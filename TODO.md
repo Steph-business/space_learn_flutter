@@ -1,0 +1,5 @@
+- [x] Fix imports in bibliothèquePage.dart: Remove incorrect local imports
+- [x] Remove Scaffold wrapper from bibliothèquePage.dart build method
+- [x] Correct LivreCard instantiation: fix statut and couleurs parameters
+- [x] Complete missing code: add closing braces for ListView, Column, Padding, and class
+- [x] Remove bottomNavigationBar from bibliothèquePage.dart
