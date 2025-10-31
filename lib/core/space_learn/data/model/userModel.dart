@@ -27,19 +27,24 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['ID'] ?? '',
-      profilId: json['ProfilID'] ?? '',
-      nomComplet: json['NomComplet'] ?? '',
-      email: json['Email'] ?? '',
-      biography: json['Biography'],
-      profilePhoto: json['ProfilePhoto'],
-      socialLinks: json['SocialLinks'],
-      walletAddress: json['WalletAddress'],
-      isProfileComplete: json['IsProfileComplete'] ?? false,
-      createdAt: json['CreatedAt'] != null
+      id: json['id'] ?? json['ID'] ?? '',
+      profilId: json['profil_id'] ?? json['ProfilID'] ?? '',
+      nomComplet: json['nom_complet'] ?? json['NomComplet'] ?? '',
+      email: json['email'] ?? json['Email'] ?? '',
+      biography: json['biography'] ?? json['Biography'],
+      profilePhoto: json['profile_photo'] ?? json['ProfilePhoto'],
+      socialLinks: json['social_links'] ?? json['SocialLinks'],
+      walletAddress: json['wallet_address'] ?? json['WalletAddress'],
+      isProfileComplete:
+          json['is_profile_complete'] ?? json['IsProfileComplete'] ?? false,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : json['CreatedAt'] != null
           ? DateTime.parse(json['CreatedAt'])
           : null,
-      updatedAt: json['UpdatedAt'] != null
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : json['UpdatedAt'] != null
           ? DateTime.parse(json['UpdatedAt'])
           : null,
     );

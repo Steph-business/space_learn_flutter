@@ -39,6 +39,8 @@ dependencies:
   http: ^1.2.1
   shared_preferences: ^2.2.3
   iconsax: ^0.0.8
+  lucide_icons_flutter: ^3.1.5
+  fl_chart: ^0.66.1
 
 dev_dependencies:
   flutter_test:
