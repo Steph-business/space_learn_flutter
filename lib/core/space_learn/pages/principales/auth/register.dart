@@ -8,7 +8,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/logi
 import '../../../../themes/app_colors.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/homePageLecteur.dart'
     as lecteurHome;
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homePageEcrivain.dart'
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homePageAuteur.dart'
     as ecrivainHome;
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 

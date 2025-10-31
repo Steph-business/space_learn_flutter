@@ -7,7 +7,7 @@ import 'register.dart';
 import '../../../../utils/tokenStorage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/homePageLecteur.dart'
     as lecteurHome;
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homePageEcrivain.dart'
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homePageAuteur.dart'
     as ecrivainHome;
 
 class ProfilPage extends StatefulWidget {
@@ -89,7 +89,7 @@ class _ProfilPageState extends State<ProfilPage> {
           } else if (newProfileName.contains('auteur') ||
               newProfileName.contains('ecrivain') ||
               newProfileName.contains('éditeur')) {
-            targetPage = const ecrivainHome.HomePageEcrivain();
+            targetPage = const ecrivainHome.HomePageAuteur();
           } else {
             targetPage = const ProfilPage(); // Fallback
           }
@@ -154,7 +154,8 @@ class _ProfilPageState extends State<ProfilPage> {
     }
     */
 
-    // Temporary: always treat as unauthenticated
+    // Always save the selected profile and go to registration first
+    // The home page redirection will happen after login, not after profile selection
     await _profileService.saveSelectedProfile(profileId);
 
     if (!mounted) return;
@@ -311,11 +312,14 @@ class _ProfilPageState extends State<ProfilPage> {
 
   IconData _getIconForProfile(String libelle) {
     final profileName = libelle.toLowerCase();
-    if (profileName.contains('Lecteur')) {
+    if (profileName.contains('lecteur')) {
       return Icons.menu_book;
     }
-    if (profileName.contains('Auteur') || profileName.contains('éditeur')) {
+    if (profileName.contains('auteur') || profileName.contains('éditeur')) {
       return Icons.edit;
+    }
+    if (profileName.contains('administrateur')) {
+      return Icons.admin_panel_settings;
     }
     // Icône par défaut pour les autres profils
     return Icons.person;
@@ -328,6 +332,9 @@ class _ProfilPageState extends State<ProfilPage> {
     }
     if (profileName.contains('auteur') || profileName.contains('éditeur')) {
       return 'Publier et vendre\nmes œuvres';
+    }
+    if (profileName.contains('administrateur')) {
+      return 'Gérer la plateforme\net les utilisateurs';
     }
     // Description par défaut
     return 'Accéder à la\nplateforme';
