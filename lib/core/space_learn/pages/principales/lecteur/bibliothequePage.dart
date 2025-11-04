@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/filtre_livres.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_card.dart';
-import 'package:space_learn_flutter/core/themes/layout/navBarAll.dart';
-import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/layout/navBarAll.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/layout/recherche_bar.dart';
 
 class BibliothequePage extends StatefulWidget {
   const BibliothequePage({Key? key}) : super(key: key);

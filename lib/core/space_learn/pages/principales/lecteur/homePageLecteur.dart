@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../themes/app_colors.dart';
 import '../../../../themes/app_text_styles.dart';
-import '../../../../themes/layout/navBarLecteur.dart';
-import '../../../../themes/layout/navBarAll.dart';
+import '../../layout/navBarLecteur.dart';
+import '../../layout/navBarAll.dart';
 import '../../widgets/lecteur/home/stats_section.dart';
 import '../../widgets/lecteur/home/continue_reading_section.dart';
 import '../../widgets/lecteur/home/recommendations_section.dart';
@@ -66,7 +66,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     _buildSectionTitle('Activité récente'),
                     const SizedBox(height: 6),
                     const RecentActivitySection(),
-                    const SizedBox(height: 8), // Espace final pour éviter que le contenu touche le bas
+                    const SizedBox(
+                      height: 8,
+                    ), // Espace final pour éviter que le contenu touche le bas
                   ],
                 ),
               ),
@@ -76,8 +78,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       ),
     );
   }
-
-
 
   Widget _buildSectionTitle(String title) {
     return Text(

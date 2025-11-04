@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-class NavBarAuteur extends StatefulWidget {
-  const NavBarAuteur({super.key});
+class NavBarAuteur extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
 
-  @override
-  State<NavBarAuteur> createState() => _NavBarAuteurState();
-}
+  const NavBarAuteur({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
 
-class _NavBarAuteurState extends State<NavBarAuteur> {
-  int _currentIndex = 0;
-
-  final List<Map<String, dynamic>> _items = [
+  final List<Map<String, dynamic>> _items = const [
     {'icon': Icons.home, 'label': 'Accueil'},
     {'icon': Icons.edit, 'label': 'Écrire'},
     {'icon': Icons.book, 'label': 'Mes Livres'},
@@ -27,13 +27,11 @@ class _NavBarAuteurState extends State<NavBarAuteur> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: List.generate(_items.length, (index) {
           final item = _items[index];
-          final bool isActive = _currentIndex == index;
+          final bool isActive = currentIndex == index;
 
           return Expanded(
             child: GestureDetector(
-              onTap: () {
-                setState(() => _currentIndex = index);
-              },
+              onTap: () => onTap(index),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 margin: const EdgeInsets.symmetric(horizontal: 2),
