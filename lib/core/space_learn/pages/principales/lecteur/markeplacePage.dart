@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../themes/layout/recherche_bar.dart';
+import '../../layout/recherche_bar.dart';
 import '../../widgets/lecteur/markeplace/select_categorie.dart';
 import '../../widgets/lecteur/markeplace/livre_card.dart';
 import '../../widgets/lecteur/markeplace/section_titre.dart';
-import '../../../../themes/layout/navBarAll.dart';
+import '../../layout/navBarAll.dart';
 
 class MarketplacePage extends StatelessWidget {
   const MarketplacePage({super.key});
@@ -22,16 +22,8 @@ class MarketplacePage extends StatelessWidget {
         "auteur": "Alice Martin",
         "prix": "15.99 €",
       },
-      {
-        "titre": "Apprendre Flutter",
-        "auteur": "Sophie K.",
-        "prix": "10.50 €",
-      },
-      {
-        "titre": "Introduction à l’IA",
-        "auteur": "Marc D.",
-        "prix": "13.49 €",
-      },
+      {"titre": "Apprendre Flutter", "auteur": "Sophie K.", "prix": "10.50 €"},
+      {"titre": "Introduction à l’IA", "auteur": "Marc D.", "prix": "13.49 €"},
     ];
 
     return Scaffold(
@@ -48,7 +40,6 @@ class MarketplacePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Titre principal
-               
                   const SizedBox(height: 20),
 
                   // Barre de recherche
@@ -71,12 +62,13 @@ class MarketplacePage extends StatelessWidget {
                     itemCount: livres.length,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.75,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.75,
+                          crossAxisSpacing: 14,
+                          mainAxisSpacing: 14,
+                        ),
                     itemBuilder: (context, index) {
                       final livre = livres[index];
                       return LivreCard(

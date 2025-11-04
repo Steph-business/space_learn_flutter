@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/layout/recherche_bar.dart';
 import '../../widgets/lecteur/recherche/resultat_liste.dart';
 import '../../widgets/lecteur/recherche/categorie_filtre.dart';
 import '../../../../themes/app_colors.dart';
-import '../../../../themes/layout/navBarAll.dart';
+import '../../layout/navBarAll.dart';
 
 class RecherchePageLecteur extends StatelessWidget {
   const RecherchePageLecteur({super.key});
@@ -25,7 +25,7 @@ class RecherchePageLecteur extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Titre principal
-                 const Text(
+                  const Text(
                     "Recherche",
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                   ),

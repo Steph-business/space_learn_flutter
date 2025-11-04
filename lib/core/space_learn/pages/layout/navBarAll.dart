@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../app_colors.dart';
-import '../app_text_styles.dart';
+import '../../../themes/app_colors.dart';
+import '../../../themes/app_text_styles.dart';
 
 class NavBarAll extends StatelessWidget {
   final String userName;
@@ -11,9 +11,7 @@ class NavBarAll extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 60, bottom: 16),
-      decoration: const BoxDecoration(
-        color: Color.fromARGB(255, 33, 32, 32),
-      ),
+      decoration: const BoxDecoration(color: Color.fromARGB(255, 33, 32, 32)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
