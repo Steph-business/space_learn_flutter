@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'publication_card.dart';
 
 class PublicationsList extends StatelessWidget {

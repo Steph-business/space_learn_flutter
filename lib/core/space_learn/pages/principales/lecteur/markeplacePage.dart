@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'package:google_fonts/google_fonts.dart';
-import '../../layout/recherche_bar.dart';
-import '../../widgets/lecteur/markeplace/select_categorie.dart';
+
+import '../../../../themes/layout/navBarAll.dart';
+import '../../../../themes/layout/recherche_bar.dart';
 import '../../widgets/lecteur/markeplace/livre_card.dart';
 import '../../widgets/lecteur/markeplace/section_titre.dart';
-import '../../layout/navBarAll.dart';
+import '../../widgets/lecteur/markeplace/select_categorie.dart';
 
 class MarketplacePage extends StatelessWidget {
   const MarketplacePage({super.key});
@@ -40,7 +42,7 @@ class MarketplacePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Titre principal
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
 
                   // Barre de recherche
                   const CustomSearchBar(),
@@ -55,7 +57,7 @@ class MarketplacePage extends StatelessWidget {
                   // Titre section
                   const SectionTitle(title: "Livres populaires"),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 2),
 
                   // Grille de livres
                   GridView.builder(

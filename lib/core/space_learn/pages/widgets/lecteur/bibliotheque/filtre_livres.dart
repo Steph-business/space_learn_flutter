@@ -12,7 +12,13 @@ class FiltreLivres extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filtres = ["Tous", "En cours", "Terminés", "Favoris"];
+    final filtres = [
+      "Tous",
+      "Business",
+      "Informatique",
+      "Science",
+      "Littérature",
+    ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(

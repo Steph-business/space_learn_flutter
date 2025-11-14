@@ -1,26 +1,34 @@
 import 'package:flutter/material.dart';
+
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../../../themes/app_colors.dart';
 
 class LivreCard extends StatelessWidget {
   final String titre;
   final String auteur;
+  final String categorie;
+  final VoidCallback? onTap;
 
   const LivreCard({
     super.key,
     required this.titre,
     required this.auteur,
+    required this.categorie,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // TODO: Navigate to book details page
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ouverture de "$titre"')),
-        );
-      },
+      onTap:
+          onTap ??
+          () {
+            // TODO: Navigate to book details page
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Ouverture de "$titre"')));
+          },
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -43,10 +51,7 @@ class LivreCard extends StatelessWidget {
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.book,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.book, color: Colors.white),
             ),
             const SizedBox(width: 16),
             Expanded(

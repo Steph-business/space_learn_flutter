@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/layout/recherche_bar.dart';
-import '../../widgets/lecteur/recherche/resultat_liste.dart';
-import '../../widgets/lecteur/recherche/categorie_filtre.dart';
+
+import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import '../../../../themes/app_colors.dart';
-import '../../layout/navBarAll.dart';
+import '../../../../themes/layout/navBarAll.dart';
+import '../../widgets/lecteur/recherche/categorie_filtre.dart';
+import '../../widgets/lecteur/recherche/resultat_liste.dart';
 
 class RecherchePageLecteur extends StatelessWidget {
   const RecherchePageLecteur({super.key});
@@ -40,9 +42,6 @@ class RecherchePageLecteur extends StatelessWidget {
                   const CategorieFiltres(),
 
                   const SizedBox(height: 28),
-
-                  // Widget : résultats (livres)
-                  const ResultatListe(),
                 ],
               ),
             ),
