@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'package:iconsax/iconsax.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/notificationPage.dart';
 
 class RecentNotificationsPage extends StatelessWidget {
   const RecentNotificationsPage({super.key});
@@ -30,40 +32,51 @@ class RecentNotificationsPage extends StatelessWidget {
       ),
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const Icon(Icons.notifications, color: Colors.black87),
-                const SizedBox(width: 8),
-                Text(
-                  'Notifications récentes',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const NotificationPage()),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.notifications, color: Colors.black87),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Notifications récentes',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
+                ],
+              ),
+            ),
+            // List
+            ...notifications.map(
+              (notif) => Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
                 ),
-              ],
+                child: NotificationCard(item: notif),
+              ),
             ),
-          ),
-          // List
-          ...notifications.map(
-            (notif) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: NotificationCard(item: notif),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

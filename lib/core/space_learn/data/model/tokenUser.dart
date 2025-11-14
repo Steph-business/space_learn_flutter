@@ -1,7 +1,5 @@
 import 'package:space_learn_flutter/core/space_learn/data/model/userModel.dart';
 
-
-
 class TokenUser {
   final String token;
   final UserModel user;

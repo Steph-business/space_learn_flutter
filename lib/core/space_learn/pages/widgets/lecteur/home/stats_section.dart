@@ -1,120 +1,99 @@
 import 'package:flutter/material.dart';
-import '../../../../../themes/app_colors.dart';
+
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../../../principales/lecteur/stat_detail.dart';
 
 class StatsSection extends StatelessWidget {
   const StatsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color.fromARGB(255, 253, 201, 134),
-            const Color.fromARGB(255, 253, 210, 154),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          // Première ligne : 2 statistiques
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.book_outlined,
-                  iconColor: Colors.white,
-                  title: '12',
-                  subtitle: 'Livres lus',
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Scaffold(
+              backgroundColor: const Color.fromARGB(255, 250, 249, 246),
+              appBar: AppBar(
+                backgroundColor: const Color.fromARGB(255, 33, 32, 32),
+                title: const Text(
+                  'Statistiques Détaillées',
+                  style: TextStyle(color: Colors.white),
+                ),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.access_time_outlined,
-                  iconColor: Colors.white,
-                  title: '2h45m',
-                  subtitle: 'Temps de lecture',
+              body: const SingleChildScrollView(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    DetailedStatistics(),
+                    SizedBox(height: 16),
+                    GrowthIndicatorsWidget(),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 16),
-          // Deuxième ligne : 2 statistiques
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.trending_up,
-                  iconColor: Colors.white,
-                  title: '89%',
-                  subtitle: 'Objectif mensuel',
-                  extra: LinearProgressIndicator(
-                    value: 0.89,
-                    backgroundColor: Colors.white.withOpacity(0.3),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                    minHeight: 4,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.local_fire_department,
-                  iconColor: Colors.white,
-                  title: '5',
-                  subtitle: 'Série de jours',
-                ),
-              ),
-            ],
+        );
+      },
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: const [
+          _StatItem(
+            icon: FontAwesomeIcons.bookOpen,
+            value: "12",
+            label: "Livres lus",
+            color: Colors.blue,
+          ),
+          _StatItem(
+            icon: FontAwesomeIcons.hourglassHalf,
+            value: "34h",
+            label: "Temps total",
+            color: Colors.green,
+          ),
+          _StatItem(
+            icon: FontAwesomeIcons.trophy,
+            value: "5",
+            label: "Objectifs",
+            color: Colors.orange,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    Widget? extra,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 32, color: AppColors.primary),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color.fromARGB(255, 69, 69, 69),
-            ),
-          ),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: const Color.fromARGB(255, 69, 69, 69),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          if (extra != null) ...[const SizedBox(height: 8), extra],
-        ],
-      ),
+class _StatItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  const _StatItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      ],
     );
   }
 }

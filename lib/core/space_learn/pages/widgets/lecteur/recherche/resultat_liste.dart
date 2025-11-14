@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'livre_card.dart';
 
 class ResultatListe extends StatelessWidget {
@@ -7,20 +8,35 @@ class ResultatListe extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final livres = [
-      {"titre": "L'importance des réseaux", "auteur": "Jean Dupont"},
-      {"titre": "Créer une entreprise", "auteur": "Alice Martin"},
-      {"titre": "Le futur de l’IA", "auteur": "Marie Kouadio"},
+      {
+        "titre": "L'importance des réseaux",
+        "auteur": "Jean Dupont",
+        "categorie": "Business",
+      },
+      {
+        "titre": "Créer une entreprise",
+        "auteur": "Alice Martin",
+        "categorie": "Business",
+      },
+      {
+        "titre": "Le futur de l’IA",
+        "auteur": "Marie Kouadio",
+        "categorie": "Informatique",
+      },
     ];
 
     return Column(
       children: livres
-          .map((livre) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: LivreCard(
-                  titre: livre["titre"]!,
-                  auteur: livre["auteur"]!,
-                ),
-              ))
+          .map(
+            (livre) => Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: LivreCard(
+                titre: livre["titre"]!,
+                auteur: livre["auteur"]!,
+                categorie: livre["categorie"]!,
+              ),
+            ),
+          )
           .toList(),
     );
   }

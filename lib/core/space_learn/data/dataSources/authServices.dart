@@ -1,11 +1,13 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
-import 'package:space_learn_flutter/core/space_learn/data/model/tokenUser.dart';
+
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/tokenUser.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/userModel.dart';
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
-import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
 import 'package:space_learn_flutter/core/utils/profileStorage.dart';
+import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
 
 class AuthService {
   /// ✅ Inscription

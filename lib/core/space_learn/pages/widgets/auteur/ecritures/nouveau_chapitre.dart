@@ -21,39 +21,52 @@ class NouveauChapitreWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Nouveau chapitre",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text(
+            "Nouveau chapitre",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
           const SizedBox(height: 16),
           TextField(
             decoration: InputDecoration(
-              hintText: "Titre du chapitre",
+              labelText: "Titre du chapitre",
+              hintText: "Ex: Introduction",
               filled: true,
               fillColor: Colors.grey[100],
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             maxLines: 6,
             decoration: InputDecoration(
-              hintText: "Contenu du chapitre...",
+              labelText: "Contenu",
+              hintText: "Commencez à écrire ici...",
               filled: true,
               fillColor: Colors.grey[100],
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () {},
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: Colors.orange,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(vertical: 12),
+              minimumSize: const Size(double.infinity, 50),
             ),
-            child: const Center(
-              child: Text("Enregistrer", style: TextStyle(color: Colors.white)),
+            icon: const Icon(Icons.save, color: Colors.white),
+            label: const Text(
+              "Enregistrer le chapitre",
+              style: TextStyle(color: Colors.white, fontSize: 16),
             ),
           ),
         ],
