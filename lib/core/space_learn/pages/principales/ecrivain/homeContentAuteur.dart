@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/action_rapide.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/livre_recent.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/notification_recent.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/community_events.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/revenus.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/statistique.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/markeplace/section_titre.dart';
@@ -37,9 +37,9 @@ class HomeContentAuteur extends StatelessWidget {
           const SizedBox(height: 20),
           const AuteurLivresRecents(),
           const SizedBox(height: 50),
-          const SectionTitle(title: "Notifications récentes"),
+          const SectionTitle(title: "Événements communautaires"),
           const SizedBox(height: 20),
-          const RecentNotificationsPage(),
+          const CommunityEventsPage(),
           const SizedBox(height: 100),
         ],
       ),
