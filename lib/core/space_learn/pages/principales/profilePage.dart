@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../themes/app_colors.dart';
+import '../../data/model/userModel.dart';
+import '../../data/dataSources/authServices.dart';
+import '../../../utils/tokenStorage.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -10,21 +13,29 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final TextEditingController _nameController = TextEditingController(
-    text: 'Steph',
-  );
-  final TextEditingController _emailController = TextEditingController(
-    text: 'steph@example.com',
-  );
-  final TextEditingController _bioController = TextEditingController(
-    text: 'Passionné de lecture et d\'écriture.',
-  );
+  UserModel? _user;
+  bool _isLoading = true;
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _socialLinksController = TextEditingController();
+  final TextEditingController _walletAddressController =
+      TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _bioController.dispose();
+    _socialLinksController.dispose();
+    _walletAddressController.dispose();
     super.dispose();
   }
 
@@ -94,6 +105,13 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 30),
 
             // Formulaire
+            _buildReadOnlyField(
+              value: _user?.profilId ?? '',
+              label: "ID Profil",
+              icon: Icons.perm_identity,
+            ),
+            const SizedBox(height: 20),
+
             _buildTextField(
               controller: _nameController,
               label: "Nom complet",
@@ -114,6 +132,20 @@ class _ProfilePageState extends State<ProfilePage> {
               label: "Biographie",
               icon: Icons.edit_outlined,
               maxLines: 3,
+            ),
+            const SizedBox(height: 20),
+
+            _buildTextField(
+              controller: _socialLinksController,
+              label: "Liens sociaux",
+              icon: Icons.link,
+            ),
+            const SizedBox(height: 20),
+
+            _buildTextField(
+              controller: _walletAddressController,
+              label: "Adresse portefeuille",
+              icon: Icons.account_balance_wallet,
             ),
             const SizedBox(height: 20),
 
@@ -207,6 +239,31 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget _buildReadOnlyField({
+    required String value,
+    required String label,
+    required IconData icon,
+  }) {
+    return TextFormField(
+      initialValue: value,
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: AppColors.primary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.grey),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.grey[100],
+      ),
+    );
+  }
+
   Widget _buildStatsSection() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -278,10 +335,39 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _loadUserProfile() async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token != null) {
+        final authService = AuthService();
+        final user = await authService.getUser(token);
+        if (user != null) {
+          setState(() {
+            _user = user;
+            _nameController.text = user.nomComplet;
+            _emailController.text = user.email;
+            _bioController.text = user.biography ?? '';
+            _socialLinksController.text = user.socialLinks ?? '';
+            _walletAddressController.text = user.walletAddress ?? '';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur lors du chargement du profil: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   void _cancelChanges() {
-    // Remettre les valeurs originales
-    _nameController.text = 'Steph';
-    _emailController.text = 'steph@example.com';
-    _bioController.text = 'Passionné de lecture et d\'écriture.';
+    if (_user != null) {
+      _nameController.text = _user!.nomComplet;
+      _emailController.text = _user!.email;
+      _bioController.text = _user!.biography ?? '';
+      _socialLinksController.text = _user!.socialLinks ?? '';
+      _walletAddressController.text = _user!.walletAddress ?? '';
+    }
   }
 }

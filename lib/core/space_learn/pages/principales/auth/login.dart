@@ -17,7 +17,6 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/h
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homePageAuteur.dart'
     as ecrivainHome;
 
-
 class LoginPage extends StatefulWidget {
   final String? initialEmail;
   final String? initialPassword;
@@ -133,6 +132,14 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

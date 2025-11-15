@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../themes/app_colors.dart';
+import '../../data/dataSources/authServices.dart';
+import '../../../utils/profileStorage.dart';
 import 'profilePage.dart';
 import 'readingPreferencesPage.dart';
+import 'auth/login.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -266,10 +269,18 @@ class SettingsPage extends StatelessWidget {
               child: const Text("Annuler"),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
                 // Logique de déconnexion
-                // Navigator.of(context).pushReplacementNamed('/login');
+                final authService = AuthService();
+                await authService.logout();
+                await ProfileStorage.clearSelectedProfile();
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
+                  );
+                }
               },
               child: const Text(
                 "Se déconnecter",

@@ -1,7 +1,7 @@
 /// api_routes.dart
 class ApiRoutes {
   // Base URL (dev ou prod)
-  static const String baseUrl = "http://192.168.252.67:8083";
+  static const String baseUrl = "http://192.168.1.2:8083";
 
   // Auth routes
   static const String profils  =    "$baseUrl/auth/profils";

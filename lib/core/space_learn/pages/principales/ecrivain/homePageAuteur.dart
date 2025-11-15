@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/layout/navBarAll.dart';
 import 'package:space_learn_flutter/core/themes/layout/navBarAuteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ecrirePage.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homeContent.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homeContentAuteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livrePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/statsPage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/teamsPage.dart';
@@ -31,7 +31,7 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
   void initState() {
     super.initState();
     _pages = [
-      const HomeContent(
+      const HomeContentAuteur(
         profileId: '',
         userName: 'Auteur',
       ), // Placeholder, will be updated
@@ -77,8 +77,8 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
       body: IndexedStack(
         index: _currentIndex,
         children: _pages.map((page) {
-          if (page is HomeContent) {
-            return HomeContent(
+          if (page is HomeContentAuteur) {
+            return HomeContentAuteur(
               profileId: widget.profileId,
               userName: widget.userName,
             );
