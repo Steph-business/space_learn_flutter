@@ -1,0 +1,69 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../utils/api_routes.dart';
+import '../model/paymentModel.dart';
+
+class PaymentService {
+  final http.Client client;
+
+  PaymentService({http.Client? client}) : client = client ?? http.Client();
+
+  Future<PaymentModel> createPayment(
+    PaymentModel payment,
+    String authToken,
+  ) async {
+    final response = await client.post(
+      Uri.parse(ApiRoutes.createPayment),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: jsonEncode(payment.toJson()),
+    );
+
+    if (response.statusCode == 201) {
+      return PaymentModel.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to create payment');
+    }
+  }
+
+  Future<List<PaymentModel>> getUserPayments(String authToken) async {
+    final response = await client.get(
+      Uri.parse(ApiRoutes.paymentsByUser),
+      headers: {'Authorization': 'Bearer $authToken'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => PaymentModel.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to fetch user payments');
+    }
+  }
+
+  Future<PaymentModel> getPaymentById(String id, String authToken) async {
+    final url = ApiRoutes.paymentById.replaceFirst(':id', id);
+    final response = await client.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $authToken'},
+    );
+
+    if (response.statusCode == 200) {
+      return PaymentModel.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to fetch payment');
+    }
+  }
+
+  Future<Map<String, dynamic>> getAuthorRevenue(String authorId) async {
+    final url = ApiRoutes.authorRevenue.replaceFirst(':authorId', authorId);
+    final response = await client.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch author revenue');
+    }
+  }
+}

@@ -1,99 +1,78 @@
+/// Dart imports with relative correct path
+import 'chapterModel.dart';
+
 class BookModel {
   final String id;
-  final String title;
-  final String author;
+  final String auteurId; // auteur_id
+  final String titre;
   final String description;
-  final double price;
-  final List<String> chapters; // Liste d'IDs de chapitres
-  final String? coverImage;
-  final bool isOwned; // Pour différencier bibliothèque vs marketplace
+  final String? imageCouverture;
+  final String? fichierUrl;
+  final String format; // PDF | EPUB | MOBI
+  final double prix;
+  final int stock;
+  final String statut; // publie | brouillon | en_revision
+  final String? adresseContratNft;
+  final DateTime? creeLe;
+  final DateTime? majLe;
+  final List<ChapterModel>? chapitres;
 
   BookModel({
     required this.id,
-    required this.title,
-    required this.author,
+    required this.auteurId,
+    required this.titre,
     required this.description,
-    required this.price,
-    required this.chapters,
-    this.coverImage,
-    this.isOwned = false,
+    this.imageCouverture,
+    this.fichierUrl,
+    required this.format,
+    required this.prix,
+    required this.stock,
+    required this.statut,
+    this.adresseContratNft,
+    this.creeLe,
+    this.majLe,
+    this.chapitres,
   });
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
     return BookModel(
       id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      author: json['author'] ?? '',
+      auteurId: json['auteur_id'] ?? '',
+      titre: json['titre'] ?? '',
       description: json['description'] ?? '',
-      price: (json['price'] ?? 0.0).toDouble(),
-      chapters: List<String>.from(json['chapters'] ?? []),
-      coverImage: json['cover_image'],
-      isOwned: json['is_owned'] ?? false,
+      imageCouverture: json['image_couverture'],
+      fichierUrl: json['fichier_url'],
+      format: json['format'] ?? '',
+      prix: (json['prix'] ?? 0.0).toDouble(),
+      stock: (json['stock'] ?? 0).toInt(),
+      statut: json['statut'] ?? '',
+      adresseContratNft: json['adresse_contrat_nft'],
+      creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
+      majLe: json['maj_le'] != null ? DateTime.parse(json['maj_le']) : null,
+      chapitres: json['chapitres'] != null
+          ? (json['chapitres'] as List)
+              .map((e) => ChapterModel.fromJson(e))
+              .toList()
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'title': title,
-      'author': author,
+      'auteur_id': auteurId,
+      'titre': titre,
       'description': description,
-      'price': price,
-      'chapters': chapters,
-      'cover_image': coverImage,
-      'is_owned': isOwned,
+      'image_couverture': imageCouverture,
+      'fichier_url': fichierUrl,
+      'format': format,
+      'prix': prix,
+      'stock': stock,
+      'statut': statut,
+      'adresse_contrat_nft': adresseContratNft,
+      'cree_le': creeLe?.toIso8601String(),
+      'maj_le': majLe?.toIso8601String(),
+      'chapitres': chapitres?.map((c) => c.toJson()).toList(),
     };
   }
-}
-
-// Mock data pour les livres
-class MockBooks {
-  static final List<BookModel> ownedBooks = [
-    BookModel(
-      id: '1',
-      title: 'L\'Art de la guerre',
-      author: 'Sun Tzu',
-      description: 'Un classique sur la stratégie militaire et la philosophie.',
-      price: 0.0,
-      chapters: ['chap1', 'chap2', 'chap3'],
-      isOwned: true,
-    ),
-    BookModel(
-      id: '2',
-      title: 'Atomic Habits',
-      author: 'James Clear',
-      description:
-          'Comment construire de bonnes habitudes et se débarrasser des mauvaises.',
-      price: 0.0,
-      chapters: ['chap4', 'chap5'],
-      isOwned: true,
-    ),
-  ];
-
-  static final List<BookModel> marketplaceBooks = [
-    BookModel(
-      id: '3',
-      title: 'L\'importance des réseaux',
-      author: 'Jean Dupont',
-      description: 'Guide pour développer son réseau professionnel.',
-      price: 12.99,
-      chapters: ['chap6', 'chap7'],
-    ),
-    BookModel(
-      id: '4',
-      title: 'Créer une entreprise',
-      author: 'Alice Martin',
-      description: 'Étapes pour lancer sa startup.',
-      price: 15.99,
-      chapters: ['chap8', 'chap9'],
-    ),
-    BookModel(
-      id: '5',
-      title: 'Apprendre Flutter',
-      author: 'Sophie K.',
-      description: 'Tutoriel complet pour Flutter.',
-      price: 10.50,
-      chapters: ['chap10'],
-    ),
-  ];
 }
