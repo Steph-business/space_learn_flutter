@@ -11,4 +11,11 @@ class ProfilModel {
       libelle: (json['libelle'] as String? ?? '').trim(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'libelle': libelle,
+    };
+  }
 }
