@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ecrirePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livrePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/statsPage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/teamsPage.dart';
@@ -12,13 +11,6 @@ class AuteurActionsRapide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = [
-      {
-        "icon": Icons.edit,
-        "title": "Écrire",
-        "subtitle": "Nouveau chapitre",
-        "color": Colors.green,
-        "page": const EcriturePage(),
-      },
       {
         "icon": Icons.library_books,
         "title": "Mes livres",

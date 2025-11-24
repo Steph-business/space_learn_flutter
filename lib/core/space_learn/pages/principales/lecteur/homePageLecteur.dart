@@ -11,7 +11,6 @@ import '../../widgets/lecteur/home/recommendations_section.dart';
 import '../../widgets/lecteur/home/stats_section.dart';
 import 'bibliothequePage.dart';
 import 'markeplacePage.dart';
-import 'recherchePage.dart';
 import 'teamsPage.dart';
 
 class HomePageLecteur extends StatelessWidget {
