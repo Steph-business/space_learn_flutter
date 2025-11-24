@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/bibliothequePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/markeplacePage.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/recherchePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/teamsPage.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 
@@ -25,7 +24,6 @@ class _MainNavBarState extends State<MainNavBar> {
 
   final List<String> _titles = [
     "Accueil",
-    "Recherche",
     "Marketplace",
     "Bibliothèque",
     "Teams",
@@ -33,7 +31,6 @@ class _MainNavBarState extends State<MainNavBar> {
 
   final List<IconData> _icons = [
     Icons.home,
-    Icons.search,
     Icons.store,
     Icons.library_books,
     Icons.group,
@@ -52,12 +49,10 @@ class _MainNavBarState extends State<MainNavBar> {
       case 0:
         return widget.child ?? const Center(child: Text('Accueil'));
       case 1:
-        return const RecherchePageLecteur();
-      case 2:
         return const MarketplacePage();
-      case 3:
+      case 2:
         return const BibliothequePage();
-      case 4:
+      case 3:
         return const TeamsPageLecteur();
       default:
         return widget.child ?? const Center(child: Text('Accueil'));
