@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../themes/app_colors.dart';
-import '../../data/dataSources/authServices.dart';
+import '../../data/dataServices/authServices.dart';
 import '../../../utils/profileStorage.dart';
 import 'profilePage.dart';
 import 'readingPreferencesPage.dart';

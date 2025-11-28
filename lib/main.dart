@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:space_learn_flutter/core/space_learn/data/dataSources/authServices.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataSources/profileService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/homePageLecteur.dart';
