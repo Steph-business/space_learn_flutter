@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../themes/app_colors.dart';
 import '../../data/model/userModel.dart';
-import '../../data/dataSources/authServices.dart';
+import '../../data/dataServices/authServices.dart';
 import '../../../utils/tokenStorage.dart';
 
 class ProfilePage extends StatefulWidget {

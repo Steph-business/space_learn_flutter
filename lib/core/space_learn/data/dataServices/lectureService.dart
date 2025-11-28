@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../utils/api_routes.dart';
-import '../model/reviewModel.dart';
+import '../model/activiteModel.dart';
 
-class ReviewService {
+class Lectureservice {
   final http.Client client;
 
-  ReviewService({http.Client? client}) : client = client ?? http.Client();
+  Lectureservice({http.Client? client}) : client = client ?? http.Client();
 
-  Future<ReviewModel> createReview({
+  Future<ActiviteModel> createReview({
     required String livreId,
     required int note,
     required String commentaire,
@@ -28,25 +28,25 @@ class ReviewService {
     );
 
     if (response.statusCode == 201) {
-      return ReviewModel.fromJson(jsonDecode(response.body));
+      return ActiviteModel.fromJson(jsonDecode(response.body));
     } else {
       throw Exception('Failed to create review');
     }
   }
 
-  Future<List<ReviewModel>> getReviewsByBook(String livreId) async {
+  Future<List<ActiviteModel>> getReviewsByBook(String livreId) async {
     final url = ApiRoutes.reviewsByBook.replaceFirst(':livre_id', livreId);
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => ReviewModel.fromJson(json)).toList();
+      return data.map((json) => ActiviteModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch reviews by book');
     }
   }
 
-  Future<List<ReviewModel>> getReviewsByUser(String authToken) async {
+  Future<List<ActiviteModel>> getReviewsByUser(String authToken) async {
     final response = await client.get(
       Uri.parse(ApiRoutes.reviewsByUser),
       headers: {'Authorization': 'Bearer $authToken'},
@@ -54,13 +54,13 @@ class ReviewService {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => ReviewModel.fromJson(json)).toList();
+      return data.map((json) => ActiviteModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch reviews by user');
     }
   }
 
-  Future<ReviewModel> updateReview({
+  Future<ActiviteModel> updateReview({
     required String id,
     required String livreId,
     required int note,
@@ -82,7 +82,7 @@ class ReviewService {
     );
 
     if (response.statusCode == 200) {
-      return ReviewModel.fromJson(jsonDecode(response.body));
+      return ActiviteModel.fromJson(jsonDecode(response.body));
     } else {
       throw Exception('Failed to update review');
     }
