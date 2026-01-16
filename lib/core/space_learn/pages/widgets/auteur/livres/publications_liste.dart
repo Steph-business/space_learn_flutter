@@ -17,14 +17,6 @@ class PublicationsList extends StatelessWidget {
         "note": "4.8",
         "image": "assets/images/book1.png",
       },
-      {
-        "titre": "Guide Python Avancé",
-        "statut": "Brouillon",
-        "progression": "85% terminé",
-        "revenu": "0€",
-        "note": "4.2",
-        "image": "assets/images/book2.png",
-      },
     ];
 
     return Column(
@@ -32,13 +24,10 @@ class PublicationsList extends StatelessWidget {
       children: [
         const Text(
           "Publications",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 16),
-        ...publications.map((p) => PublicationCard(data: p)).toList(),
+        ...publications.map((p) => PublicationCard(data: p)),
       ],
     );
   }

@@ -1,5 +1,5 @@
 /// Dart imports with relative correct path
-import 'chapterModel.dart';
+library;
 
 class BookModel {
   final String id;
@@ -15,7 +15,6 @@ class BookModel {
   final String? adresseContratNft;
   final DateTime? creeLe;
   final DateTime? majLe;
-  final List<ChapterModel>? chapitres;
 
   BookModel({
     required this.id,
@@ -31,7 +30,6 @@ class BookModel {
     this.adresseContratNft,
     this.creeLe,
     this.majLe,
-    this.chapitres,
   });
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
@@ -49,11 +47,6 @@ class BookModel {
       adresseContratNft: json['adresse_contrat_nft'],
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
       majLe: json['maj_le'] != null ? DateTime.parse(json['maj_le']) : null,
-      chapitres: json['chapitres'] != null
-          ? (json['chapitres'] as List)
-              .map((e) => ChapterModel.fromJson(e))
-              .toList()
-          : null,
     );
   }
 
@@ -72,7 +65,6 @@ class BookModel {
       'adresse_contrat_nft': adresseContratNft,
       'cree_le': creeLe?.toIso8601String(),
       'maj_le': majLe?.toIso8601String(),
-      'chapitres': chapitres?.map((c) => c.toJson()).toList(),
     };
   }
 }

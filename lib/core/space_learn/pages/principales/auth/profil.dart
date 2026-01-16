@@ -2,15 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import '../../../../themes/app_colors.dart';
-import '../../../../utils/tokenStorage.dart';
 import '../../../data/dataServices/authServices.dart';
 import '../../../data/dataServices/profileService.dart';
 import 'register.dart';
-
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/homePageLecteur.dart'
-    as lecteurHome;
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homePageAuteur.dart'
-    as ecrivainHome;
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
@@ -169,9 +163,9 @@ class _ProfilPageState extends State<ProfilPage> {
       ),
     );
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const RegisterPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const RegisterPage()));
 
     setState(() => isUpdating = false);
   }

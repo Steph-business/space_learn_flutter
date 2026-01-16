@@ -25,18 +25,7 @@ class LivreCard extends StatelessWidget {
       'author': auteur,
       'price': prix,
       'description': 'Description du livre $titre par $auteur.',
-      'chapters': [
-        {
-          'id': 'chap1',
-          'title': 'Introduction',
-          'content': 'Contenu du chapitre 1...',
-        },
-        {
-          'id': 'chap2',
-          'title': 'Chapitre principal',
-          'content': 'Contenu du chapitre 2...',
-        },
-      ],
+      // 'chapters': [], // Removed chapters
     };
 
     return GestureDetector(

@@ -70,10 +70,12 @@ class DetailedStatsService {
     if (tauxConversion != null) body['taux_conversion'] = tauxConversion;
     if (nouveauxLecteurs != null) body['nouveaux_lecteurs'] = nouveauxLecteurs;
     if (satisfaction != null) body['satisfaction'] = satisfaction;
-    if (tempsLectureMoyen != null)
+    if (tempsLectureMoyen != null) {
       body['temps_lecture_moyen'] = tempsLectureMoyen;
-    if (lecteursReccurents != null)
+    }
+    if (lecteursReccurents != null) {
       body['lecteurs_recurrents'] = lecteursReccurents;
+    }
     if (revenuParVue != null) body['revenu_par_vue'] = revenuParVue;
 
     final response = await client.put(

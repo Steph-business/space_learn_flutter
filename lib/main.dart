@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/homePageLecteur.dart';
 import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
 import 'package:space_learn_flutter/core/utils/profileStorage.dart';
 
@@ -13,7 +10,14 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/homePageLecteur.dart'
     as lecteurHome;
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'YOUR_SUPABASE_URL',
+    anonKey: 'YOUR_SUPABASE_ANON_KEY',
+  );
+
   runApp(const MyApp());
 }
 

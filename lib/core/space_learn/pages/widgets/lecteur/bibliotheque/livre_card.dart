@@ -4,7 +4,6 @@ class LivreCard extends StatelessWidget {
   final String titre;
   final String auteur;
   final int progression;
-  final String statut;
   final List<Color> couleurs;
 
   const LivreCard({
@@ -12,7 +11,6 @@ class LivreCard extends StatelessWidget {
     required this.titre,
     required this.auteur,
     required this.progression,
-    required this.statut,
     required this.couleurs,
   });
 
@@ -56,7 +54,10 @@ class LivreCard extends StatelessWidget {
                 children: [
                   Text(
                     titre,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                   Text(
                     auteur,
@@ -71,37 +72,13 @@ class LivreCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "$progression%",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: statut == "En cours"
-                              ? Colors.green[100]
-                              : Colors.blue[100],
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          statut,
-                          style: TextStyle(
-                            color: statut == "En cours"
-                                ? Colors.green[800]
-                                : Colors.blue[800],
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      )
-                    ],
-                  )
+                  Text(
+                    "$progression%",
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

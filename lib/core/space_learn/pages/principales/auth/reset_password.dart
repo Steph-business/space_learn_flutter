@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
-import '../../../../themes/app_colors.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;

@@ -7,7 +7,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibli
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/reading_page.dart';
 
 class BibliothequePage extends StatefulWidget {
-  const BibliothequePage({Key? key}) : super(key: key);
+  const BibliothequePage({super.key});
 
   @override
   State<BibliothequePage> createState() => _BibliothequePageState();
@@ -22,7 +22,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "L'Art de la guerre",
       "auteur": "Sun Tzu",
       "progression": 75,
-      "statut": "En cours",
       "couleur": [Color(0xFF6A5AE0), Color(0xFF8B82F6)],
       "categorie": "Business",
     },
@@ -30,7 +29,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Atomic Habits",
       "auteur": "James Clear",
       "progression": 100,
-      "statut": "Terminé",
       "couleur": [Color(0xFFFF5E8A), Color(0xFFFF7DB3)],
       "categorie": "Business",
     },
@@ -38,7 +36,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Rich Dad Poor Dad",
       "auteur": "Robert Kiyosaki",
       "progression": 60,
-      "statut": "En cours",
       "couleur": [Color(0xFF2196F3), Color(0xFF64B5F6)],
       "categorie": "Business",
     },
@@ -46,7 +43,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "The Lean Startup",
       "auteur": "Eric Ries",
       "progression": 85,
-      "statut": "Terminé",
       "couleur": [Color(0xFF00BCD4), Color(0xFF4DD0E1)],
       "categorie": "Business",
     },
@@ -54,7 +50,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Zero to One",
       "auteur": "Peter Thiel",
       "progression": 40,
-      "statut": "En cours",
       "couleur": [Color(0xFF3F51B5), Color(0xFF7986CB)],
       "categorie": "Business",
     },
@@ -64,7 +59,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Clean Code",
       "auteur": "Robert C. Martin",
       "progression": 45,
-      "statut": "En cours",
       "couleur": [Color(0xFF4CAF50), Color(0xFF81C784)],
       "categorie": "Informatique",
     },
@@ -72,7 +66,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "The Pragmatic Programmer",
       "auteur": "Andrew Hunt",
       "progression": 70,
-      "statut": "En cours",
       "couleur": [Color(0xFF8BC34A), Color(0xFFAED581)],
       "categorie": "Informatique",
     },
@@ -80,7 +73,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Design Patterns",
       "auteur": "Gang of Four",
       "progression": 25,
-      "statut": "En cours",
       "couleur": [Color(0xFF009688), Color(0xFF4DB6AC)],
       "categorie": "Informatique",
     },
@@ -88,7 +80,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Code Complete",
       "auteur": "Steve McConnell",
       "progression": 95,
-      "statut": "Terminé",
       "couleur": [Color(0xFF607D8B), Color(0xFF90A4AE)],
       "categorie": "Informatique",
     },
@@ -96,7 +87,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Refactoring",
       "auteur": "Martin Fowler",
       "progression": 50,
-      "statut": "En cours",
       "couleur": [Color(0xFF795548), Color(0xFFA1887F)],
       "categorie": "Informatique",
     },
@@ -106,7 +96,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Sapiens",
       "auteur": "Yuval Noah Harari",
       "progression": 90,
-      "statut": "Terminé",
       "couleur": [Color(0xFFFF9800), Color(0xFFFFB74D)],
       "categorie": "Science",
     },
@@ -114,7 +103,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "A Brief History of Time",
       "auteur": "Stephen Hawking",
       "progression": 35,
-      "statut": "En cours",
       "couleur": [Color(0xFF9E9E9E), Color(0xFFBDBDBD)],
       "categorie": "Science",
     },
@@ -122,7 +110,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "The Gene",
       "auteur": "Siddhartha Mukherjee",
       "progression": 80,
-      "statut": "Terminé",
       "couleur": [Color(0xFF673AB7), Color(0xFF9575CD)],
       "categorie": "Science",
     },
@@ -130,7 +117,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Cosmos",
       "auteur": "Carl Sagan",
       "progression": 55,
-      "statut": "En cours",
       "couleur": [Color(0xFF3F51B5), Color(0xFF7986CB)],
       "categorie": "Science",
     },
@@ -138,7 +124,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "The Body Keeps the Score",
       "auteur": "Bessel van der Kolk",
       "progression": 65,
-      "statut": "En cours",
       "couleur": [Color(0xFFE91E63), Color(0xFFF06292)],
       "categorie": "Science",
     },
@@ -148,7 +133,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "1984",
       "auteur": "George Orwell",
       "progression": 30,
-      "statut": "En cours",
       "couleur": [Color(0xFF9C27B0), Color(0xFFBA68C8)],
       "categorie": "Littérature",
     },
@@ -156,7 +140,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "To Kill a Mockingbird",
       "auteur": "Harper Lee",
       "progression": 100,
-      "statut": "Terminé",
       "couleur": [Color(0xFF4CAF50), Color(0xFF81C784)],
       "categorie": "Littérature",
     },
@@ -164,7 +147,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "Pride and Prejudice",
       "auteur": "Jane Austen",
       "progression": 75,
-      "statut": "En cours",
       "couleur": [Color(0xFFFF5722), Color(0xFFFF8A65)],
       "categorie": "Littérature",
     },
@@ -172,7 +154,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "The Great Gatsby",
       "auteur": "F. Scott Fitzgerald",
       "progression": 45,
-      "statut": "En cours",
       "couleur": [Color(0xFF2196F3), Color(0xFF64B5F6)],
       "categorie": "Littérature",
     },
@@ -180,7 +161,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       "titre": "One Hundred Years of Solitude",
       "auteur": "Gabriel García Márquez",
       "progression": 20,
-      "statut": "En cours",
       "couleur": [Color(0xFF009688), Color(0xFF4DB6AC)],
       "categorie": "Littérature",
     },
@@ -231,22 +211,8 @@ class _BibliothequePageState extends State<BibliothequePage> {
                                   builder: (context) => ReadingPage(
                                     book: {
                                       'title': livre["titre"],
-                                      'chapters': [
-                                        {
-                                          'title': 'Chapitre 1',
-                                          'content': 'Contenu du chapitre 1...',
-                                        },
-                                        {
-                                          'title': 'Chapitre 2',
-                                          'content': 'Contenu du chapitre 2...',
-                                        },
-                                      ],
+                                      // 'chapters': [], // Removed chapters
                                     },
-                                    chapter: {
-                                      'title': 'Chapitre 1',
-                                      'content': 'Contenu du chapitre 1...',
-                                    },
-                                    chapterIndex: 0,
                                   ),
                                 ),
                               );
@@ -255,7 +221,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
                               titre: livre["titre"],
                               auteur: livre["auteur"],
                               progression: livre["progression"],
-                              statut: livre["statut"],
                               couleurs: livre["couleur"],
                             ),
                           );

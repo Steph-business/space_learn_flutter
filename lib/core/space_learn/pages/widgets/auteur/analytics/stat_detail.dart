@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 // Widget 1: Statistiques détaillées
 class DetailedStatistics extends StatefulWidget {
-  const DetailedStatistics({Key? key}) : super(key: key);
+  const DetailedStatistics({super.key});
 
   @override
   State<DetailedStatistics> createState() => _DetailedStatisticsState();
@@ -287,7 +287,7 @@ class _MetricCard extends StatelessWidget {
 
 // Widget 2: Indicateurs de croissance
 class GrowthIndicatorsWidget extends StatefulWidget {
-  const GrowthIndicatorsWidget({Key? key}) : super(key: key);
+  const GrowthIndicatorsWidget({super.key});
 
   @override
   State<GrowthIndicatorsWidget> createState() => _GrowthIndicatorsWidgetState();
@@ -526,7 +526,7 @@ class _GrowthItem extends StatelessWidget {
 
 // Exemple d'utilisation
 class StatsExamplePage extends StatelessWidget {
-  const StatsExamplePage({Key? key}) : super(key: key);
+  const StatsExamplePage({super.key});
 
   @override
   Widget build(BuildContext context) {

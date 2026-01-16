@@ -2,24 +2,12 @@ import 'package:flutter/material.dart';
 
 class ContinueReadingSection extends StatelessWidget {
   final Map<String, dynamic> book;
-  final Map<String, dynamic> chapter;
-  final int chapterIndex;
   final VoidCallback? onTap;
 
-  const ContinueReadingSection({
-    super.key,
-    required this.book,
-    required this.chapter,
-    required this.chapterIndex,
-    this.onTap,
-  });
+  const ContinueReadingSection({super.key, required this.book, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final chapters = book['chapters'] as List?;
-    final totalChapters = chapters?.length ?? 1;
-    final progress = (chapterIndex + 1) / totalChapters;
-
     return GestureDetector(
       onTap: onTap,
       child: Card(
@@ -44,20 +32,16 @@ class ContinueReadingSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "${chapter['title'] ?? 'Chapitre'} - Chapitre ${chapterIndex + 1}",
+                      "Continuer la lecture (PDF/EPUB)",
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: Colors.grey,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Colors.deepPurple,
-                      ),
-                    ),
+                    // Removed progress bar as it was chapter based.
+                    // Could be replaced by last page read if implemented.
                   ],
                 ),
               ),
+              const Icon(Icons.play_arrow, color: Colors.deepPurple),
             ],
           ),
         ),

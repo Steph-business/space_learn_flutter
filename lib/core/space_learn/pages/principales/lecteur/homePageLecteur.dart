@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../themes/app_colors.dart';
-import '../../../../themes/app_text_styles.dart';
 import '../../widgets/details/reading_page.dart';
 import '../../../../themes/layout/navBarAll.dart';
 import '../../../../themes/layout/navBarLecteur.dart';
@@ -9,8 +7,6 @@ import '../../widgets/lecteur/home/continue_reading_section.dart';
 import '../../widgets/lecteur/home/recent_activity_section.dart';
 import '../../widgets/lecteur/home/recommendations_section.dart';
 import '../../widgets/lecteur/home/stats_section.dart';
-import 'bibliothequePage.dart';
-import 'markeplacePage.dart';
 import 'teamsPage.dart';
 
 class HomePageLecteur extends StatelessWidget {
@@ -28,16 +24,8 @@ class HomePageLecteur extends StatelessWidget {
   // Données fictives pour la démonstration
   Map<String, dynamic> get _sampleBook => {
     'title': "L'art de la simplicité",
-    'chapters': [
-      {'title': 'Chapitre 1', 'content': 'Contenu du chapitre 1...'},
-      {'title': 'Chapitre 2', 'content': 'Contenu du chapitre 2...'},
-      {'title': 'Chapitre 3', 'content': 'Contenu du chapitre 3...'},
-    ],
+    // 'chapters': [], // Removed chapters
   };
-
-  Map<String, dynamic> get _sampleChapter =>
-      _sampleBook['chapters'][2]; // Chapitre 3
-  int get _sampleChapterIndex => 2;
 
   @override
   Widget build(BuildContext context) {
@@ -63,17 +51,14 @@ class HomePageLecteur extends StatelessWidget {
                     const SizedBox(height: 16),
                     ContinueReadingSection(
                       book: _sampleBook,
-                      chapter: _sampleChapter,
-                      chapterIndex: _sampleChapterIndex,
+                      // chapter: _sampleChapter, // Removed
+                      // chapterIndex: _sampleChapterIndex, // Removed
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ReadingPage(
-                              book: _sampleBook,
-                              chapter: _sampleChapter,
-                              chapterIndex: _sampleChapterIndex,
-                            ),
+                            builder: (context) =>
+                                ReadingPage(book: _sampleBook),
                           ),
                         );
                       },
@@ -86,6 +71,12 @@ class HomePageLecteur extends StatelessWidget {
                         _buildSectionTitle('Recommandations'),
                         TextButton(
                           onPressed: () {
+                            // Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (context) => const MarketplacePage(),
+                            //   ),
+                            // );
                             // Utiliser un callback pour changer l'index de la navbar
                             // Cette approche évite les problèmes de type
                             final navBarElement = context
@@ -106,7 +97,7 @@ class HomePageLecteur extends StatelessWidget {
                               }
                             }
                           },
-                          child: const Text('Voir tout'),
+                          child: const Text('Voir plus'),
                         ),
                       ],
                     ),

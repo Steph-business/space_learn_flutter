@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livrePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/statsPage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/teamsPage.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouterLivrePage.dart';
 
 class AuteurActionsRapide extends StatelessWidget {
   const AuteurActionsRapide({super.key});
@@ -31,6 +32,13 @@ class AuteurActionsRapide extends StatelessWidget {
         "subtitle": "Collaborer",
         "color": Colors.purple,
         "page": TeamsPage(),
+      },
+      {
+        "icon": Icons.add_circle,
+        "title": "Ajouter livre",
+        "subtitle": "Nouvelle oeuvre",
+        "color": Colors.green,
+        "page": const AjouterLivrePage(),
       },
     ];
 

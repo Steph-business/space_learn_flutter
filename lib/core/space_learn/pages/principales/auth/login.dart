@@ -10,7 +10,6 @@ import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/forgot_password.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/register.dart';
-import '../../../../themes/app_colors.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/homePageLecteur.dart'
     as lecteurHome;
