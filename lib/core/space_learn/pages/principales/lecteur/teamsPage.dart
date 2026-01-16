@@ -28,16 +28,6 @@ class TeamsPageLecteur extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
-          actions: const [
-            Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Icon(Icons.mail_outline, color: Colors.white),
-            ),
-          ],
-          leading: const Padding(
-            padding: EdgeInsets.only(left: 12),
-            child: Icon(Icons.menu, color: Colors.white),
-          ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(60),
             child: Container(

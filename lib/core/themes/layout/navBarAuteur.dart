@@ -12,6 +12,7 @@ class NavBarAuteur extends StatelessWidget {
 
   final List<Map<String, dynamic>> _items = const [
     {'icon': Icons.home, 'label': 'Accueil'},
+    {'icon': Icons.add_circle_outline, 'label': 'Publier'},
     {'icon': Icons.book, 'label': 'Mes Livres'},
     {'icon': Icons.bar_chart, 'label': 'Analytics'},
     {'icon': Icons.group, 'label': 'Teams'},

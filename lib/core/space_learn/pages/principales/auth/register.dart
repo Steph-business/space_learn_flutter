@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import '../../../../themes/app_colors.dart';
@@ -20,7 +19,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -64,7 +64,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Les mots de passe ne correspondent pas.')),
+        const SnackBar(
+          content: Text('Les mots de passe ne correspondent pas.'),
+        ),
       );
       return;
     }
@@ -74,11 +76,13 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (selectedProfile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez d'abord sélectionner un profil.")),
+        const SnackBar(
+          content: Text("Veuillez d'abord sélectionner un profil."),
+        ),
       );
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const ProfilPage()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const ProfilPage()));
       return;
     }
 
@@ -103,15 +107,14 @@ class _RegisterPageState extends State<RegisterPage> {
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (_) => LoginPage(
-            initialEmail: email,
-            initialPassword: password,
-          ),
+          builder: (_) =>
+              LoginPage(initialEmail: email, initialPassword: password),
         ),
         (route) => false,
       );
     } catch (e) {
-      developer.log("Erreur lors de l'inscription: $e",
+      developer.log(
+        "Erreur lors de l'inscription: $e",
         name: 'RegisterPage',
         error: e,
         level: 1000,
@@ -155,7 +158,10 @@ class _RegisterPageState extends State<RegisterPage> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 20.0,
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -307,7 +313,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             onTap: _isLoading
                                 ? null
                                 : () {
-                                    Navigator.of(context).pushReplacement(
+                                    Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (_) => const LoginPage(),
                                       ),
@@ -374,12 +380,12 @@ class _RegisterPageState extends State<RegisterPage> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
-      style: GoogleFonts.poppins(
-        fontSize: 16,
-        color: AppColors.darkGray,
-      ),
+      style: GoogleFonts.poppins(fontSize: 16, color: AppColors.darkGray),
     );
   }
 }

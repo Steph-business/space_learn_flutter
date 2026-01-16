@@ -1,20 +1,20 @@
 /// api_routes.dart
 class ApiRoutes {
   // Base URL (dev ou prod)
-  static const String baseUrl = "http://192.168.252.67:8083";
+  static const String baseUrl = "http://192.168.252.193:8083";
 
   // Auth routes
-  static const String profils  =    "$baseUrl/auth/profils";
-  static const String register =   "$baseUrl/auth/register";
-  static const String login    =      "$baseUrl/auth/login";
-  static const String logout   =     "$baseUrl/auth/logout";
-  static const String sendOtp  =    "$baseUrl/auth/send-otp";
-  static const String verifyOtp =  "$baseUrl/auth/verify-otp";
+  static const String profils = "$baseUrl/auth/profils";
+  static const String register = "$baseUrl/auth/register";
+  static const String login = "$baseUrl/auth/login";
+  static const String logout = "$baseUrl/auth/logout";
+  static const String sendOtp = "$baseUrl/auth/send-otp";
+  static const String verifyOtp = "$baseUrl/auth/verify-otp";
   static const String forgotPassword = "$baseUrl/auth/forgot-password";
   static const String resetPassword = "$baseUrl/auth/reset-password";
 
   // Exemple pour User (si tu as un contrôleur user)
-  static const String getUser =    "$baseUrl/utilisateurs/me";
+  static const String getUser = "$baseUrl/utilisateurs/me";
   static const String updateUser = "$baseUrl/utilisateurs/update";
   static const String selectProfile =
       "$baseUrl/utilisateurs/me/profil"; // Ajout de la route
@@ -22,17 +22,15 @@ class ApiRoutes {
   // Autres routes (cours, vidéos, etc.) peuvent être ajoutées ici
 
   // New base URL for Gin server on port 8082
-  static const String baseUrlsGin = "http://192.168.252.67:8082";
+  static const String baseUrlsGin = "http://192.168.252.193:8082";
 
   // Book routes
   static const String books = "$baseUrlsGin/api/books";
   static const String bookById = "$baseUrlsGin/api/books/:id";
-  static const String booksByAuthor = "$baseUrlsGin/api/books/author/:auteur_id";
+  static const String booksByAuthor =
+      "$baseUrlsGin/api/books/author/:auteur_id";
 
-  // Chapter routes
-  static const String createChapter = "$baseUrlsGin/api/chapters";
-  static const String chaptersByBook = "$baseUrlsGin/api/chapters/book/:livre_id";
-  static const String chapterById = "$baseUrlsGin/api/chapters/:id";
+  // Chapter routes - Removed
 
   // Payment routes
   static const String createPayment = "$baseUrlsGin/api/payments";
@@ -46,9 +44,12 @@ class ApiRoutes {
 
   // Relations routes
   static const String followUser = "$baseUrlsGin/api/relations/follow/:suit_id";
-  static const String unfollowUser = "$baseUrlsGin/api/relations/unfollow/:suit_id";
-  static const String getFollowers = "$baseUrlsGin/api/relations/followers/:utilisateur_id";
-  static const String getFollowing = "$baseUrlsGin/api/relations/following/:utilisateur_id";
+  static const String unfollowUser =
+      "$baseUrlsGin/api/relations/unfollow/:suit_id";
+  static const String getFollowers =
+      "$baseUrlsGin/api/relations/followers/:utilisateur_id";
+  static const String getFollowing =
+      "$baseUrlsGin/api/relations/following/:utilisateur_id";
 
   // Favorites routes
   static const String addFavorite = "$baseUrlsGin/api/favorites";
@@ -62,35 +63,44 @@ class ApiRoutes {
 
   // Detailed Statistics routes
   static const String createDetailedStats = "$baseUrlsGin/api/detailed-stats";
-  static const String detailedStatsByBook = "$baseUrlsGin/api/detailed-stats/:livre_id";
-  static const String updateDetailedStats = "$baseUrlsGin/api/detailed-stats/:livre_id";
+  static const String detailedStatsByBook =
+      "$baseUrlsGin/api/detailed-stats/:livre_id";
+  static const String updateDetailedStats =
+      "$baseUrlsGin/api/detailed-stats/:livre_id";
 
   // Reading activity routes
   static const String logReadingActivity = "$baseUrlsGin/api/reading/activity";
-  static const String getReadingActivities = "$baseUrlsGin/api/reading/activities";
-  static const String updateReadingProgress = "$baseUrlsGin/api/reading/progress";
+  static const String getReadingActivities =
+      "$baseUrlsGin/api/reading/activities";
+  static const String updateReadingProgress =
+      "$baseUrlsGin/api/reading/progress";
   static const String getReadingProgress = "$baseUrlsGin/api/reading/progress";
 
   // Analytics route
   static const String analytics = "$baseUrlsGin/api/analytics";
 
-  // Recommendation routes
+  // Recommandation routes
   static const String createRecommendation = "$baseUrlsGin/api/recommendations";
   static const String getRecommendations = "$baseUrlsGin/api/recommendations";
-  static const String deleteRecommendation = "$baseUrlsGin/api/recommendations/:id";
+  static const String deleteRecommendation =
+      "$baseUrlsGin/api/recommendations/:id";
 
   // Notification routes
   static const String getNotifications = "$baseUrlsGin/api/notifications";
-  static const String markNotificationAsRead = "$baseUrlsGin/api/notifications/:id/read";
-  static const String markAllNotificationsAsRead = "$baseUrlsGin/api/notifications/read-all";
+  static const String markNotificationAsRead =
+      "$baseUrlsGin/api/notifications/:id/read";
+  static const String markAllNotificationsAsRead =
+      "$baseUrlsGin/api/notifications/read-all";
   static const String deleteNotification = "$baseUrlsGin/api/notifications/:id";
 
   // Community events route
   static const String communityEvents = "$baseUrlsGin/api/community/events";
 
   // Author related routes
-  static const String recentBooksByAuthor = "$baseUrlsGin/api/authors/:authorId/books/recent";
-  static const String authorRevenue = "$baseUrlsGin/api/authors/:authorId/revenue";
+  static const String recentBooksByAuthor =
+      "$baseUrlsGin/api/authors/:authorId/books/recent";
+  static const String authorRevenue =
+      "$baseUrlsGin/api/authors/:authorId/revenue";
 
   // Review routes
   static const String createReview = "$baseUrlsGin/api/reviews";
@@ -108,7 +118,8 @@ class ApiRoutes {
 
   // Message routes
   static const String createMessage = "$baseUrlsGin/api/messages";
-  static const String messagesByDiscussion = "$baseUrlsGin/api/messages/discussion/:discussion_id";
+  static const String messagesByDiscussion =
+      "$baseUrlsGin/api/messages/discussion/:discussion_id";
   static const String updateMessage = "$baseUrlsGin/api/messages/:id";
   static const String deleteMessage = "$baseUrlsGin/api/messages/:id";
 }

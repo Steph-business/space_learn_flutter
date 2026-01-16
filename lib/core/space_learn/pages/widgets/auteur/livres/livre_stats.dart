@@ -3,45 +3,81 @@ import 'package:flutter/material.dart';
 class LivreStatsSection extends StatelessWidget {
   const LivreStatsSection({super.key});
 
-  Widget _buildStatCard(String label, [String value = "0"]) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2E3A59),
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildSummaryItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 24),
         ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(color: Colors.grey[300], fontSize: 11),
-            ),
-          ],
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Color(0xFF2D3142),
+          ),
         ),
-      ),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _buildStatCard("Tous", "12"),
-        _buildStatCard("Publiés", "8"),
-        _buildStatCard("Brouillons", "3"),
-        _buildStatCard("En révision", "1"),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildSummaryItem(
+            "Publications",
+            "12",
+            Icons.menu_book_rounded,
+            Colors.blue,
+          ),
+          _buildSummaryItem(
+            "Vues",
+            "3.5k",
+            Icons.visibility_rounded,
+            Colors.orange,
+          ),
+          _buildSummaryItem(
+            "Revenus",
+            "1.2k€",
+            Icons.euro_rounded,
+            Colors.green,
+          ),
+        ],
+      ),
     );
   }
 }

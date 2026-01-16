@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_colors.dart';
 import '../app_text_styles.dart';
-import '../../space_learn/pages/principales/settingsPage.dart';
-import '../../space_learn/pages/principales/settingsPageAuteur.dart';
+import '../../space_learn/pages/principales/ecrivain/settingsPageAuteur.dart';
 import '../../space_learn/pages/principales/notificationPage.dart';
 import '../../space_learn/pages/principales/messagesPage.dart';
 

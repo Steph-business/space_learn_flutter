@@ -7,7 +7,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/teams/
 class TeamsPage extends StatelessWidget {
   final VoidCallback? onBackPressed;
 
-  TeamsPage({super.key, this.onBackPressed});
+  const TeamsPage({super.key, this.onBackPressed});
 
   final List<Tab> _tabs = const [
     Tab(text: "Commentaires"),

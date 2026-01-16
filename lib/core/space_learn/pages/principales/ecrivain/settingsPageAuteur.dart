@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../themes/app_colors.dart';
-import '../../data/dataServices/authServices.dart';
-import '../../../utils/profileStorage.dart';
-import 'profilePage.dart';
-import 'auth/login.dart';
+import '../../../../themes/app_colors.dart';
+import '../../../data/dataServices/authServices.dart';
+import '../../../../utils/profileStorage.dart';
+import '../profilePage.dart';
+import '../auth/login.dart';
 
 class SettingsPageAuteur extends StatelessWidget {
   const SettingsPageAuteur({super.key});

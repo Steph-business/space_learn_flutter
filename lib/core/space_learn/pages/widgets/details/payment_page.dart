@@ -35,7 +35,7 @@ class _PaymentPageState extends State<PaymentPage> {
           children: [
             // Résumé détaillé de la commande
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
@@ -121,37 +121,50 @@ class _PaymentPageState extends State<PaymentPage> {
             ),
             const SizedBox(height: 16),
 
-            // 4 méthodes de paiement alignées verticalement
-            Column(
-              children: [
-                _PaymentMethodTile(
-                  label: 'Carte Visa',
-                  icon: Icons.credit_card,
-                  color: AppColors.primary,
-                  onPressed: () => _selectPaymentMethod('Visa'),
-                ),
-                const SizedBox(height: 16),
-                _PaymentMethodTile(
-                  label: 'PayPal',
-                  icon: Icons.paypal,
-                  color: Colors.blue,
-                  onPressed: () => _selectPaymentMethod('PayPal'),
-                ),
-                const SizedBox(height: 16),
-                _PaymentMethodTile(
-                  label: 'Orange Money',
-                  icon: Icons.phone_android,
-                  color: Colors.orange,
-                  onPressed: () => _selectPaymentMethod('Orange Money'),
-                ),
-                const SizedBox(height: 16),
-                _PaymentMethodTile(
-                  label: 'Wave',
-                  icon: Icons.waves,
-                  color: Colors.blue,
-                  onPressed: () => _selectPaymentMethod('Wave'),
-                ),
-              ],
+            // 4 méthodes de paiement alignées horizontalement
+            SizedBox(
+              height: 70,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  SizedBox(
+                    width: 70,
+                    child: _PaymentMethodTile(
+                      label: 'Carte Visa',
+                      icon: Icons.credit_card,
+                      color: AppColors.primary,
+                      onPressed: () => _selectPaymentMethod('Visa'),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 70,
+                    child: _PaymentMethodTile(
+                      label: 'PayPal',
+                      icon: Icons.paypal,
+                      color: Colors.blue,
+                      onPressed: () => _selectPaymentMethod('PayPal'),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 70,
+                    child: _PaymentMethodTile(
+                      label: 'Orange Money',
+                      icon: Icons.phone_android,
+                      color: Colors.orange,
+                      onPressed: () => _selectPaymentMethod('Orange Money'),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 70,
+                    child: _PaymentMethodTile(
+                      label: 'Wave',
+                      icon: Icons.waves,
+                      color: Colors.blue,
+                      onPressed: () => _selectPaymentMethod('Wave'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -236,7 +249,7 @@ class _PaymentMethodTileState extends State<_PaymentMethodTile>
           return Transform.scale(
             scale: _scaleAnimation.value,
             child: Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -268,20 +281,20 @@ class _PaymentMethodTileState extends State<_PaymentMethodTile>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: widget.color.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(widget.icon, size: 36, color: widget.color),
+                    child: Icon(widget.icon, size: 24, color: widget.color),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     widget.label,
                     style: TextStyle(
                       color: widget.color,
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: 11,
                       letterSpacing: 0.5,
                     ),
                     textAlign: TextAlign.center,
