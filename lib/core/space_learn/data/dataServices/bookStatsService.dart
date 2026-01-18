@@ -17,7 +17,7 @@ class BookStatsService {
     required String periode,
   }) async {
     final response = await client.post(
-      Uri.parse(ApiRoutes.createBookStats),
+      Uri.parse(ApiRoutes.bookStats),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'livre_id': livreId,
@@ -30,7 +30,8 @@ class BookStatsService {
     );
 
     if (response.statusCode == 201) {
-      return BookStatsModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return BookStatsModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to create book statistics');
     }
@@ -41,7 +42,8 @@ class BookStatsService {
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => BookStatsModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch book statistics for book');
@@ -71,7 +73,8 @@ class BookStatsService {
     );
 
     if (response.statusCode == 200) {
-      return BookStatsModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return BookStatsModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to update book statistics');
     }

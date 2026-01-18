@@ -4,20 +4,20 @@ class ReadingActivityModel {
   final String id;
   final String utilisateurId;
   final String livreId;
-  final int chapitreIndex;
-  final int position;
+  final int chapitreCourant; // chapitre_courant
+  final int pourcentage; // pourcentage
   final DateTime? creeLe;
-  final DateTime? misAJourLe;
+  final DateTime? majLe; // maj_le
   final BookModel? livre;
 
   ReadingActivityModel({
     required this.id,
     required this.utilisateurId,
     required this.livreId,
-    required this.chapitreIndex,
-    required this.position,
+    required this.chapitreCourant,
+    required this.pourcentage,
     this.creeLe,
-    this.misAJourLe,
+    this.majLe,
     this.livre,
   });
 
@@ -26,13 +26,11 @@ class ReadingActivityModel {
       id: json['id'] ?? '',
       utilisateurId: json['utilisateur_id'] ?? '',
       livreId: json['livre_id'] ?? '',
-      chapitreIndex: json['chapitre_index'] ?? 0,
-      position: json['position'] ?? 0,
+      chapitreCourant: json['chapitre_courant'] ?? 0,
+      pourcentage: json['pourcentage'] ?? 0,
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      misAJourLe: json['mis_a_jour_le'] != null
-          ? DateTime.parse(json['mis_a_jour_le'])
-          : null,
-      livre: json['livre'] != null ? BookModel.fromJson(json['livre']) : null,
+      majLe: json['maj_le'] != null ? DateTime.parse(json['maj_le']) : null,
+      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
     );
   }
 
@@ -41,11 +39,11 @@ class ReadingActivityModel {
       'id': id,
       'utilisateur_id': utilisateurId,
       'livre_id': livreId,
-      'chapitre_index': chapitreIndex,
-      'position': position,
+      'chapitre_courant': chapitreCourant,
+      'pourcentage': pourcentage,
       'cree_le': creeLe?.toIso8601String(),
-      'mis_a_jour_le': misAJourLe?.toIso8601String(),
-      'livre': livre?.toJson(),
+      'maj_le': majLe?.toIso8601String(),
+      'Livre': livre?.toJson(),
     };
   }
 }

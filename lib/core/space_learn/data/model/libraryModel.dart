@@ -24,7 +24,7 @@ class LibraryModel {
       livreId: json['livre_id'] ?? '',
       acquisVia: json['acquis_via'] ?? '',
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      livre: json['livre'] != null ? BookModel.fromJson(json['livre']) : null,
+      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
     );
   }
 
@@ -35,7 +35,7 @@ class LibraryModel {
       'livre_id': livreId,
       'acquis_via': acquisVia,
       'cree_le': creeLe?.toIso8601String(),
-      'livre': livre?.toJson(),
+      'Livre': livre?.toJson(),
     };
   }
 }

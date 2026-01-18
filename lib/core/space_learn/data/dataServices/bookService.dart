@@ -19,7 +19,8 @@ class BookService {
     );
 
     if (response.statusCode == 201) {
-      return BookModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      return BookModel.fromJson(data['data'] ?? data);
     } else {
       throw Exception('Failed to create book');
     }
@@ -40,7 +41,8 @@ class BookService {
     final response = await client.get(uri);
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => BookModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch books');
@@ -52,7 +54,8 @@ class BookService {
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      return BookModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return BookModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to fetch book');
     }
@@ -74,7 +77,8 @@ class BookService {
     );
 
     if (response.statusCode == 200) {
-      return BookModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return BookModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to update book');
     }
@@ -97,7 +101,8 @@ class BookService {
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => BookModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch books by author');

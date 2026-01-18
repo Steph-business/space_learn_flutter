@@ -24,7 +24,9 @@ class Message {
       utilisateurId: json['utilisateur_id'],
       contenu: json['contenu'],
       creeLe: DateTime.parse(json['cree_le']),
-      discussion: json['discussion'] != null ? Discussion.fromJson(json['discussion']) : null,
+      discussion: json['Discussion'] != null
+          ? Discussion.fromJson(json['Discussion'])
+          : null,
     );
   }
 
@@ -35,7 +37,7 @@ class Message {
       'utilisateur_id': utilisateurId,
       'contenu': contenu,
       'cree_le': creeLe.toIso8601String(),
-      'discussion': discussion?.toJson(),
+      'Discussion': discussion?.toJson(),
     };
   }
 }

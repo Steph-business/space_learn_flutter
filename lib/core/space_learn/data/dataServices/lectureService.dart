@@ -15,7 +15,7 @@ class Lectureservice {
     required String authToken,
   }) async {
     final response = await client.post(
-      Uri.parse(ApiRoutes.createReview),
+      Uri.parse(ApiRoutes.reviews),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -28,7 +28,8 @@ class Lectureservice {
     );
 
     if (response.statusCode == 201) {
-      return ReviewModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return ReviewModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to create review');
     }
@@ -39,7 +40,8 @@ class Lectureservice {
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => ReviewModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch reviews by book');
@@ -53,7 +55,8 @@ class Lectureservice {
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => ReviewModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch reviews by user');
@@ -67,7 +70,7 @@ class Lectureservice {
     required String commentaire,
     required String authToken,
   }) async {
-    final url = ApiRoutes.updateReview.replaceFirst(':id', id);
+    final url = ApiRoutes.reviewById.replaceFirst(':id', id);
     final response = await client.put(
       Uri.parse(url),
       headers: {
@@ -82,14 +85,15 @@ class Lectureservice {
     );
 
     if (response.statusCode == 200) {
-      return ReviewModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return ReviewModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to update review');
     }
   }
 
   Future<void> deleteReview(String id, String authToken) async {
-    final url = ApiRoutes.deleteReview.replaceFirst(':id', id);
+    final url = ApiRoutes.reviewById.replaceFirst(':id', id);
     final response = await client.delete(
       Uri.parse(url),
       headers: {'Authorization': 'Bearer $authToken'},

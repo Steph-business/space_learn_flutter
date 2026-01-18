@@ -14,7 +14,7 @@ class DiscussionService {
     String token,
   ) async {
     final response = await client.post(
-      Uri.parse(ApiRoutes.createDiscussion),
+      Uri.parse(ApiRoutes.discussions),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -23,7 +23,8 @@ class DiscussionService {
     );
 
     if (response.statusCode == 201) {
-      return Discussion.fromJson(json.decode(response.body));
+      final Map<String, dynamic> data = json.decode(response.body);
+      return Discussion.fromJson(data['data'] ?? data);
     } else {
       throw Exception('Failed to create discussion');
     }
@@ -31,12 +32,13 @@ class DiscussionService {
 
   Future<List<Discussion>> getDiscussionsByUser(String token) async {
     final response = await client.get(
-      Uri.parse(ApiRoutes.discussionsByUser),
+      Uri.parse(ApiRoutes.discussions),
       headers: {'Authorization': 'Bearer $token'},
     );
 
     if (response.statusCode == 200) {
-      Iterable list = json.decode(response.body);
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      final List<dynamic> list = responseData['data'] ?? [];
       return list.map((json) => Discussion.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch discussions');
@@ -48,7 +50,8 @@ class DiscussionService {
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      return Discussion.fromJson(json.decode(response.body));
+      final Map<String, dynamic> data = json.decode(response.body);
+      return Discussion.fromJson(data['data'] ?? data);
     } else {
       throw Exception('Failed to get discussion');
     }
@@ -59,7 +62,7 @@ class DiscussionService {
     String titre,
     String token,
   ) async {
-    final url = ApiRoutes.updateDiscussion.replaceFirst(':id', id);
+    final url = ApiRoutes.discussionById.replaceFirst(':id', id);
     final response = await client.put(
       Uri.parse(url),
       headers: {
@@ -70,14 +73,15 @@ class DiscussionService {
     );
 
     if (response.statusCode == 200) {
-      return Discussion.fromJson(json.decode(response.body));
+      final Map<String, dynamic> data = json.decode(response.body);
+      return Discussion.fromJson(data['data'] ?? data);
     } else {
       throw Exception('Failed to update discussion');
     }
   }
 
   Future<void> deleteDiscussion(String id, String token) async {
-    final url = ApiRoutes.deleteDiscussion.replaceFirst(':id', id);
+    final url = ApiRoutes.discussionById.replaceFirst(':id', id);
     final response = await client.delete(
       Uri.parse(url),
       headers: {'Authorization': 'Bearer $token'},

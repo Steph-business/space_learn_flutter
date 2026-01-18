@@ -24,7 +24,7 @@ class RecommendationModel {
       livreId: json['livre_id'] ?? '',
       raison: json['raison'] ?? '',
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      livre: json['livre'] != null ? BookModel.fromJson(json['livre']) : null,
+      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
     );
   }
 
@@ -35,7 +35,7 @@ class RecommendationModel {
       'livre_id': livreId,
       'raison': raison,
       'cree_le': creeLe?.toIso8601String(),
-      'livre': livre?.toJson(),
+      'Livre': livre?.toJson(),
     };
   }
 }

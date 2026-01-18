@@ -46,7 +46,7 @@ class DetailedStatsModel {
           ? (json['revenu_par_vue'] as num).toDouble()
           : 0.0,
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      livre: json['livre'] != null ? BookModel.fromJson(json['livre']) : null,
+      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
     );
   }
 
@@ -61,7 +61,7 @@ class DetailedStatsModel {
       'lecteurs_recurrents': lecteursReccurents,
       'revenu_par_vue': revenuParVue,
       'cree_le': creeLe?.toIso8601String(),
-      'livre': livre?.toJson(),
+      'Livre': livre?.toJson(),
     };
   }
 }

@@ -29,18 +29,21 @@ class Analytics {
 
   factory Analytics.fromJson(Map<String, dynamic> json) {
     return Analytics(
-      id: json['id'] as String,
-      utilisateurId: json['utilisateur_id'] as String,
-      periode: json['periode'] as String,
-      revenusTotaux: (json['revenus_totaux'] as num).toDouble(),
-      vuesTotales: json['vues_totales'] as int,
-      telechargementsTotaux: json['telechargements_totaux'] as int,
-      noteMoyenne: (json['note_moyenne'] as num).toDouble(),
-      variationRevenus: (json['variation_revenus'] as num).toDouble(),
-      variationVues: (json['variation_vues'] as num).toDouble(),
-      variationTelechargements: (json['variation_telechargements'] as num).toDouble(),
-      variationNote: (json['variation_note'] as num).toDouble(),
-      creeLe: DateTime.parse(json['cree_le'] as String),
+      id: json['id'] ?? '',
+      utilisateurId: json['utilisateur_id'] ?? '',
+      periode: json['periode'] ?? '',
+      revenusTotaux: (json['revenus_totaux'] ?? 0.0).toDouble(),
+      vuesTotales: (json['vues_totales'] ?? 0).toInt(),
+      telechargementsTotaux: (json['telechargements_totaux'] ?? 0).toInt(),
+      noteMoyenne: (json['note_moyenne'] ?? 0.0).toDouble(),
+      variationRevenus: (json['variation_revenus'] ?? 0.0).toDouble(),
+      variationVues: (json['variation_vues'] ?? 0.0).toDouble(),
+      variationTelechargements: (json['variation_telechargements'] ?? 0.0)
+          .toDouble(),
+      variationNote: (json['variation_note'] ?? 0.0).toDouble(),
+      creeLe: json['cree_le'] != null
+          ? DateTime.parse(json['cree_le'])
+          : DateTime.now(),
     );
   }
 

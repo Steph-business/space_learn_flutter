@@ -19,7 +19,7 @@ class DetailedStatsService {
     required double revenuParVue,
   }) async {
     final response = await client.post(
-      Uri.parse(ApiRoutes.createDetailedStats),
+      Uri.parse(ApiRoutes.detailedStats),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'livre_id': livreId,
@@ -33,7 +33,8 @@ class DetailedStatsService {
     );
 
     if (response.statusCode == 201) {
-      return DetailedStatsModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return DetailedStatsModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to create detailed statistics');
     }
@@ -47,7 +48,8 @@ class DetailedStatsService {
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      return DetailedStatsModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return DetailedStatsModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to fetch detailed statistics for book');
     }
@@ -85,7 +87,8 @@ class DetailedStatsService {
     );
 
     if (response.statusCode == 200) {
-      return DetailedStatsModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return DetailedStatsModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to update detailed statistics');
     }

@@ -12,13 +12,12 @@ class RelationService {
     final url = ApiRoutes.followUser.replaceFirst(':suit_id', suitId);
     final response = await client.post(
       Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $authToken',
-      },
+      headers: {'Authorization': 'Bearer $authToken'},
     );
 
     if (response.statusCode == 201) {
-      return RelationModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      return RelationModel.fromJson(data['data'] ?? data);
     } else {
       throw Exception('Failed to follow user');
     }
@@ -28,9 +27,7 @@ class RelationService {
     final url = ApiRoutes.unfollowUser.replaceFirst(':suit_id', suitId);
     final response = await client.delete(
       Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $authToken',
-      },
+      headers: {'Authorization': 'Bearer $authToken'},
     );
 
     if (response.statusCode != 200) {
@@ -39,11 +36,15 @@ class RelationService {
   }
 
   Future<List<RelationModel>> getFollowers(String utilisateurId) async {
-    final url = ApiRoutes.getFollowers.replaceFirst(':utilisateur_id', utilisateurId);
+    final url = ApiRoutes.getFollowers.replaceFirst(
+      ':utilisateur_id',
+      utilisateurId,
+    );
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => RelationModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch followers');
@@ -51,11 +52,15 @@ class RelationService {
   }
 
   Future<List<RelationModel>> getFollowing(String utilisateurId) async {
-    final url = ApiRoutes.getFollowing.replaceFirst(':utilisateur_id', utilisateurId);
+    final url = ApiRoutes.getFollowing.replaceFirst(
+      ':utilisateur_id',
+      utilisateurId,
+    );
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => RelationModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch following users');
@@ -65,13 +70,12 @@ class RelationService {
   Future<List<dynamic>> getCommunityEvents(String authToken) async {
     final response = await client.get(
       Uri.parse(ApiRoutes.communityEvents),
-      headers: {
-        'Authorization': 'Bearer $authToken',
-      },
+      headers: {'Authorization': 'Bearer $authToken'},
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body) as List<dynamic>;
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return responseData['data'] ?? responseData;
     } else {
       throw Exception('Failed to fetch community events');
     }
