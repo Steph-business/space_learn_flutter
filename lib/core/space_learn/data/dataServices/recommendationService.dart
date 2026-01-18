@@ -11,12 +11,13 @@ class RecommendationService {
 
   Future<List<RecommendationModel>> getRecommendations(String authToken) async {
     final response = await client.get(
-      Uri.parse(ApiRoutes.getRecommendations),
+      Uri.parse(ApiRoutes.recommendations),
       headers: {'Authorization': 'Bearer $authToken'},
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => RecommendationModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch recommendations');
@@ -29,7 +30,7 @@ class RecommendationService {
     required String authToken,
   }) async {
     final response = await client.post(
-      Uri.parse(ApiRoutes.createRecommendation),
+      Uri.parse(ApiRoutes.recommendations),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -38,14 +39,15 @@ class RecommendationService {
     );
 
     if (response.statusCode == 201) {
-      return RecommendationModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return RecommendationModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to create recommendation');
     }
   }
 
   Future<void> deleteRecommendation(String id, String authToken) async {
-    final url = ApiRoutes.deleteRecommendation.replaceFirst(':id', id);
+    final url = ApiRoutes.recommendationById.replaceFirst(':id', id);
     final response = await client.delete(
       Uri.parse(url),
       headers: {'Authorization': 'Bearer $authToken'},

@@ -29,11 +29,15 @@ class BookStatsModel {
       livreId: json['livre_id'] ?? '',
       vues: json['vues'] ?? 0,
       telechargements: json['telechargements'] ?? 0,
-      noteMoyenne: (json['note_moyenne'] != null) ? (json['note_moyenne'] as num).toDouble() : 0.0,
-      revenus: (json['revenus'] != null) ? (json['revenus'] as num).toDouble() : 0.0,
+      noteMoyenne: (json['note_moyenne'] != null)
+          ? (json['note_moyenne'] as num).toDouble()
+          : 0.0,
+      revenus: (json['revenus'] != null)
+          ? (json['revenus'] as num).toDouble()
+          : 0.0,
       periode: json['periode'] ?? '',
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      livre: json['livre'] != null ? BookModel.fromJson(json['livre']) : null,
+      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
     );
   }
 
@@ -47,7 +51,7 @@ class BookStatsModel {
       'revenus': revenus,
       'periode': periode,
       'cree_le': creeLe?.toIso8601String(),
-      'livre': livre?.toJson(),
+      'Livre': livre?.toJson(),
     };
   }
 }

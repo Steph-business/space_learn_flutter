@@ -30,7 +30,7 @@ class ReviewModel {
       note: json['note'] ?? 0,
       commentaire: json['commentaire'] ?? '',
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      livre: json['livre'] != null ? BookModel.fromJson(json['livre']) : null,
+      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
       utilisateur: json['utilisateur'] != null
           ? ProfilModel.fromJson(json['utilisateur'])
           : null,
@@ -45,7 +45,7 @@ class ReviewModel {
       'note': note,
       'commentaire': commentaire,
       'cree_le': creeLe?.toIso8601String(),
-      'livre': livre?.toJson(),
+      'Livre': livre?.toJson(),
       'utilisateur': utilisateur?.toJson(),
     };
   }

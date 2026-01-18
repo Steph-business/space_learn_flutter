@@ -14,7 +14,7 @@ class LibraryService {
     String authToken,
   ) async {
     final response = await client.post(
-      Uri.parse(ApiRoutes.addToLibrary),
+      Uri.parse(ApiRoutes.library),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -23,7 +23,8 @@ class LibraryService {
     );
 
     if (response.statusCode == 201) {
-      return LibraryModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return LibraryModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to add to library');
     }
@@ -31,12 +32,13 @@ class LibraryService {
 
   Future<List<LibraryModel>> getUserLibrary(String authToken) async {
     final response = await client.get(
-      Uri.parse(ApiRoutes.getLibrary),
+      Uri.parse(ApiRoutes.library),
       headers: {'Authorization': 'Bearer $authToken'},
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => LibraryModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch user library');

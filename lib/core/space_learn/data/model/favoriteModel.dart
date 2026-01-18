@@ -21,7 +21,7 @@ class FavoriteModel {
       utilisateurId: json['utilisateur_id'] ?? '',
       livreId: json['livre_id'] ?? '',
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      livre: json['livre'] != null ? BookModel.fromJson(json['livre']) : null,
+      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
     );
   }
 
@@ -31,7 +31,7 @@ class FavoriteModel {
       'utilisateur_id': utilisateurId,
       'livre_id': livreId,
       'cree_le': creeLe?.toIso8601String(),
-      'livre': livre?.toJson(),
+      'Livre': livre?.toJson(),
     };
   }
 }

@@ -13,7 +13,7 @@ class PaymentService {
     String authToken,
   ) async {
     final response = await client.post(
-      Uri.parse(ApiRoutes.createPayment),
+      Uri.parse(ApiRoutes.payments),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -22,7 +22,8 @@ class PaymentService {
     );
 
     if (response.statusCode == 201) {
-      return PaymentModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return PaymentModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to create payment');
     }
@@ -30,12 +31,13 @@ class PaymentService {
 
   Future<List<PaymentModel>> getUserPayments(String authToken) async {
     final response = await client.get(
-      Uri.parse(ApiRoutes.paymentsByUser),
+      Uri.parse(ApiRoutes.payments),
       headers: {'Authorization': 'Bearer $authToken'},
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => PaymentModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch user payments');
@@ -50,7 +52,8 @@ class PaymentService {
     );
 
     if (response.statusCode == 200) {
-      return PaymentModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return PaymentModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to fetch payment');
     }
@@ -61,7 +64,8 @@ class PaymentService {
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return responseData['data'] ?? responseData;
     } else {
       throw Exception('Failed to fetch author revenue');
     }

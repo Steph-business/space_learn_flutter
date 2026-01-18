@@ -10,7 +10,7 @@ class FavoriteService {
 
   Future<FavoriteModel> addFavorite(String livreId, String authToken) async {
     final response = await client.post(
-      Uri.parse(ApiRoutes.addFavorite),
+      Uri.parse(ApiRoutes.favorites),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -19,7 +19,8 @@ class FavoriteService {
     );
 
     if (response.statusCode == 201) {
-      return FavoriteModel.fromJson(jsonDecode(response.body));
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return FavoriteModel.fromJson(responseData['data'] ?? responseData);
     } else {
       throw Exception('Failed to add favorite');
     }
@@ -27,12 +28,13 @@ class FavoriteService {
 
   Future<List<FavoriteModel>> getFavorites(String authToken) async {
     final response = await client.get(
-      Uri.parse(ApiRoutes.getFavorites),
+      Uri.parse(ApiRoutes.favorites),
       headers: {'Authorization': 'Bearer $authToken'},
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => FavoriteModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch favorites');

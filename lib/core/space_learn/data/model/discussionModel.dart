@@ -27,9 +27,9 @@ class Discussion {
       livreId: json['livre_id'],
       titre: json['titre'],
       creeLe: DateTime.parse(json['cree_le']),
-      livre: json['livre'] != null ? BookModel.fromJson(json['livre']) : null,
-      messages: json['messages'] != null
-          ? List<Message>.from(json['messages'].map((x) => Message.fromJson(x)))
+      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
+      messages: json['Messages'] != null
+          ? List<Message>.from(json['Messages'].map((x) => Message.fromJson(x)))
           : [],
     );
   }
@@ -41,8 +41,8 @@ class Discussion {
       'livre_id': livreId,
       'titre': titre,
       'cree_le': creeLe.toIso8601String(),
-      'livre': livre?.toJson(),
-      'messages': messages.isNotEmpty
+      'Livre': livre?.toJson(),
+      'Messages': messages.isNotEmpty
           ? messages.map((e) => e.toJson()).toList()
           : [],
     };
