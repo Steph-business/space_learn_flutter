@@ -1,6 +1,9 @@
 # TODO - Implémentation des pages restantes Space Learn Flutter
 
 ## Tâches prioritaires
+- [x] Créer fichier sampleBookData.dart avec exemple de données livre
+- [x] Corriger BookModel pour utiliser la vraie structure API (prix en int)
+- [x] Corriger ajouterLivrePage.dart pour utiliser int.tryParse pour le prix
 - [ ] Compléter `statsPage.dart` : Ajouter Scaffold et AppBar pour cohérence
 - [ ] Ajouter AppBar à `livrePage.dart`
 - [ ] Créer modèles : `BookModel.dart` et `ChapterModel.dart` avec mock data

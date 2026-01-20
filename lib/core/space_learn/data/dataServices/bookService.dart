@@ -9,20 +9,49 @@ class BookService {
   BookService({http.Client? client}) : client = client ?? http.Client();
 
   Future<BookModel> createBook(BookModel book, String authToken) async {
+    // Only send the fields needed for creation (exclude id, relations, timestamps)
+    // Using snake_case format that Go backend expects
+    final Map<String, dynamic> createData = {
+      'auteur_id': book.auteurId,
+      'titre': book.titre,
+      'description': book.description,
+      'image_couverture': book.imageCouverture,
+      'fichier_url': book.fichierUrl,
+      'format': book.format,
+      'prix': book.prix,
+      'stock': book.stock,
+      'statut': book.statut,
+    };
+
+    // Always include categorie_id - if null, send empty string or handle appropriately
+    if (book.categorieId != null && book.categorieId!.isNotEmpty) {
+      createData['categorie_id'] = book.categorieId;
+    } else {
+      // Send empty string or null for categorie_id if not provided
+      createData['categorie_id'] = '';
+    }
+
+    print('📤 BookService.createBook - Sending data: $createData');
+
     final response = await client.post(
       Uri.parse(ApiRoutes.books),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
       },
-      body: jsonEncode(book.toJson()),
+      body: jsonEncode(createData),
     );
 
-    if (response.statusCode == 201) {
+    print(
+      '📥 BookService.createBook - Response status: ${response.statusCode}',
+    );
+    print('📥 BookService.createBook - Response body: ${response.body}');
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
       final Map<String, dynamic> data = jsonDecode(response.body);
       return BookModel.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to create book');
+      throw Exception('Failed to create book: ${response.body}');
     }
   }
 
