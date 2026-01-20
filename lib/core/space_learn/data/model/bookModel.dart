@@ -11,7 +11,7 @@ class BookModel {
   final String? imageCouverture;
   final String? fichierUrl;
   final String format; // PDF | EPUB | MOBI
-  final double prix;
+  final int prix;
   final int stock;
   final String? categorieId; // categorie_id
   final String statut; // publie | brouillon | en_revision
@@ -55,7 +55,7 @@ class BookModel {
       imageCouverture: json['image_couverture'],
       fichierUrl: json['fichier_url'],
       format: json['format'] ?? '',
-      prix: (json['prix'] ?? 0.0).toDouble(),
+      prix: (json['prix'] ?? 0).toInt(),
       stock: (json['stock'] ?? 0).toInt(),
       categorieId: json['categorie_id'],
       statut: json['statut'] ?? '',
