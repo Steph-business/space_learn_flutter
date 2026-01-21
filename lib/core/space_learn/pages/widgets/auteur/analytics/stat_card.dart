@@ -19,14 +19,14 @@ class _StatistiquesWidgetState extends State<StatistiquesWidget> {
     switch (_selectedIndex) {
       case 0: // 7 jours
         return {
-          'revenue': {'value': '€1,285', 'change': '+€127', 'percent': '+12%'},
+          'revenue': {'value': '1,285 FCFA', 'change': '+127 FCFA', 'percent': '+12%'},
           'views': {'value': '15,247', 'change': '+1,156', 'percent': '+8%'},
           'downloads': {'value': '3,456', 'change': '+456', 'percent': '+15%'},
           'rating': {'value': '4.7', 'change': '', 'percent': '+0.2'},
         };
       case 1: // 30 jours
         return {
-          'revenue': {'value': '€4,850', 'change': '+€892', 'percent': '+23%'},
+          'revenue': {'value': '4,850 FCFA', 'change': '+892 FCFA', 'percent': '+23%'},
           'views': {'value': '58,750', 'change': '+8,456', 'percent': '+17%'},
           'downloads': {
             'value': '12,450',
@@ -38,8 +38,8 @@ class _StatistiquesWidgetState extends State<StatistiquesWidget> {
       case 2: // 3 mois
         return {
           'revenue': {
-            'value': '€15,200',
-            'change': '+€2,450',
+            'value': '15,200 FCFA',
+            'change': '+2,450 FCFA',
             'percent': '+19%',
           },
           'views': {'value': '185,000', 'change': '+28,750', 'percent': '+18%'},
@@ -53,8 +53,8 @@ class _StatistiquesWidgetState extends State<StatistiquesWidget> {
       case 3: // 1 an
         return {
           'revenue': {
-            'value': '€58,750',
-            'change': '+€12,850',
+            'value': '58,750 FCFA',
+            'change': '+12,850 FCFA',
             'percent': '+28%',
           },
           'views': {
@@ -71,7 +71,7 @@ class _StatistiquesWidgetState extends State<StatistiquesWidget> {
         };
       default:
         return {
-          'revenue': {'value': '€0', 'change': '', 'percent': '0%'},
+          'revenue': {'value': '0 FCFA', 'change': '', 'percent': '0%'},
           'views': {'value': '0', 'change': '', 'percent': '0%'},
           'downloads': {'value': '0', 'change': '', 'percent': '0%'},
           'rating': {'value': '0', 'change': '', 'percent': '0%'},
@@ -245,10 +245,7 @@ class StatCard extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
+          _buildValueWidget(),
           const SizedBox(height: 4),
           Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 4),
@@ -269,6 +266,31 @@ class StatCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildValueWidget() {
+    if (value.contains('FCFA')) {
+      final parts = value.split(' FCFA');
+      return Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: '${parts[0]} ',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextSpan(
+              text: 'FCFA',
+              style: TextStyle(fontWeight: FontWeight.normal),
+            ),
+          ],
+          style: const TextStyle(fontSize: 20, color: Colors.black),
+        ),
+      );
+    }
+    return Text(
+      value,
+      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
     );
   }
 }

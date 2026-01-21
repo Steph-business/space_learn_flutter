@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/layout/navBarAll.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/filtre_livres.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_card.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/reading_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/libraryModel.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
+
+import 'package:space_learn_flutter/core/utils/api_routes.dart';
+import 'package:space_learn_flutter/core/themes/layout/navBarLecteur.dart';
 
 class BibliothequePage extends StatefulWidget {
   const BibliothequePage({super.key});
@@ -15,219 +22,200 @@ class BibliothequePage extends StatefulWidget {
 
 class _BibliothequePageState extends State<BibliothequePage> {
   String filtreActif = "Tous";
+  final LibraryService _libraryService = LibraryService();
+  final AuthService _authService = AuthService();
+  List<LibraryModel> _libraryItems = [];
+  bool _isLoading = true;
+  String? _error;
+  String _userName = "Lecteur";
 
-  final List<Map<String, dynamic>> livres = [
-    // Business Category
-    {
-      "titre": "L'Art de la guerre",
-      "auteur": "Sun Tzu",
-      "progression": 75,
-      "couleur": [Color(0xFF6A5AE0), Color(0xFF8B82F6)],
-      "categorie": "Business",
-    },
-    {
-      "titre": "Atomic Habits",
-      "auteur": "James Clear",
-      "progression": 100,
-      "couleur": [Color(0xFFFF5E8A), Color(0xFFFF7DB3)],
-      "categorie": "Business",
-    },
-    {
-      "titre": "Rich Dad Poor Dad",
-      "auteur": "Robert Kiyosaki",
-      "progression": 60,
-      "couleur": [Color(0xFF2196F3), Color(0xFF64B5F6)],
-      "categorie": "Business",
-    },
-    {
-      "titre": "The Lean Startup",
-      "auteur": "Eric Ries",
-      "progression": 85,
-      "couleur": [Color(0xFF00BCD4), Color(0xFF4DD0E1)],
-      "categorie": "Business",
-    },
-    {
-      "titre": "Zero to One",
-      "auteur": "Peter Thiel",
-      "progression": 40,
-      "couleur": [Color(0xFF3F51B5), Color(0xFF7986CB)],
-      "categorie": "Business",
-    },
+  @override
+  void initState() {
+    super.initState();
+    _loadLibrary();
+    _loadUserInfo();
+  }
 
-    // Informatique Category
-    {
-      "titre": "Clean Code",
-      "auteur": "Robert C. Martin",
-      "progression": 45,
-      "couleur": [Color(0xFF4CAF50), Color(0xFF81C784)],
-      "categorie": "Informatique",
-    },
-    {
-      "titre": "The Pragmatic Programmer",
-      "auteur": "Andrew Hunt",
-      "progression": 70,
-      "couleur": [Color(0xFF8BC34A), Color(0xFFAED581)],
-      "categorie": "Informatique",
-    },
-    {
-      "titre": "Design Patterns",
-      "auteur": "Gang of Four",
-      "progression": 25,
-      "couleur": [Color(0xFF009688), Color(0xFF4DB6AC)],
-      "categorie": "Informatique",
-    },
-    {
-      "titre": "Code Complete",
-      "auteur": "Steve McConnell",
-      "progression": 95,
-      "couleur": [Color(0xFF607D8B), Color(0xFF90A4AE)],
-      "categorie": "Informatique",
-    },
-    {
-      "titre": "Refactoring",
-      "auteur": "Martin Fowler",
-      "progression": 50,
-      "couleur": [Color(0xFF795548), Color(0xFFA1887F)],
-      "categorie": "Informatique",
-    },
+  Future<void> _loadUserInfo() async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token != null) {
+        final user = await _authService.getUser(token);
+        if (user != null && mounted) {
+          setState(() {
+            _userName = user.nomComplet.split(' ')[0];
+          });
+        }
+      }
+    } catch (e) {
+      print("Error loading user info: $e");
+    }
+  }
 
-    // Science Category
-    {
-      "titre": "Sapiens",
-      "auteur": "Yuval Noah Harari",
-      "progression": 90,
-      "couleur": [Color(0xFFFF9800), Color(0xFFFFB74D)],
-      "categorie": "Science",
-    },
-    {
-      "titre": "A Brief History of Time",
-      "auteur": "Stephen Hawking",
-      "progression": 35,
-      "couleur": [Color(0xFF9E9E9E), Color(0xFFBDBDBD)],
-      "categorie": "Science",
-    },
-    {
-      "titre": "The Gene",
-      "auteur": "Siddhartha Mukherjee",
-      "progression": 80,
-      "couleur": [Color(0xFF673AB7), Color(0xFF9575CD)],
-      "categorie": "Science",
-    },
-    {
-      "titre": "Cosmos",
-      "auteur": "Carl Sagan",
-      "progression": 55,
-      "couleur": [Color(0xFF3F51B5), Color(0xFF7986CB)],
-      "categorie": "Science",
-    },
-    {
-      "titre": "The Body Keeps the Score",
-      "auteur": "Bessel van der Kolk",
-      "progression": 65,
-      "couleur": [Color(0xFFE91E63), Color(0xFFF06292)],
-      "categorie": "Science",
-    },
+  Future<void> _loadLibrary() async {
+    try {
+      print("🔄 Chargement de la bibliothèque...");
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
-    // Littérature Category
-    {
-      "titre": "1984",
-      "auteur": "George Orwell",
-      "progression": 30,
-      "couleur": [Color(0xFF9C27B0), Color(0xFFBA68C8)],
-      "categorie": "Littérature",
-    },
-    {
-      "titre": "To Kill a Mockingbird",
-      "auteur": "Harper Lee",
-      "progression": 100,
-      "couleur": [Color(0xFF4CAF50), Color(0xFF81C784)],
-      "categorie": "Littérature",
-    },
-    {
-      "titre": "Pride and Prejudice",
-      "auteur": "Jane Austen",
-      "progression": 75,
-      "couleur": [Color(0xFFFF5722), Color(0xFFFF8A65)],
-      "categorie": "Littérature",
-    },
-    {
-      "titre": "The Great Gatsby",
-      "auteur": "F. Scott Fitzgerald",
-      "progression": 45,
-      "couleur": [Color(0xFF2196F3), Color(0xFF64B5F6)],
-      "categorie": "Littérature",
-    },
-    {
-      "titre": "One Hundred Years of Solitude",
-      "auteur": "Gabriel García Márquez",
-      "progression": 20,
-      "couleur": [Color(0xFF009688), Color(0xFF4DB6AC)],
-      "categorie": "Littérature",
-    },
-  ];
+      final token = await TokenStorage.getToken();
+      if (token == null) throw Exception("Non connecté");
+
+      print("📡 Appel API: ${ApiRoutes.library}");
+      final items = await _libraryService.getUserLibrary(token);
+      print("📚 Bibliothèque chargée : ${items.length} livres trouvés");
+      
+      // Log des détails pour chaque livre pour déboguer le mapping
+      for (var i = 0; i < items.length; i++) {
+        print("📖 Item $i: ID=${items[i].id}, LivreID=${items[i].livreId}");
+        if (items[i].livre == null) {
+          print("⚠️ Attention: L'objet livre est null pour l'item ${items[i].id}.");
+        } else {
+          print("✅ Livre trouvé: ${items[i].livre?.titre}");
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _libraryItems = items;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("❌ Erreur chargement bibliothèque : $e");
+      if (mounted) {
+        setState(() {
+          _error = "Erreur lors du chargement de la bibliothèque";
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
           // En-tête fixe
-          const NavBarAll(),
+          NavBarAll(userName: _userName),
           // Contenu défilable
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Titre principal
-                  const Text(
-                    "Bibliothèque",
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  const CustomSearchBar(),
-                  const SizedBox(height: 16),
-                  FiltreLivres(
-                    filtreActif: filtreActif,
-                    onFiltreChange: (f) => setState(() => filtreActif = f),
-                  ),
-                  ListView(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: livres
-                        .where((livre) {
-                          if (filtreActif == "Tous") return true;
-                          return livre["categorie"] == filtreActif;
-                        })
-                        .map((livre) {
+            child: RefreshIndicator(
+              onRefresh: _loadLibrary,
+              color: const Color(0xFFF59E0B),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Ma Bibliothèque",
+                              style: GoogleFonts.poppins(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF1E293B),
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            Text(
+                              "Continuez vos lectures en cours",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: const Icon(
+                            Icons.grid_view_rounded,
+                            color: Color(0xFF64748B),
+                            size: 20,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Search and Filter
+                    const CustomSearchBar(),
+                    const SizedBox(height: 20),
+                    FiltreLivres(
+                      filtreActif: filtreActif,
+                      onFiltreChange: (f) => setState(() => filtreActif = f),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(60.0),
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFF59E0B),
+                            strokeWidth: 3,
+                          ),
+                        ),
+                      )
+                    else if (_error != null)
+                      _buildErrorState()
+                    else if (_libraryItems.isEmpty)
+                      _buildEmptyState()
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _libraryItems.length,
+                        itemBuilder: (context, index) {
+                          final item = _libraryItems[index];
+                          final book = item.livre;
+                          
+                          if (book == null) return const SizedBox.shrink();
+
                           return GestureDetector(
                             onTap: () {
-                              // Navigation vers la page de lecture
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => ReadingPage(
-                                    book: {
-                                      'title': livre["titre"],
-                                      // 'chapters': [], // Removed chapters
-                                    },
+                                    book: book.toJson(),
                                   ),
                                 ),
                               );
                             },
                             child: LivreCard(
-                              titre: livre["titre"],
-                              auteur: livre["auteur"],
-                              progression: livre["progression"],
-                              couleurs: livre["couleur"],
+                              titre: book.titre,
+                              auteur: book.authorName,
+                              progression: 0, // Idéalement, récupérer la progression réelle
+                              couleurs: const [Color(0xFF6A5AE0), Color(0xFF8B82F6)],
+                              imageUrl: book.imageCouverture,
                             ),
                           );
-                        })
-                        .toList(),
-                  ),
-                ],
+                        },
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -235,4 +223,89 @@ class _BibliothequePageState extends State<BibliothequePage> {
       ),
     );
   }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.library_books_rounded,
+                size: 48,
+                color: const Color(0xFF94A3B8),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              "Votre bibliothèque est vide",
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                color: const Color(0xFF1E293B),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Explorez le marketplace pour ajouter des livres",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                // Naviguer vers le marketplace
+                MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF59E0B),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              child: const Text("Découvrir des livres"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              style: GoogleFonts.poppins(color: const Color(0xFF1E293B)),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: _loadLibrary,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text("Réessayer"),
+              style: TextButton.styleFrom(foregroundColor: const Color(0xFFF59E0B)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+

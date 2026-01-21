@@ -9,17 +9,19 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 
 class MainNavBar extends StatefulWidget {
   final Widget? child;
+  static final GlobalKey<MainNavBarState> mainNavBarKey = GlobalKey<MainNavBarState>();
+  
   const MainNavBar({super.key, this.child});
 
   @override
-  State<MainNavBar> createState() => _MainNavBarState();
+  State<MainNavBar> createState() => MainNavBarState();
 
-  static _MainNavBarState? of(BuildContext context) {
-    return context.findAncestorStateOfType<_MainNavBarState>();
+  static MainNavBarState? of(BuildContext context) {
+    return context.findAncestorStateOfType<MainNavBarState>();
   }
 }
 
-class _MainNavBarState extends State<MainNavBar> {
+class MainNavBarState extends State<MainNavBar> {
   int _selectedIndex = 0;
 
   final List<String> _titles = [
@@ -41,7 +43,11 @@ class _MainNavBarState extends State<MainNavBar> {
   }
 
   void navigateToBibliotheque() {
-    _onItemTapped(3);
+    _onItemTapped(2);
+  }
+
+  void navigateToMarketplace() {
+    _onItemTapped(1);
   }
 
   Widget _getPage(int index) {

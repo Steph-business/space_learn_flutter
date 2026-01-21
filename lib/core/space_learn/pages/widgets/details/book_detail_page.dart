@@ -35,17 +35,53 @@ class BookDetailPage extends StatelessWidget {
             // Couverture du livre
             Center(
               child: Container(
-                height: 200,
-                width: 150,
+                height: 250,
+                width: 180,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.book,
-                  size: 80,
-                  color: AppColors.primary,
-                ),
+                child: book['image'] != null &&
+                        book['image'].toString().isNotEmpty &&
+                        !book['image'].toString().contains('example.com')
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          book['image'],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.book,
+                              size: 80,
+                              color: AppColors.primary,
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(
+                        Icons.book,
+                        size: 80,
+                        color: AppColors.primary,
+                      ),
               ),
             ),
             const SizedBox(height: 20),
@@ -62,7 +98,38 @@ class BookDetailPage extends StatelessWidget {
               style: AppTextStyles.subheading,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Stats Row moved here
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildStatItem(
+                  Icons.star,
+                  Colors.amber,
+                  (book['note_moyenne'] ?? 0.0).toStringAsFixed(1),
+                  "Avis",
+                ),
+                _buildDivider(),
+                _buildStatItem(
+                  Icons.download_rounded,
+                  AppColors.primary,
+                  (book['telechargements'] ?? 0).toString(),
+                  "Téléch.",
+                ),
+                _buildDivider(),
+                _buildStatItem(
+                  Icons.calendar_today,
+                  Colors.grey,
+                  book['cree_le'] != null
+                      ? "${DateTime.parse(book['cree_le'].toString()).day}/${DateTime.parse(book['cree_le'].toString()).month}/${DateTime.parse(book['cree_le'].toString()).year}"
+                      : "N/A",
+                  "Publié",
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
 
             // Description
             Text('Description', style: AppTextStyles.subheading),
@@ -98,6 +165,38 @@ class BookDetailPage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, Color color, String value, String label) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 30,
+      width: 1,
+      color: Colors.grey[300],
+      margin: const EdgeInsets.symmetric(horizontal: 20),
     );
   }
 }

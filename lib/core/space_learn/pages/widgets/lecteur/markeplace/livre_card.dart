@@ -1,110 +1,212 @@
 import 'package:flutter/material.dart';
-
 import 'package:google_fonts/google_fonts.dart';
-
 import '../../details/purchase_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
 
 class LivreCard extends StatelessWidget {
-  final String titre;
-  final String auteur;
-  final String prix;
+  final BookModel book;
 
   const LivreCard({
     super.key,
-    required this.titre,
-    required this.auteur,
-    required this.prix,
+    required this.book,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Mock data pour le livre
-    final mockBook = {
-      'id': titre.hashCode.toString(),
-      'title': titre,
-      'author': auteur,
-      'price': prix,
-      'description': 'Description du livre $titre par $auteur.',
-      'chapters': [
-        {
-          'id': 'chap1',
-          'title': 'Introduction',
-          'content': 'Contenu du chapitre 1...',
-        },
-        {
-          'id': 'chap2',
-          'title': 'Chapitre principal',
-          'content': 'Contenu du chapitre 2...',
-        },
-      ],
+    // Data pour la page d'achat
+    final bookData = {
+      'id': book.id,
+      'title': book.titre,
+      'author': book.authorName,
+      'price': book.prix,
+      'description': book.description,
+      'image': book.imageCouverture,
+      'format': book.format,
+      'note_moyenne': book.noteMoyenne ?? 0.0,
+      'telechargements': book.telechargements ?? 0,
+      'cree_le': book.creeLe,
+      'chapters': [],
     };
+
+    final String formattedDate = book.creeLe != null
+        ? "${book.creeLe!.day}/${book.creeLe!.month}/${book.creeLe!.year}"
+        : "N/A";
 
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => PurchasePage(book: mockBook)),
+          MaterialPageRoute(builder: (context) => PurchasePage(book: bookData)),
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
           ],
+          border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 110,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF73B3), Color(0xFFEE5AFF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            // Image Section with Price Tag
+            Stack(
+              children: [
+                Hero(
+                  tag: 'book-image-${book.id}',
+                  child: Container(
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(24),
+                      ),
+                    ),
+                    child: book.imageCouverture != null &&
+                            book.imageCouverture!.isNotEmpty &&
+                            !book.imageCouverture!.contains('example.com')
+                        ? ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(24),
+                            ),
+                            child: Image.network(
+                              book.imageCouverture!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                            ),
+                          )
+                        : _buildPlaceholder(),
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: Icon(Icons.book, color: Colors.white, size: 40),
-              ),
+                // Price Tag with Gradient
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2563EB).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${book.prix} ',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'FCFA',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w400,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ],
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              titre,
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: const Color(0xFF1E293B),
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              auteur,
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-            const Spacer(),
-            Text(
-              prix,
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF2563EB),
+            // Info Section
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.titre,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: const Color(0xFF1E293B),
+                      height: 1.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    book.authorName,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 11,
+                      color: const Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 12),
+                  // Stats Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            (book.noteMoyenne ?? 0.0).toStringAsFixed(1),
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.download_rounded, color: Color(0xFF94A3B8), size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${book.telechargements ?? 0}",
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return const Center(
+      child: Icon(
+        Icons.book_rounded,
+        color: Color(0xFFCBD5E1),
+        size: 48,
       ),
     );
   }

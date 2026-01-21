@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
-
+import 'dart:async' as java_timer;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/paymentService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/paymentModel.dart';
+import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
+import 'package:space_learn_flutter/core/themes/layout/navBarLecteur.dart';
 
 class PaymentPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -16,155 +24,230 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        title: const Text(
-          'Paiement',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        backgroundColor: const Color(0xFFF59E0B),
+        elevation: 0,
         centerTitle: true,
+        title: Text(
+          'Paiement',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Résumé détaillé de la commande
+            // Header Book Summary
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF59E0B),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(32),
+                ),
               ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Small Cover Thumbnail
+                    Container(
+                      height: 80,
+                      width: 60,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[100],
+                      ),
+                      child: widget.book['image'] != null &&
+                              widget.book['image'].toString().isNotEmpty &&
+                              !widget.book['image']
+                                  .toString()
+                                  .contains('example.com')
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                widget.book['image'],
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : const Icon(Icons.book, color: Color(0xFFF59E0B)),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.book['title'] ?? 'Sans titre',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: const Color(0xFF1E293B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Par ${widget.book['author'] ?? 'Auteur inconnu'}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '${widget.book['price'] ?? '0'} ',
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'FCFA',
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Color(0xFFF59E0B),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.book,
-                        size: 40,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.book['title'] ?? '',
-                              style: AppTextStyles.subheading,
-                            ),
-                            Text(
-                              'Par ${widget.book['author'] ?? ''}',
-                              style: AppTextStyles.bodyText2,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Informations supplémentaires sur le livre
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Genre: ${widget.book['genre'] ?? 'Non spécifié'}',
-                              style: AppTextStyles.bodyText2,
-                            ),
-                            Text(
-                              'Pages: ${widget.book['pages'] ?? 'N/A'}',
-                              style: AppTextStyles.bodyText2,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '${widget.book['price'] ?? 'Prix non disponible'}',
-                        style: AppTextStyles.heading.copyWith(
-                          color: AppColors.primary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (widget.book['description'] != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.book['description'],
-                      style: AppTextStyles.bodyText2.copyWith(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    'Méthode de paiement',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1E293B),
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sélectionnez votre mode de paiement préféré',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Payment Methods Grid
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 1.3,
+                    children: [
+                      _buildPaymentMethodCard(
+                        'Carte Visa',
+                        Icons.credit_card_rounded,
+                        const Color(0xFF1E293B),
+                        () => _selectPaymentMethod('Visa'),
+                      ),
+                      _buildPaymentMethodCard(
+                        'PayPal',
+                        Icons.paypal_rounded,
+                        const Color(0xFF003087),
+                        () => _selectPaymentMethod('PayPal'),
+                      ),
+                      _buildPaymentMethodCard(
+                        'Orange Money',
+                        Icons.phone_android_rounded,
+                        const Color(0xFFFF6600),
+                        () => _selectPaymentMethod('Orange Money'),
+                      ),
+                      _buildPaymentMethodCard(
+                        'Wave',
+                        Icons.waves_rounded,
+                        const Color(0xFF1DA1F2),
+                        () => _selectPaymentMethod('Wave'),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
 
-            // Toutes les méthodes de paiement
+  Widget _buildPaymentMethodCard(
+      String label, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 12),
             Text(
-              'Choisissez votre méthode de paiement',
-              style: AppTextStyles.subheading,
-            ),
-            const SizedBox(height: 16),
-
-            // 4 méthodes de paiement alignées horizontalement
-            SizedBox(
-              height: 70,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  SizedBox(
-                    width: 70,
-                    child: _PaymentMethodTile(
-                      label: 'Carte Visa',
-                      icon: Icons.credit_card,
-                      color: AppColors.primary,
-                      onPressed: () => _selectPaymentMethod('Visa'),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 70,
-                    child: _PaymentMethodTile(
-                      label: 'PayPal',
-                      icon: Icons.paypal,
-                      color: Colors.blue,
-                      onPressed: () => _selectPaymentMethod('PayPal'),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 70,
-                    child: _PaymentMethodTile(
-                      label: 'Orange Money',
-                      icon: Icons.phone_android,
-                      color: Colors.orange,
-                      onPressed: () => _selectPaymentMethod('Orange Money'),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 70,
-                    child: _PaymentMethodTile(
-                      label: 'Wave',
-                      icon: Icons.waves,
-                      color: Colors.blue,
-                      onPressed: () => _selectPaymentMethod('Wave'),
-                    ),
-                  ),
-                ],
+              label,
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: const Color(0xFF1E293B),
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -182,6 +265,7 @@ class _PaymentPageState extends State<PaymentPage> {
     );
   }
 }
+
 
 // Widget pour les tuiles de méthodes de paiement
 class _PaymentMethodTile extends StatefulWidget {
@@ -335,7 +419,7 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
   @override
   void initState() {
     super.initState();
-    _amountController.text = widget.book['price']?.toString() ?? '';
+    _amountController.text = "${widget.book['price']?.toString() ?? '0'} FCFA";
   }
 
   @override
@@ -349,56 +433,182 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: const Color(0xFFF59E0B),
+        elevation: 0,
+        centerTitle: true,
         title: Text(
-          'Paiement via ${widget.method}',
-          style: const TextStyle(
+          'Détails du paiement',
+          style: GoogleFonts.poppins(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
           ),
         ),
-        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Résumé de la commande
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF59E0B),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(32),
                 ),
-                child: Row(
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Paiement via ${widget.method}',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Veuillez remplir les informations ci-dessous',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.book, size: 40, color: AppColors.primary),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    // Champs spécifiques selon la méthode
+                    if (widget.method == 'Visa') ...[
+                      _buildTextField(
+                        controller: _phoneController,
+                        label: 'Numéro de carte Visa',
+                        hint: 'XXXX XXXX XXXX XXXX',
+                        icon: Icons.credit_card_rounded,
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer le numéro de votre carte';
+                          }
+                          if (value.length < 16) return 'Numéro de carte invalide';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
                         children: [
-                          Text(
-                            widget.book['title'] ?? '',
-                            style: AppTextStyles.subheading,
+                          Expanded(
+                            child: _buildTextField(
+                              label: 'Expiration',
+                              hint: 'MM/YY',
+                              icon: Icons.calendar_today_rounded,
+                              keyboardType: TextInputType.datetime,
+                            ),
                           ),
-                          Text(
-                            'Par ${widget.book['author'] ?? ''}',
-                            style: AppTextStyles.bodyText2,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildTextField(
+                              label: 'CVV',
+                              hint: 'XXX',
+                              icon: Icons.lock_outline_rounded,
+                              keyboardType: TextInputType.number,
+                              obscureText: true,
+                            ),
                           ),
-                          Text(
-                            '${widget.book['price'] ?? 'Prix non disponible'}',
-                            style: AppTextStyles.heading.copyWith(
-                              color: AppColors.primary,
-                              fontSize: 18,
+                        ],
+                      ),
+                    ] else if (widget.method == 'PayPal') ...[
+                      _buildTextField(
+                        controller: _emailController,
+                        label: 'Adresse email PayPal',
+                        hint: 'votre.email@example.com',
+                        icon: Icons.email_rounded,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer votre adresse email';
+                          }
+                          return null;
+                        },
+                      ),
+                    ] else ...[
+                      _buildTextField(
+                        controller: _phoneController,
+                        label: 'Numéro de téléphone ${widget.method}',
+                        hint: '+225 XX XX XX XX XX',
+                        icon: Icons.phone_iphone_rounded,
+                        keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer votre numéro';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    _buildTextField(
+                      controller: _amountController,
+                      label: 'Montant à payer',
+                      icon: Icons.payments_rounded,
+                      readOnly: true,
+                    ),
+                    const SizedBox(height: 40),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 60,
+                      child: ElevatedButton(
+                        onPressed: _processPayment,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E293B),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Confirmer le paiement',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.security_rounded,
+                              color: Color(0xFF64748B), size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Paiement 100% sécurisé et crypté.',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
@@ -407,261 +617,167 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
-
-              // Informations de paiement selon la méthode
-              Text(
-                'Informations de paiement - ${widget.method}',
-                style: AppTextStyles.subheading,
-              ),
-              const SizedBox(height: 16),
-
-              // Champs spécifiques selon la méthode
-              if (widget.method == 'Visa') ...[
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Numéro de carte Visa',
-                    hintText: 'XXXX XXXX XXXX XXXX',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.credit_card),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer le numéro de votre carte';
-                    }
-                    if (value.length < 16) {
-                      return 'Numéro de carte invalide';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Date d\'expiration',
-                    hintText: 'MM/YY',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.calendar_today),
-                  ),
-                  keyboardType: TextInputType.datetime,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer la date d\'expiration';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'CVV',
-                    hintText: 'XXX',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
-                  ),
-                  keyboardType: TextInputType.number,
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer le CVV';
-                    }
-                    if (value.length < 3) {
-                      return 'CVV invalide';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Adresse email',
-                    hintText: 'votre.email@example.com',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre adresse email';
-                    }
-                    if (!RegExp(
-                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                    ).hasMatch(value)) {
-                      return 'Adresse email invalide';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-              ] else if (widget.method == 'PayPal' ||
-                  widget.method == 'Apple Pay' ||
-                  widget.method == 'Google Pay') ...[
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Adresse email',
-                    hintText: 'votre.email@example.com',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre adresse email';
-                    }
-                    if (!RegExp(
-                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                    ).hasMatch(value)) {
-                      return 'Adresse email invalide';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-              ] else ...[
-                // Méthodes mobiles africaines
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: InputDecoration(
-                    labelText: 'Numéro de téléphone ${widget.method}',
-                    hintText: _getPhoneHint(widget.method),
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.phone),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre numéro de téléphone';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Montant
-              TextFormField(
-                controller: _amountController,
-                decoration: const InputDecoration(
-                  labelText: 'Montant',
-                  hintText: '0.00',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.attach_money),
-                ),
-                keyboardType: TextInputType.number,
-                readOnly: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Montant requis';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 30),
-
-              // Bouton de paiement
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _processPayment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: Text(
-                    'Payer avec ${widget.method}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Note
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _getPaymentNote(widget.method),
-                  style: AppTextStyles.bodyText2,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  String _getPhoneHint(String method) {
-    switch (method) {
-      case 'Orange Money':
-        return '+225 XX XX XX XX XX';
-      case 'Moov Money':
-        return '+225 XX XX XX XX XX';
-      case 'Wave':
-        return '+225 XX XX XX XX XX';
-      case 'MTN Money':
-        return '+225 XX XX XX XX XX';
-      default:
-        return '+225 XX XX XX XX XX';
-    }
+  Widget _buildTextField({
+    TextEditingController? controller,
+    required String label,
+    String? hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    bool readOnly = false,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF475569),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          readOnly: readOnly,
+          validator: validator,
+          style: GoogleFonts.poppins(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF1E293B),
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.poppins(
+              color: const Color(0xFF94A3B8),
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(icon, color: const Color(0xFFF59E0B), size: 20),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  String _getPaymentNote(String method) {
-    switch (method) {
-      case 'Visa':
-        return 'Paiement sécurisé par carte Visa. Vos informations sont cryptées et protégées.';
-      case 'PayPal':
-        return 'Vous serez redirigé vers PayPal pour finaliser le paiement.';
-      case 'Apple Pay':
-        return 'Paiement rapide et sécurisé avec Apple Pay.';
-      case 'Google Pay':
-        return 'Paiement rapide et sécurisé avec Google Pay.';
-      case 'Orange Money':
-        return 'Confirmez le paiement sur votre application Orange Money.';
-      case 'Moov Money':
-        return 'Confirmez le paiement sur votre application Moov Money.';
-      case 'Wave':
-        return 'Confirmez le paiement sur votre application Wave.';
-      case 'MTN Money':
-        return 'Confirmez le paiement sur votre application MTN Money.';
-      default:
-        return 'Paiement sécurisé.';
-    }
-  }
-
-  void _processPayment() {
+  void _processPayment() async {
     if (_formKey.currentState!.validate()) {
-      // Simulation du traitement du paiement
+      // Afficher le dialogue de chargement
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Traitement du paiement...'),
-            ],
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(color: Color(0xFFF59E0B)),
+                const SizedBox(height: 24),
+                Text(
+                  'Traitement du paiement...',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
 
-      // Simuler un délai de traitement
-      Future.delayed(const Duration(seconds: 2), () {
+      try {
+        final token = await TokenStorage.getToken();
+        if (token == null) {
+          throw Exception("Utilisateur non connecté");
+        }
+
+        final authService = AuthService();
+        final user = await authService.getUser(token);
+        if (user == null) {
+          throw Exception("Impossible de récupérer les informations utilisateur");
+        }
+
+        final paymentService = PaymentService();
+        
+        // Générer des IDs fictifs pour la transaction et la référence
+        final transactionId = "TRX-${DateTime.now().millisecondsSinceEpoch}";
+        final referenceId = "REF-${DateTime.now().millisecondsSinceEpoch}";
+
+        final payment = PaymentModel(
+          id: "", // Sera généré par le backend
+          utilisateurId: user.id,
+          livreId: widget.book['id']?.toString() ?? "",
+          methodePaiement: widget.method.toLowerCase().replaceAll(' ', '_'),
+          transactionId: transactionId,
+          referenceId: referenceId,
+          montant: double.tryParse(widget.book['price']?.toString() ?? '0') ?? 0.0,
+          creeLe: DateTime.now(),
+        );
+
+        print("🚀 Tentative de création du paiement pour le livre: ${widget.book['id']}");
+        await paymentService.createPayment(payment, token);
+        print("✅ Paiement créé avec succès");
+
+        // ✅ Ajouter le livre à la bibliothèque de l'utilisateur
+        print("📚 Tentative d'ajout du livre à la bibliothèque...");
+        final libraryService = LibraryService();
+        await libraryService.addToLibrary(
+          widget.book['id']?.toString() ?? "",
+          user.id,
+          "achat", // acquis_via
+          token,
+        );
+        print("✅ Livre ajouté à la bibliothèque avec succès");
+        
+        // ✅ Incrémenter le nombre de téléchargements
+        print("📥 Incrémentation du nombre de téléchargements...");
+        try {
+          final bookService = BookService();
+          final currentDownloads = widget.book['telechargements'] ?? 0;
+          await bookService.updateBook(
+            widget.book['id']?.toString() ?? "",
+            {'telechargements': currentDownloads + 1},
+            token,
+          );
+          print("✅ Nombre de téléchargements incrémenté");
+        } catch (e) {
+          print("⚠️ Erreur lors de l'incrémentation des téléchargements: $e");
+          // On ne bloque pas le processus si l'incrémentation échoue
+        }
+
+        if (!mounted) return;
         Navigator.of(context).pop(); // Fermer le dialog
 
         // Naviguer vers la page de confirmation
@@ -671,63 +787,136 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
             builder: (context) => PaymentConfirmationPage(book: widget.book),
           ),
         );
-      });
+      } catch (e) {
+        if (!mounted) return;
+        Navigator.of(context).pop(); // Fermer le dialog
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Erreur de paiement : ${e.toString()}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }
 
 // Page de confirmation de paiement
-class PaymentConfirmationPage extends StatelessWidget {
+class PaymentConfirmationPage extends StatefulWidget {
   final Map<String, dynamic> book;
 
   const PaymentConfirmationPage({super.key, required this.book});
 
   @override
+  State<PaymentConfirmationPage> createState() => _PaymentConfirmationPageState();
+}
+
+class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
+  int _secondsRemaining = 3;
+  late java_timer.Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = java_timer.Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() {
+          _secondsRemaining--;
+        });
+      } else {
+        _timer.cancel();
+        _navigateToLibrary();
+      }
+    });
+  }
+
+  void _navigateToLibrary() {
+    if (!mounted) return;
+    // Retourner à l'accueil
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    // Changer d'onglet vers la bibliothèque via la GlobalKey
+    MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+      backgroundColor: Colors.white,
+      body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 100),
-              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_rounded,
+                    color: Color(0xFF16A34A), size: 64),
+              ),
+              const SizedBox(height: 32),
               Text(
                 'Paiement réussi !',
-                style: AppTextStyles.heading,
+                style: GoogleFonts.poppins(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1E293B),
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
-                'Votre achat de "${book['title']}" a été confirmé.',
-                style: AppTextStyles.bodyText1,
+                'Félicitations ! Votre achat de "${widget.book['title']}" a été confirmé avec succès.',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: const Color(0xFF64748B),
+                  height: 1.5,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 24),
               Text(
-                'Le livre a été ajouté à votre bibliothèque.',
-                style: AppTextStyles.bodyText2,
+                'Redirection vers votre bibliothèque dans $_secondsRemaining secondes...',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: const Color(0xFFF59E0B),
+                  fontWeight: FontWeight.w600,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 48),
               SizedBox(
                 width: double.infinity,
+                height: 60,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Retourner à la page d'accueil ou bibliothèque
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
+                  onPressed: _navigateToLibrary,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: const Color(0xFFF59E0B),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
                   ),
-                  child: const Text(
-                    'Retour à l\'accueil',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  child: Text(
+                    'Aller dans ma bibliothèque',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -735,14 +924,13 @@ class PaymentConfirmationPage extends StatelessWidget {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  // Naviguer vers la bibliothèque
                   Navigator.of(context).popUntil((route) => route.isFirst);
-                  // Ici, on pourrait naviguer vers la bibliothèque si nécessaire
                 },
                 child: Text(
-                  'Voir ma bibliothèque',
-                  style: TextStyle(
-                    color: AppColors.primary,
+                  'Retour à l\'accueil',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
                     decoration: TextDecoration.underline,
                   ),
                 ),
@@ -754,3 +942,4 @@ class PaymentConfirmationPage extends StatelessWidget {
     );
   }
 }
+

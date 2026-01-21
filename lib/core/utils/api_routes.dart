@@ -22,7 +22,7 @@ class ApiRoutes {
   // Autres routes (cours, vidéos, etc.) peuvent être ajoutées ici
 
   // New base URL for Gin server on port 8082
-  static const String baseUrlsGin = "http://192.168.252.193:8082";
+  static const String baseUrlsGin = "http://192.168.252.193:8085";
 
   // Book routes
   static const String books = "$baseUrlsGin/api/books";
