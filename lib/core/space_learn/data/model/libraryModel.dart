@@ -18,13 +18,22 @@ class LibraryModel {
   });
 
   factory LibraryModel.fromJson(Map<String, dynamic> json) {
+    print("🔍 LibraryModel.fromJson keys: ${json.keys.toList()}");
     return LibraryModel(
       id: json['id'] ?? '',
       utilisateurId: json['utilisateur_id'] ?? '',
       livreId: json['livre_id'] ?? '',
       acquisVia: json['acquis_via'] ?? '',
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
+      livre: (json['Livre'] != null) 
+          ? BookModel.fromJson(json['Livre']) 
+          : (json['livre'] != null) 
+              ? BookModel.fromJson(json['livre']) 
+              : (json['Book'] != null)
+                  ? BookModel.fromJson(json['Book'])
+                  : (json['book'] != null)
+                      ? BookModel.fromJson(json['book'])
+                      : null,
     );
   }
 

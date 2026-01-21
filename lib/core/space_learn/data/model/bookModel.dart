@@ -2,6 +2,7 @@ import 'categorie.dart';
 import 'activiteModel.dart';
 import 'readingActivityModel.dart';
 import 'recommendationModel.dart';
+import 'userModel.dart';
 
 class BookModel {
   final String id;
@@ -19,11 +20,16 @@ class BookModel {
   final DateTime? creeLe;
   final DateTime? majLe;
 
+  // Stats
+  final double noteMoyenne;
+  final int telechargements;
+
   // Relations
   final Categorie? categorie; // Categorie
   final List<ReviewModel>? activites; // Activites
   final List<ReadingActivityModel>? progressions; // Progressions
   final List<RecommendationModel>? recommandations; // Recommandations
+  final UserModel? auteur; // Auteur
 
   BookModel({
     required this.id,
@@ -44,13 +50,48 @@ class BookModel {
     this.activites,
     this.progressions,
     this.recommandations,
-  });
+    this.auteur,
+    double? noteMoyenne,
+    int? telechargements,
+  })  : noteMoyenne = noteMoyenne ?? 0.0,
+        telechargements = telechargements ?? 0;
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
+    // Handle author extraction
+    UserModel? author;
+    final authorData = json['Auteur'] ?? json['auteur'] ?? json['author'];
+    
+    if (authorData != null) {
+      if (authorData is Map<String, dynamic>) {
+        author = UserModel.fromJson(authorData);
+      } else if (authorData is String) {
+        // If it's just a string, create a dummy UserModel with that name
+        author = UserModel(
+          id: '',
+          profilId: '',
+          email: '',
+          nomComplet: authorData,
+          isProfileComplete: false,
+        );
+      }
+    } else {
+      // Fallback: check for top-level name fields
+      final nameFallback = json['auteur_nom'] ?? json['author_name'] ?? json['NomComplet'] ?? json['nom_complet'];
+      if (nameFallback != null && nameFallback is String) {
+        author = UserModel(
+          id: '',
+          profilId: '',
+          email: '',
+          nomComplet: nameFallback,
+          isProfileComplete: false,
+        );
+      }
+    }
+
     return BookModel(
       id: json['id'] ?? '',
-      auteurId: json['auteur_id'] ?? '',
-      titre: json['titre'] ?? '',
+      auteurId: json['auteur_id'] ?? json['author_id'] ?? '',
+      titre: json['titre'] ?? json['title'] ?? '',
       description: json['description'] ?? '',
       imageCouverture: json['image_couverture'],
       fichierUrl: json['fichier_url'],
@@ -62,6 +103,12 @@ class BookModel {
       adresseContratNft: json['adresse_contrat_nft'],
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
       majLe: json['maj_le'] != null ? DateTime.parse(json['maj_le']) : null,
+      noteMoyenne: (json['note_moyenne'] != null)
+          ? (json['note_moyenne'] as num).toDouble()
+          : 0.0,
+      telechargements: (json['telechargements'] != null)
+          ? (json['telechargements'] as num).toInt()
+          : 0,
       categorie: json['Categorie'] != null
           ? Categorie.fromJson(json['Categorie'])
           : null,
@@ -80,8 +127,11 @@ class BookModel {
                 .map((i) => RecommendationModel.fromJson(i))
                 .toList()
           : null,
+      auteur: author,
     );
   }
+
+  String get authorName => auteur?.nomComplet ?? 'Auteur inconnu';
 
   Map<String, dynamic> toJson() {
     return {
@@ -99,10 +149,13 @@ class BookModel {
       'adresse_contrat_nft': adresseContratNft,
       'cree_le': creeLe?.toIso8601String(),
       'maj_le': majLe?.toIso8601String(),
+      'note_moyenne': noteMoyenne,
+      'telechargements': telechargements,
       'Categorie': categorie?.toJson(),
       'Activites': activites?.map((i) => i.toJson()).toList(),
       'Progressions': progressions?.map((i) => i.toJson()).toList(),
       'Recommandations': recommandations?.map((i) => i.toJson()).toList(),
+      'Auteur': auteur?.toJson(),
     };
   }
 }

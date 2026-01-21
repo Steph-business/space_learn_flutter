@@ -20,14 +20,7 @@ class LivreStatsSection extends StatelessWidget {
           child: Icon(icon, color: color, size: 24),
         ),
         const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: Color(0xFF2D3142),
-          ),
-        ),
+        _buildValueWidget(value),
         Text(
           label,
           style: TextStyle(
@@ -37,6 +30,38 @@ class LivreStatsSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildValueWidget(String value) {
+    if (value.contains('FCFA')) {
+      final parts = value.split(' FCFA');
+      return Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: '${parts[0]} ',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextSpan(
+              text: 'FCFA',
+              style: TextStyle(fontWeight: FontWeight.normal),
+            ),
+          ],
+          style: const TextStyle(
+            fontSize: 16,
+            color: Color(0xFF2D3142),
+          ),
+        ),
+      );
+    }
+    return Text(
+      value,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+        color: Color(0xFF2D3142),
+      ),
     );
   }
 
@@ -72,8 +97,8 @@ class LivreStatsSection extends StatelessWidget {
           ),
           _buildSummaryItem(
             "Revenus",
-            "1.2k€",
-            Icons.euro_rounded,
+            "1.2k FCFA",
+            Icons.payments_rounded,
             Colors.green,
           ),
         ],

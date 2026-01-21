@@ -118,8 +118,6 @@ class NavBarAll extends StatelessWidget {
               ),
               IconButton(
                 onPressed: () {
-                  // Assuming we can determine if user is author or reader
-                  // For now, navigate to reader settings, but in real app, check user type
                   Navigator.push(
                     context,
                     MaterialPageRoute(

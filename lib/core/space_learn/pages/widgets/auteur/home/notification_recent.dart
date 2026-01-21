@@ -11,7 +11,7 @@ class RecentNotificationsPage extends StatelessWidget {
     final notifications = [
       NotificationItem(
         title: "Nouveau paiement reçu",
-        description: "Vente de \"L'importance des réseaux\" - €12.99",
+        description: "Vente de \"L'importance des réseaux\" - 12.99 FCFA",
         timeAgo: "Il y a 2 heures",
         icon: Iconsax.coin,
         borderColor: Colors.greenAccent,

@@ -38,12 +38,26 @@ class Revenus extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "€2,891",
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1E293B),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: "2,891 ",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextSpan(
+                        text: "FCFA",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                    style: const TextStyle(
+                      fontSize: 20,
+                      color: Color(0xFF1E293B),
+                    ),
                   ),
                 ),
                 Container(

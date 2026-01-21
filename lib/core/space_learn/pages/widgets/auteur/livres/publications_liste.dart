@@ -1,24 +1,14 @@
 import 'package:flutter/material.dart';
-
+import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
 import 'publication_card.dart';
 
 class PublicationsList extends StatelessWidget {
-  const PublicationsList({super.key});
+  final List<BookModel> books;
+  final String? authorName;
+  const PublicationsList({super.key, required this.books, this.authorName});
 
   @override
   Widget build(BuildContext context) {
-    final publications = [
-      {
-        "titre": "L'importance des réseaux",
-        "statut": "Publié",
-        "vues": "245 vues",
-        "downloads": "56 téléchargements",
-        "revenu": "127€",
-        "note": "4.8",
-        "image": "assets/images/book1.png",
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -27,7 +17,7 @@ class PublicationsList extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 16),
-        ...publications.map((p) => PublicationCard(data: p)),
+        ...books.map((book) => PublicationCard(book: book, authorName: authorName)),
       ],
     );
   }

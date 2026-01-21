@@ -21,7 +21,7 @@ class _DetailedStatisticsState extends State<DetailedStatistics> {
           'satisfaction': {'value': '89%', 'label': 'Satisfaction'},
           'readingTime': {'value': '4.2min', 'label': 'Temps\nlecture'},
           'recurring': {'value': '67%', 'label': 'Lecteurs\nrécurrents'},
-          'revenuePerView': {'value': '€0.37', 'label': 'Revenu par\nvue'},
+          'revenuePerView': {'value': '0.37 FCFA', 'label': 'Revenu par\nvue'},
         };
       case 1: // 30 jours
         return {
@@ -30,7 +30,7 @@ class _DetailedStatisticsState extends State<DetailedStatistics> {
           'satisfaction': {'value': '87%', 'label': 'Satisfaction'},
           'readingTime': {'value': '4.5min', 'label': 'Temps\nlecture'},
           'recurring': {'value': '72%', 'label': 'Lecteurs\nrécurrents'},
-          'revenuePerView': {'value': '€0.42', 'label': 'Revenu par\nvue'},
+          'revenuePerView': {'value': '0.42 FCFA', 'label': 'Revenu par\nvue'},
         };
       case 2: // 3 mois
         return {
@@ -39,7 +39,7 @@ class _DetailedStatisticsState extends State<DetailedStatistics> {
           'satisfaction': {'value': '85%', 'label': 'Satisfaction'},
           'readingTime': {'value': '4.8min', 'label': 'Temps\nlecture'},
           'recurring': {'value': '75%', 'label': 'Lecteurs\nrécurrents'},
-          'revenuePerView': {'value': '€0.45', 'label': 'Revenu par\nvue'},
+          'revenuePerView': {'value': '0.45 FCFA', 'label': 'Revenu par\nvue'},
         };
       case 3: // 1 an
         return {
@@ -48,7 +48,7 @@ class _DetailedStatisticsState extends State<DetailedStatistics> {
           'satisfaction': {'value': '82%', 'label': 'Satisfaction'},
           'readingTime': {'value': '5.2min', 'label': 'Temps\nlecture'},
           'recurring': {'value': '78%', 'label': 'Lecteurs\nrécurrents'},
-          'revenuePerView': {'value': '€0.48', 'label': 'Revenu par\nvue'},
+          'revenuePerView': {'value': '0.48 FCFA', 'label': 'Revenu par\nvue'},
         };
       default:
         return {
@@ -57,7 +57,7 @@ class _DetailedStatisticsState extends State<DetailedStatistics> {
           'satisfaction': {'value': '0%', 'label': 'Satisfaction'},
           'readingTime': {'value': '0min', 'label': 'Temps\nlecture'},
           'recurring': {'value': '0%', 'label': 'Lecteurs\nrécurrents'},
-          'revenuePerView': {'value': '€0', 'label': 'Revenu par\nvue'},
+          'revenuePerView': {'value': '0 FCFA', 'label': 'Revenu par\nvue'},
         };
     }
   }
@@ -261,14 +261,7 @@ class _MetricCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
+          _buildValueWidget(),
           const SizedBox(height: 8),
           Text(
             label,
@@ -280,6 +273,38 @@ class _MetricCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildValueWidget() {
+    if (value.contains('FCFA')) {
+      final parts = value.split(' FCFA');
+      return Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: '${parts[0]} ',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextSpan(
+              text: 'FCFA',
+              style: TextStyle(fontWeight: FontWeight.normal),
+            ),
+          ],
+          style: const TextStyle(
+            fontSize: 24,
+            color: Colors.black87,
+          ),
+        ),
+      );
+    }
+    return Text(
+      value,
+      style: const TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
       ),
     );
   }

@@ -113,9 +113,10 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => destination),
+          (route) => false,
         );
       }
     } catch (e) {

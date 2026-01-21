@@ -7,25 +7,57 @@ import '../../widgets/lecteur/markeplace/livre_card.dart';
 import '../../widgets/lecteur/markeplace/section_titre.dart';
 import '../../widgets/lecteur/markeplace/select_categorie.dart';
 
-class MarketplacePage extends StatelessWidget {
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
+
+class MarketplacePage extends StatefulWidget {
   const MarketplacePage({super.key});
 
   @override
+  State<MarketplacePage> createState() => _MarketplacePageState();
+}
+
+class _MarketplacePageState extends State<MarketplacePage> {
+  final BookService _bookService = BookService();
+  List<BookModel> _books = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBooks();
+  }
+
+  Future<void> _loadBooks() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      // Fetch all published books
+      final books = await _bookService.getAllBooks(statut: 'publie');
+      
+      if (mounted) {
+        setState(() {
+          _books = books;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading marketplace books: $e');
+      if (mounted) {
+        setState(() {
+          _error = "Erreur lors du chargement des livres.";
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final livres = [
-      {
-        "titre": "L'importance des réseaux",
-        "auteur": "Jean Dupont",
-        "prix": "12.99 €",
-      },
-      {
-        "titre": "Créer une entreprise",
-        "auteur": "Alice Martin",
-        "prix": "15.99 €",
-      },
-      {"titre": "Apprendre Flutter", "auteur": "Sophie K.", "prix": "10.50 €"},
-      {"titre": "Introduction à l’IA", "auteur": "Marc D.", "prix": "13.49 €"},
-    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -59,26 +91,51 @@ class MarketplacePage extends StatelessWidget {
                   const SizedBox(height: 2),
 
                   // Grille de livres
-                  GridView.builder(
-                    itemCount: livres.length,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.75,
-                          crossAxisSpacing: 14,
-                          mainAxisSpacing: 14,
-                        ),
-                    itemBuilder: (context, index) {
-                      final livre = livres[index];
-                      return LivreCard(
-                        titre: livre["titre"]!,
-                        auteur: livre["auteur"]!,
-                        prix: livre["prix"]!,
-                      );
-                    },
-                  ),
+                  if (_isLoading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (_error != null)
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(_error!, style: const TextStyle(color: Colors.red)),
+                          ElevatedButton(
+                            onPressed: _loadBooks,
+                            child: const Text("Réessayer"),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (_books.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40.0),
+                        child: Text("Aucun livre disponible pour le moment."),
+                      ),
+                    )
+                  else
+                    GridView.builder(
+                      itemCount: _books.length,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.75,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                      ),
+                      itemBuilder: (context, index) {
+                        final book = _books[index];
+                        return LivreCard(
+                          book: book,
+                        );
+                      },
+                    ),
                 ],
               ),
             ),

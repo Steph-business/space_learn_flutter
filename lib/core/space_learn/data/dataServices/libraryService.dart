@@ -10,6 +10,7 @@ class LibraryService {
 
   Future<LibraryModel> addToLibrary(
     String livreId,
+    String utilisateurId,
     String acquisVia,
     String authToken,
   ) async {
@@ -19,7 +20,11 @@ class LibraryService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
       },
-      body: jsonEncode({'livre_id': livreId, 'acquis_via': acquisVia}),
+      body: jsonEncode({
+        'livre_id': livreId,
+        'utilisateur_id': utilisateurId,
+        'acquis_via': acquisVia
+      }),
     );
 
     if (response.statusCode == 201) {
@@ -37,8 +42,16 @@ class LibraryService {
     );
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      final List<dynamic> data = responseData['data'] ?? [];
+      print("📥 RAW LIBRARY RESPONSE: ${response.body}");
+      final dynamic decoded = jsonDecode(response.body);
+      List<dynamic> data;
+      if (decoded is List) {
+        data = decoded;
+      } else if (decoded is Map && decoded.containsKey('data')) {
+        data = decoded['data'];
+      } else {
+        data = [];
+      }
       return data.map((json) => LibraryModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch user library');
