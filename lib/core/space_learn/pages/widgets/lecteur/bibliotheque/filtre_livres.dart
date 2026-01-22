@@ -3,23 +3,19 @@ import 'package:google_fonts/google_fonts.dart';
 
 class FiltreLivres extends StatelessWidget {
   final String filtreActif;
+  final List<String> categories;
   final ValueChanged<String> onFiltreChange;
 
   const FiltreLivres({
     super.key,
     required this.filtreActif,
+    required this.categories,
     required this.onFiltreChange,
   });
 
   @override
   Widget build(BuildContext context) {
-    final filtres = [
-      "Tous",
-      "Business",
-      "Informatique",
-      "Science",
-      "Littérature",
-    ];
+    final filtres = categories;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
