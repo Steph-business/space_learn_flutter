@@ -137,4 +137,6 @@ class BookService {
       throw Exception('Failed to fetch books by author');
     }
   }
+  // Alias for consistency
+  Future<List<BookModel>> getBooksByAuthor(String auteurId) => getBooksByAuthorId(auteurId);
 }
