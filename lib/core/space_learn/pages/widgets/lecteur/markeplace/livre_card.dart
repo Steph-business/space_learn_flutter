@@ -61,7 +61,7 @@ class LivreCard extends StatelessWidget {
                 Hero(
                   tag: 'book-image-${book.id}',
                   child: Container(
-                    height: 150,
+                    height: 120,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
@@ -85,53 +85,12 @@ class LivreCard extends StatelessWidget {
                         : _buildPlaceholder(),
                   ),
                 ),
-                // Price Tag with Gradient
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF2563EB).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '${book.prix} ',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                          TextSpan(
-                            text: 'FCFA',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w400,
-                              fontSize: 9,
-                            ),
-                          ),
-                        ],
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
+
               ],
             ),
             // Info Section
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -139,26 +98,48 @@ class LivreCard extends StatelessWidget {
                     book.titre,
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w700,
-                      fontSize: 14,
+                      fontSize: 13,
                       color: const Color(0xFF1E293B),
                       height: 1.2,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     book.authorName,
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w500,
-                      fontSize: 11,
+                      fontSize: 10,
                       color: const Color(0xFF64748B),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 10),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${book.prix} ',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: const Color(0xFF2563EB),
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'FCFA',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 12),
-                  // Stats Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -169,27 +150,28 @@ class LivreCard extends StatelessWidget {
                           Text(
                             (book.noteMoyenne ?? 0.0).toStringAsFixed(1),
                             style: GoogleFonts.poppins(
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF1E293B),
                             ),
                           ),
                         ],
                       ),
-                      Row(
-                        children: [
-                          const Icon(Icons.download_rounded, color: Color(0xFF94A3B8), size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            "${book.telechargements ?? 0}",
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF64748B),
+                      if (book.creeLe != null)
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time_rounded, color: Color(0xFF94A3B8), size: 12),
+                            const SizedBox(width: 4),
+                            Text(
+                              _timeAgo(book.creeLe!),
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF64748B),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                     ],
                   ),
                 ],
@@ -209,5 +191,24 @@ class LivreCard extends StatelessWidget {
         size: 48,
       ),
     );
+  }
+
+  String _timeAgo(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 365) {
+      return "il y a ${(difference.inDays / 365).floor()} an(s)";
+    } else if (difference.inDays > 30) {
+      return "il y a ${(difference.inDays / 30).floor()} mois";
+    } else if (difference.inDays > 0) {
+      return "il y a ${difference.inDays} j";
+    } else if (difference.inHours > 0) {
+      return "il y a ${difference.inHours} h";
+    } else if (difference.inMinutes > 0) {
+      return "il y a ${difference.inMinutes} min";
+    } else {
+      return "à l'instant";
+    }
   }
 }

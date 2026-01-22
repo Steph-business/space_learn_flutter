@@ -2,19 +2,72 @@ import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livrePage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
+import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 
-class AuteurLivresRecents extends StatelessWidget {
+class AuteurLivresRecents extends StatefulWidget {
   const AuteurLivresRecents({super.key});
 
   @override
+  State<AuteurLivresRecents> createState() => _AuteurLivresRecentsState();
+}
+
+class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
+  final BookService _bookService = BookService();
+  final AuthService _authService = AuthService();
+  List<BookModel> _books = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBooks();
+  }
+
+  Future<void> _loadBooks() async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token != null) {
+        final user = await _authService.getUser(token);
+        if (user != null) {
+          final books = await _bookService.getBooksByAuthor(user.id);
+          if (mounted) {
+            setState(() {
+              // Sort by creation date descending and take top 3
+              books.sort((a, b) => (b.creeLe ?? DateTime(0)).compareTo(a.creeLe ?? DateTime(0)));
+              _books = books.take(3).toList();
+              _isLoading = false;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print("Error loading recent books: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final livres = [
-      {"titre": "L'importance des réseaux", "ventes": "432", "note": "4.5"},
-      {"titre": "Guide du Marketing Digital", "ventes": "127", "note": "4.2"},
-    ];
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_books.isEmpty) {
+      return Center(
+        child: Text(
+          "Aucun livre publié récemment.",
+          style: GoogleFonts.poppins(color: Colors.grey),
+        ),
+      );
+    }
 
     return Column(
-      children: livres.map((livre) {
+      children: _books.map((book) {
         return GestureDetector(
           onTap: () {
             Navigator.push(
@@ -26,7 +79,7 @@ class AuteurLivresRecents extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9), // Light blue-gray background
+              color: const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -42,27 +95,35 @@ class AuteurLivresRecents extends StatelessWidget {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF818CF8), Color(0xFF6366F1)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
                     borderRadius: BorderRadius.circular(14),
+                    image: (book.imageCouverture != null && book.imageCouverture!.isNotEmpty)
+                        ? DecorationImage(
+                            image: NetworkImage(book.imageCouverture!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                    color: (book.imageCouverture == null || book.imageCouverture!.isEmpty) 
+                        ? const Color(0xFF818CF8) 
+                        : null,
                   ),
-                  child: const Icon(Icons.book, color: Colors.white, size: 24),
+                  child: (book.imageCouverture == null || book.imageCouverture!.isEmpty)
+                      ? const Icon(Icons.book, color: Colors.white, size: 24)
+                      : null,
                 ),
-                const SizedBox(width: 16), // Increased padding
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        livre["titre"]!,
+                        book.titre,
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
                           color: const Color(0xFF1E293B),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
                       Row(
@@ -77,7 +138,7 @@ class AuteurLivresRecents extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              "${livre["ventes"]} ventes",
+                              "${book.telechargements} ventes",
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 color: const Color(0xFF1565C0),
@@ -85,9 +146,7 @@ class AuteurLivresRecents extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(
-                            width: 12,
-                          ), // Padding between sales and rating
+                          const SizedBox(width: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
@@ -106,7 +165,7 @@ class AuteurLivresRecents extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 2),
                                 Text(
-                                  livre["note"]!,
+                                  (book.noteMoyenne ?? 0.0).toStringAsFixed(1),
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -121,7 +180,7 @@ class AuteurLivresRecents extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12), // Padding before status
+                const SizedBox(width: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,

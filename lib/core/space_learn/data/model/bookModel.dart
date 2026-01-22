@@ -59,11 +59,25 @@ class BookModel {
   factory BookModel.fromJson(Map<String, dynamic> json) {
     // Handle author extraction
     UserModel? author;
-    final authorData = json['Auteur'] ?? json['auteur'] ?? json['author'];
+    final authorData = json['Auteur'] ?? json['auteur'] ?? json['author'] ?? json['Utilisateur'];
     
     if (authorData != null) {
       if (authorData is Map<String, dynamic>) {
-        author = UserModel.fromJson(authorData);
+        try {
+          author = UserModel.fromJson(authorData);
+        } catch (e) {
+          // Fallback if full parsing fails but we have the name
+          final name = authorData['nom_complet'] ?? authorData['NomComplet'];
+          if (name != null) {
+             author = UserModel(
+              id: authorData['id'] ?? '',
+              profilId: authorData['profil_id'] ?? '',
+              email: authorData['email'] ?? '',
+              nomComplet: name,
+              isProfileComplete: false,
+            );
+          }
+        }
       } else if (authorData is String) {
         // If it's just a string, create a dummy UserModel with that name
         author = UserModel(
