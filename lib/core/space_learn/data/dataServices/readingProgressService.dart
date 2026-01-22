@@ -9,29 +9,44 @@ class ReadingProgressService {
   ReadingProgressService({http.Client? client}) : client = client ?? http.Client();
 
   Future<ReadingActivityModel?> getReadingProgress(String livreId, String authToken) async {
-    // Assuming there's an endpoint to get progress for a specific book
-    // If not, we might need to fetch all activities and filter, or use a specific endpoint
-    // For now, let's assume we can pass livre_id as a query param or similar
-    // Or maybe the backend handles it via the 'readingActivity' route
-    
     final uri = Uri.parse('${ApiRoutes.readingActivity}?livre_id=$livreId');
     
-    final response = await client.get(
-      uri,
-      headers: {'Authorization': 'Bearer $authToken'},
-    );
+    print("🔍 [ReadingProgressService] Fetching progress for book: $livreId");
+    print("📡 [ReadingProgressService] GET URL: $uri");
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      // Check if data is present
-      if (responseData['data'] != null) {
-         return ReadingActivityModel.fromJson(responseData['data']);
+    try {
+      final response = await client.get(
+        uri,
+        headers: {'Authorization': 'Bearer $authToken'},
+      );
+
+      print("📥 [ReadingProgressService] Response Status: ${response.statusCode}");
+      print("📥 [ReadingProgressService] Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final data = responseData['data'];
+        if (data != null) {
+          if (data is List) {
+            if (data.isNotEmpty) {
+              return ReadingActivityModel.fromJson(data.first);
+            }
+            return null;
+          } else if (data is Map<String, dynamic>) {
+            return ReadingActivityModel.fromJson(data);
+          }
+        }
+        return null;
+      } else if (response.statusCode == 404) {
+        print("⚠️ [ReadingProgressService] No progress found (404). This might be normal for a new book.");
+        return null;
+      } else {
+        print("❌ [ReadingProgressService] Error: ${response.statusCode}");
+        throw Exception('Failed to fetch reading progress: ${response.statusCode}');
       }
-      return null;
-    } else if (response.statusCode == 404) {
-      return null;
-    } else {
-      throw Exception('Failed to fetch reading progress');
+    } catch (e) {
+      print("❌ [ReadingProgressService] Exception: $e");
+      rethrow;
     }
   }
 
@@ -42,22 +57,34 @@ class ReadingProgressService {
     required String authToken,
   }) async {
     final int percentage = (currentPage / totalPages * 100).round();
-    
-    final response = await client.post(
-      Uri.parse(ApiRoutes.readingProgress),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      },
-      body: jsonEncode({
-        'livre_id': livreId,
-        'chapitre_courant': currentPage, // Using chapter_current for page number
-        'pourcentage': percentage,
-      }),
-    );
+    final uri = Uri.parse(ApiRoutes.readingProgress);
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to update reading progress');
+    print("💾 [ReadingProgressService] Updating progress: Book=$livreId, Page=$currentPage ($percentage%)");
+    print("📡 [ReadingProgressService] POST URL: $uri");
+    
+    try {
+      final response = await client.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: jsonEncode({
+          'livre_id': livreId,
+          'chapitre_courant': currentPage,
+          'pourcentage': percentage,
+        }),
+      );
+
+      print("📥 [ReadingProgressService] Update Response Status: ${response.statusCode}");
+      print("📥 [ReadingProgressService] Update Response Body: ${response.body}");
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to update reading progress: ${response.statusCode}');
+      }
+    } catch (e) {
+      print("❌ [ReadingProgressService] Update Exception: $e");
+      rethrow;
     }
   }
 }

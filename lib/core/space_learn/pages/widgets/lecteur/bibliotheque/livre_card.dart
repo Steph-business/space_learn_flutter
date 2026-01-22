@@ -4,18 +4,26 @@ import 'package:google_fonts/google_fonts.dart';
 class LivreCard extends StatelessWidget {
   final String titre;
   final String auteur;
+  final String? categorie;
   final int progression;
   final List<Color> couleurs;
   final String? imageUrl;
+  final DateTime? dateAcquisition;
 
   const LivreCard({
     super.key,
     required this.titre,
     required this.auteur,
+    this.categorie,
     required this.progression,
     required this.couleurs,
     this.imageUrl,
+    this.dateAcquisition,
   });
+
+  String _formatDate(DateTime date) {
+    return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,13 +95,42 @@ class LivreCard extends StatelessWidget {
                       Text(
                         auteur,
                         style: GoogleFonts.poppins(
-                          color: const Color(0xFF64748B),
+                          color: const Color(0xFF475569),
                           fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (categorie != null && categorie!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            categorie!,
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (dateAcquisition != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          "Acquis le ${_formatDate(dateAcquisition!)}",
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF94A3B8),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       // Progress Section
                       Row(

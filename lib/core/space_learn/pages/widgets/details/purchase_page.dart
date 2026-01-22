@@ -48,7 +48,7 @@ class PurchasePage extends StatelessWidget {
             Stack(
               children: [
                 Container(
-                  height: 300,
+                  height: 350,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -58,7 +58,7 @@ class PurchasePage extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 120, left: 20, right: 20),
+                  padding: const EdgeInsets.only(top: 140, left: 20, right: 20),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -66,8 +66,8 @@ class PurchasePage extends StatelessWidget {
                       Hero(
                         tag: 'book-${book['id']}',
                         child: Container(
-                          height: 220,
-                          width: 150,
+                          height: 180,
+                          width: 120,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
@@ -114,7 +114,7 @@ class PurchasePage extends StatelessWidget {
                             Text(
                               book['title'] ?? 'Sans titre',
                               style: GoogleFonts.poppins(
-                                fontSize: 24,
+                                fontSize: 20,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                                 height: 1.2,
