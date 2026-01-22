@@ -37,18 +37,23 @@ class _ReadingPageState extends State<ReadingPage> {
   Future<void> _loadProgress() async {
     try {
       final token = await TokenStorage.getToken();
-      final bookId = widget.book['id'] ?? widget.book['ID'];
-      
-      if (token != null && bookId != null) {
-        final progress = await _progressService.getReadingProgress(bookId, token);
-        if (progress != null && progress.chapitreCourant > 0) {
+      if (token != null) {
+        print("📖 [ReadingPage] Loading progress for book ID: ${widget.book['id']}");
+        final progress = await _progressService.getReadingProgress(
+          widget.book['id'],
+          token,
+        );
+        if (progress != null && mounted) {
+          print("✅ [ReadingPage] Progress loaded: Page ${progress.chapitreCourant}");
           setState(() {
             _savedPage = progress.chapitreCourant;
           });
+        } else {
+          print("⚠️ [ReadingPage] No saved progress found.");
         }
       }
     } catch (e) {
-      print("Error loading progress: $e");
+      print("❌ [ReadingPage] Error loading progress: $e");
     }
   }
 
@@ -183,30 +188,35 @@ class _ReadingPageState extends State<ReadingPage> {
 
   Widget _buildBottomNavigation() {
     return Container(
-      height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         color: const Color(0xFF16213E),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, -5)),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
-            onPressed: _currentPage > 1 ? () => _pdfViewerController.previousPage() : null,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left, color: Colors.white, size: 24),
+                onPressed: _currentPage > 1 ? () => _pdfViewerController.previousPage() : null,
+              ),
+              Text(
+                "Page $_currentPage / $_totalPages",
+                style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, color: Colors.white, size: 24),
+                onPressed: _currentPage < _totalPages ? () => _pdfViewerController.nextPage() : null,
+              ),
+            ],
           ),
-          Text(
-            "Page $_currentPage sur $_totalPages",
-            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.white, size: 30),
-            onPressed: _currentPage < _totalPages ? () => _pdfViewerController.nextPage() : null,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -221,15 +231,16 @@ class _ReadingPageState extends State<ReadingPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.35,
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 30,
-                    offset: const Offset(0, 15),
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
@@ -243,14 +254,14 @@ class _ReadingPageState extends State<ReadingPage> {
               ),
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 16),
           Text(
             title,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: const Color(0xFF1E293B),
             ),
           ),
           const SizedBox(height: 8),
@@ -258,11 +269,11 @@ class _ReadingPageState extends State<ReadingPage> {
             author,
             style: GoogleFonts.poppins(
               fontSize: 16,
-              color: Colors.white70,
+              color: const Color(0xFF64748B),
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => setState(() => _showCover = false),
             style: ElevatedButton.styleFrom(
@@ -286,7 +297,7 @@ class _ReadingPageState extends State<ReadingPage> {
               child: Text(
                 "Page $_savedPage",
                 style: GoogleFonts.poppins(
-                  color: Colors.white54,
+                  color: const Color(0xFF94A3B8),
                   fontSize: 12,
                 ),
               ),

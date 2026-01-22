@@ -25,6 +25,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
   final LibraryService _libraryService = LibraryService();
   final AuthService _authService = AuthService();
   List<LibraryModel> _libraryItems = [];
+  List<String> _categories = ["Tous"];
   bool _isLoading = true;
   String? _error;
   String _userName = "Lecteur";
@@ -82,6 +83,16 @@ class _BibliothequePageState extends State<BibliothequePage> {
       if (mounted) {
         setState(() {
           _libraryItems = items;
+          
+          // Extract unique categories
+          final Set<String> categorySet = {"Tous"};
+          for (var item in items) {
+            if (item.livre?.categorie != null && item.livre!.categorie!.nom.isNotEmpty) {
+              categorySet.add(item.livre!.categorie!.nom);
+            }
+          }
+          _categories = categorySet.toList();
+          
           _isLoading = false;
         });
       }
@@ -94,6 +105,13 @@ class _BibliothequePageState extends State<BibliothequePage> {
         });
       }
     }
+  }
+
+  List<LibraryModel> _getFilteredBooks() {
+    if (filtreActif == "Tous") {
+      return _libraryItems;
+    }
+    return _libraryItems.where((item) => item.livre?.categorie?.nom == filtreActif).toList();
   }
 
   @override
@@ -163,6 +181,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                     const SizedBox(height: 20),
                     FiltreLivres(
                       filtreActif: filtreActif,
+                      categories: _categories,
                       onFiltreChange: (f) => setState(() => filtreActif = f),
                     ),
                     const SizedBox(height: 24),
@@ -186,9 +205,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         shrinkWrap: true,
                         padding: EdgeInsets.zero,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _libraryItems.length,
+                        itemCount: _getFilteredBooks().length,
                         itemBuilder: (context, index) {
-                          final item = _libraryItems[index];
+                          final item = _getFilteredBooks()[index];
                           final book = item.livre;
                           
                           if (book == null) return const SizedBox.shrink();
@@ -207,9 +226,13 @@ class _BibliothequePageState extends State<BibliothequePage> {
                             child: LivreCard(
                               titre: book.titre,
                               auteur: book.authorName,
-                              progression: 0, // Idéalement, récupérer la progression réelle
+                              categorie: book.categorie?.nom,
+                              progression: (book.progressions != null && book.progressions!.isNotEmpty)
+                                  ? book.progressions!.first.pourcentage
+                                  : 0,
                               couleurs: const [Color(0xFF6A5AE0), Color(0xFF8B82F6)],
                               imageUrl: book.imageCouverture,
+                              dateAcquisition: item.creeLe,
                             ),
                           );
                         },

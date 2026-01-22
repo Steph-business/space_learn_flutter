@@ -9,6 +9,7 @@ import '../../widgets/lecteur/home/recent_activity_section.dart';
 import '../../widgets/lecteur/home/recommendations_section.dart';
 import '../../widgets/lecteur/home/stats_section.dart';
 import '../../widgets/lecteur/home/featured_authors_section.dart';
+
 import 'teamsPage.dart';
 
 import '../../../data/dataServices/libraryService.dart';
@@ -48,6 +49,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   ReaderStatsModel? _stats;
   BookModel? _continueReadingBook;
   List<BookModel> _recommendations = [];
+
   List<UserModel> _featuredAuthors = [];
   List<ReviewModel> _recentActivities = [];
 
@@ -91,6 +93,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           final allBooks = (results[2] as List).cast<BookModel>();
           _recommendations = allBooks.take(5).toList();
           
+
+          
           // Extract unique authors from books
           final authorsMap = <String, UserModel>{};
           for (var book in allBooks) {
@@ -128,13 +132,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             Expanded(
               child: _isLoading 
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFF59E0B)))
-                : _error != null
-                  ? _buildErrorState()
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      color: const Color(0xFFF59E0B),
-                      child: _buildContent(),
-                    ),
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: const Color(0xFFF59E0B),
+                    child: _error != null
+                      ? _buildErrorState()
+                      : _buildContent(),
+                  ),
             ),
           ],
         ),
@@ -168,6 +172,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             ),
             const SizedBox(height: 32),
           ],
+          
+
           
           _buildSectionHeader(
             context, 
@@ -240,26 +246,32 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   }
 
   Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
-            const SizedBox(height: 16),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(color: const Color(0xFF1E293B)),
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+                const SizedBox(height: 16),
+                Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(color: const Color(0xFF1E293B)),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadData,
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B)),
+                  child: const Text("Réessayer"),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadData,
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B)),
-              child: const Text("Réessayer"),
-            ),
-          ],
+          ),
         ),
       ),
     );
