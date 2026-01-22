@@ -93,6 +93,7 @@ class ApiRoutes {
       "$baseUrlsGin/api/authors/:authorId/books/recent";
   static const String authorRevenue =
       "$baseUrlsGin/api/authors/:authorId/revenue";
+  static const String authorStats = "$baseUrlsGin/api/authors/:authorId/stats";
 
   // Review routes
   static const String reviews = "$baseUrlsGin/api/reviews";

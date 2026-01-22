@@ -35,8 +35,8 @@ class BookDetailPage extends StatelessWidget {
             // Couverture du livre
             Center(
               child: Container(
-                height: 250,
-                width: 180,
+                height: 200,
+                width: 140,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -84,7 +84,7 @@ class BookDetailPage extends StatelessWidget {
                       ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Titre et auteur
             Text(
@@ -98,7 +98,7 @@ class BookDetailPage extends StatelessWidget {
               style: AppTextStyles.subheading,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Stats Row moved here
             Row(
@@ -128,7 +128,7 @@ class BookDetailPage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
 
             // Description
@@ -138,7 +138,7 @@ class BookDetailPage extends StatelessWidget {
               book['description'] ?? 'Aucune description disponible.',
               style: AppTextStyles.bodyText1,
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
             // Bouton Lire
             SizedBox(
@@ -171,20 +171,20 @@ class BookDetailPage extends StatelessWidget {
   Widget _buildStatItem(IconData icon, Color color, String value, String label) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 24),
+        Icon(icon, color: color, size: 20),
         const SizedBox(height: 4),
         Text(
           value,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 16,
+            fontSize: 14,
           ),
         ),
         Text(
           label,
           style: TextStyle(
             color: Colors.grey[600],
-            fontSize: 12,
+            fontSize: 11,
           ),
         ),
       ],

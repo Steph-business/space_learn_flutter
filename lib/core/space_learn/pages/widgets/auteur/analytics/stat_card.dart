@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
+import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 
 class StatistiquesWidget extends StatefulWidget {
   const StatistiquesWidget({super.key});
@@ -14,69 +17,50 @@ class _StatistiquesWidgetState extends State<StatistiquesWidget> {
   final List<String> filters = ["7 jours", "30 jours", "3 mois", "1 an"];
   bool _isLoading = false;
 
+  final AuthorStatsService _authorStatsService = AuthorStatsService();
+  final AuthService _authService = AuthService();
+  Map<String, dynamic> _fetchedData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _onFilterChanged(0);
+  }
+
   // Dynamic data based on selected period
   Map<String, dynamic> get _currentData {
-    switch (_selectedIndex) {
-      case 0: // 7 jours
-        return {
-          'revenue': {'value': '1,285 FCFA', 'change': '+127 FCFA', 'percent': '+12%'},
-          'views': {'value': '15,247', 'change': '+1,156', 'percent': '+8%'},
-          'downloads': {'value': '3,456', 'change': '+456', 'percent': '+15%'},
-          'rating': {'value': '4.7', 'change': '', 'percent': '+0.2'},
-        };
-      case 1: // 30 jours
-        return {
-          'revenue': {'value': '4,850 FCFA', 'change': '+892 FCFA', 'percent': '+23%'},
-          'views': {'value': '58,750', 'change': '+8,456', 'percent': '+17%'},
-          'downloads': {
-            'value': '12,450',
-            'change': '+2,156',
-            'percent': '+21%',
-          },
-          'rating': {'value': '4.6', 'change': '', 'percent': '+0.1'},
-        };
-      case 2: // 3 mois
-        return {
-          'revenue': {
-            'value': '15,200 FCFA',
-            'change': '+2,450 FCFA',
-            'percent': '+19%',
-          },
-          'views': {'value': '185,000', 'change': '+28,750', 'percent': '+18%'},
-          'downloads': {
-            'value': '38,750',
-            'change': '+8,456',
-            'percent': '+28%',
-          },
-          'rating': {'value': '4.5', 'change': '', 'percent': '+0.3'},
-        };
-      case 3: // 1 an
-        return {
-          'revenue': {
-            'value': '58,750 FCFA',
-            'change': '+12,850 FCFA',
-            'percent': '+28%',
-          },
-          'views': {
-            'value': '725,000',
-            'change': '+125,000',
-            'percent': '+21%',
-          },
-          'downloads': {
-            'value': '152,500',
-            'change': '+35,750',
-            'percent': '+31%',
-          },
-          'rating': {'value': '4.4', 'change': '', 'percent': '+0.4'},
-        };
-      default:
-        return {
-          'revenue': {'value': '0 FCFA', 'change': '', 'percent': '0%'},
-          'views': {'value': '0', 'change': '', 'percent': '0%'},
-          'downloads': {'value': '0', 'change': '', 'percent': '0%'},
-          'rating': {'value': '0', 'change': '', 'percent': '0%'},
-        };
+    if (_fetchedData.isNotEmpty) {
+      return {
+        'revenue': {
+          'value': '${_fetchedData['revenue'] ?? 0} FCFA',
+          'change': '${_fetchedData['revenue_change'] ?? 0} FCFA',
+          'percent': '${_fetchedData['revenue_percent'] ?? 0}%'
+        },
+        'views': {
+          'value': '${_fetchedData['views'] ?? 0}',
+          'change': '${_fetchedData['views_change'] ?? 0}',
+          'percent': '${_fetchedData['views_percent'] ?? 0}%'
+        },
+        'downloads': {
+          'value': '${_fetchedData['downloads'] ?? 0}',
+          'change': '${_fetchedData['downloads_change'] ?? 0}',
+          'percent': '${_fetchedData['downloads_percent'] ?? 0}%'
+        },
+        'rating': {
+          'value': '${_fetchedData['rating'] ?? 0.0}',
+          'change': '',
+          'percent': '${_fetchedData['rating_change'] ?? 0}'
+        },
+      };
     }
+
+    // Fallback to zeros if no data
+    return {
+      'revenue': {'value': '0 FCFA', 'change': '', 'percent': '0%'},
+      'views': {'value': '0', 'change': '', 'percent': '0%'},
+      'downloads': {'value': '0', 'change': '', 'percent': '0%'},
+      'rating': {'value': '0', 'change': '', 'percent': '0%'},
+    };
   }
 
   void _onFilterChanged(int index) async {
@@ -85,12 +69,29 @@ class _StatistiquesWidgetState extends State<StatistiquesWidget> {
       _selectedIndex = index;
     });
 
-    // Simulate loading delay
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final token = await TokenStorage.getToken();
+      if (token != null) {
+        final user = await _authService.getUser(token);
+        if (user != null) {
+           final period = ["7d", "30d", "3m", "1y"][index];
+           final data = await _authorStatsService.getAuthorStats(user.id, period);
+           if (mounted) {
+             setState(() {
+               _fetchedData = data;
+             });
+           }
+        }
+      }
+    } catch (e) {
+      print("Error loading stats: $e");
+    }
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override

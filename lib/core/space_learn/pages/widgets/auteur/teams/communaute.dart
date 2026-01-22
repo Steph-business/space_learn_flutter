@@ -5,33 +5,41 @@ class Communaute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Commentaires récents",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          _commentCard(
-            name: "Marie Dubois",
-            time: "Il y a 2h",
-            comment:
-                "Excellent livre ! Les conseils sur le networking sont très pratiques. J'ai déjà commencé à appliquer vos méthodes.",
-            title: "L'importance des réseaux",
-            stars: 5,
-          ),
-          _commentCard(
-            name: "Thomas Martin",
-            time: "Il y a 5h",
-            comment:
-                "Merci pour ce guide de méditation. Les exercices sont parfaits pour débuter. Avez-vous prévu une suite ?",
-            title: "Apprendre à méditer",
-            stars: 4,
-          ),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Simulate reload
+        await Future.delayed(const Duration(seconds: 1));
+      },
+      color: Colors.deepPurple,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Commentaires récents",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _commentCard(
+              name: "Marie Dubois",
+              time: "Il y a 2h",
+              comment:
+                  "Excellent livre ! Les conseils sur le networking sont très pratiques. J'ai déjà commencé à appliquer vos méthodes.",
+              title: "L'importance des réseaux",
+              stars: 5,
+            ),
+            _commentCard(
+              name: "Thomas Martin",
+              time: "Il y a 5h",
+              comment:
+                  "Merci pour ce guide de méditation. Les exercices sont parfaits pour débuter. Avez-vous prévu une suite ?",
+              title: "Apprendre à méditer",
+              stars: 4,
+            ),
+          ],
+        ),
       ),
     );
   }
