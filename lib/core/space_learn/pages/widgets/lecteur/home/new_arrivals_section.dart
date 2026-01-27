@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../details/purchase_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import '../../../../data/model/bookModel.dart';
 
 class NewArrivalsSection extends StatelessWidget {
@@ -44,7 +44,7 @@ class _NewArrivalCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PurchasePage(book: book.toJson()),
+            builder: (context) => BookDetailPage(book: book, isOwned: false),
           ),
         );
       },
@@ -83,7 +83,8 @@ class _NewArrivalCard extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: book.imageCouverture != null &&
+                  child:
+                      book.imageCouverture != null &&
                           book.imageCouverture!.isNotEmpty &&
                           !book.imageCouverture!.contains('example.com')
                       ? Image.network(
@@ -104,8 +105,10 @@ class _NewArrivalCard extends StatelessWidget {
                 children: [
                   // Badge
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFDCFCE7),
                       borderRadius: BorderRadius.circular(8),
@@ -172,8 +175,11 @@ class _NewArrivalCard extends StatelessWidget {
                       ),
                       Row(
                         children: [
-                          const Icon(Icons.star_rounded,
-                              color: Color(0xFFF59E0B), size: 16),
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFF59E0B),
+                            size: 16,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             (book.noteMoyenne ?? 0.0).toStringAsFixed(1),
@@ -200,11 +206,7 @@ class _NewArrivalCard extends StatelessWidget {
     return Container(
       color: const Color(0xFFF1F5F9),
       child: const Center(
-        child: Icon(
-          Icons.book_rounded,
-          color: Color(0xFFCBD5E1),
-          size: 32,
-        ),
+        child: Icon(Icons.book_rounded, color: Color(0xFFCBD5E1), size: 32),
       ),
     );
   }

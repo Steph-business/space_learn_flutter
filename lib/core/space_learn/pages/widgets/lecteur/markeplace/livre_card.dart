@@ -1,33 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../details/purchase_page.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
+import '../../../../data/model/bookModel.dart';
 
 class LivreCard extends StatelessWidget {
   final BookModel book;
 
-  const LivreCard({
-    super.key,
-    required this.book,
-  });
+  const LivreCard({super.key, required this.book});
 
   @override
   Widget build(BuildContext context) {
-    // Data pour la page d'achat
-    final bookData = {
-      'id': book.id,
-      'title': book.titre,
-      'author': book.authorName,
-      'price': book.prix,
-      'description': book.description,
-      'image': book.imageCouverture,
-      'format': book.format,
-      'note_moyenne': book.noteMoyenne ?? 0.0,
-      'telechargements': book.telechargements ?? 0,
-      'cree_le': book.creeLe,
-      'chapters': [],
-    };
-
     final String formattedDate = book.creeLe != null
         ? "${book.creeLe!.day}/${book.creeLe!.month}/${book.creeLe!.year}"
         : "N/A";
@@ -36,7 +18,9 @@ class LivreCard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => PurchasePage(book: bookData)),
+          MaterialPageRoute(
+            builder: (context) => BookDetailPage(book: book, isOwned: false),
+          ),
         );
       },
       child: Container(
@@ -69,7 +53,8 @@ class LivreCard extends StatelessWidget {
                         top: Radius.circular(24),
                       ),
                     ),
-                    child: book.imageCouverture != null &&
+                    child:
+                        book.imageCouverture != null &&
                             book.imageCouverture!.isNotEmpty &&
                             !book.imageCouverture!.contains('example.com')
                         ? ClipRRect(
@@ -79,13 +64,13 @@ class LivreCard extends StatelessWidget {
                             child: Image.network(
                               book.imageCouverture!,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildPlaceholder(),
                             ),
                           )
                         : _buildPlaceholder(),
                   ),
                 ),
-
               ],
             ),
             // Info Section
@@ -145,7 +130,11 @@ class LivreCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 16),
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFF59E0B),
+                            size: 16,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             (book.noteMoyenne ?? 0.0).toStringAsFixed(1),
@@ -160,7 +149,11 @@ class LivreCard extends StatelessWidget {
                       if (book.creeLe != null)
                         Row(
                           children: [
-                            const Icon(Icons.access_time_rounded, color: Color(0xFF94A3B8), size: 12),
+                            const Icon(
+                              Icons.access_time_rounded,
+                              color: Color(0xFF94A3B8),
+                              size: 12,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               _timeAgo(book.creeLe!),
@@ -185,11 +178,7 @@ class LivreCard extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return const Center(
-      child: Icon(
-        Icons.book_rounded,
-        color: Color(0xFFCBD5E1),
-        size: 48,
-      ),
+      child: Icon(Icons.book_rounded, color: Color(0xFFCBD5E1), size: 48),
     );
   }
 
