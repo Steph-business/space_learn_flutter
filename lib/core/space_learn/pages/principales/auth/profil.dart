@@ -29,8 +29,12 @@ class _ProfilPageState extends State<ProfilPage> {
 
   /// ✅ Charge les profils depuis le backend via ProfileService
   Future<void> _loadProfiles() async {
+    debugPrint('--- PROFILPAGE LOADING PROFILES ---');
     try {
       final profiles = await _profileService.getProfils();
+      debugPrint(
+        '--- PROFILPAGE PROFILES LOADED: ${profiles.length} items ---',
+      );
       if (mounted) {
         setState(() {
           _profiles = profiles;
@@ -38,6 +42,7 @@ class _ProfilPageState extends State<ProfilPage> {
         });
       }
     } catch (e) {
+      debugPrint('--- PROFILPAGE LOAD ERROR: $e ---');
       if (mounted) {
         setState(() {
           error = e.toString();
@@ -172,6 +177,9 @@ class _ProfilPageState extends State<ProfilPage> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+      '--- PROFILPAGE BUILD CALLED: isLoading=$isLoading, error=$error, profiles=${_profiles.length} ---',
+    );
     return Scaffold(
       backgroundColor: AppColors.primary,
       appBar: AppBar(

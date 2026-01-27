@@ -4,7 +4,7 @@ import 'package:space_learn_flutter/core/themes/layout/navBarAll.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/filtre_livres.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_card.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/reading_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/libraryModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -69,12 +69,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
       print("📡 Appel API: ${ApiRoutes.library}");
       final items = await _libraryService.getUserLibrary(token);
       print("📚 Bibliothèque chargée : ${items.length} livres trouvés");
-      
+
       // Log des détails pour chaque livre pour déboguer le mapping
       for (var i = 0; i < items.length; i++) {
         print("📖 Item $i: ID=${items[i].id}, LivreID=${items[i].livreId}");
         if (items[i].livre == null) {
-          print("⚠️ Attention: L'objet livre est null pour l'item ${items[i].id}.");
+          print(
+            "⚠️ Attention: L'objet livre est null pour l'item ${items[i].id}.",
+          );
         } else {
           print("✅ Livre trouvé: ${items[i].livre?.titre}");
         }
@@ -83,16 +85,17 @@ class _BibliothequePageState extends State<BibliothequePage> {
       if (mounted) {
         setState(() {
           _libraryItems = items;
-          
+
           // Extract unique categories
           final Set<String> categorySet = {"Tous"};
           for (var item in items) {
-            if (item.livre?.categorie != null && item.livre!.categorie!.nom.isNotEmpty) {
+            if (item.livre?.categorie != null &&
+                item.livre!.categorie!.nom.isNotEmpty) {
               categorySet.add(item.livre!.categorie!.nom);
             }
           }
           _categories = categorySet.toList();
-          
+
           _isLoading = false;
         });
       }
@@ -111,7 +114,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
     if (filtreActif == "Tous") {
       return _libraryItems;
     }
-    return _libraryItems.where((item) => item.livre?.categorie?.nom == filtreActif).toList();
+    return _libraryItems
+        .where((item) => item.livre?.categorie?.nom == filtreActif)
+        .toList();
   }
 
   @override
@@ -129,7 +134,10 @@ class _BibliothequePageState extends State<BibliothequePage> {
               color: const Color(0xFFF59E0B),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -175,7 +183,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Search and Filter
                     const CustomSearchBar(),
                     const SizedBox(height: 20),
@@ -185,7 +193,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                       onFiltreChange: (f) => setState(() => filtreActif = f),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     if (_isLoading)
                       const Center(
                         child: Padding(
@@ -209,7 +217,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         itemBuilder: (context, index) {
                           final item = _getFilteredBooks()[index];
                           final book = item.livre;
-                          
+
                           if (book == null) return const SizedBox.shrink();
 
                           return GestureDetector(
@@ -217,9 +225,8 @@ class _BibliothequePageState extends State<BibliothequePage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ReadingPage(
-                                    book: book.toJson(),
-                                  ),
+                                  builder: (context) =>
+                                      BookDetailPage(book: book, isOwned: true),
                                 ),
                               );
                             },
@@ -227,10 +234,15 @@ class _BibliothequePageState extends State<BibliothequePage> {
                               titre: book.titre,
                               auteur: book.authorName,
                               categorie: book.categorie?.nom,
-                              progression: (book.progressions != null && book.progressions!.isNotEmpty)
+                              progression:
+                                  (book.progressions != null &&
+                                      book.progressions!.isNotEmpty)
                                   ? book.progressions!.first.pourcentage
                                   : 0,
-                              couleurs: const [Color(0xFF6A5AE0), Color(0xFF8B82F6)],
+                              couleurs: const [
+                                Color(0xFF6A5AE0),
+                                Color(0xFF8B82F6),
+                              ],
                               imageUrl: book.imageCouverture,
                               dateAcquisition: item.creeLe,
                             ),
@@ -294,8 +306,13 @@ class _BibliothequePageState extends State<BibliothequePage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF59E0B),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
               child: const Text("Découvrir des livres"),
@@ -312,7 +329,11 @@ class _BibliothequePageState extends State<BibliothequePage> {
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
           children: [
-            const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: Colors.redAccent,
+            ),
             const SizedBox(height: 16),
             Text(
               _error!,
@@ -323,7 +344,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
               onPressed: _loadLibrary,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text("Réessayer"),
-              style: TextButton.styleFrom(foregroundColor: const Color(0xFFF59E0B)),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFF59E0B),
+              ),
             ),
           ],
         ),
@@ -331,4 +354,3 @@ class _BibliothequePageState extends State<BibliothequePage> {
     );
   }
 }
-

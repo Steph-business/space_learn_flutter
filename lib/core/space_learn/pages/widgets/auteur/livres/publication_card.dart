@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
-import '../../details/book_detail_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 
 class PublicationCard extends StatelessWidget {
   final BookModel book;
@@ -8,26 +8,18 @@ class PublicationCard extends StatelessWidget {
 
   const PublicationCard({super.key, required this.book, this.authorName});
 
+  void _navigateToBookDetail(BuildContext context, BookModel book) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BookDetailPage(book: book, isOwned: false),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isPublished = book.statut == "publie";
-
-    // Convert BookModel to the format expected by BookDetailPage if necessary
-    // or update BookDetailPage to accept BookModel
-    final bookData = {
-      'id': book.id,
-      'title': book.titre,
-      'author': authorName ?? 'Mon livre',
-      'description': book.description,
-      'image': book.imageCouverture,
-      'price': book.prix,
-      'format': book.format,
-      'fichier_url': book.fichierUrl,
-      'note_moyenne': book.noteMoyenne ?? 0.0,
-      'telechargements': book.telechargements ?? 0,
-      'cree_le': book.creeLe,
-      'chapters': [], // Add chapters if available in your model
-    };
 
     final String formattedDate = book.creeLe != null
         ? "${book.creeLe!.day}/${book.creeLe!.month}/${book.creeLe!.year}"
@@ -35,12 +27,7 @@ class PublicationCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BookDetailPage(book: bookData),
-          ),
-        );
+        _navigateToBookDetail(context, book);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -67,7 +54,8 @@ class PublicationCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 color: Colors.grey[100],
               ),
-              child: book.imageCouverture != null &&
+              child:
+                  book.imageCouverture != null &&
                       book.imageCouverture!.isNotEmpty &&
                       !book.imageCouverture!.contains('example.com')
                   ? ClipRRect(
@@ -147,7 +135,7 @@ class PublicationCard extends StatelessWidget {
                       const Icon(Icons.star, color: Colors.amber, size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        (book.noteMoyenne ?? 0.0).toStringAsFixed(1),
+                        book.noteMoyenne.toStringAsFixed(1),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -161,7 +149,7 @@ class PublicationCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        "${book.telechargements ?? 0}",
+                        "${book.telechargements}",
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF64748B),
@@ -175,25 +163,34 @@ class PublicationCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: "${book.prix} ",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  BookDetailPage(book: book, isOwned: true),
                             ),
-                            const TextSpan(
-                              text: "FCFA",
-                              style: TextStyle(
-                                fontWeight: FontWeight.normal,
+                          );
+                        },
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: "${book.prix} ",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
+                              const TextSpan(
+                                text: "FCFA",
+                                style: TextStyle(fontWeight: FontWeight.normal),
+                              ),
+                            ],
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Color(0xFF2563EB),
                             ),
-                          ],
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: Color(0xFF2563EB),
                           ),
                         ),
                       ),

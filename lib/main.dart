@@ -11,13 +11,21 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/h
     as lecteurHome;
 
 Future<void> main() async {
+  debugPrint('--- APP STARTING ---');
   WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('--- BINDING INITIALIZED ---');
 
-  await Supabase.initialize(
-    url: 'https://uqmydsydlkwxcfcdtsbu.supabase.co',
-    anonKey:
-        '***CLE_SUPABASE_RETIREE***',
-  );
+  try {
+    debugPrint('--- INITIALIZING SUPABASE ---');
+    await Supabase.initialize(
+      url: 'https://uqmydsydlkwxcfcdtsbu.supabase.co',
+      anonKey:
+          '***CLE_SUPABASE_RETIREE***',
+    );
+    debugPrint('--- SUPABASE INITIALIZED ---');
+  } catch (e) {
+    debugPrint('--- SUPABASE ERROR: $e ---');
+  }
 
   runApp(const MyApp());
 }
@@ -36,12 +44,15 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    debugPrint('--- MYAPP INITSTATE ---');
     _loadInitialPage();
   }
 
   Future<void> _loadInitialPage() async {
+    debugPrint('--- LOADING INITIAL PAGE ---');
     try {
       final page = await _getInitialPage();
+      debugPrint('--- PAGE DETERMINED: ${page.runtimeType} ---');
       if (mounted) {
         setState(() {
           _initialPage = page;
@@ -49,6 +60,7 @@ class _MyAppState extends State<MyApp> {
         });
       }
     } catch (e) {
+      debugPrint('--- LOADING PAGE ERROR: $e ---');
       if (mounted) {
         setState(() {
           _initialPage = const ProfilPage();
@@ -60,27 +72,27 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading || _initialPage == null) {
-      return MaterialApp(
-        title: 'Space Learn',
-        theme: ThemeData(primarySwatch: Colors.orange),
-        debugShowCheckedModeBanner: false,
-        home: const Scaffold(body: Center(child: CircularProgressIndicator())),
-      );
-    }
+    debugPrint(
+      '--- BUILD CALLED: isLoading=$_isLoading, initialPage=${_initialPage?.runtimeType} ---',
+    );
 
     return MaterialApp(
       title: 'Space Learn',
       theme: ThemeData(primarySwatch: Colors.orange),
       debugShowCheckedModeBanner: false,
-      home: _initialPage,
+      home: _isLoading || _initialPage == null
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : _initialPage!,
     );
   }
 
   Future<Widget> _getInitialPage() async {
+    debugPrint('--- GETTING INITIAL PAGE ---');
     // Check if user is already logged in
     final token = await TokenStorage.getToken();
     final selectedProfile = await ProfileStorage.getSelectedProfile();
+    debugPrint('--- TOKEN: $token ---');
+    debugPrint('--- PROFILE: $selectedProfile ---');
 
     if (token != null && token.isNotEmpty && selectedProfile != null) {
       // User is logged in, determine which home page to show
@@ -93,8 +105,8 @@ class _MyAppState extends State<MyApp> {
       } else if (profileName.contains('auteur') ||
           profileName.contains('ecrivain') ||
           profileName.contains('éditeur')) {
-        return const ecrivainHome.HomePageAuteur(
-          profileId: '',
+        return ecrivainHome.HomePageAuteur(
+          profileId: selectedProfile,
           userName: 'Auteur',
         );
       }
