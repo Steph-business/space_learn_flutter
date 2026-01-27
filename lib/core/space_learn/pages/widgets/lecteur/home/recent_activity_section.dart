@@ -13,7 +13,7 @@ class RecentActivitySection extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -38,7 +38,11 @@ class RecentActivitySection extends StatelessWidget {
             color: const Color(0xFFFEF3C7),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFFD97706), size: 20),
+          child: const Icon(
+            Icons.chat_bubble_rounded,
+            color: Color(0xFFD97706),
+            size: 20,
+          ),
         ),
         title: Text(
           "Vous avez commenté '${activity.livre?.titre ?? 'un livre'}'",
@@ -60,7 +64,10 @@ class RecentActivitySection extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+          color: Color(0xFF94A3B8),
+        ),
       ),
     );
   }

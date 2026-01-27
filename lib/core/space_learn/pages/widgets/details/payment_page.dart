@@ -50,17 +50,12 @@ class _PaymentPageState extends State<PaymentPage> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF59E0B),
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(32),
-                ),
-              ),
+              decoration: const BoxDecoration(color: Color(0xFFF59E0B)),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(4),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -76,14 +71,15 @@ class _PaymentPageState extends State<PaymentPage> {
                       height: 80,
                       width: 60,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(4),
                         color: Colors.grey[100],
                       ),
-                      child: widget.book['image'] != null &&
+                      child:
+                          widget.book['image'] != null &&
                               widget.book['image'].toString().isNotEmpty &&
-                              !widget.book['image']
-                                  .toString()
-                                  .contains('example.com')
+                              !widget.book['image'].toString().contains(
+                                'example.com',
+                              )
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
@@ -109,7 +105,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            'Par ${widget.book['author'] ?? 'Auteur inconnu'}',
+                            'Par ${widget.book['auteur_nom'] ?? 'Auteur inconnu'}',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               color: const Color(0xFF64748B),
@@ -217,7 +213,11 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Widget _buildPaymentMethodCard(
-      String label, IconData icon, Color color, VoidCallback onTap) {
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -265,7 +265,6 @@ class _PaymentPageState extends State<PaymentPage> {
     );
   }
 }
-
 
 // Widget pour les tuiles de méthodes de paiement
 class _PaymentMethodTile extends StatefulWidget {
@@ -503,7 +502,8 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
                           if (value == null || value.isEmpty) {
                             return 'Veuillez entrer le numéro de votre carte';
                           }
-                          if (value.length < 16) return 'Numéro de carte invalide';
+                          if (value.length < 16)
+                            return 'Numéro de carte invalide';
                           return null;
                         },
                       ),
@@ -598,8 +598,11 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.security_rounded,
-                              color: Color(0xFF64748B), size: 20),
+                          const Icon(
+                            Icons.security_rounded,
+                            color: Color(0xFF64748B),
+                            size: 20,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -666,8 +669,10 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
             prefixIcon: Icon(icon, color: const Color(0xFFF59E0B), size: 20),
             filled: true,
             fillColor: Colors.white,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -726,11 +731,13 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
         final authService = AuthService();
         final user = await authService.getUser(token);
         if (user == null) {
-          throw Exception("Impossible de récupérer les informations utilisateur");
+          throw Exception(
+            "Impossible de récupérer les informations utilisateur",
+          );
         }
 
         final paymentService = PaymentService();
-        
+
         // Générer des IDs fictifs pour la transaction et la référence
         final transactionId = "TRX-${DateTime.now().millisecondsSinceEpoch}";
         final referenceId = "REF-${DateTime.now().millisecondsSinceEpoch}";
@@ -742,11 +749,14 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
           methodePaiement: widget.method.toLowerCase().replaceAll(' ', '_'),
           transactionId: transactionId,
           referenceId: referenceId,
-          montant: double.tryParse(widget.book['price']?.toString() ?? '0') ?? 0.0,
+          montant:
+              double.tryParse(widget.book['price']?.toString() ?? '0') ?? 0.0,
           creeLe: DateTime.now(),
         );
 
-        print("🚀 Tentative de création du paiement pour le livre: ${widget.book['id']}");
+        print(
+          "🚀 Tentative de création du paiement pour le livre: ${widget.book['id']}",
+        );
         await paymentService.createPayment(payment, token);
         print("✅ Paiement créé avec succès");
 
@@ -760,17 +770,15 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
           token,
         );
         print("✅ Livre ajouté à la bibliothèque avec succès");
-        
+
         // ✅ Incrémenter le nombre de téléchargements
         print("📥 Incrémentation du nombre de téléchargements...");
         try {
           final bookService = BookService();
           final currentDownloads = widget.book['telechargements'] ?? 0;
-          await bookService.updateBook(
-            widget.book['id']?.toString() ?? "",
-            {'telechargements': currentDownloads + 1},
-            token,
-          );
+          await bookService.updateBook(widget.book['id']?.toString() ?? "", {
+            'telechargements': currentDownloads + 1,
+          }, token);
           print("✅ Nombre de téléchargements incrémenté");
         } catch (e) {
           print("⚠️ Erreur lors de l'incrémentation des téléchargements: $e");
@@ -790,7 +798,7 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
       } catch (e) {
         if (!mounted) return;
         Navigator.of(context).pop(); // Fermer le dialog
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Erreur de paiement : ${e.toString()}"),
@@ -809,7 +817,8 @@ class PaymentConfirmationPage extends StatefulWidget {
   const PaymentConfirmationPage({super.key, required this.book});
 
   @override
-  State<PaymentConfirmationPage> createState() => _PaymentConfirmationPageState();
+  State<PaymentConfirmationPage> createState() =>
+      _PaymentConfirmationPageState();
 }
 
 class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
@@ -865,8 +874,11 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                   color: const Color(0xFFDCFCE7),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_rounded,
-                    color: Color(0xFF16A34A), size: 64),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Color(0xFF16A34A),
+                  size: 64,
+                ),
               ),
               const SizedBox(height: 32),
               Text(
@@ -942,4 +954,3 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
     );
   }
 }
-

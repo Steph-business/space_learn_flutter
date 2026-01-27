@@ -26,7 +26,7 @@ class LivreCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -50,7 +50,7 @@ class LivreCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(24),
+                        top: Radius.circular(2),
                       ),
                     ),
                     child:
@@ -59,7 +59,7 @@ class LivreCard extends StatelessWidget {
                             !book.imageCouverture!.contains('example.com')
                         ? ClipRRect(
                             borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(24),
+                              top: Radius.circular(2),
                             ),
                             child: Image.network(
                               book.imageCouverture!,

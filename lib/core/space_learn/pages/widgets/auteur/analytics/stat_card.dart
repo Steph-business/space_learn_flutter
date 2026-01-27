@@ -34,22 +34,22 @@ class _StatistiquesWidgetState extends State<StatistiquesWidget> {
         'revenue': {
           'value': '${_fetchedData['revenue'] ?? 0} FCFA',
           'change': '${_fetchedData['revenue_change'] ?? 0} FCFA',
-          'percent': '${_fetchedData['revenue_percent'] ?? 0}%'
+          'percent': '${_fetchedData['revenue_percent'] ?? 0}%',
         },
         'views': {
           'value': '${_fetchedData['views'] ?? 0}',
           'change': '${_fetchedData['views_change'] ?? 0}',
-          'percent': '${_fetchedData['views_percent'] ?? 0}%'
+          'percent': '${_fetchedData['views_percent'] ?? 0}%',
         },
         'downloads': {
           'value': '${_fetchedData['downloads'] ?? 0}',
           'change': '${_fetchedData['downloads_change'] ?? 0}',
-          'percent': '${_fetchedData['downloads_percent'] ?? 0}%'
+          'percent': '${_fetchedData['downloads_percent'] ?? 0}%',
         },
         'rating': {
           'value': '${_fetchedData['rating'] ?? 0.0}',
           'change': '',
-          'percent': '${_fetchedData['rating_change'] ?? 0}'
+          'percent': '${_fetchedData['rating_change'] ?? 0}',
         },
       };
     }
@@ -74,13 +74,16 @@ class _StatistiquesWidgetState extends State<StatistiquesWidget> {
       if (token != null) {
         final user = await _authService.getUser(token);
         if (user != null) {
-           final period = ["7d", "30d", "3m", "1y"][index];
-           final data = await _authorStatsService.getAuthorStats(user.id, period);
-           if (mounted) {
-             setState(() {
-               _fetchedData = data;
-             });
-           }
+          final period = ["7d", "30d", "3m", "1y"][index];
+          final data = await _authorStatsService.getAuthorStats(
+            user.id,
+            period,
+          );
+          if (mounted) {
+            setState(() {
+              _fetchedData = data;
+            });
+          }
         }
       }
     } catch (e) {
@@ -236,7 +239,7 @@ class StatCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: const [
           BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
         ],

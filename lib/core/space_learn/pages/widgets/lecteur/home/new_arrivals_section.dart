@@ -72,7 +72,7 @@ class _NewArrivalCard extends StatelessWidget {
                 width: 90,
                 height: double.infinity,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -82,7 +82,7 @@ class _NewArrivalCard extends StatelessWidget {
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                   child:
                       book.imageCouverture != null &&
                           book.imageCouverture!.isNotEmpty &&
