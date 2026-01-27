@@ -69,7 +69,7 @@ class PurchasePage extends StatelessWidget {
                           height: 180,
                           width: 120,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(2),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.3),
@@ -79,27 +79,34 @@ class PurchasePage extends StatelessWidget {
                             ],
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: book['image'] != null &&
+                            borderRadius: BorderRadius.circular(2),
+                            child:
+                                book['image'] != null &&
                                     book['image'].toString().isNotEmpty &&
-                                    !book['image']
-                                        .toString()
-                                        .contains('example.com')
+                                    !book['image'].toString().contains(
+                                      'example.com',
+                                    )
                                 ? Image.network(
                                     book['image'],
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
                                         color: Colors.white,
-                                        child: const Icon(Icons.book,
-                                            size: 50, color: Color(0xFFD97706)),
+                                        child: const Icon(
+                                          Icons.book,
+                                          size: 50,
+                                          color: Color(0xFFD97706),
+                                        ),
                                       );
                                     },
                                   )
                                 : Container(
                                     color: Colors.white,
-                                    child: const Icon(Icons.book,
-                                        size: 50, color: Color(0xFFD97706)),
+                                    child: const Icon(
+                                      Icons.book,
+                                      size: 50,
+                                      color: Color(0xFFD97706),
+                                    ),
                                   ),
                           ),
                         ),
@@ -135,20 +142,33 @@ class PurchasePage extends StatelessWidget {
                             // Compact Stats Row in Header
                             Row(
                               children: [
-                                _buildHeaderStat(Icons.star_rounded, (book['note_moyenne'] ?? 0.0).toStringAsFixed(1)),
+                                _buildHeaderStat(
+                                  Icons.star_rounded,
+                                  (book['note_moyenne'] ?? 0.0).toStringAsFixed(
+                                    1,
+                                  ),
+                                ),
                                 const SizedBox(width: 12),
-                                _buildHeaderStat(Icons.download_rounded, (book['telechargements'] ?? 0).toString()),
+                                _buildHeaderStat(
+                                  Icons.download_rounded,
+                                  (book['telechargements'] ?? 0).toString(),
+                                ),
                                 const SizedBox(width: 12),
-                                _buildHeaderStat(Icons.calendar_today_rounded, formattedDate),
+                                _buildHeaderStat(
+                                  Icons.calendar_today_rounded,
+                                  formattedDate,
+                                ),
                               ],
                             ),
                             const SizedBox(height: 16),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(2),
                               ),
                               child: Text(
                                 book['format']?.toString().toUpperCase() ??
@@ -184,7 +204,7 @@ class PurchasePage extends StatelessWidget {
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(4),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
@@ -248,10 +268,11 @@ class PurchasePage extends StatelessWidget {
                               backgroundColor: const Color(0xFFF59E0B),
                               foregroundColor: Colors.white,
                               elevation: 8,
-                              shadowColor:
-                                  const Color(0xFFF59E0B).withOpacity(0.4),
+                              shadowColor: const Color(
+                                0xFFF59E0B,
+                              ).withOpacity(0.4),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
                             child: Text(
@@ -314,6 +335,4 @@ class PurchasePage extends StatelessWidget {
       ],
     );
   }
-
 }
-

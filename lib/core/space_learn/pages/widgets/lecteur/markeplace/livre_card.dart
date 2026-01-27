@@ -6,10 +6,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
 class LivreCard extends StatelessWidget {
   final BookModel book;
 
-  const LivreCard({
-    super.key,
-    required this.book,
-  });
+  const LivreCard({super.key, required this.book});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +39,7 @@ class LivreCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -66,26 +63,27 @@ class LivreCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(24),
+                        top: Radius.circular(2),
                       ),
                     ),
-                    child: book.imageCouverture != null &&
+                    child:
+                        book.imageCouverture != null &&
                             book.imageCouverture!.isNotEmpty &&
                             !book.imageCouverture!.contains('example.com')
                         ? ClipRRect(
                             borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(24),
+                              top: Radius.circular(2),
                             ),
                             child: Image.network(
                               book.imageCouverture!,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildPlaceholder(),
                             ),
                           )
                         : _buildPlaceholder(),
                   ),
                 ),
-
               ],
             ),
             // Info Section
@@ -145,7 +143,11 @@ class LivreCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 16),
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFF59E0B),
+                            size: 16,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             (book.noteMoyenne ?? 0.0).toStringAsFixed(1),
@@ -160,7 +162,11 @@ class LivreCard extends StatelessWidget {
                       if (book.creeLe != null)
                         Row(
                           children: [
-                            const Icon(Icons.access_time_rounded, color: Color(0xFF94A3B8), size: 12),
+                            const Icon(
+                              Icons.access_time_rounded,
+                              color: Color(0xFF94A3B8),
+                              size: 12,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               _timeAgo(book.creeLe!),
@@ -185,11 +191,7 @@ class LivreCard extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return const Center(
-      child: Icon(
-        Icons.book_rounded,
-        color: Color(0xFFCBD5E1),
-        size: 48,
-      ),
+      child: Icon(Icons.book_rounded, color: Color(0xFFCBD5E1), size: 48),
     );
   }
 

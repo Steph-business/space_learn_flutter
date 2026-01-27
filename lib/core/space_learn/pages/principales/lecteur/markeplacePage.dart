@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 import '../../../../themes/layout/navBarAll.dart';
 import '../../../../themes/layout/recherche_bar.dart';
 import '../../widgets/lecteur/markeplace/livre_card.dart';
@@ -40,11 +39,11 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
       // Fetch all published books
       final books = await _bookService.getAllBooks(statut: 'publie');
-      
+
       if (mounted) {
         setState(() {
           _books = books;
-          
+
           // Extract unique categories
           final Set<String> categorySet = {"Tout"};
           for (var book in books) {
@@ -53,7 +52,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
             }
           }
           _categories = categorySet.toList();
-          
+
           _isLoading = false;
         });
       }
@@ -72,7 +71,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
     if (_selectedCategory == "Tout") {
       return _books;
     }
-    return _books.where((book) => book.categorie?.nom == _selectedCategory).toList();
+    return _books
+        .where((book) => book.categorie?.nom == _selectedCategory)
+        .toList();
   }
 
   void _onCategorySelected(String category) {
@@ -83,7 +84,6 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
@@ -97,7 +97,10 @@ class _MarketplacePageState extends State<MarketplacePage> {
               color: const Color(0xFFF59E0B),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -128,7 +131,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.all(40.0),
-                          child: CircularProgressIndicator(color: Color(0xFFF59E0B)),
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFF59E0B),
+                          ),
                         ),
                       )
                     else if (_error != null)
@@ -138,13 +143,24 @@ class _MarketplacePageState extends State<MarketplacePage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                size: 48,
+                                color: Colors.redAccent,
+                              ),
                               const SizedBox(height: 16),
-                              Text(_error!, style: const TextStyle(color: Color(0xFF1E293B))),
+                              Text(
+                                _error!,
+                                style: const TextStyle(
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
                               const SizedBox(height: 16),
                               ElevatedButton(
                                 onPressed: _loadBooks,
-                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF59E0B),
+                                ),
                                 child: const Text("Réessayer"),
                               ),
                             ],
@@ -157,7 +173,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         child: const Center(
                           child: Padding(
                             padding: EdgeInsets.all(40.0),
-                            child: Text("Aucun livre disponible dans cette catégorie."),
+                            child: Text(
+                              "Aucun livre disponible dans cette catégorie.",
+                            ),
                           ),
                         ),
                       )
@@ -168,16 +186,14 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.65,
-                          crossAxisSpacing: 14,
-                          mainAxisSpacing: 14,
-                        ),
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.65,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                            ),
                         itemBuilder: (context, index) {
                           final book = _getFilteredBooks()[index];
-                          return LivreCard(
-                            book: book,
-                          );
+                          return LivreCard(book: book);
                         },
                       ),
                   ],

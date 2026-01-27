@@ -47,7 +47,7 @@ class PublicationCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.06),
@@ -67,7 +67,8 @@ class PublicationCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 color: Colors.grey[100],
               ),
-              child: book.imageCouverture != null &&
+              child:
+                  book.imageCouverture != null &&
                       book.imageCouverture!.isNotEmpty &&
                       !book.imageCouverture!.contains('example.com')
                   ? ClipRRect(
@@ -186,9 +187,7 @@ class PublicationCard extends StatelessWidget {
                             ),
                             const TextSpan(
                               text: "FCFA",
-                              style: TextStyle(
-                                fontWeight: FontWeight.normal,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.normal),
                             ),
                           ],
                           style: const TextStyle(
