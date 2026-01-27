@@ -15,7 +15,7 @@ class RecommendationsSection extends StatelessWidget {
         height: 100,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(2),
           border: Border.all(color: const Color(0xFFF1F5F9)),
         ),
         child: Center(
@@ -76,7 +76,7 @@ class _BookCard extends StatelessWidget {
         width: 140,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.03),
