@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../details/purchase_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import '../../../../data/model/bookModel.dart';
 
 class NewArrivalsSection extends StatelessWidget {
@@ -44,7 +44,7 @@ class _NewArrivalCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PurchasePage(book: book.toJson()),
+            builder: (context) => BookDetailPage(book: book, isOwned: false),
           ),
         );
       },
@@ -53,7 +53,7 @@ class _NewArrivalCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -72,7 +72,7 @@ class _NewArrivalCard extends StatelessWidget {
                 width: 90,
                 height: double.infinity,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -82,7 +82,7 @@ class _NewArrivalCard extends StatelessWidget {
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(20),
                   child:
                       book.imageCouverture != null &&
                           book.imageCouverture!.isNotEmpty &&

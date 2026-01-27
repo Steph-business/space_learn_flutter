@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../details/purchase_page.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
+import '../../../../data/model/bookModel.dart';
 
 class LivreCard extends StatelessWidget {
   final BookModel book;
@@ -10,21 +10,6 @@ class LivreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Data pour la page d'achat
-    final bookData = {
-      'id': book.id,
-      'title': book.titre,
-      'author': book.authorName,
-      'price': book.prix,
-      'description': book.description,
-      'image': book.imageCouverture,
-      'format': book.format,
-      'note_moyenne': book.noteMoyenne ?? 0.0,
-      'telechargements': book.telechargements ?? 0,
-      'cree_le': book.creeLe,
-      'chapters': [],
-    };
-
     final String formattedDate = book.creeLe != null
         ? "${book.creeLe!.day}/${book.creeLe!.month}/${book.creeLe!.year}"
         : "N/A";
@@ -33,7 +18,9 @@ class LivreCard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => PurchasePage(book: bookData)),
+          MaterialPageRoute(
+            builder: (context) => BookDetailPage(book: book, isOwned: false),
+          ),
         );
       },
       child: Container(
