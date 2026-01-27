@@ -36,7 +36,11 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
           if (mounted) {
             setState(() {
               // Sort by creation date descending and take top 3
-              books.sort((a, b) => (b.creeLe ?? DateTime(0)).compareTo(a.creeLe ?? DateTime(0)));
+              books.sort(
+                (a, b) => (b.creeLe ?? DateTime(0)).compareTo(
+                  a.creeLe ?? DateTime(0),
+                ),
+              );
               _books = books.take(3).toList();
               _isLoading = false;
             });
@@ -80,7 +84,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(2),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),
@@ -96,17 +100,23 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
                   height: 50,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    image: (book.imageCouverture != null && book.imageCouverture!.isNotEmpty)
+                    image:
+                        (book.imageCouverture != null &&
+                            book.imageCouverture!.isNotEmpty)
                         ? DecorationImage(
                             image: NetworkImage(book.imageCouverture!),
                             fit: BoxFit.cover,
                           )
                         : null,
-                    color: (book.imageCouverture == null || book.imageCouverture!.isEmpty) 
-                        ? const Color(0xFF818CF8) 
+                    color:
+                        (book.imageCouverture == null ||
+                            book.imageCouverture!.isEmpty)
+                        ? const Color(0xFF818CF8)
                         : null,
                   ),
-                  child: (book.imageCouverture == null || book.imageCouverture!.isEmpty)
+                  child:
+                      (book.imageCouverture == null ||
+                          book.imageCouverture!.isEmpty)
                       ? const Icon(Icons.book, color: Colors.white, size: 24)
                       : null,
                 ),

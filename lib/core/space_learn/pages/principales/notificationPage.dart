@@ -26,14 +26,11 @@ class NotificationPage extends StatelessWidget {
         ),
       ),
       body: const SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Notifications récentes",
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-            ),
+            
             SizedBox(height: 20),
             RecentNotificationsPage(),
           ],

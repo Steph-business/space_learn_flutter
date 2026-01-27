@@ -31,7 +31,11 @@ class StatsSection extends StatelessWidget {
                 ),
                 centerTitle: true,
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
@@ -54,7 +58,7 @@ class StatsSection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),

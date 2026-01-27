@@ -16,7 +16,7 @@ class ContinueReadingSection extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -33,7 +33,7 @@ class ContinueReadingSection extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(2),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
@@ -43,21 +43,26 @@ class ContinueReadingSection extends StatelessWidget {
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: book.imageCouverture != null && 
-                       book.imageCouverture!.isNotEmpty && 
-                       !book.imageCouverture!.contains('example.com')
+                borderRadius: BorderRadius.circular(2),
+                child:
+                    book.imageCouverture != null &&
+                        book.imageCouverture!.isNotEmpty &&
+                        !book.imageCouverture!.contains('example.com')
                     ? Image.network(
                         book.imageCouverture!,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildPlaceholder(),
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
                           return const Center(
                             child: SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6366F1)),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF6366F1),
+                              ),
                             ),
                           );
                         },
@@ -95,7 +100,9 @@ class ContinueReadingSection extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: 0.65, // Valeur statique pour l'instant
                       backgroundColor: const Color(0xFFF1F5F9),
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFFF59E0B),
+                      ),
                       minHeight: 6,
                     ),
                   ),

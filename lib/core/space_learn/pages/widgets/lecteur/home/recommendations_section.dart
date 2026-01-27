@@ -16,13 +16,16 @@ class RecommendationsSection extends StatelessWidget {
         height: 100,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(2),
           border: Border.all(color: const Color(0xFFF1F5F9)),
         ),
         child: Center(
           child: Text(
             "Aucune recommandation pour le moment",
-            style: GoogleFonts.poppins(color: const Color(0xFF64748B), fontSize: 13),
+            style: GoogleFonts.poppins(
+              color: const Color(0xFF64748B),
+              fontSize: 13,
+            ),
           ),
         ),
       );
@@ -53,7 +56,9 @@ class RecommendationsSection extends StatelessWidget {
     // Pour l'instant, on redirige vers PurchasePage par défaut ou BookDetailPage si on simule
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => PurchasePage(book: book.toJson())),
+      MaterialPageRoute(
+        builder: (context) => PurchasePage(book: book.toJson()),
+      ),
     );
   }
 }
@@ -62,10 +67,7 @@ class _BookCard extends StatelessWidget {
   final BookModel book;
   final VoidCallback? onTap;
 
-  const _BookCard({
-    required this.book,
-    this.onTap,
-  });
+  const _BookCard({required this.book, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +79,7 @@ class _BookCard extends StatelessWidget {
         width: 140,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.03),
@@ -95,19 +97,28 @@ class _BookCard extends StatelessWidget {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(2),
+                  ),
                 ),
-                child: book.imageCouverture != null && 
-                       book.imageCouverture!.isNotEmpty && 
-                       !book.imageCouverture!.contains('example.com')
+                child:
+                    book.imageCouverture != null &&
+                        book.imageCouverture!.isNotEmpty &&
+                        !book.imageCouverture!.contains('example.com')
                     ? ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(2),
+                        ),
                         child: Image.network(
                           book.imageCouverture!,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Center(
-                              child: Icon(Icons.book_rounded, color: color, size: 40),
+                              child: Icon(
+                                Icons.book_rounded,
+                                color: color,
+                                size: 40,
+                              ),
                             );
                           },
                         ),
@@ -146,7 +157,11 @@ class _BookCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 14),
+                      const Icon(
+                        Icons.star_rounded,
+                        color: Color(0xFFF59E0B),
+                        size: 14,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         (book.noteMoyenne ?? 0.0).toStringAsFixed(1),

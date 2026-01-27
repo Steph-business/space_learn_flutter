@@ -22,7 +22,7 @@ class Revenus extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -43,9 +43,7 @@ class Revenus extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: "2,891 ",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                       ),
                       TextSpan(
                         text: "FCFA",
