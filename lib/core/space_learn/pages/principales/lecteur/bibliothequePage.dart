@@ -4,7 +4,7 @@ import 'package:space_learn_flutter/core/themes/layout/navBarAll.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/filtre_livres.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_card.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/reading_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/libraryModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -135,8 +135,8 @@ class _BibliothequePageState extends State<BibliothequePage> {
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
+                  horizontal: 20,
+                  vertical: 24,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +226,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      ReadingPage(book: book.toJson()),
+                                      BookDetailPage(book: book, isOwned: true),
                                 ),
                               );
                             },

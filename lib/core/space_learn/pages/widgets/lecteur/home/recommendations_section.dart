@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../details/book_detail_page.dart';
-import '../../details/purchase_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import '../../../../data/model/bookModel.dart';
 
 class RecommendationsSection extends StatelessWidget {
@@ -52,12 +51,10 @@ class RecommendationsSection extends StatelessWidget {
   }
 
   void _navigateToBookDetail(BuildContext context, BookModel book) {
-    // Dans une vraie app, on vérifierait si l'utilisateur possède déjà le livre
-    // Pour l'instant, on redirige vers PurchasePage par défaut ou BookDetailPage si on simule
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PurchasePage(book: book.toJson()),
+        builder: (context) => BookDetailPage(book: book, isOwned: false),
       ),
     );
   }
@@ -98,7 +95,7 @@ class _BookCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(2),
+                    top: Radius.circular(20),
                   ),
                 ),
                 child:
@@ -107,7 +104,7 @@ class _BookCard extends StatelessWidget {
                         !book.imageCouverture!.contains('example.com')
                     ? ClipRRect(
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(2),
+                          top: Radius.circular(20),
                         ),
                         child: Image.network(
                           book.imageCouverture!,
