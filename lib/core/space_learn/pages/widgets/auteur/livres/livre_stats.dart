@@ -48,10 +48,7 @@ class LivreStatsSection extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.normal),
             ),
           ],
-          style: const TextStyle(
-            fontSize: 16,
-            color: Color(0xFF2D3142),
-          ),
+          style: const TextStyle(fontSize: 16, color: Color(0xFF2D3142)),
         ),
       );
     }
@@ -71,7 +68,7 @@ class LivreStatsSection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),

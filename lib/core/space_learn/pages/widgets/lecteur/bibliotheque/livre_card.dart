@@ -31,7 +31,7 @@ class LivreCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -42,7 +42,7 @@ class LivreCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(2),
         child: Material(
           color: Colors.transparent,
           child: Padding(
@@ -54,7 +54,7 @@ class LivreCard extends StatelessWidget {
                   width: 85,
                   height: 120,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(2),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.15),
@@ -64,12 +64,16 @@ class LivreCard extends StatelessWidget {
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: imageUrl != null && imageUrl!.isNotEmpty && !imageUrl!.contains('example.com')
+                    borderRadius: BorderRadius.circular(2),
+                    child:
+                        imageUrl != null &&
+                            imageUrl!.isNotEmpty &&
+                            !imageUrl!.contains('example.com')
                         ? Image.network(
                             imageUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildPlaceholder(),
                           )
                         : _buildPlaceholder(),
                   ),
@@ -105,7 +109,10 @@ class LivreCard extends StatelessWidget {
                       if (categorie != null && categorie!.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(6),
@@ -140,7 +147,8 @@ class LivreCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       "Progression",
@@ -177,9 +185,14 @@ class LivreCard extends StatelessWidget {
                                         height: 6,
                                         decoration: BoxDecoration(
                                           gradient: const LinearGradient(
-                                            colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                            colors: [
+                                              Color(0xFFF59E0B),
+                                              Color(0xFFD97706),
+                                            ],
                                           ),
-                                          borderRadius: BorderRadius.circular(3),
+                                          borderRadius: BorderRadius.circular(
+                                            3,
+                                          ),
                                         ),
                                       ),
                                     ),

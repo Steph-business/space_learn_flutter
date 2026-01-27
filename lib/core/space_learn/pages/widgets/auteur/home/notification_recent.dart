@@ -1,48 +1,92 @@
 import 'package:flutter/material.dart';
-
 import 'package:iconsax/iconsax.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/notificationPage.dart';
 
-class RecentNotificationsPage extends StatelessWidget {
-  const RecentNotificationsPage({super.key});
+import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
+
+class RecentNotificationsPage extends StatefulWidget {
+  final VoidCallback? onTapOpenNotifications;
+
+  const RecentNotificationsPage({super.key, this.onTapOpenNotifications});
+
+  @override
+  State<RecentNotificationsPage> createState() => _RecentNotificationsPageState();
+}
+
+class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
+  final NotificationService _service = NotificationService();
+  List<NotificationModel> _notifications = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('Utilisateur non authentifié');
+      }
+
+      final list = await _service.getNotifications(token);
+      setState(() {
+        _notifications = list;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  String _formatTimeAgo(DateTime? dt) {
+    if (dt == null) return '';
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} minutes';
+    if (diff.inHours < 24) return 'Il y a ${diff.inHours} heures';
+    return 'Il y a ${diff.inDays} jours';
+  }
+
+  IconData _iconForType(String type) {
+    switch (type.toLowerCase()) {
+      case 'payment':
+      case 'paiement':
+        return Iconsax.coin;
+      case 'review':
+      case 'avis':
+        return Iconsax.star5;
+      case 'report':
+      case 'rapport':
+        return Iconsax.graph;
+      default:
+        return Iconsax.notification;
+    }
+  }
+
+  Color _colorForRead(bool lu) => lu ? Colors.grey : Colors.blueAccent;
 
   @override
   Widget build(BuildContext context) {
-    final notifications = [
-      NotificationItem(
-        title: "Nouveau paiement reçu",
-        description: "Vente de \"L'importance des réseaux\" - 12.99 FCFA",
-        timeAgo: "Il y a 2 heures",
-        icon: Iconsax.coin,
-        borderColor: Colors.greenAccent,
-      ),
-      NotificationItem(
-        title: "Nouvel avis",
-        description: "Marie K. a donné 5 étoiles à votre livre",
-        timeAgo: "Il y a 4 heures",
-        icon: Iconsax.star5,
-        borderColor: Colors.blueAccent,
-      ),
-      NotificationItem(
-        title: "Rapport mensuel",
-        description: "Vos statistiques mensuelles sont disponibles",
-        timeAgo: "Il y a 1 jour",
-        icon: Iconsax.graph,
-        borderColor: Colors.orangeAccent,
-      ),
-    ];
-
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const NotificationPage()),
-        );
-      },
+      onTap: widget.onTapOpenNotifications,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(2),
         ),
         child: Column(
           children: [
@@ -53,7 +97,7 @@ class RecentNotificationsPage extends StatelessWidget {
                 children: [
                   const Icon(Icons.notifications, color: Colors.black87),
                   const SizedBox(width: 8),
-                  Text(
+                  const Text(
                     'Notifications récentes',
                     style: TextStyle(
                       fontSize: 18,
@@ -64,17 +108,46 @@ class RecentNotificationsPage extends StatelessWidget {
                 ],
               ),
             ),
-            // List
-            ...notifications.map(
-              (notif) => Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-                child: NotificationCard(item: notif),
+
+            if (_loading) ...[
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
               ),
-            ),
-            const SizedBox(height: 16),
+            ] else if (_error != null) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                child: Column(
+                  children: [
+                    Text('Erreur: $_error'),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _loadNotifications,
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (_notifications.isEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Text('Aucune notification pour le moment.'),
+              ),
+            ] else ...[
+              // List
+              ..._notifications.map(
+                (notif) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: _NotificationCardFromModel(
+                    model: notif,
+                    icon: _iconForType(notif.type),
+                    borderColor: _colorForRead(notif.lu),
+                    timeAgo: _formatTimeAgo(notif.creeLe),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ],
         ),
       ),
@@ -82,26 +155,19 @@ class RecentNotificationsPage extends StatelessWidget {
   }
 }
 
-class NotificationItem {
-  final String title;
-  final String description;
-  final String timeAgo;
+class _NotificationCardFromModel extends StatelessWidget {
+  final NotificationModel model;
   final IconData icon;
   final Color borderColor;
+  final String timeAgo;
 
-  NotificationItem({
-    required this.title,
-    required this.description,
-    required this.timeAgo,
+  const _NotificationCardFromModel({
+    Key? key,
+    required this.model,
     required this.icon,
     required this.borderColor,
-  });
-}
-
-class NotificationCard extends StatelessWidget {
-  final NotificationItem item;
-
-  const NotificationCard({super.key, required this.item});
+    required this.timeAgo,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +176,7 @@ class NotificationCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border(left: BorderSide(width: 5, color: item.borderColor)),
+        border: Border(left: BorderSide(width: 5, color: borderColor)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -121,11 +187,11 @@ class NotificationCard extends StatelessWidget {
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: item.borderColor.withOpacity(0.15),
-          child: Icon(item.icon, color: item.borderColor, size: 22),
+          backgroundColor: borderColor.withOpacity(0.15),
+          child: Icon(icon, color: borderColor, size: 22),
         ),
         title: Text(
-          item.title,
+          model.type,
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
         subtitle: Column(
@@ -133,12 +199,12 @@ class NotificationCard extends StatelessWidget {
           children: [
             const SizedBox(height: 4),
             Text(
-              item.description,
+              model.contenu,
               style: const TextStyle(color: Colors.black54, fontSize: 13),
             ),
             const SizedBox(height: 4),
             Text(
-              item.timeAgo,
+              timeAgo,
               style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ],
@@ -146,7 +212,7 @@ class NotificationCard extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Notification : ${item.title}")),
+            SnackBar(content: Text("Notification : ${model.contenu}")),
           );
         },
       ),
