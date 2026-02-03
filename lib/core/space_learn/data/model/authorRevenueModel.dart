@@ -1,19 +1,40 @@
 class AuthorRevenueModel {
-  final List<MonthlyRevenue> monthlyRevenue;
+  final List<TimeFrameRevenue> dailyRevenue;
+  final List<TimeFrameRevenue> weeklyRevenue;
+  final List<TimeFrameRevenue> monthlyRevenue;
+  final List<TimeFrameRevenue> yearlyRevenue;
   final List<BookRevenue> revenueByBook;
   final double totalRevenue;
 
   AuthorRevenueModel({
+    required this.dailyRevenue,
+    required this.weeklyRevenue,
     required this.monthlyRevenue,
+    required this.yearlyRevenue,
     required this.revenueByBook,
     required this.totalRevenue,
   });
 
   factory AuthorRevenueModel.fromJson(Map<String, dynamic> json) {
     return AuthorRevenueModel(
+      dailyRevenue:
+          (json['daily_revenue'] as List?)
+              ?.map((i) => TimeFrameRevenue.fromJson(i, 'day'))
+              .toList() ??
+          [],
+      weeklyRevenue:
+          (json['weekly_revenue'] as List?)
+              ?.map((i) => TimeFrameRevenue.fromJson(i, 'week'))
+              .toList() ??
+          [],
       monthlyRevenue:
           (json['monthly_revenue'] as List?)
-              ?.map((i) => MonthlyRevenue.fromJson(i))
+              ?.map((i) => TimeFrameRevenue.fromJson(i, 'month'))
+              .toList() ??
+          [],
+      yearlyRevenue:
+          (json['yearly_revenue'] as List?)
+              ?.map((i) => TimeFrameRevenue.fromJson(i, 'year'))
               .toList() ??
           [],
       revenueByBook:
@@ -27,34 +48,32 @@ class AuthorRevenueModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'daily_revenue': dailyRevenue.map((i) => i.toJson()).toList(),
+      'weekly_revenue': weeklyRevenue.map((i) => i.toJson()).toList(),
       'monthly_revenue': monthlyRevenue.map((i) => i.toJson()).toList(),
+      'yearly_revenue': yearlyRevenue.map((i) => i.toJson()).toList(),
       'revenue_by_book': revenueByBook.map((i) => i.toJson()).toList(),
       'total_revenue': totalRevenue,
     };
   }
 }
 
-class MonthlyRevenue {
-  final String mois;
-  final int annee;
-  final double montant;
+class TimeFrameRevenue {
+  final String date;
+  final double revenue;
 
-  MonthlyRevenue({
-    required this.mois,
-    required this.annee,
-    required this.montant,
-  });
+  TimeFrameRevenue({required this.date, required this.revenue});
 
-  factory MonthlyRevenue.fromJson(Map<String, dynamic> json) {
-    return MonthlyRevenue(
-      mois: json['mois'] ?? json['month'] ?? '',
-      annee: json['annee'] ?? json['year'] ?? 0,
-      montant: (json['montant'] ?? json['amount'] ?? 0.0).toDouble(),
+  factory TimeFrameRevenue.fromJson(Map<String, dynamic> json, String dateKey) {
+    return TimeFrameRevenue(
+      date: json[dateKey] ?? json['date'] ?? '',
+      revenue: (json['revenue'] ?? json['montant'] ?? json['amount'] ?? 0.0)
+          .toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'mois': mois, 'annee': annee, 'montant': montant};
+    return {'date': date, 'revenue': revenue};
   }
 }
 
@@ -72,8 +91,9 @@ class BookRevenue {
   factory BookRevenue.fromJson(Map<String, dynamic> json) {
     return BookRevenue(
       livreId: json['livre_id'] ?? json['book_id'] ?? '',
-      titre: json['titre'] ?? json['title'] ?? '',
-      montant: (json['montant'] ?? json['amount'] ?? 0.0).toDouble(),
+      titre: json['livre_titre'] ?? json['titre'] ?? json['title'] ?? '',
+      montant: (json['revenue'] ?? json['montant'] ?? json['amount'] ?? 0.0)
+          .toDouble(),
     );
   }
 

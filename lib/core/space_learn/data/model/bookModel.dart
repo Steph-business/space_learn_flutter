@@ -3,6 +3,7 @@ import 'activiteModel.dart';
 import 'readingActivityModel.dart';
 import 'recommendationModel.dart';
 import 'userModel.dart';
+import '../../../utils/api_routes.dart';
 
 class BookModel {
   final String id;
@@ -53,14 +54,18 @@ class BookModel {
     this.auteur,
     double? noteMoyenne,
     int? telechargements,
-  })  : noteMoyenne = noteMoyenne ?? 0.0,
-        telechargements = telechargements ?? 0;
+  }) : noteMoyenne = noteMoyenne ?? 0.0,
+       telechargements = telechargements ?? 0;
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
     // Handle author extraction
     UserModel? author;
-    final authorData = json['Auteur'] ?? json['auteur'] ?? json['author'] ?? json['Utilisateur'];
-    
+    final authorData =
+        json['Auteur'] ??
+        json['auteur'] ??
+        json['author'] ??
+        json['Utilisateur'];
+
     if (authorData != null) {
       if (authorData is Map<String, dynamic>) {
         try {
@@ -69,7 +74,7 @@ class BookModel {
           // Fallback if full parsing fails but we have the name
           final name = authorData['nom_complet'] ?? authorData['NomComplet'];
           if (name != null) {
-             author = UserModel(
+            author = UserModel(
               id: authorData['id'] ?? '',
               profilId: authorData['profil_id'] ?? '',
               email: authorData['email'] ?? '',
@@ -90,7 +95,11 @@ class BookModel {
       }
     } else {
       // Fallback: check for top-level name fields
-      final nameFallback = json['auteur_nom'] ?? json['author_name'] ?? json['NomComplet'] ?? json['nom_complet'];
+      final nameFallback =
+          json['auteur_nom'] ??
+          json['author_name'] ??
+          json['NomComplet'] ??
+          json['nom_complet'];
       if (nameFallback != null && nameFallback is String) {
         author = UserModel(
           id: '',
@@ -107,8 +116,11 @@ class BookModel {
       auteurId: json['auteur_id'] ?? json['author_id'] ?? '',
       titre: json['titre'] ?? json['title'] ?? '',
       description: json['description'] ?? '',
-      imageCouverture: json['image_couverture'],
-      fichierUrl: json['fichier_url'],
+      imageCouverture: _sanitizeImageUrl(
+        json['image_couverture'],
+        useGin: true,
+      ),
+      fichierUrl: _sanitizeImageUrl(json['fichier_url'], useGin: true),
       format: json['format'] ?? '',
       prix: (json['prix'] ?? 0).toInt(),
       stock: (json['stock'] ?? 0).toInt(),
@@ -143,6 +155,10 @@ class BookModel {
           : null,
       auteur: author,
     );
+  }
+
+  static String? _sanitizeImageUrl(String? url, {bool useGin = false}) {
+    return ApiRoutes.sanitizeImageUrl(url, useGin: useGin);
   }
 
   String get authorName => auteur?.nomComplet ?? 'Auteur inconnu';
