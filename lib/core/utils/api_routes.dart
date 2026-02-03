@@ -1,7 +1,7 @@
 /// api_routes.dart
 class ApiRoutes {
   // Base URL (dev ou prod)
-  static const String baseUrl = "http://192.168.1.11:8083";
+  static const String baseUrl = "http://192.168.252.193:8083";
 
   // Auth routes
   static const String profils = "$baseUrl/auth/profils";
@@ -22,7 +22,7 @@ class ApiRoutes {
   // Autres routes (cours, vidéos, etc.) peuvent être ajoutées ici
 
   // New base URL for Gin server on port 8082
-  static const String baseUrlsGin = "http://192.168.1.11:8085";
+  static const String baseUrlsGin = "http://192.168.252.193:8085";
 
   // Book routes
   static const String books = "$baseUrlsGin/api/books";

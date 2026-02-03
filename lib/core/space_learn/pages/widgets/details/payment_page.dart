@@ -71,7 +71,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       height: 80,
                       width: 60,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(12),
                         color: Colors.grey[100],
                       ),
                       child:
@@ -81,7 +81,7 @@ class _PaymentPageState extends State<PaymentPage> {
                                 'example.com',
                               )
                           ? ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                               child: Image.network(
                                 widget.book['image'],
                                 fit: BoxFit.cover,
