@@ -137,6 +137,24 @@ class BookService {
       throw Exception('Failed to fetch books by author');
     }
   }
+
   // Alias for consistency
-  Future<List<BookModel>> getBooksByAuthor(String auteurId) => getBooksByAuthorId(auteurId);
+  Future<List<BookModel>> getBooksByAuthor(String auteurId) =>
+      getBooksByAuthorId(auteurId);
+
+  Future<List<BookModel>> getBooksByCategory(String categorieId) async {
+    final queryParameters = {'categorie_id': categorieId};
+    final uri = Uri.parse(
+      ApiRoutes.books,
+    ).replace(queryParameters: queryParameters);
+    final response = await client.get(uri);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
+      return data.map((json) => BookModel.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to fetch books by category');
+    }
+  }
 }
