@@ -3,8 +3,6 @@ import 'dart:async' as java_timer;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/paymentService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/paymentModel.dart';
 import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
@@ -75,16 +73,22 @@ class _PaymentPageState extends State<PaymentPage> {
                         color: Colors.grey[100],
                       ),
                       child:
-                          widget.book['image'] != null &&
-                              widget.book['image'].toString().isNotEmpty &&
-                              !widget.book['image'].toString().contains(
-                                'example.com',
-                              )
+                          _getBookImage(widget.book) != null &&
+                              _getBookImage(widget.book)!.isNotEmpty &&
+                              !_getBookImage(
+                                widget.book,
+                              )!.contains('example.com')
                           ? ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(4),
                               child: Image.network(
-                                widget.book['image'],
+                                _getBookImage(widget.book)!,
                                 fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.book,
+                                    color: Color(0xFFF59E0B),
+                                  );
+                                },
                               ),
                             )
                           : const Icon(Icons.book, color: Color(0xFFF59E0B)),
@@ -95,7 +99,7 @@ class _PaymentPageState extends State<PaymentPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.book['title'] ?? 'Sans titre',
+                            _getBookTitle(widget.book),
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -105,7 +109,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            'Par ${widget.book['auteur_nom'] ?? 'Auteur inconnu'}',
+                            'Par ${_getAuthorName(widget.book)}',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               color: const Color(0xFF64748B),
@@ -116,7 +120,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             TextSpan(
                               children: [
                                 TextSpan(
-                                  text: '${widget.book['price'] ?? '0'} ',
+                                  text: '${_getBookPrice(widget.book)} ',
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -263,6 +267,33 @@ class _PaymentPageState extends State<PaymentPage> {
             PaymentDetailsPage(method: method, book: widget.book),
       ),
     );
+  }
+
+  // Data recovery helpers
+  String _getBookTitle(Map<String, dynamic> book) {
+    return book['titre']?.toString() ??
+        book['title']?.toString() ??
+        'Sans titre';
+  }
+
+  String _getAuthorName(Map<String, dynamic> book) {
+    if (book['Auteur'] is Map) {
+      return book['Auteur']['nom_complet']?.toString() ??
+          book['Auteur']['NomComplet']?.toString() ??
+          'Auteur inconnu';
+    }
+    return book['auteur_nom']?.toString() ??
+        book['author_name']?.toString() ??
+        book['author']?.toString() ??
+        'Auteur inconnu';
+  }
+
+  String _getBookPrice(Map<String, dynamic> book) {
+    return (book['prix'] ?? book['price'] ?? '0').toString();
+  }
+
+  String? _getBookImage(Map<String, dynamic> book) {
+    return book['image_couverture']?.toString() ?? book['image']?.toString();
   }
 }
 
@@ -418,7 +449,8 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
   @override
   void initState() {
     super.initState();
-    _amountController.text = "${widget.book['price']?.toString() ?? '0'} FCFA";
+    final price = widget.book['prix'] ?? widget.book['price'] ?? '0';
+    _amountController.text = "$price FCFA";
   }
 
   @override
@@ -738,8 +770,15 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
 
         final paymentService = PaymentService();
 
-        // Générer des IDs fictifs pour la transaction et la référence
-        final transactionId = "TRX-${DateTime.now().millisecondsSinceEpoch}";
+        // Si mobile money, on utilise le numéro de téléphone comme transaction_id
+        final isMoMo =
+            widget.method.toLowerCase().contains('money') ||
+            widget.method.toLowerCase().contains('wave');
+
+        final transactionId = isMoMo
+            ? _phoneController.text.trim()
+            : "TRX-${DateTime.now().millisecondsSinceEpoch}";
+
         final referenceId = "REF-${DateTime.now().millisecondsSinceEpoch}";
 
         final payment = PaymentModel(
@@ -750,39 +789,53 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
           transactionId: transactionId,
           referenceId: referenceId,
           montant:
-              double.tryParse(widget.book['price']?.toString() ?? '0') ?? 0.0,
+              double.tryParse(
+                (widget.book['prix'] ?? widget.book['price'] ?? '0').toString(),
+              ) ??
+              0.0,
           creeLe: DateTime.now(),
         );
 
         print(
           "🚀 Tentative de création du paiement pour le livre: ${widget.book['id']}",
         );
-        await paymentService.createPayment(payment, token);
-        print("✅ Paiement créé avec succès");
+        final result = await paymentService.createPayment(payment, token);
+        print("✅ Paiement initié avec succès");
 
-        // ✅ Ajouter le livre à la bibliothèque de l'utilisateur
-        print("📚 Tentative d'ajout du livre à la bibliothèque...");
-        final libraryService = LibraryService();
-        await libraryService.addToLibrary(
-          widget.book['id']?.toString() ?? "",
-          user.id,
-          "achat", // acquis_via
-          token,
-        );
-        print("✅ Livre ajouté à la bibliothèque avec succès");
+        // Si c'est un paiement MoMo, on attend la confirmation (polling)
+        if (isMoMo && result.referenceId.isNotEmpty) {
+          print(
+            "⏳ En attente de confirmation MoMo (Ref: ${result.referenceId})...",
+          );
+          bool isConfirmed = false;
+          int attempts = 0;
+          const maxAttempts = 30; // 30 tentatives * 2 secondes = 1 minute
 
-        // ✅ Incrémenter le nombre de téléchargements
-        print("📥 Incrémentation du nombre de téléchargements...");
-        try {
-          final bookService = BookService();
-          final currentDownloads = widget.book['telechargements'] ?? 0;
-          await bookService.updateBook(widget.book['id']?.toString() ?? "", {
-            'telechargements': currentDownloads + 1,
-          }, token);
-          print("✅ Nombre de téléchargements incrémenté");
-        } catch (e) {
-          print("⚠️ Erreur lors de l'incrémentation des téléchargements: $e");
-          // On ne bloque pas le processus si l'incrémentation échoue
+          while (!isConfirmed && attempts < maxAttempts) {
+            attempts++;
+            await Future.delayed(const Duration(seconds: 2));
+            try {
+              final status = await paymentService.getMomoStatus(
+                result.referenceId,
+                token,
+              );
+              if (status['status'] == 'SUCCESSFUL') {
+                isConfirmed = true;
+                print("✅ Paiement MoMo confirmé !");
+              } else if (status['status'] == 'FAILED' ||
+                  status['status'] == 'REJECTED') {
+                throw Exception("Le paiement a été rejeté ou a échoué.");
+              }
+            } catch (e) {
+              print("⚠️ Erreur lors du polling MoMo: $e");
+            }
+          }
+
+          if (!isConfirmed) {
+            throw Exception(
+              "Délai d'attente dépassé pour la confirmation MoMo.",
+            );
+          }
         }
 
         if (!mounted) return;
