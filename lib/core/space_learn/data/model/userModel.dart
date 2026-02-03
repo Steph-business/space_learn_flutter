@@ -1,3 +1,5 @@
+import '../../../utils/api_routes.dart';
+
 class UserModel {
   final String id;
   final String profilId;
@@ -26,7 +28,12 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    String name = json['nom_complet'] ?? json['NomComplet'] ?? json['name'] ?? json['full_name'] ?? '';
+    String name =
+        json['nom_complet'] ??
+        json['NomComplet'] ??
+        json['name'] ??
+        json['full_name'] ??
+        '';
     if (name.isEmpty) {
       name = json['email'] ?? json['Email'] ?? '';
     }
@@ -37,7 +44,9 @@ class UserModel {
       nomComplet: name,
       email: json['email'] ?? json['Email'] ?? '',
       biography: json['biography'] ?? json['Biography'],
-      profilePhoto: json['profile_photo'] ?? json['ProfilePhoto'],
+      profilePhoto: ApiRoutes.sanitizeImageUrl(
+        json['profile_photo'] ?? json['ProfilePhoto'],
+      ),
       socialLinks: json['social_links'] ?? json['SocialLinks'],
       walletAddress: json['wallet_address'] ?? json['WalletAddress'],
       isProfileComplete:
