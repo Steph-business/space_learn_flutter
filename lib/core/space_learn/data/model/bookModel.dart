@@ -3,6 +3,7 @@ import 'activiteModel.dart';
 import 'readingActivityModel.dart';
 import 'recommendationModel.dart';
 import 'userModel.dart';
+import '../../../utils/api_routes.dart';
 
 class BookModel {
   final String id;
@@ -115,8 +116,11 @@ class BookModel {
       auteurId: json['auteur_id'] ?? json['author_id'] ?? '',
       titre: json['titre'] ?? json['title'] ?? '',
       description: json['description'] ?? '',
-      imageCouverture: json['image_couverture'],
-      fichierUrl: json['fichier_url'],
+      imageCouverture: _sanitizeImageUrl(
+        json['image_couverture'],
+        useGin: true,
+      ),
+      fichierUrl: _sanitizeImageUrl(json['fichier_url'], useGin: true),
       format: json['format'] ?? '',
       prix: (json['prix'] ?? json['price'] ?? 0).toInt(),
       stock: (json['stock'] ?? 0).toInt(),
@@ -151,6 +155,10 @@ class BookModel {
           : null,
       auteur: author,
     );
+  }
+
+  static String? _sanitizeImageUrl(String? url, {bool useGin = false}) {
+    return ApiRoutes.sanitizeImageUrl(url, useGin: useGin);
   }
 
   String get authorName => auteur?.nomComplet ?? 'Auteur inconnu';
