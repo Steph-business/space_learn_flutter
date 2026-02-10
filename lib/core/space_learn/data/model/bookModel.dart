@@ -53,14 +53,18 @@ class BookModel {
     this.auteur,
     double? noteMoyenne,
     int? telechargements,
-  })  : noteMoyenne = noteMoyenne ?? 0.0,
-        telechargements = telechargements ?? 0;
+  }) : noteMoyenne = noteMoyenne ?? 0.0,
+       telechargements = telechargements ?? 0;
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
     // Handle author extraction
     UserModel? author;
-    final authorData = json['Auteur'] ?? json['auteur'] ?? json['author'] ?? json['Utilisateur'];
-    
+    final authorData =
+        json['Auteur'] ??
+        json['auteur'] ??
+        json['author'] ??
+        json['Utilisateur'];
+
     if (authorData != null) {
       if (authorData is Map<String, dynamic>) {
         try {
@@ -69,7 +73,7 @@ class BookModel {
           // Fallback if full parsing fails but we have the name
           final name = authorData['nom_complet'] ?? authorData['NomComplet'];
           if (name != null) {
-             author = UserModel(
+            author = UserModel(
               id: authorData['id'] ?? '',
               profilId: authorData['profil_id'] ?? '',
               email: authorData['email'] ?? '',
@@ -90,7 +94,11 @@ class BookModel {
       }
     } else {
       // Fallback: check for top-level name fields
-      final nameFallback = json['auteur_nom'] ?? json['author_name'] ?? json['NomComplet'] ?? json['nom_complet'];
+      final nameFallback =
+          json['auteur_nom'] ??
+          json['author_name'] ??
+          json['NomComplet'] ??
+          json['nom_complet'];
       if (nameFallback != null && nameFallback is String) {
         author = UserModel(
           id: '',
@@ -110,7 +118,7 @@ class BookModel {
       imageCouverture: json['image_couverture'],
       fichierUrl: json['fichier_url'],
       format: json['format'] ?? '',
-      prix: (json['prix'] ?? 0).toInt(),
+      prix: (json['prix'] ?? json['price'] ?? 0).toInt(),
       stock: (json['stock'] ?? 0).toInt(),
       categorieId: json['categorie_id'],
       statut: json['statut'] ?? '',
