@@ -2,18 +2,69 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/payment_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'reading_page.dart';
 
-class BookDetailPage extends StatelessWidget {
+class BookDetailPage extends StatefulWidget {
   final BookModel book;
   final bool isOwned;
 
   const BookDetailPage({super.key, required this.book, this.isOwned = false});
 
   @override
+  State<BookDetailPage> createState() => _BookDetailPageState();
+}
+
+class _BookDetailPageState extends State<BookDetailPage> {
+  final BookService _bookService = BookService();
+  List<BookModel> _authorBooks = [];
+  List<BookModel> _categoryBooks = [];
+  bool _isLoadingRelated = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRelatedBooks();
+  }
+
+  Future<void> _loadRelatedBooks() async {
+    try {
+      final futures = [
+        _bookService.getBooksByAuthorId(widget.book.auteurId),
+        if (widget.book.categorieId != null &&
+            widget.book.categorieId!.isNotEmpty)
+          _bookService.getBooksByCategory(widget.book.categorieId!),
+      ];
+
+      final results = await Future.wait(futures);
+
+      if (mounted) {
+        setState(() {
+          // Filter out the current book
+          _authorBooks = results[0]
+              .where((b) => b.id != widget.book.id)
+              .toList();
+
+          if (results.length > 1) {
+            _categoryBooks = results[1]
+                .where((b) => b.id != widget.book.id)
+                .toList();
+          }
+          _isLoadingRelated = false;
+        });
+      }
+    } catch (e) {
+      print("Error loading related books: $e");
+      if (mounted) {
+        setState(() => _isLoadingRelated = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final String formattedDate = book.creeLe != null
-        ? "${book.creeLe!.day}/${book.creeLe!.month}/${book.creeLe!.year}"
+    final String formattedDate = widget.book.creeLe != null
+        ? "${widget.book.creeLe!.day}/${widget.book.creeLe!.month}/${widget.book.creeLe!.year}"
         : "N/A";
 
     return Scaffold(
@@ -24,7 +75,7 @@ class BookDetailPage extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          isOwned ? 'Lecture' : 'Détails de l\'achat',
+          widget.isOwned ? 'Lecture' : 'Détails de l\'achat',
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -66,7 +117,7 @@ class BookDetailPage extends StatelessWidget {
                     children: [
                       // Book Cover with premium shadow
                       Hero(
-                        tag: 'book-${book.id}',
+                        tag: 'book-${widget.book.id}',
                         child: Container(
                           height: 180,
                           width: 120,
@@ -83,13 +134,13 @@ class BookDetailPage extends StatelessWidget {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child:
-                                book.imageCouverture != null &&
-                                    book.imageCouverture!.isNotEmpty &&
-                                    !book.imageCouverture!.contains(
+                                widget.book.imageCouverture != null &&
+                                    widget.book.imageCouverture!.isNotEmpty &&
+                                    !widget.book.imageCouverture!.contains(
                                       'example.com',
                                     )
                                 ? Image.network(
-                                    book.imageCouverture!,
+                                    widget.book.imageCouverture!,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
@@ -121,7 +172,7 @@ class BookDetailPage extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              book.titre,
+                              widget.book.titre,
                               style: GoogleFonts.poppins(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
@@ -133,7 +184,7 @@ class BookDetailPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Par ${book.authorName}',
+                              'Par ${widget.book.authorName}',
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: Colors.white.withOpacity(0.9),
@@ -146,12 +197,12 @@ class BookDetailPage extends StatelessWidget {
                               children: [
                                 _buildHeaderStat(
                                   Icons.star_rounded,
-                                  book.noteMoyenne.toStringAsFixed(1),
+                                  widget.book.noteMoyenne.toStringAsFixed(1),
                                 ),
                                 const SizedBox(width: 12),
                                 _buildHeaderStat(
                                   Icons.download_rounded,
-                                  book.telechargements.toString(),
+                                  widget.book.telechargements.toString(),
                                 ),
                                 const SizedBox(width: 12),
                                 _buildHeaderStat(
@@ -171,7 +222,7 @@ class BookDetailPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                book.format.toUpperCase(),
+                                widget.book.format.toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -199,7 +250,7 @@ class BookDetailPage extends StatelessWidget {
                   const SizedBox(height: 10),
 
                   // Price and Buy Button (Only if not owned)
-                  if (!isOwned)
+                  if (!widget.isOwned)
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
@@ -230,7 +281,7 @@ class BookDetailPage extends StatelessWidget {
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: "${book.prix} ",
+                                      text: "${widget.book.prix} ",
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.w800,
                                       ),
@@ -261,7 +312,7 @@ class BookDetailPage extends StatelessWidget {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        PaymentPage(book: book.toJson()),
+                                        PaymentPage(book: widget.book.toJson()),
                                   ),
                                 );
                               },
@@ -299,7 +350,7 @@ class BookDetailPage extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  ReadingPage(book: book.toJson()),
+                                  ReadingPage(book: widget.book.toJson()),
                             ),
                           );
                         },
@@ -334,15 +385,135 @@ class BookDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    book.description,
+                    widget.book.description,
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       color: const Color(0xFF475569),
                       height: 1.7,
                     ),
                   ),
+
+                  const SizedBox(height: 32),
+
+                  // Related Sections
+                  if (_isLoadingRelated)
+                    const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFF59E0B),
+                      ),
+                    )
+                  else ...[
+                    if (_authorBooks.isNotEmpty)
+                      _buildRelatedSection(
+                        "Livres du même auteur",
+                        _authorBooks,
+                      ),
+
+                    if (_categoryBooks.isNotEmpty)
+                      _buildRelatedSection(
+                        "Recommandations (Même catégorie)",
+                        _categoryBooks,
+                      ),
+                  ],
+
                   const SizedBox(height: 40),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRelatedSection(String title, List<BookModel> books) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1E293B),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 180,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: books.length,
+            itemBuilder: (context, index) {
+              final book = books[index];
+              return _buildBookCard(book);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBookCard(BookModel book) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookDetailPage(
+              book: book,
+              isOwned: false,
+            ), // On assume non possédé pour le moment
+          ),
+        );
+      },
+      child: Container(
+        width: 110,
+        margin: const EdgeInsets.only(right: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child:
+                    book.imageCouverture != null &&
+                        book.imageCouverture!.isNotEmpty
+                    ? Image.network(
+                        book.imageCouverture!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(
+                            Icons.book,
+                            color: Color(0xFFF59E0B),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.book, color: Color(0xFFF59E0B)),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              book.titre,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1E293B),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              "${book.prix} FCFA",
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFFF59E0B),
               ),
             ),
           ],

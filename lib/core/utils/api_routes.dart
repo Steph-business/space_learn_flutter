@@ -33,6 +33,8 @@ class ApiRoutes {
   // Payment routes
   static const String payments = "$baseUrlsGin/api/payments";
   static const String paymentById = "$baseUrlsGin/api/payments/:id";
+  static const String momoStatus =
+      "$baseUrlsGin/api/payments/momo/status/:referenceId";
 
   // Library routes
   static const String library = "$baseUrlsGin/api/library";
@@ -114,4 +116,39 @@ class ApiRoutes {
   // Category routes
   static const String categories = "$baseUrlsGin/api/categories";
   static const String categorieById = "$baseUrlsGin/api/categories/:id";
+
+  static String? sanitizeImageUrl(String? url, {bool useGin = false}) {
+    if (url == null || url.isEmpty) return null;
+
+    // If it's a Supabase URL, keep it as is
+    if (url.contains('supabase.co')) return url;
+
+    final targetBaseUrl = useGin ? baseUrlsGin : baseUrl;
+
+    String sanitized = url;
+    if (url.startsWith('http')) {
+      // It's already absolute. We check if it's pointing to localhost/IP and swap for current base.
+      final List<String> oldBases = [
+        '192.168.252.193',
+        'localhost',
+        '127.0.0.1',
+      ];
+      for (final oldBase in oldBases) {
+        if (url.contains(oldBase)) {
+          try {
+            final uri = Uri.parse(url);
+            final path = uri.path + (uri.hasQuery ? '?${uri.query}' : '');
+            sanitized = '$targetBaseUrl$path';
+            break;
+          } catch (_) {}
+        }
+      }
+    } else {
+      // Relative path - prepend target base URL
+      final separator = url.startsWith('/') ? '' : '/';
+      sanitized = '$targetBaseUrl$separator$url';
+    }
+
+    return sanitized;
+  }
 }

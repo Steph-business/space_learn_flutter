@@ -4,6 +4,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import '../../../../utils/tokenStorage.dart';
+import '../../../../utils/api_routes.dart';
 import '../../../data/dataServices/readingProgressService.dart';
 
 class ReadingPage extends StatefulWidget {
@@ -19,11 +20,12 @@ class _ReadingPageState extends State<ReadingPage> {
   final GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
   late PdfViewerController _pdfViewerController;
   final ReadingProgressService _progressService = ReadingProgressService();
-  
+
   bool _showCover = true;
   int _currentPage = 1;
   int _totalPages = 0;
   bool _isDocumentLoaded = false;
+  String? _loadError;
   int? _savedPage;
   Timer? _saveTimer;
 
@@ -38,13 +40,17 @@ class _ReadingPageState extends State<ReadingPage> {
     try {
       final token = await TokenStorage.getToken();
       if (token != null) {
-        print("📖 [ReadingPage] Loading progress for book ID: ${widget.book['id']}");
+        print(
+          "📖 [ReadingPage] Loading progress for book ID: ${widget.book['id']}",
+        );
         final progress = await _progressService.getReadingProgress(
           widget.book['id'],
           token,
         );
         if (progress != null && mounted) {
-          print("✅ [ReadingPage] Progress loaded: Page ${progress.chapitreCourant}");
+          print(
+            "✅ [ReadingPage] Progress loaded: Page ${progress.chapitreCourant}",
+          );
           setState(() {
             _savedPage = progress.chapitreCourant;
           });
@@ -61,7 +67,7 @@ class _ReadingPageState extends State<ReadingPage> {
     try {
       final token = await TokenStorage.getToken();
       final bookId = widget.book['id'] ?? widget.book['ID'];
-      
+
       if (token != null && bookId != null && _totalPages > 0) {
         await _progressService.updateReadingProgress(
           livreId: bookId,
@@ -79,7 +85,7 @@ class _ReadingPageState extends State<ReadingPage> {
     setState(() {
       _currentPage = page;
     });
-    
+
     // Debounce save
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(seconds: 2), () {
@@ -98,12 +104,28 @@ class _ReadingPageState extends State<ReadingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final String? pdfUrl = widget.book['fichier_url'] ?? widget.book['fichierUrl'];
-    final String? imageUrl = widget.book['image_couverture'] ?? widget.book['imageCouverture'];
-    final String title = widget.book['titre'] ?? widget.book['title'] ?? 'Lecture';
-    
-    final String format = (widget.book['format'] ?? '').toString().toLowerCase();
-    final bool isPdf = format == 'pdf' || (pdfUrl != null && pdfUrl.toLowerCase().endsWith('.pdf'));
+    final String? rawPdfUrl = _getBookFileUrl(widget.book);
+    final String? rawImageUrl = _getBookImage(widget.book);
+
+    // Sanitize URLs (ensure they use Gin base if relative)
+    final String? pdfUrl = ApiRoutes.sanitizeImageUrl(rawPdfUrl, useGin: true);
+    final String? imageUrl = ApiRoutes.sanitizeImageUrl(
+      rawImageUrl,
+      useGin: true,
+    );
+
+    final String title = _getBookTitle(widget.book);
+
+    final String format = (widget.book['format'] ?? '')
+        .toString()
+        .toLowerCase();
+    final bool isPdf =
+        format == 'pdf' ||
+        (pdfUrl != null && pdfUrl.toLowerCase().contains('.pdf'));
+
+    print("📖 [ReadingPage] Title: $title");
+    print("📂 [ReadingPage] PDF URL: $pdfUrl");
+    print("🖼️ [ReadingPage] Image URL: $imageUrl");
 
     return Scaffold(
       appBar: AppBar(
@@ -123,7 +145,7 @@ class _ReadingPageState extends State<ReadingPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
-          if (isPdf && !_showCover && _isDocumentLoaded)
+          if (isPdf && !_showCover && _isDocumentLoaded && _loadError == null)
             IconButton(
               icon: const Icon(Icons.menu_book, color: Colors.white),
               onPressed: () {
@@ -132,17 +154,24 @@ class _ReadingPageState extends State<ReadingPage> {
             ),
         ],
       ),
-      body: _buildBody(pdfUrl, imageUrl, isPdf),
-      bottomNavigationBar: (!_showCover && isPdf && _isDocumentLoaded && _totalPages > 0) 
+      body: _loadError != null
+          ? _buildErrorView(_loadError!)
+          : _buildBody(pdfUrl, imageUrl, isPdf),
+      bottomNavigationBar:
+          (!_showCover &&
+              isPdf &&
+              _isDocumentLoaded &&
+              _totalPages > 0 &&
+              _loadError == null)
           ? _buildBottomNavigation()
           : null,
     );
   }
 
   Widget _buildBody(String? pdfUrl, String? imageUrl, bool isPdf) {
-    if (_showCover && 
-        imageUrl != null && 
-        imageUrl.isNotEmpty && 
+    if (_showCover &&
+        imageUrl != null &&
+        imageUrl.isNotEmpty &&
         !imageUrl.contains('example.com')) {
       return _buildCoverView(imageUrl);
     }
@@ -152,7 +181,9 @@ class _ReadingPageState extends State<ReadingPage> {
     }
 
     if (!isPdf) {
-      return _buildErrorView("Le format de ce livre n'est pas encore supporté par la liseuse.");
+      return _buildErrorView(
+        "Le format de ce livre n'est pas encore supporté par la liseuse.",
+      );
     }
 
     return SfPdfViewer.network(
@@ -167,15 +198,27 @@ class _ReadingPageState extends State<ReadingPage> {
           setState(() {
             _totalPages = details.document.pages.count;
             _isDocumentLoaded = true;
+            _loadError = null;
           });
-          
+
           // Jump to saved page if available
-          if (_savedPage != null && _savedPage! > 1 && _savedPage! <= _totalPages) {
+          if (_savedPage != null &&
+              _savedPage! > 1 &&
+              _savedPage! <= _totalPages) {
             // Small delay to ensure viewer is ready
             Future.delayed(const Duration(milliseconds: 100), () {
               _pdfViewerController.jumpToPage(_savedPage!);
             });
           }
+        }
+      },
+      onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+        if (mounted) {
+          print("❌ [ReadingPage] Load failed: ${details.error}");
+          setState(() {
+            _loadError =
+                "Impossible de charger le document. Vérifiez votre connexion internet.\n\nErreur: ${details.error}";
+          });
         }
       },
       onPageChanged: (PdfPageChangedDetails details) {
@@ -191,7 +234,11 @@ class _ReadingPageState extends State<ReadingPage> {
       decoration: BoxDecoration(
         color: const Color(0xFF16213E),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, -5)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
         ],
       ),
       child: SafeArea(
@@ -203,16 +250,32 @@ class _ReadingPageState extends State<ReadingPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.chevron_left, color: Colors.white, size: 24),
-                onPressed: _currentPage > 1 ? () => _pdfViewerController.previousPage() : null,
+                icon: const Icon(
+                  Icons.chevron_left,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                onPressed: _currentPage > 1
+                    ? () => _pdfViewerController.previousPage()
+                    : null,
               ),
               Text(
                 "Page $_currentPage / $_totalPages",
-                style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right, color: Colors.white, size: 24),
-                onPressed: _currentPage < _totalPages ? () => _pdfViewerController.nextPage() : null,
+                icon: const Icon(
+                  Icons.chevron_right,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                onPressed: _currentPage < _totalPages
+                    ? () => _pdfViewerController.nextPage()
+                    : null,
               ),
             ],
           ),
@@ -222,7 +285,7 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Widget _buildCoverView(String imageUrl) {
-    final String title = widget.book['titre'] ?? widget.book['title'] ?? 'Sans titre';
+    final String title = _getBookTitle(widget.book);
     final String author = _getAuthorName();
 
     return Container(
@@ -249,7 +312,8 @@ class _ReadingPageState extends State<ReadingPage> {
                 child: Image.network(
                   imageUrl,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.book, size: 100, color: Colors.grey),
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.book, size: 100, color: Colors.grey),
                 ),
               ),
             ),
@@ -280,11 +344,15 @@ class _ReadingPageState extends State<ReadingPage> {
               backgroundColor: const Color(0xFFF59E0B),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
               elevation: 0,
             ),
             child: Text(
-              _savedPage != null && _savedPage! > 1 ? "Reprendre la lecture" : "Commencer la lecture",
+              _savedPage != null && _savedPage! > 1
+                  ? "Reprendre la lecture"
+                  : "Commencer la lecture",
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -310,15 +378,45 @@ class _ReadingPageState extends State<ReadingPage> {
 
   String _getAuthorName() {
     // Essayer de récupérer le nom depuis l'objet Auteur/auteur
-    final auteurObj = widget.book['Auteur'] ?? widget.book['auteur'] ?? widget.book['author'];
+    final auteurObj =
+        widget.book['Auteur'] ??
+        widget.book['auteur'] ??
+        widget.book['author'] ??
+        widget.book['Utilisateur'];
+
     if (auteurObj is Map) {
-      return auteurObj['NomComplet'] ?? auteurObj['nom_complet'] ?? auteurObj['name'] ?? 'Auteur inconnu';
+      return auteurObj['NomComplet']?.toString() ??
+          auteurObj['nom_complet']?.toString() ??
+          auteurObj['nom']?.toString() ??
+          'Auteur inconnu';
     }
-    
+
     // Si c'est directement une String
     if (auteurObj is String) return auteurObj;
 
-    return 'Auteur inconnu';
+    // Fallback on top level name
+    return widget.book['auteur_nom']?.toString() ??
+        widget.book['author_name']?.toString() ??
+        'Auteur inconnu';
+  }
+
+  // Robust Data Extraction Helpers
+  String _getBookTitle(Map<String, dynamic> book) {
+    return book['titre']?.toString() ??
+        book['title']?.toString() ??
+        'Sans titre';
+  }
+
+  String? _getBookImage(Map<String, dynamic> book) {
+    return book['image_couverture']?.toString() ??
+        book['imageCouverture']?.toString() ??
+        book['image']?.toString();
+  }
+
+  String? _getBookFileUrl(Map<String, dynamic> book) {
+    return book['fichier_url']?.toString() ??
+        book['fichierUrl']?.toString() ??
+        book['url']?.toString();
   }
 
   Widget _buildErrorView(String message) {
