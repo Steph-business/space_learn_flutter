@@ -122,7 +122,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           height: 180,
                           width: 120,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.3),
@@ -132,7 +132,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             ],
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             child:
                                 widget.book.imageCouverture != null &&
                                     widget.book.imageCouverture!.isNotEmpty &&

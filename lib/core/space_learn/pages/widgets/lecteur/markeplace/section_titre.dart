@@ -19,13 +19,7 @@ class SectionTitle extends StatelessWidget {
             color: const Color(0xFF1E293B),
           ),
         ),
-        Row(
-          children: const [
-            Icon(Icons.grid_view, color: Color(0xFF1E293B)),
-            SizedBox(width: 6),
-            Icon(Icons.list, color: Color(0xFF94A3B8)),
-          ],
-        ),
+        // Icons removed for cleaner look
       ],
     );
   }

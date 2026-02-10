@@ -69,7 +69,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       height: 80,
                       width: 60,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(12),
                         color: Colors.grey[100],
                       ),
                       child:
@@ -769,6 +769,51 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
         }
 
         final paymentService = PaymentService();
+        final libraryService = LibraryService();
+
+        // Check if user already owns the book
+        final userLibrary = await libraryService.getUserLibrary(token);
+        final bool isAlreadyOwned = userLibrary.any(
+          (item) =>
+              item.livreId == (widget.book['id']?.toString() ?? "") ||
+              (item.livre != null &&
+                  item.livre!.id == (widget.book['id']?.toString() ?? "")),
+        );
+
+        if (isAlreadyOwned) {
+          if (!mounted) return;
+          Navigator.of(context).pop(); // Close processing dialog
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(
+                'Livre déjà possédé',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+              ),
+              content: Text(
+                'Vous possédez déjà ce livre dans votre bibliothèque.',
+                style: GoogleFonts.poppins(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close alert
+                    // Return to the root (MainNavBar)
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    // Switch to Marketplace tab
+                    MainNavBar.mainNavBarKey.currentState
+                        ?.navigateToMarketplace();
+                  },
+                  child: Text(
+                    'Aller au Marketplace',
+                    style: GoogleFonts.poppins(color: const Color(0xFFF59E0B)),
+                  ),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
 
         // Si mobile money, on utilise le numéro de téléphone comme transaction_id
         final isMoMo =
@@ -945,7 +990,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Félicitations ! Votre achat de "${widget.book['title']}" a été confirmé avec succès.',
+                'Félicitations ! Votre achat de "${widget.book['titre']}" a été confirmé avec succès.',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   color: const Color(0xFF64748B),

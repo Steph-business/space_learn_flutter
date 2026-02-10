@@ -122,7 +122,7 @@ class BookModel {
       ),
       fichierUrl: _sanitizeImageUrl(json['fichier_url'], useGin: true),
       format: json['format'] ?? '',
-      prix: (json['prix'] ?? 0).toInt(),
+      prix: (json['prix'] ?? json['price'] ?? 0).toInt(),
       stock: (json['stock'] ?? 0).toInt(),
       categorieId: json['categorie_id'],
       statut: json['statut'] ?? '',

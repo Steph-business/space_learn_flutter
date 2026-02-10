@@ -14,24 +14,43 @@ class LibraryService {
     String acquisVia,
     String authToken,
   ) async {
-    final response = await client.post(
-      Uri.parse(ApiRoutes.library),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      },
-      body: jsonEncode({
-        'livre_id': livreId,
-        'utilisateur_id': utilisateurId,
-        'acquis_via': acquisVia
-      }),
+    print(
+      "📚 [LibraryService] Adding book to library: $livreId, User: $utilisateurId, Method: $acquisVia",
     );
+    final uri = Uri.parse(ApiRoutes.library);
+    print("📡 [LibraryService] POST URL: $uri");
 
-    if (response.statusCode == 201) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return LibraryModel.fromJson(responseData['data'] ?? responseData);
-    } else {
-      throw Exception('Failed to add to library');
+    try {
+      final response = await client
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $authToken',
+            },
+            body: jsonEncode({
+              'livre_id': livreId,
+              'utilisateur_id': utilisateurId,
+              'acquis_via': acquisVia,
+            }),
+          )
+          .timeout(const Duration(seconds: 15)); // Add timeout
+
+      print("📥 [LibraryService] Response Status: ${response.statusCode}");
+      print("📥 [LibraryService] Response Body: ${response.body}");
+
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return LibraryModel.fromJson(responseData['data'] ?? responseData);
+      } else {
+        print(
+          "❌ [LibraryService] Failed to add: ${response.statusCode} - ${response.body}",
+        );
+        throw Exception('Failed to add to library: ${response.statusCode}');
+      }
+    } catch (e) {
+      print("❌ [LibraryService] Exception adding to library: $e");
+      rethrow;
     }
   }
 
