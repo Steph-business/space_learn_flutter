@@ -75,15 +75,17 @@ class _PaymentPageState extends State<PaymentPage> {
                         color: Colors.grey[100],
                       ),
                       child:
-                          widget.book['image'] != null &&
-                              widget.book['image'].toString().isNotEmpty &&
-                              !widget.book['image'].toString().contains(
-                                'example.com',
-                              )
+                          widget.book['image_couverture'] != null &&
+                              widget.book['image_couverture']
+                                  .toString()
+                                  .isNotEmpty &&
+                              !widget.book['image_couverture']
+                                  .toString()
+                                  .contains('example.com')
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Image.network(
-                                widget.book['image'],
+                                widget.book['image_couverture'],
                                 fit: BoxFit.cover,
                               ),
                             )
@@ -95,7 +97,7 @@ class _PaymentPageState extends State<PaymentPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.book['title'] ?? 'Sans titre',
+                            widget.book['titre'] ?? 'Sans titre',
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -105,7 +107,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            'Par ${widget.book['auteur_nom'] ?? 'Auteur inconnu'}',
+                            'Par ${widget.book['Auteur'] != null ? widget.book['Auteur']['nom_complet'] : 'Auteur inconnu'}',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               color: const Color(0xFF64748B),
@@ -116,7 +118,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             TextSpan(
                               children: [
                                 TextSpan(
-                                  text: '${widget.book['price'] ?? '0'} ',
+                                  text: '${widget.book['prix'] ?? '0'} ',
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -418,7 +420,7 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
   @override
   void initState() {
     super.initState();
-    _amountController.text = "${widget.book['price']?.toString() ?? '0'} FCFA";
+    _amountController.text = "${widget.book['prix']?.toString() ?? '0'} FCFA";
   }
 
   @override
@@ -737,36 +739,87 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
         }
 
         final paymentService = PaymentService();
+        final libraryService = LibraryService();
+
+        // Check if user already owns the book
+        final userLibrary = await libraryService.getUserLibrary(token);
+        final bool isAlreadyOwned = userLibrary.any(
+          (item) =>
+              item.livreId == (widget.book['id']?.toString() ?? "") ||
+              (item.livre != null &&
+                  item.livre!.id == (widget.book['id']?.toString() ?? "")),
+        );
+
+        if (isAlreadyOwned) {
+          if (!mounted) return;
+          Navigator.of(context).pop(); // Close processing dialog
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(
+                'Livre déjà possédé',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+              ),
+              content: Text(
+                'Vous possédez déjà ce livre dans votre bibliothèque.',
+                style: GoogleFonts.poppins(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close alert
+                    // Return to the root (MainNavBar)
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    // Switch to Marketplace tab
+                    MainNavBar.mainNavBarKey.currentState
+                        ?.navigateToMarketplace();
+                  },
+                  child: Text(
+                    'Aller au Marketplace',
+                    style: GoogleFonts.poppins(color: const Color(0xFFF59E0B)),
+                  ),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
 
         // Générer des IDs fictifs pour la transaction et la référence
         final transactionId = "TRX-${DateTime.now().millisecondsSinceEpoch}";
         final referenceId = "REF-${DateTime.now().millisecondsSinceEpoch}";
 
-        final payment = PaymentModel(
-          id: "", // Sera généré par le backend
-          utilisateurId: user.id,
-          livreId: widget.book['id']?.toString() ?? "",
-          methodePaiement: widget.method.toLowerCase().replaceAll(' ', '_'),
-          transactionId: transactionId,
-          referenceId: referenceId,
-          montant:
-              double.tryParse(widget.book['price']?.toString() ?? '0') ?? 0.0,
-          creeLe: DateTime.now(),
-        );
+        final double amount =
+            double.tryParse(widget.book['prix']?.toString() ?? '0') ?? 0.0;
 
-        print(
-          "🚀 Tentative de création du paiement pour le livre: ${widget.book['id']}",
-        );
-        await paymentService.createPayment(payment, token);
-        print("✅ Paiement créé avec succès");
+        // Skip payment creation if amount is 0 (Free book)
+        if (amount > 0) {
+          final payment = PaymentModel(
+            id: "", // Sera généré par le backend
+            utilisateurId: user.id,
+            livreId: widget.book['id']?.toString() ?? "",
+            methodePaiement: widget.method.toLowerCase().replaceAll(' ', '_'),
+            transactionId: transactionId,
+            referenceId: referenceId,
+            montant: amount,
+            creeLe: DateTime.now(),
+          );
+
+          print(
+            "🚀 Tentative de création du paiement pour le livre: ${widget.book['id']}",
+          );
+          await paymentService.createPayment(payment, token);
+          print("✅ Paiement créé avec succès");
+        } else {
+          print("🚀 Livre gratuit, étape de paiement ignorée.");
+        }
 
         // ✅ Ajouter le livre à la bibliothèque de l'utilisateur
         print("📚 Tentative d'ajout du livre à la bibliothèque...");
-        final libraryService = LibraryService();
         await libraryService.addToLibrary(
           widget.book['id']?.toString() ?? "",
           user.id,
-          "achat", // acquis_via
+          amount > 0 ? "achat" : "gratuit", // acquis_via adapté
           token,
         );
         print("✅ Livre ajouté à la bibliothèque avec succès");
@@ -892,7 +945,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Félicitations ! Votre achat de "${widget.book['title']}" a été confirmé avec succès.',
+                'Félicitations ! Votre achat de "${widget.book['titre']}" a été confirmé avec succès.',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   color: const Color(0xFF64748B),
