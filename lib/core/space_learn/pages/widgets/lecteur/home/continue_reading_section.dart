@@ -4,9 +4,17 @@ import '../../../../data/model/bookModel.dart';
 
 class ContinueReadingSection extends StatelessWidget {
   final BookModel book;
+  final double progress; // 0.0 to 1.0
+  final int? currentChapter;
   final VoidCallback? onTap;
 
-  const ContinueReadingSection({super.key, required this.book, this.onTap});
+  const ContinueReadingSection({
+    super.key,
+    required this.book,
+    this.progress = 0.0,
+    this.currentChapter,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +95,9 @@ class ContinueReadingSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Continuer la lecture",
+                    currentChapter != null
+                        ? "Chapitre $currentChapter"
+                        : "Continuer la lecture",
                     style: GoogleFonts.poppins(
                       color: const Color(0xFF64748B),
                       fontSize: 13,
@@ -98,7 +108,9 @@ class ContinueReadingSection extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: 0.65, // Valeur statique pour l'instant
+                      value: progress > 0
+                          ? progress
+                          : 0.05, // Minimum visibility
                       backgroundColor: const Color(0xFFF1F5F9),
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         Color(0xFFF59E0B),

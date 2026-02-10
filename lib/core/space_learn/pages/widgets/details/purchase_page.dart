@@ -69,7 +69,7 @@ class PurchasePage extends StatelessWidget {
                           height: 180,
                           width: 120,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.3),
@@ -79,7 +79,7 @@ class PurchasePage extends StatelessWidget {
                             ],
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(12),
                             child:
                                 book['image'] != null &&
                                     book['image'].toString().isNotEmpty &&

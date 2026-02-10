@@ -22,6 +22,8 @@ import '../../../data/model/readerStatsModel.dart';
 import '../../../data/model/activiteModel.dart';
 import '../../../data/model/userModel.dart';
 import '../../../../utils/tokenStorage.dart';
+import '../../../data/dataServices/readingProgressService.dart';
+import '../../../data/model/readingActivityModel.dart';
 
 class HomePageLecteur extends StatefulWidget {
   final String profileId;
@@ -42,12 +44,15 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   final BookService _bookService = BookService();
   final ReaderStatsService _statsService = ReaderStatsService();
   final Lectureservice _lectureService = Lectureservice();
+  final ReadingProgressService _readingProgressService =
+      ReadingProgressService();
 
   bool _isLoading = true;
   String? _error;
 
   ReaderStatsModel? _stats;
   BookModel? _continueReadingBook;
+  ReadingActivityModel? _readingProgress;
   List<BookModel> _recommendations = [];
 
   List<UserModel> _featuredAuthors = [];
@@ -77,45 +82,92 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         _lectureService.getReviewsByUser(token),
       ]);
 
-      setState(() {
-        if (results[0] is ReaderStatsModel) {
-          _stats = results[0] as ReaderStatsModel;
-        }
-        
-        if (results[1] is List) {
-          final library = (results[1] as List).cast<LibraryModel>();
-          if (library.isNotEmpty) {
-            _continueReadingBook = library.first.livre;
+      if (mounted) {
+        setState(() {
+          if (results[0] is ReaderStatsModel) {
+            _stats = results[0] as ReaderStatsModel;
           }
-        }
 
-        if (results[2] is List) {
-          final allBooks = (results[2] as List).cast<BookModel>();
-          _recommendations = allBooks.take(5).toList();
-          
-
-          
-          // Extract unique authors from books
-          final authorsMap = <String, UserModel>{};
-          for (var book in allBooks) {
-            if (book.auteur != null) {
-              authorsMap[book.auteur!.id] = book.auteur!;
+          if (results[1] is List) {
+            final library = (results[1] as List).cast<LibraryModel>();
+            if (library.isNotEmpty) {
+              _continueReadingBook = library.first.livre;
             }
           }
-          _featuredAuthors = authorsMap.values.take(10).toList();
+
+          if (results[2] is List) {
+            final allBooks = (results[2] as List).cast<BookModel>();
+            _recommendations = allBooks.take(5).toList();
+
+            // Extract unique authors from books
+            final authorsMap = <String, UserModel>{};
+            for (var book in allBooks) {
+              if (book.auteur != null) {
+                authorsMap[book.auteur!.id] = book.auteur!;
+              }
+            }
+            _featuredAuthors = authorsMap.values.take(10).toList();
+          }
+
+          if (results[3] is List) {
+            _recentActivities = (results[3] as List).cast<ReviewModel>();
+          }
+        });
+
+        // 2. Fetch Progress and Fix Author if needed
+        if (_continueReadingBook != null) {
+          try {
+            // Fetch Reading Progress
+            final progress = await _readingProgressService.getReadingProgress(
+              _continueReadingBook!.id,
+              token,
+            );
+            print("Fetched progress: ${progress?.pourcentage ?? 'None'}");
+
+            // Fix missing Author details if "Unknown" or ID only (using ID to fetch full details)
+            // This is the workaround for the user's issue where "Livre" has empty author details
+            // but the main object (or book ID) is valid.
+            bool needsAuthorFix =
+                _continueReadingBook!.auteur == null ||
+                _continueReadingBook!.authorName == 'Auteur inconnu' ||
+                _continueReadingBook!.auteur!.nomComplet.isEmpty;
+
+            if (needsAuthorFix) {
+              print(
+                "🔄 Fixing author details for book ${_continueReadingBook!.id}...",
+              );
+              try {
+                final fullBook = await _bookService.getBookById(
+                  _continueReadingBook!.id,
+                );
+                _continueReadingBook = fullBook;
+              } catch (bookErr) {
+                print("⚠️ Failed to fix book author details: $bookErr");
+              }
+            }
+
+            if (mounted) {
+              setState(() {
+                _readingProgress = progress;
+                // _continueReadingBook is updated in place if fullBook was fetched
+              });
+            }
+          } catch (e) {
+            print("⚠️ Error enriching reading data: $e");
+          }
         }
 
-        if (results[3] is List) {
-          _recentActivities = (results[3] as List).cast<ReviewModel>();
-        }
-        
-        _isLoading = false;
-      });
+        setState(() {
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = "Erreur lors du chargement des données: $e";
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = "Erreur lors du chargement des données: $e";
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -130,15 +182,19 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           children: [
             NavBarAll(userName: widget.userName),
             Expanded(
-              child: _isLoading 
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFFF59E0B)))
-                : RefreshIndicator(
-                    onRefresh: _loadData,
-                    color: const Color(0xFFF59E0B),
-                    child: _error != null
-                      ? _buildErrorState()
-                      : _buildContent(),
-                  ),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFF59E0B),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadData,
+                      color: const Color(0xFFF59E0B),
+                      child: _error != null
+                          ? _buildErrorState()
+                          : _buildContent(),
+                    ),
             ),
           ],
         ),
@@ -155,30 +211,32 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         children: [
           StatsSection(stats: _stats),
           const SizedBox(height: 32),
-          
+
           if (_continueReadingBook != null) ...[
             _buildSectionHeader(context, 'Continuer la lecture', null),
             const SizedBox(height: 16),
             ContinueReadingSection(
               book: _continueReadingBook!,
+              currentChapter: _readingProgress?.chapitreCourant,
+              progress: (_readingProgress?.pourcentage ?? 0) / 100.0,
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ReadingPage(book: _continueReadingBook!.toJson()),
+                    builder: (context) =>
+                        ReadingPage(book: _continueReadingBook!.toJson()),
                   ),
                 );
               },
             ),
             const SizedBox(height: 32),
           ],
-          
 
-          
           _buildSectionHeader(
-            context, 
-            'Recommandations', 
-            () => MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace(),
+            context,
+            'Recommandations',
+            () =>
+                MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace(),
           ),
           const SizedBox(height: 16),
           RecommendationsSection(books: _recommendations),
@@ -190,27 +248,31 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             FeaturedAuthorsSection(authors: _featuredAuthors),
             const SizedBox(height: 32),
           ],
-          
-          _buildSectionHeader(
-            context, 
-            'Activité Récente', 
-            null,
-          ),
+
+          _buildSectionHeader(context, 'Activité Récente', null),
           const SizedBox(height: 12),
           if (_recentActivities.isEmpty)
             _buildEmptyActivity()
           else
-            ..._recentActivities.take(3).map((activity) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: RecentActivitySection(activity: activity),
-            )),
+            ..._recentActivities
+                .take(3)
+                .map(
+                  (activity) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: RecentActivitySection(activity: activity),
+                  ),
+                ),
           const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, VoidCallback? onSeeMore) {
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    VoidCallback? onSeeMore,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -256,7 +318,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: Colors.redAccent,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   _error!,
@@ -266,7 +332,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: _loadData,
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF59E0B),
+                  ),
                   child: const Text("Réessayer"),
                 ),
               ],
@@ -288,7 +356,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       child: Center(
         child: Text(
           "Aucune activité récente",
-          style: GoogleFonts.poppins(color: const Color(0xFF64748B), fontSize: 14),
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF64748B),
+            fontSize: 14,
+          ),
         ),
       ),
     );
