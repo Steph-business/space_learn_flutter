@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
-import '../../../../data/model/bookModel.dart';
+import '../../../../data/model/book_model.dart';
 
 class NewArrivalsSection extends StatelessWidget {
   final List<BookModel> books;

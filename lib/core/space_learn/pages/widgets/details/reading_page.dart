@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
-import '../../../../utils/tokenStorage.dart';
+import '../../../../utils/token_storage.dart';
+import '../../../../utils/book_utils.dart';
 import '../../../data/dataServices/readingProgressService.dart';
 
 class ReadingPage extends StatefulWidget {

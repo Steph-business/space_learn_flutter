@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../themes/app_colors.dart';
-import '../../data/model/userModel.dart';
+import '../../data/model/user_model.dart';
 import '../../data/dataServices/authServices.dart';
-import '../../../utils/tokenStorage.dart';
+import '../../../utils/token_storage.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

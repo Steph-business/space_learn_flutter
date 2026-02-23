@@ -6,8 +6,8 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/paymentSe
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/paymentModel.dart';
-import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
-import 'package:space_learn_flutter/core/themes/layout/navBarLecteur.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 
 class PaymentPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -553,7 +553,7 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
                       // Mobile Money (Orange, Wave)
                       _buildDarkTextField(
                         controller: _phoneController,
-                        label: 'Numéro de téléphone (${_selectedMethod})',
+                        label: 'Numéro de téléphone ($_selectedMethod)',
                         hint: '+225 ...',
                         icon: Icons.phone_android,
                         keyboardType: TextInputType.phone,

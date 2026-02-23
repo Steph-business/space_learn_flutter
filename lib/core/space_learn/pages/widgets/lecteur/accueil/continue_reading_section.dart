@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../data/model/bookModel.dart';
+import '../../../../data/model/book_model.dart';
 
 class ContinueReadingSection extends StatelessWidget {
   final BookModel book;
@@ -25,18 +25,19 @@ class ContinueReadingSection extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
+            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF4338CA).withOpacity(0.35),
+              color: const Color(0xFF1E293B).withOpacity(0.35),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
           ],
+          border: Border.all(color: Colors.transparent),
         ),
         child: Stack(
           children: [
@@ -130,7 +131,7 @@ class ContinueReadingSection extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFFC7D2FE),
+                              color: const Color(0xFF06B6D4),
                             ),
                           ),
                         ),
@@ -172,7 +173,7 @@ class ContinueReadingSection extends StatelessWidget {
                             Text(
                               '$percent%',
                               style: GoogleFonts.poppins(
-                                color: const Color(0xFFA5B4FC),
+                                color: const Color(0xFF06B6D4),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -186,7 +187,7 @@ class ContinueReadingSection extends StatelessWidget {
                             value: progress > 0 ? progress : 0.05,
                             backgroundColor: Colors.white.withOpacity(0.15),
                             valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFF818CF8),
+                              Color(0xFF06B6D4),
                             ),
                             minHeight: 8,
                           ),
@@ -208,14 +209,14 @@ class ContinueReadingSection extends StatelessWidget {
                                 children: [
                                   const Icon(
                                     Icons.play_arrow_rounded,
-                                    color: Color(0xFF4338CA),
+                                    color: Color(0xFF06B6D4),
                                     size: 18,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Reprendre',
                                     style: GoogleFonts.poppins(
-                                      color: const Color(0xFF4338CA),
+                                      color: const Color(0xFF06B6D4),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
                                     ),

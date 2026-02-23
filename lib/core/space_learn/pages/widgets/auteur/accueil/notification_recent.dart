@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
-import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import '../../../../data/dataServices/authServices.dart';
 import 'dart:async';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
@@ -407,7 +407,6 @@ class _NotificationCardFromModel extends StatelessWidget {
   final String timeAgo;
 
   const _NotificationCardFromModel({
-    super.key,
     required this.model,
     required this.icon,
     required this.borderColor,

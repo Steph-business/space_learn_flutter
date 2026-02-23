@@ -29,7 +29,9 @@ class FiltreLivres extends StatelessWidget {
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: actif ? const Color(0xFF1E293B) : Colors.white,
+                color: actif
+                    ? const Color(0xFF06B6D4)
+                    : const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: actif
                     ? [
@@ -37,24 +39,24 @@ class FiltreLivres extends StatelessWidget {
                           color: const Color(0xFF1E293B).withOpacity(0.2),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
-                        )
+                        ),
                       ]
                     : [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
                           blurRadius: 5,
                           offset: const Offset(0, 2),
-                        )
+                        ),
                       ],
                 border: Border.all(
-                  color: actif ? Colors.transparent : const Color(0xFFE2E8F0),
+                  color: actif ? Colors.transparent : Colors.transparent,
                   width: 1,
                 ),
               ),
               child: Text(
                 f,
                 style: GoogleFonts.poppins(
-                  color: actif ? Colors.white : const Color(0xFF64748B),
+                  color: actif ? Colors.white : Colors.grey[400],
                   fontWeight: actif ? FontWeight.w600 : FontWeight.w500,
                   fontSize: 13,
                 ),

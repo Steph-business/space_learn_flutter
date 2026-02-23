@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:space_learn_flutter/core/themes/layout/navBarAll.dart';
-import 'package:space_learn_flutter/core/themes/layout/navBarAuteur.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_auteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/contenu_accueil_auteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';

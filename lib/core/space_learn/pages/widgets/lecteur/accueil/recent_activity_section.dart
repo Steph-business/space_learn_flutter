@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../../themes/layout/navBarLecteur.dart';
-import '../../../../data/model/activiteModel.dart';
+import '../../../../../themes/layout/nav_bar_lecteur.dart';
+import '../../../../data/model/activite_model.dart';
 
 class RecentActivitySection extends StatelessWidget {
   final ReviewModel activity;

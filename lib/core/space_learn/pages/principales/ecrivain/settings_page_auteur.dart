@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../data/dataServices/authServices.dart';
-import '../../../utils/profileStorage.dart';
-import 'profilePage.dart';
-import 'readingPreferencesPage.dart';
-import 'auth/login.dart';
+import '../../../data/dataServices/authServices.dart';
+import '../../../../utils/profile_storage.dart';
+import '../profilePage.dart';
+import '../auth/login.dart';
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+class SettingsPageAuteur extends StatelessWidget {
+  const SettingsPageAuteur({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +45,7 @@ class SettingsPage extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: const Text(
-              "Paramètres",
+              "Paramètres Auteur",
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -55,13 +54,13 @@ class SettingsPage extends StatelessWidget {
             centerTitle: true,
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Titre principal
                 const Text(
-                  "Paramètres",
+                  "Paramètres Auteur",
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -75,7 +74,7 @@ class SettingsPage extends StatelessWidget {
                 _buildSettingItem(
                   icon: Icons.person_outline,
                   title: "Informations personnelles",
-                  subtitle: "Modifier vos informations",
+                  subtitle: "Modifier vos informations d'auteur",
                   onTap: () {
                     Navigator.push(
                       context,
@@ -88,7 +87,7 @@ class SettingsPage extends StatelessWidget {
                 _buildSettingItem(
                   icon: Icons.photo_camera_outlined,
                   title: "Photo de profil",
-                  subtitle: "Changer votre photo",
+                  subtitle: "Changer votre photo d'auteur",
                   onTap: () {
                     // Navigation vers la page de changement de photo
                   },
@@ -96,27 +95,43 @@ class SettingsPage extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Section Lecture
-                _buildSectionTitle("Lecture"),
+                // Section Écriture
+                _buildSectionTitle("Écriture"),
                 _buildSettingItem(
-                  icon: Icons.book_outlined,
-                  title: "Préférences de lecture",
+                  icon: Icons.edit_outlined,
+                  title: "Préférences d'écriture",
                   subtitle: "Police, taille du texte, thème",
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ReadingPreferencesPage(),
-                      ),
-                    );
+                    // Navigation vers les préférences d'écriture
                   },
                 ),
                 _buildSettingItem(
                   icon: Icons.notifications_outlined,
-                  title: "Notifications de lecture",
-                  subtitle: "Rappels de lecture, nouveaux chapitres",
+                  title: "Notifications de ventes",
+                  subtitle: "Rappels de ventes, nouveaux commentaires",
                   onTap: () {
-                    // Navigation vers les notifications
+                    // Navigation vers les notifications de ventes
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                // Section Publication
+                _buildSectionTitle("Publication"),
+                _buildSettingItem(
+                  icon: Icons.publish_outlined,
+                  title: "Paramètres de publication",
+                  subtitle: "Visibilité, prix, droits d'auteur",
+                  onTap: () {
+                    // Navigation vers les paramètres de publication
+                  },
+                ),
+                _buildSettingItem(
+                  icon: Icons.analytics_outlined,
+                  title: "Rapports de ventes",
+                  subtitle: "Statistiques détaillées",
+                  onTap: () {
+                    // Navigation vers les rapports
                   },
                 ),
 
@@ -138,14 +153,6 @@ class SettingsPage extends StatelessWidget {
                   subtitle: "Mode automatique",
                   onTap: () {
                     // Navigation vers la sélection de thème
-                  },
-                ),
-                _buildSettingItem(
-                  icon: Icons.download_outlined,
-                  title: "Téléchargements",
-                  subtitle: "Gérer les livres téléchargés",
-                  onTap: () {
-                    // Navigation vers les téléchargements
                   },
                 ),
 
@@ -201,14 +208,6 @@ class SettingsPage extends StatelessWidget {
                   subtitle: "1.0.0",
                   onTap: () {
                     // Afficher les informations de version
-                  },
-                ),
-                _buildSettingItem(
-                  icon: Icons.description_outlined,
-                  title: "Conditions d'utilisation",
-                  subtitle: "Lire les conditions",
-                  onTap: () {
-                    // Navigation vers les conditions d'utilisation
                   },
                 ),
 

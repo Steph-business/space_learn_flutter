@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 
 class PublicationCard extends StatelessWidget {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../space_learn/pages/principales/ecrivain/settingsPageAuteur.dart';
+import '../../space_learn/pages/principales/ecrivain/settings_page_auteur.dart';
 import '../../space_learn/pages/principales/notificationPage.dart';
-import '../../space_learn/pages/principales/messagesPage.dart';
+import '../../space_learn/pages/principales/messages_page.dart';
 
 class NavBarAll extends StatelessWidget {
   final String userName;

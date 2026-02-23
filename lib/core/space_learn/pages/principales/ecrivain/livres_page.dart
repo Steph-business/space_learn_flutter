@@ -7,8 +7,8 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
-import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class LivresPage extends StatefulWidget {
   final VoidCallback? onBackPressed;
