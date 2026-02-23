@@ -1,31 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../app_colors.dart';
-import '../app_text_styles.dart';
 import '../../space_learn/pages/principales/ecrivain/settingsPageAuteur.dart';
 import '../../space_learn/pages/principales/notificationPage.dart';
 import '../../space_learn/pages/principales/messagesPage.dart';
 
 class NavBarAll extends StatelessWidget {
   final String userName;
+  final String? greeting;
+  final String? subtitle;
 
-  const NavBarAll({super.key, this.userName = 'Steph'});
+  const NavBarAll({
+    super.key,
+    this.userName = 'Steph',
+    this.greeting,
+    this.subtitle,
+  });
+
+  static String getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Bonjour';
+    if (hour < 18) return 'Bon après-midi';
+    return 'Bonsoir';
+  }
+
+  static String getFirstName(String fullName) {
+    return fullName.split(' ').first;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final greetingText =
+        greeting ?? '${getGreeting()}, ${getFirstName(userName)} 👋';
+    final subtitleText = subtitle ?? 'Que souhaitez-vous lire aujourd\'hui ?';
+
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 60, bottom: 16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1A1A2E), // Dark blue-black
-            Color(0xFF16213E), // Dark blue
-            Color(0xFF0F3460), // Medium blue
-          ],
-        ),
-      ),
+      decoration: const BoxDecoration(color: Colors.transparent),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -34,33 +45,22 @@ class NavBarAll extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 2.0,
-                  children: [
-                    const Text(
-                      'Hello,',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    Text(
-                      userName,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
                 Text(
-                  'Bienvenue dans votre espace lecture',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primary,
+                  greetingText,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitleText,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.7),
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -79,8 +79,8 @@ class NavBarAll extends StatelessWidget {
                   );
                 },
                 icon: const Icon(
-                  Icons.chat_outlined,
-                  color: AppColors.primary,
+                  Icons.chat_bubble_outline_rounded,
+                  color: Colors.white,
                   size: 24,
                 ),
               ),
@@ -98,7 +98,7 @@ class NavBarAll extends StatelessWidget {
                     },
                     icon: const Icon(
                       Icons.notifications_outlined,
-                      color: AppColors.primary,
+                      color: Colors.white,
                       size: 24,
                     ),
                   ),
@@ -127,7 +127,7 @@ class NavBarAll extends StatelessWidget {
                 },
                 icon: const Icon(
                   Icons.settings_outlined,
-                  color: AppColors.primary,
+                  color: Colors.white,
                   size: 24,
                 ),
               ),

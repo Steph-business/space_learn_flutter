@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/bibliothequePage.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/markeplacePage.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/teamsPage.dart';
-import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/bibliotheque_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/boutique_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/communaute_page.dart';
 
 class MainNavBar extends StatefulWidget {
   final Widget? child;
-  static final GlobalKey<MainNavBarState> mainNavBarKey = GlobalKey<MainNavBarState>();
-  
+  static final GlobalKey<MainNavBarState> mainNavBarKey =
+      GlobalKey<MainNavBarState>();
+
   const MainNavBar({super.key, this.child});
 
   @override
@@ -26,9 +26,9 @@ class MainNavBarState extends State<MainNavBar> {
 
   final List<String> _titles = [
     "Accueil",
-    "Marketplace",
+    "Boutique",
     "Bibliothèque",
-    "Teams",
+    "Communauté",
   ];
 
   final List<IconData> _icons = [
@@ -48,6 +48,10 @@ class MainNavBarState extends State<MainNavBar> {
 
   void navigateToMarketplace() {
     _onItemTapped(1);
+  }
+
+  void navigateToCommunaute() {
+    _onItemTapped(3);
   }
 
   Widget _getPage(int index) {
@@ -73,14 +77,14 @@ class MainNavBarState extends State<MainNavBar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFF0F172A),
       body: _getPage(_selectedIndex),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF1E293B),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withOpacity(0.2),
               blurRadius: 8,
               offset: const Offset(0, -2),
             ),
@@ -91,8 +95,8 @@ class MainNavBarState extends State<MainNavBar> {
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
           elevation: 0,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primary,
+          backgroundColor: const Color(0xFF1E293B),
+          selectedItemColor: const Color(0xFF06B6D4), // Cyan
           unselectedItemColor: Colors.grey[500],
           showUnselectedLabels: true,
           selectedLabelStyle: GoogleFonts.poppins(

@@ -67,20 +67,37 @@ class BookService {
       ApiRoutes.books,
     ).replace(queryParameters: queryParameters);
 
-    final response = await client.get(uri);
+    try {
+      final response = await client.get(uri);
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      final List<dynamic> data = responseData['data'] ?? [];
-      return data.map((json) => BookModel.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to fetch books');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+        return data.map((json) => BookModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to fetch books: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to fetch books: $e');
     }
   }
 
-  Future<BookModel> getBookById(String id) async {
+  /// Fetch a single book by id. If [authToken] is provided, it will be sent
+  /// in the Authorization header. Some endpoints return richer data for
+  /// authenticated requests (including author info), so prefer passing the
+  /// token when available.
+  Future<BookModel> getBookById(String id, {String? authToken}) async {
     final url = ApiRoutes.bookById.replaceFirst(':id', id);
-    final response = await client.get(Uri.parse(url));
+    final uri = Uri.parse(url);
+    final headers = <String, String>{};
+    if (authToken != null && authToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $authToken';
+    }
+
+    final response = await client.get(
+      uri,
+      headers: headers.isEmpty ? null : headers,
+    );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -127,21 +144,45 @@ class BookService {
 
   Future<List<BookModel>> getBooksByAuthorId(String auteurId) async {
     final url = ApiRoutes.booksByAuthor.replaceFirst(':auteur_id', auteurId);
-    final response = await client.get(Uri.parse(url));
+    try {
+      final response = await client.get(Uri.parse(url));
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      final List<dynamic> data = responseData['data'] ?? [];
-      return data.map((json) => BookModel.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to fetch books by author');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+        return data.map((json) => BookModel.fromJson(json)).toList();
+      } else {
+        print(
+          '⚠️ BookService.getBooksByAuthorId - server error: ${response.statusCode}, attempting fallback host',
+        );
+      }
+    } catch (e) {
+      print('❌ Error loading books by author: $e - attempting fallback host');
     }
+
+    // Fallback attempt: try the same path using the main baseUrl instead of baseUrlsGin
+    try {
+      final fallbackUrl = ApiRoutes.booksByAuthor
+          .replaceFirst(ApiRoutes.baseUrlsGin, ApiRoutes.baseUrl)
+          .replaceFirst(':auteur_id', auteurId);
+      final resp2 = await client.get(Uri.parse(fallbackUrl));
+      if (resp2.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(resp2.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+        return data.map((json) => BookModel.fromJson(json)).toList();
+      } else {
+        print('⚠️ Fallback getBooksByAuthorId failed: ${resp2.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Fallback error loading books by author: $e');
+    }
+
+    return [];
   }
 
   // Alias for consistency
   Future<List<BookModel>> getBooksByAuthor(String auteurId) =>
       getBooksByAuthorId(auteurId);
-
   Future<List<BookModel>> getBooksByCategory(String categorieId) async {
     final queryParameters = {'categorie_id': categorieId};
     final uri = Uri.parse(

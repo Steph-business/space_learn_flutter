@@ -11,9 +11,9 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/forg
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/register.dart';
 
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/homePageLecteur.dart'
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
     as lecteurHome;
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homePageAuteur.dart'
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;
 
 class LoginPage extends StatefulWidget {

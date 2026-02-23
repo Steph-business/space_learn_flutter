@@ -63,30 +63,34 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final String formattedDate = widget.book.creeLe != null
-        ? "${widget.book.creeLe!.day}/${widget.book.creeLe!.month}/${widget.book.creeLe!.year}"
+    final book = widget.book;
+    final isOwned = widget.isOwned;
+
+    final String formattedDate = book.creeLe != null
+        ? "${book.creeLe!.day}/${book.creeLe!.month}/${book.creeLe!.year}"
         : "N/A";
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF0F172A),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         title: Text(
-          widget.isOwned ? 'Lecture' : 'Détails de l\'achat',
+          isOwned ? 'Lecture' : 'Détails de l\'achat',
           style: GoogleFonts.poppins(
             color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            letterSpacing: 1.2,
           ),
         ),
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.2),
-            shape: BoxShape.circle,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+            size: 20,
           ),
           child: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
@@ -117,7 +121,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     children: [
                       // Book Cover with premium shadow
                       Hero(
-                        tag: 'book-${widget.book.id}',
+                        tag: 'book-${book.id}',
                         child: Container(
                           height: 180,
                           width: 120,
@@ -134,13 +138,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child:
-                                widget.book.imageCouverture != null &&
-                                    widget.book.imageCouverture!.isNotEmpty &&
-                                    !widget.book.imageCouverture!.contains(
+                                book.imageCouverture != null &&
+                                    book.imageCouverture!.isNotEmpty &&
+                                    !book.imageCouverture!.contains(
                                       'example.com',
                                     )
                                 ? Image.network(
-                                    widget.book.imageCouverture!,
+                                    book.imageCouverture!,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
@@ -172,22 +176,18 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              widget.book.titre,
+                              book.titre,
                               style: GoogleFonts.poppins(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
                                 color: Colors.white,
-                                height: 1.2,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 8),
                             Text(
-                              'Par ${widget.book.authorName}',
+                              'Par ${book.authorName}',
                               style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.9),
+                                color: const Color(0xFF06B6D4),
+                                fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -197,12 +197,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               children: [
                                 _buildHeaderStat(
                                   Icons.star_rounded,
-                                  widget.book.noteMoyenne.toStringAsFixed(1),
+                                  book.noteMoyenne.toStringAsFixed(1),
                                 ),
                                 const SizedBox(width: 12),
                                 _buildHeaderStat(
                                   Icons.download_rounded,
-                                  widget.book.telechargements.toString(),
+                                  book.telechargements.toString(),
                                 ),
                                 const SizedBox(width: 12),
                                 _buildHeaderStat(
@@ -222,7 +222,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                widget.book.format.toUpperCase(),
+                                book.format.toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -250,7 +250,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   const SizedBox(height: 10),
 
                   // Price and Buy Button (Only if not owned)
-                  if (!widget.isOwned)
+                  if (!isOwned)
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
@@ -281,7 +281,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: "${widget.book.prix} ",
+                                      text: "${book.prix} ",
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.w800,
                                       ),
@@ -312,7 +312,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        PaymentPage(book: widget.book.toJson()),
+                                        PaymentPage(book: book.toJson()),
                                   ),
                                 );
                               },
@@ -355,19 +355,27 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF59E0B),
+                          backgroundColor: const Color(0xFF06B6D4),
                           foregroundColor: Colors.white,
-                          elevation: 4,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Text(
-                          'Commencer la lecture',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.menu_book, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Commencer la lecture',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -385,37 +393,29 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    widget.book.description,
+                    book.description,
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       color: const Color(0xFF475569),
                       height: 1.7,
                     ),
                   ),
+                  const SizedBox(height: 40),
 
-                  const SizedBox(height: 32),
-
-                  // Related Sections
-                  if (_isLoadingRelated)
-                    const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFF59E0B),
-                      ),
-                    )
-                  else ...[
+                  if (!_isLoadingRelated) ...[
                     if (_authorBooks.isNotEmpty)
-                      _buildRelatedSection(
-                        "Livres du même auteur",
-                        _authorBooks,
-                      ),
-
+                      _buildRelatedSection("Du même auteur", _authorBooks),
                     if (_categoryBooks.isNotEmpty)
-                      _buildRelatedSection(
-                        "Recommandations (Même catégorie)",
-                        _categoryBooks,
+                      _buildRelatedSection("Livres similaires", _categoryBooks),
+                  ] else
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF06B6D4),
+                        ),
                       ),
-                  ],
-
+                    ),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -522,21 +522,99 @@ class _BookDetailPageState extends State<BookDetailPage> {
     );
   }
 
-  Widget _buildHeaderStat(IconData icon, String value) {
+  Widget _buildStars(double rating) {
+    int fullStars = rating.floor();
+    bool hasHalfStar = (rating - fullStars) >= 0.5;
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.white70, size: 14),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+      children: List.generate(5, (index) {
+        if (index < fullStars) {
+          return const Icon(Icons.star, color: Color(0xFFF59E0B), size: 18);
+        } else if (index == fullStars && hasHalfStar) {
+          return const Icon(
+            Icons.star_half,
+            color: Color(0xFFF59E0B),
+            size: 18,
+          );
+        } else {
+          return const Icon(
+            Icons.star_border,
+            color: Color(0xFFF59E0B),
+            size: 18,
+          );
+        }
+      }),
+    );
+  }
+
+  Widget _buildReviewCard(String name, String time, int stars, String comment) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: const Color(0xFF06B6D4).withOpacity(0.2),
+                child: const Icon(
+                  Icons.person,
+                  color: Color(0xFF06B6D4),
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      time,
+                      style: GoogleFonts.poppins(
+                        color: Colors.grey[500],
+                        fontSize: 10,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: List.generate(5, (index) {
+                  return Icon(
+                    index < stars ? Icons.star : Icons.star_border,
+                    color: const Color(0xFFF59E0B),
+                    size: 14,
+                  );
+                }),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            comment,
+            style: GoogleFonts.poppins(
+              color: Colors.grey[300],
+              fontStyle: FontStyle.italic,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

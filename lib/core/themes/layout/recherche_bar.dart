@@ -17,22 +17,30 @@ class CustomSearchBar extends StatelessWidget {
                 color: Colors.grey[500],
                 fontSize: 14,
               ),
-              prefixIcon: const Icon(Icons.search,
-                  color: Color(0xFF6D6DFF), size: 20),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: Color(0xFF06B6D4),
+                size: 20,
+              ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: const Color(0xFF1E293B),
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
               enabledBorder: OutlineInputBorder(
-                borderSide:
-                    const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+                borderSide: const BorderSide(
+                  color: Colors.transparent,
+                  width: 0,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide:
-                    const BorderSide(color: Color(0xFF6D6DFF), width: 1.5),
+                borderSide: const BorderSide(
+                  color: Color(0xFF06B6D4),
+                  width: 1.5,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
+            style: const TextStyle(color: Colors.white),
           ),
         ),
         const SizedBox(width: 10),
@@ -41,10 +49,9 @@ class CustomSearchBar extends StatelessWidget {
           icon: const Icon(Icons.filter_list, size: 18),
           label: const Text("Filtrer"),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1E293B),
+            backgroundColor: const Color(0xFF06B6D4), // Cyan
             foregroundColor: Colors.white,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

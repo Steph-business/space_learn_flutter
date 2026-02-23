@@ -3,10 +3,10 @@ import 'dart:async' as java_timer;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/paymentService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/paymentModel.dart';
 import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
-import 'package:space_learn_flutter/core/themes/app_colors.dart';
-import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:space_learn_flutter/core/themes/layout/navBarLecteur.dart';
 
 class PaymentPage extends StatefulWidget {
@@ -19,16 +19,39 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
+  String _selectedMethod = 'Orange';
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _cardController = TextEditingController();
+  final _expController = TextEditingController();
+  final _cvvController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _cardController.dispose();
+    _expController.dispose();
+    _cvvController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final String price = widget.book['prix']?.toString() ?? '0';
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF0F172A),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF59E0B),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Paiement',
+          'Paiement Sécurisé',
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -36,7 +59,11 @@ class _PaymentPageState extends State<PaymentPage> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -73,22 +100,18 @@ class _PaymentPageState extends State<PaymentPage> {
                         color: Colors.grey[100],
                       ),
                       child:
-                          _getBookImage(widget.book) != null &&
-                              _getBookImage(widget.book)!.isNotEmpty &&
-                              !_getBookImage(
-                                widget.book,
-                              )!.contains('example.com')
+                          widget.book['image_couverture'] != null &&
+                              widget.book['image_couverture']
+                                  .toString()
+                                  .isNotEmpty &&
+                              !widget.book['image_couverture']
+                                  .toString()
+                                  .contains('example.com')
                           ? ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(12),
                               child: Image.network(
-                                _getBookImage(widget.book)!,
+                                widget.book['image_couverture'],
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.book,
-                                    color: Color(0xFFF59E0B),
-                                  );
-                                },
                               ),
                             )
                           : const Icon(Icons.book, color: Color(0xFFF59E0B)),
@@ -99,7 +122,7 @@ class _PaymentPageState extends State<PaymentPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _getBookTitle(widget.book),
+                            widget.book['titre'] ?? 'Sans titre',
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -109,7 +132,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            'Par ${_getAuthorName(widget.book)}',
+                            'Par ${widget.book['Auteur'] != null ? widget.book['Auteur']['nom_complet'] : 'Auteur inconnu'}',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               color: const Color(0xFF64748B),
@@ -120,7 +143,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             TextSpan(
                               children: [
                                 TextSpan(
-                                  text: '${_getBookPrice(widget.book)} ',
+                                  text: '${widget.book['prix'] ?? '0'} ',
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -267,33 +290,6 @@ class _PaymentPageState extends State<PaymentPage> {
             PaymentDetailsPage(method: method, book: widget.book),
       ),
     );
-  }
-
-  // Data recovery helpers
-  String _getBookTitle(Map<String, dynamic> book) {
-    return book['titre']?.toString() ??
-        book['title']?.toString() ??
-        'Sans titre';
-  }
-
-  String _getAuthorName(Map<String, dynamic> book) {
-    if (book['Auteur'] is Map) {
-      return book['Auteur']['nom_complet']?.toString() ??
-          book['Auteur']['NomComplet']?.toString() ??
-          'Auteur inconnu';
-    }
-    return book['auteur_nom']?.toString() ??
-        book['author_name']?.toString() ??
-        book['author']?.toString() ??
-        'Auteur inconnu';
-  }
-
-  String _getBookPrice(Map<String, dynamic> book) {
-    return (book['prix'] ?? book['price'] ?? '0').toString();
-  }
-
-  String? _getBookImage(Map<String, dynamic> book) {
-    return book['image_couverture']?.toString() ?? book['image']?.toString();
   }
 }
 
@@ -449,8 +445,7 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
   @override
   void initState() {
     super.initState();
-    final price = widget.book['prix'] ?? widget.book['price'] ?? '0';
-    _amountController.text = "$price FCFA";
+    _amountController.text = "${widget.book['prix']?.toString() ?? '0'} FCFA";
   }
 
   @override
@@ -530,144 +525,128 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
                         hint: 'XXXX XXXX XXXX XXXX',
                         icon: Icons.credit_card_rounded,
                         keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer le numéro de votre carte';
-                          }
-                          if (value.length < 16)
-                            return 'Numéro de carte invalide';
-                          return null;
-                        },
                       ),
                       const SizedBox(height: 20),
                       Row(
                         children: [
                           Expanded(
-                            child: _buildTextField(
-                              label: 'Expiration',
-                              hint: 'MM/YY',
-                              icon: Icons.calendar_today_rounded,
-                              keyboardType: TextInputType.datetime,
+                            child: _buildDarkTextField(
+                              controller: _expController,
+                              label: "Date d'expiration",
+                              hint: 'MM/AA',
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: _buildTextField(
+                            child: _buildDarkTextField(
+                              controller: _cvvController,
                               label: 'CVV',
-                              hint: 'XXX',
-                              icon: Icons.lock_outline_rounded,
-                              keyboardType: TextInputType.number,
+                              hint: '123',
+                              icon: Icons.lock_outline,
                               obscureText: true,
+                              keyboardType: TextInputType.number,
                             ),
                           ),
                         ],
                       ),
-                    ] else if (widget.method == 'PayPal') ...[
-                      _buildTextField(
-                        controller: _emailController,
-                        label: 'Adresse email PayPal',
-                        hint: 'votre.email@example.com',
-                        icon: Icons.email_rounded,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer votre adresse email';
-                          }
-                          return null;
-                        },
-                      ),
                     ] else ...[
-                      _buildTextField(
+                      // Mobile Money (Orange, Wave)
+                      _buildDarkTextField(
                         controller: _phoneController,
-                        label: 'Numéro de téléphone ${widget.method}',
-                        hint: '+225 XX XX XX XX XX',
-                        icon: Icons.phone_iphone_rounded,
+                        label: 'Numéro de téléphone (${_selectedMethod})',
+                        hint: '+225 ...',
+                        icon: Icons.phone_android,
                         keyboardType: TextInputType.phone,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer votre numéro';
-                          }
-                          return null;
-                        },
                       ),
                     ],
-                    const SizedBox(height: 20),
-                    _buildTextField(
-                      controller: _amountController,
-                      label: 'Montant à payer',
-                      icon: Icons.payments_rounded,
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 40),
+
+                    const SizedBox(height: 48),
+
+                    // Pay Button
                     SizedBox(
                       width: double.infinity,
-                      height: 60,
+                      height: 56,
                       child: ElevatedButton(
                         onPressed: _processPayment,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E293B),
+                          backgroundColor: const Color(0xFF06B6D4), // Cyan
                           foregroundColor: Colors.white,
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          elevation: 0,
                         ),
                         child: Text(
-                          'Confirmer le paiement',
+                          'Payer $price FCFA',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.security_rounded,
-                            color: Color(0xFF64748B),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Paiement 100% sécurisé et crypté.',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: const Color(0xFF64748B),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+
+                    // Footer text
+                    Center(
+                      child: Text(
+                        'Paiement sécurisé par Stripe',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF64748B),
+                          fontSize: 12,
+                        ),
                       ),
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMethodTab(String method) {
+    bool isSelected = _selectedMethod == method;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedMethod = method;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF06B6D4) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            method,
+            style: GoogleFonts.poppins(
+              color: isSelected ? Colors.white : Colors.grey[500],
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTextField({
-    TextEditingController? controller,
+  Widget _buildDarkTextField({
+    required TextEditingController controller,
     required String label,
-    String? hint,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
+    required String hint,
+    IconData? icon,
     bool obscureText = false,
-    bool readOnly = false,
-    String? Function(String?)? validator,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -675,49 +654,47 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
         Text(
           label,
           style: GoogleFonts.poppins(
+            color: Colors.white,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF475569),
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          keyboardType: keyboardType,
           obscureText: obscureText,
-          readOnly: readOnly,
-          validator: validator,
-          style: GoogleFonts.poppins(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF1E293B),
-          ),
+          keyboardType: keyboardType,
+          style: GoogleFonts.poppins(color: Colors.white, fontSize: 15),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.poppins(
-              color: const Color(0xFF94A3B8),
-              fontSize: 14,
-            ),
-            prefixIcon: Icon(icon, color: const Color(0xFFF59E0B), size: 20),
+            hintStyle: GoogleFonts.poppins(color: Colors.white30),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: const Color(0xFF1E293B),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 2),
+              borderSide: const BorderSide(
+                color: Color(0xFF06B6D4),
+                width: 1.5,
+              ),
             ),
+            suffixIcon: icon != null
+                ? Icon(icon, color: Colors.white30, size: 20)
+                : null,
           ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Ce champ est requis';
+            }
+            return null;
+          },
         ),
       ],
     );
@@ -725,7 +702,6 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
 
   void _processPayment() async {
     if (_formKey.currentState!.validate()) {
-      // Afficher le dialogue de chargement
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -733,17 +709,18 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
           child: Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(color: Color(0xFFF59E0B)),
+                const CircularProgressIndicator(color: Color(0xFF06B6D4)),
                 const SizedBox(height: 24),
                 Text(
-                  'Traitement du paiement...',
+                  'Traitement...',
                   style: GoogleFonts.poppins(
+                    color: Colors.white,
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
                   ),
@@ -756,22 +733,15 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
 
       try {
         final token = await TokenStorage.getToken();
-        if (token == null) {
-          throw Exception("Utilisateur non connecté");
-        }
+        if (token == null) throw Exception("Utilisateur non connecté");
 
         final authService = AuthService();
         final user = await authService.getUser(token);
-        if (user == null) {
-          throw Exception(
-            "Impossible de récupérer les informations utilisateur",
-          );
-        }
+        if (user == null) throw Exception("Impossible de récupérer les infos");
 
         final paymentService = PaymentService();
         final libraryService = LibraryService();
 
-        // Check if user already owns the book
         final userLibrary = await libraryService.getUserLibrary(token);
         final bool isAlreadyOwned = userLibrary.any(
           (item) =>
@@ -782,31 +752,34 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
 
         if (isAlreadyOwned) {
           if (!mounted) return;
-          Navigator.of(context).pop(); // Close processing dialog
+          Navigator.of(context).pop();
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF1E293B),
               title: Text(
                 'Livre déjà possédé',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               content: Text(
                 'Vous possédez déjà ce livre dans votre bibliothèque.',
-                style: GoogleFonts.poppins(),
+                style: GoogleFonts.poppins(color: Colors.white70),
               ),
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // Close alert
-                    // Return to the root (MainNavBar)
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                    // Switch to Marketplace tab
+                    Navigator.of(context).pop();
+                    final nav = Navigator.of(context);
+                    if (nav.canPop()) nav.popUntil((route) => route.isFirst);
                     MainNavBar.mainNavBarKey.currentState
                         ?.navigateToMarketplace();
                   },
                   child: Text(
-                    'Aller au Marketplace',
-                    style: GoogleFonts.poppins(color: const Color(0xFFF59E0B)),
+                    'OK',
+                    style: GoogleFonts.poppins(color: const Color(0xFF06B6D4)),
                   ),
                 ),
               ],
@@ -815,78 +788,62 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
           return;
         }
 
-        // Si mobile money, on utilise le numéro de téléphone comme transaction_id
-        final isMoMo =
-            widget.method.toLowerCase().contains('money') ||
-            widget.method.toLowerCase().contains('wave');
-
-        final transactionId = isMoMo
-            ? _phoneController.text.trim()
-            : "TRX-${DateTime.now().millisecondsSinceEpoch}";
-
+        // Générer des IDs fictifs pour la transaction et la référence
+        final transactionId = "TRX-${DateTime.now().millisecondsSinceEpoch}";
         final referenceId = "REF-${DateTime.now().millisecondsSinceEpoch}";
 
-        final payment = PaymentModel(
-          id: "", // Sera généré par le backend
-          utilisateurId: user.id,
-          livreId: widget.book['id']?.toString() ?? "",
-          methodePaiement: widget.method.toLowerCase().replaceAll(' ', '_'),
-          transactionId: transactionId,
-          referenceId: referenceId,
-          montant:
-              double.tryParse(
-                (widget.book['prix'] ?? widget.book['price'] ?? '0').toString(),
-              ) ??
-              0.0,
-          creeLe: DateTime.now(),
-        );
+        final double amount =
+            double.tryParse(widget.book['prix']?.toString() ?? '0') ?? 0.0;
 
-        print(
-          "🚀 Tentative de création du paiement pour le livre: ${widget.book['id']}",
-        );
-        final result = await paymentService.createPayment(payment, token);
-        print("✅ Paiement initié avec succès");
-
-        // Si c'est un paiement MoMo, on attend la confirmation (polling)
-        if (isMoMo && result.referenceId.isNotEmpty) {
-          print(
-            "⏳ En attente de confirmation MoMo (Ref: ${result.referenceId})...",
+        // Skip payment creation if amount is 0 (Free book)
+        if (amount > 0) {
+          final payment = PaymentModel(
+            id: "", // Sera généré par le backend
+            utilisateurId: user.id,
+            livreId: widget.book['id']?.toString() ?? "",
+            methodePaiement: widget.method.toLowerCase().replaceAll(' ', '_'),
+            transactionId: transactionId,
+            referenceId: referenceId,
+            montant: amount,
+            creeLe: DateTime.now(),
           );
-          bool isConfirmed = false;
-          int attempts = 0;
-          const maxAttempts = 30; // 30 tentatives * 2 secondes = 1 minute
 
-          while (!isConfirmed && attempts < maxAttempts) {
-            attempts++;
-            await Future.delayed(const Duration(seconds: 2));
-            try {
-              final status = await paymentService.getMomoStatus(
-                result.referenceId,
-                token,
-              );
-              if (status['status'] == 'SUCCESSFUL') {
-                isConfirmed = true;
-                print("✅ Paiement MoMo confirmé !");
-              } else if (status['status'] == 'FAILED' ||
-                  status['status'] == 'REJECTED') {
-                throw Exception("Le paiement a été rejeté ou a échoué.");
-              }
-            } catch (e) {
-              print("⚠️ Erreur lors du polling MoMo: $e");
-            }
-          }
+          print(
+            "🚀 Tentative de création du paiement pour le livre: ${widget.book['id']}",
+          );
+          await paymentService.createPayment(payment, token);
+          print("✅ Paiement créé avec succès");
+        } else {
+          print("🚀 Livre gratuit, étape de paiement ignorée.");
+        }
 
-          if (!isConfirmed) {
-            throw Exception(
-              "Délai d'attente dépassé pour la confirmation MoMo.",
-            );
-          }
+        // ✅ Ajouter le livre à la bibliothèque de l'utilisateur
+        print("📚 Tentative d'ajout du livre à la bibliothèque...");
+        await libraryService.addToLibrary(
+          widget.book['id']?.toString() ?? "",
+          user.id,
+          amount > 0 ? "achat" : "gratuit", // acquis_via adapté
+          token,
+        );
+        print("✅ Livre ajouté à la bibliothèque avec succès");
+
+        // ✅ Incrémenter le nombre de téléchargements
+        print("📥 Incrémentation du nombre de téléchargements...");
+        try {
+          final bookService = BookService();
+          final currentDownloads = widget.book['telechargements'] ?? 0;
+          await bookService.updateBook(widget.book['id']?.toString() ?? "", {
+            'telechargements': currentDownloads + 1,
+          }, token);
+          print("✅ Nombre de téléchargements incrémenté");
+        } catch (e) {
+          print("⚠️ Erreur lors de l'incrémentation des téléchargements: $e");
+          // On ne bloque pas le processus si l'incrémentation échoue
         }
 
         if (!mounted) return;
-        Navigator.of(context).pop(); // Fermer le dialog
+        Navigator.of(context).pop();
 
-        // Naviguer vers la page de confirmation
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -895,11 +852,10 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
         );
       } catch (e) {
         if (!mounted) return;
-        Navigator.of(context).pop(); // Fermer le dialog
-
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Erreur de paiement : ${e.toString()}"),
+            content: Text("Erreur : ${e.toString()}"),
             backgroundColor: Colors.red,
           ),
         );
@@ -908,12 +864,9 @@ class _PaymentDetailsPageState extends State<PaymentDetailsPage> {
   }
 }
 
-// Page de confirmation de paiement
 class PaymentConfirmationPage extends StatefulWidget {
   final Map<String, dynamic> book;
-
   const PaymentConfirmationPage({super.key, required this.book});
-
   @override
   State<PaymentConfirmationPage> createState() =>
       _PaymentConfirmationPageState();
@@ -944,9 +897,8 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
 
   void _navigateToLibrary() {
     if (!mounted) return;
-    // Retourner à l'accueil
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    // Changer d'onglet vers la bibliothèque via la GlobalKey
+    final nav = Navigator.of(context);
+    if (nav.canPop()) nav.popUntil((route) => route.isFirst);
     MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
   }
 
@@ -959,7 +911,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF0F172A),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -969,12 +921,12 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: const Color(0xFF06B6D4).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.check_rounded,
-                  color: Color(0xFF16A34A),
+                  color: Color(0xFF06B6D4),
                   size: 64,
                 ),
               ),
@@ -984,26 +936,26 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1E293B),
+                  color: Colors.white,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
-                'Félicitations ! Votre achat de "${widget.book['titre']}" a été confirmé avec succès.',
+                'Votre achat de "${widget.book['titre']}" a été confirmé.',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
-                  color: const Color(0xFF64748B),
+                  color: Colors.grey[400],
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               Text(
-                'Redirection vers votre bibliothèque dans $_secondsRemaining secondes...',
+                'Redirection vers votre bibliothèque dans $_secondsRemaining...',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: const Color(0xFFF59E0B),
+                  color: const Color(0xFF06B6D4),
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
@@ -1015,12 +967,11 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                 child: ElevatedButton(
                   onPressed: _navigateToLibrary,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF59E0B),
+                    backgroundColor: const Color(0xFF06B6D4),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    elevation: 0,
                   ),
                   child: Text(
                     'Aller dans ma bibliothèque',
@@ -1028,20 +979,6 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                child: Text(
-                  'Retour à l\'accueil',
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFF64748B),
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),

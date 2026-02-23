@@ -60,11 +60,9 @@ class BookModel {
   factory BookModel.fromJson(Map<String, dynamic> json) {
     // Handle author extraction
     UserModel? author;
-    final authorData =
-        json['Auteur'] ??
-        json['auteur'] ??
-        json['author'] ??
-        json['Utilisateur'];
+    final authorData = json['Auteur'] ?? json['auteur'] ?? json['author'];
+    // Note: json['Utilisateur'] is intentionally excluded — it represents
+    // the library owner (reader), NOT the book author.
 
     if (authorData != null) {
       if (authorData is Map<String, dynamic>) {

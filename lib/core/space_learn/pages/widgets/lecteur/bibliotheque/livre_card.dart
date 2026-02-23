@@ -30,16 +30,16 @@ class LivreCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+        border: Border.all(color: Colors.transparent, width: 0),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(2),
@@ -89,7 +89,7 @@ class LivreCard extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: const Color(0xFF1E293B),
+                          color: Colors.white,
                           height: 1.2,
                         ),
                         maxLines: 2,
@@ -99,7 +99,7 @@ class LivreCard extends StatelessWidget {
                       Text(
                         auteur,
                         style: GoogleFonts.poppins(
-                          color: const Color(0xFF475569),
+                          color: Colors.grey[400],
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -114,7 +114,7 @@ class LivreCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color: const Color(0xFF0F172A),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -122,7 +122,7 @@ class LivreCard extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
-                              color: const Color(0xFF64748B),
+                              color: Colors.grey[300],
                             ),
                           ),
                         ),
@@ -132,7 +132,7 @@ class LivreCard extends StatelessWidget {
                         Text(
                           "Acquis le ${_formatDate(dateAcquisition!)}",
                           style: GoogleFonts.poppins(
-                            color: const Color(0xFF94A3B8),
+                            color: Colors.grey[500],
                             fontSize: 11,
                             fontWeight: FontWeight.w400,
                           ),
@@ -155,7 +155,7 @@ class LivreCard extends StatelessWidget {
                                       style: GoogleFonts.poppins(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF94A3B8),
+                                        color: Colors.grey[400],
                                       ),
                                     ),
                                     Text(
@@ -175,7 +175,7 @@ class LivreCard extends StatelessWidget {
                                       height: 6,
                                       width: double.infinity,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFF1F5F9),
+                                        color: const Color(0xFF0F172A),
                                         borderRadius: BorderRadius.circular(3),
                                       ),
                                     ),

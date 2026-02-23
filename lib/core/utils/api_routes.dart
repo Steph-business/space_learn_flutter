@@ -22,7 +22,7 @@ class ApiRoutes {
   // Autres routes (cours, vidéos, etc.) peuvent être ajoutées ici
 
   // New base URL for Gin server on port 8082
-  static const String baseUrlsGin = "http://192.168.252.193:8085";
+  static const String baseUrlsGin = "http://192.168.252.224:8082";
 
   // Book routes
   static const String books = "$baseUrlsGin/api/books";
@@ -78,6 +78,9 @@ class ApiRoutes {
 
   // Notifications routes
   static const String notifications = "$baseUrlsGin/api/notifications";
+  // Server-Sent Events (SSE) endpoint for streaming notifications in real-time
+  static const String notificationsStream =
+      "$baseUrlsGin/api/notifications/stream";
   static const String markNotificationAsRead =
       "$baseUrlsGin/api/notifications/:id/read";
   static const String markAllNotificationsAsRead =

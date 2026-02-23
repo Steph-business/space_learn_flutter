@@ -5,9 +5,9 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/prof
 import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
 import 'package:space_learn_flutter/core/utils/profileStorage.dart';
 
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/homePageAuteur.dart'
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/homePageLecteur.dart'
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
     as lecteurHome;
 
 Future<void> main() async {
@@ -38,81 +38,64 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Widget? _initialPage;
+  String? _selectedProfile;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    debugPrint('--- MYAPP INITSTATE ---');
-    _loadInitialPage();
+    _loadInitialData();
   }
 
-  Future<void> _loadInitialPage() async {
-    debugPrint('--- LOADING INITIAL PAGE ---');
+  Future<void> _loadInitialData() async {
     try {
-      final page = await _getInitialPage();
-      debugPrint('--- PAGE DETERMINED: ${page.runtimeType} ---');
+      final token = await TokenStorage.getToken();
+      final profile = await ProfileStorage.getSelectedProfile();
+
       if (mounted) {
         setState(() {
-          _initialPage = page;
+          // On ne garde le profil que si on a un token valide
+          _selectedProfile = (token != null && token.isNotEmpty)
+              ? profile
+              : null;
           _isLoading = false;
         });
       }
     } catch (e) {
-      debugPrint('--- LOADING PAGE ERROR: $e ---');
-      if (mounted) {
-        setState(() {
-          _initialPage = const ProfilPage();
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-      '--- BUILD CALLED: isLoading=$_isLoading, initialPage=${_initialPage?.runtimeType} ---',
-    );
-
     return MaterialApp(
       title: 'Space Learn',
       theme: ThemeData(primarySwatch: Colors.orange),
       debugShowCheckedModeBanner: false,
-      home: _isLoading || _initialPage == null
+      home: _isLoading
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-          : _initialPage!,
+          : _getHomeWidget(),
     );
   }
 
-  Future<Widget> _getInitialPage() async {
-    debugPrint('--- GETTING INITIAL PAGE ---');
-    // Check if user is already logged in
-    final token = await TokenStorage.getToken();
-    final selectedProfile = await ProfileStorage.getSelectedProfile();
-    debugPrint('--- TOKEN: $token ---');
-    debugPrint('--- PROFILE: $selectedProfile ---');
+  Widget _getHomeWidget() {
+    if (_selectedProfile == null) return const ProfilPage();
 
-    if (token != null && token.isNotEmpty && selectedProfile != null) {
-      // User is logged in, determine which home page to show
-      final profileName = selectedProfile.toLowerCase();
-      if (profileName.contains('lecteur')) {
-        return lecteurHome.HomePageLecteur(
-          profileId: selectedProfile,
-          userName: 'Lecteur',
-        );
-      } else if (profileName.contains('auteur') ||
-          profileName.contains('ecrivain') ||
-          profileName.contains('éditeur')) {
-        return ecrivainHome.HomePageAuteur(
-          profileId: selectedProfile,
-          userName: 'Auteur',
-        );
-      }
+    final profileName = _selectedProfile!.toLowerCase();
+    if (profileName.contains('lecteur')) {
+      return lecteurHome.HomePageLecteur(
+        profileId: _selectedProfile!,
+        userName: 'Lecteur',
+      );
+    } else if (profileName.contains('auteur') ||
+        profileName.contains('ecrivain') ||
+        profileName.contains('éditeur')) {
+      return ecrivainHome.HomePageAuteur(
+        profileId: _selectedProfile!,
+        userName: 'Auteur',
+      );
     }
 
-    // Default to profile selection page
     return const ProfilPage();
   }
 }
