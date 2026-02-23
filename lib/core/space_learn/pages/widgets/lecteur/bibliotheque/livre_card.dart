@@ -163,7 +163,7 @@ class LivreCard extends StatelessWidget {
                                       style: GoogleFonts.poppins(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: const Color(0xFFF59E0B),
+                                        color: const Color(0xFF06B6D4),
                                       ),
                                     ),
                                   ],
@@ -185,10 +185,7 @@ class LivreCard extends StatelessWidget {
                                         height: 6,
                                         decoration: BoxDecoration(
                                           gradient: const LinearGradient(
-                                            colors: [
-                                              Color(0xFFF59E0B),
-                                              Color(0xFFD97706),
-                                            ],
+                                            colors: [Color(0xFF06B6D4)],
                                           ),
                                           borderRadius: BorderRadius.circular(
                                             3,
@@ -206,12 +203,12 @@ class LivreCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF59E0B).withOpacity(0.1),
+                              color: const Color(0xFF06B6D4).withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.play_arrow_rounded,
-                              color: Color(0xFFF59E0B),
+                              color: Color(0xFF06B6D4),
                               size: 20,
                             ),
                           ),

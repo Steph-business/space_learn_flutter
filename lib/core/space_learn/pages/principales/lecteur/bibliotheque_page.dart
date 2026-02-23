@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/themes/layout/navBarAll.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/filtre_livres.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_card.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/libraryModel.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
-import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
-import 'package:space_learn_flutter/core/themes/layout/navBarLecteur.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 
 class BibliothequePage extends StatefulWidget {
   const BibliothequePage({super.key});
@@ -328,7 +328,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: const Color(0xFF1E293B),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -342,7 +342,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               "Votre bibliothèque est vide",
               style: GoogleFonts.poppins(
                 fontSize: 18,
-                color: const Color(0xFF1E293B),
+                color: Colors.white,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -352,7 +352,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: const Color(0xFF64748B),
+                color: Colors.grey[400],
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -363,7 +363,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                 MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF59E0B),
+                backgroundColor: const Color(0xFF06B6D4),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -394,17 +394,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
               color: Colors.redAccent,
             ),
             const SizedBox(height: 16),
-            Text(
-              _error!,
-              style: GoogleFonts.poppins(color: const Color(0xFF1E293B)),
-            ),
+            Text(_error!, style: GoogleFonts.poppins(color: Colors.white)),
             const SizedBox(height: 16),
             TextButton.icon(
               onPressed: _loadLibrary,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text("Réessayer"),
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFF59E0B),
+                foregroundColor: const Color(0xFF06B6D4),
               ),
             ),
           ],

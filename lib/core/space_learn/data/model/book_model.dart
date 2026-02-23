@@ -1,8 +1,8 @@
 import 'categorie.dart';
-import 'activiteModel.dart';
+import 'activite_model.dart';
 import 'readingActivityModel.dart';
 import 'recommendationModel.dart';
-import 'userModel.dart';
+import 'user_model.dart';
 import '../../../utils/api_routes.dart';
 
 class BookModel {

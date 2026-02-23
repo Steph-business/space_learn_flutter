@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
-import 'package:space_learn_flutter/core/utils/tokenStorage.dart';
-import 'package:space_learn_flutter/core/utils/profileStorage.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;

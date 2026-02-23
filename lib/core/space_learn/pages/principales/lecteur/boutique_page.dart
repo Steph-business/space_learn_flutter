@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../../themes/layout/navBarAll.dart';
+import '../../../../themes/layout/nav_bar_all.dart';
 import '../../../../themes/layout/recherche_bar.dart';
 import '../../widgets/lecteur/boutique/livre_card.dart';
 import '../../widgets/lecteur/boutique/section_titre.dart';
 import '../../widgets/lecteur/boutique/select_categorie.dart';
 import '../../widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/bookModel.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 
 class MarketplacePage extends StatefulWidget {
   const MarketplacePage({super.key});

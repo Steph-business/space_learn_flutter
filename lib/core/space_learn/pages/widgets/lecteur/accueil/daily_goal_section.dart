@@ -17,8 +17,9 @@ class DailyGoalSection extends StatelessWidget {
     if (hourMatch != null) total += int.parse(hourMatch.group(1)!) * 60;
     if (minMatch != null) total += int.parse(minMatch.group(1)!);
     // Si format simple "2h" sans minutes
-    if (total == 0 && hourMatch != null)
+    if (total == 0 && hourMatch != null) {
       total = int.parse(hourMatch.group(1)!) * 60;
+    }
     return total;
   }
 

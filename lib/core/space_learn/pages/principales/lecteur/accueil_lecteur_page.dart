@@ -1,30 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../widgets/details/reading_page.dart';
 import '../../widgets/details/book_detail_page.dart';
 
-import '../../../../themes/layout/navBarAll.dart';
-import '../../../../themes/layout/navBarLecteur.dart';
-import '../../widgets/lecteur/accueil/continue_reading_section.dart';
-import '../../widgets/lecteur/accueil/recent_activity_section.dart';
-import '../../widgets/lecteur/accueil/recommendations_section.dart';
+import '../../../../themes/layout/nav_bar_all.dart';
+import '../../../../themes/layout/nav_bar_lecteur.dart';
 
-import '../../widgets/lecteur/accueil/featured_authors_section.dart';
-import '../../widgets/lecteur/accueil/daily_quote_section.dart';
-import '../../widgets/lecteur/accueil/daily_goal_section.dart';
-import '../../widgets/lecteur/accueil/quick_library_section.dart';
 
 import '../../../data/dataServices/libraryService.dart';
 import '../../../data/dataServices/bookService.dart';
 import '../../../data/dataServices/readerStatsService.dart';
 import '../../../data/dataServices/lectureService.dart';
-import '../../../data/model/bookModel.dart';
-import '../../../data/model/libraryModel.dart';
+import '../../../data/model/book_model.dart';
+import '../../../data/model/library_model.dart';
 import '../../../data/model/readerStatsModel.dart';
-import '../../../data/model/activiteModel.dart';
-import '../../../data/model/userModel.dart';
-import '../../../../utils/tokenStorage.dart';
+import '../../../data/model/activite_model.dart';
+import '../../../data/model/user_model.dart';
+import '../../../../utils/token_storage.dart';
 import '../../../data/dataServices/readingProgressService.dart';
 import '../../../data/model/readingActivityModel.dart';
 import '../../../data/dataServices/categorie_service.dart';

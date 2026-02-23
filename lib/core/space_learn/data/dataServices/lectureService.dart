@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../utils/api_routes.dart';
-import '../model/activiteModel.dart';
+import '../model/activite_model.dart';
 
 class Lectureservice {
   final http.Client client;

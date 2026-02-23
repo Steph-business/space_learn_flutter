@@ -46,6 +46,8 @@ dependencies:
   supabase_flutter: ^2.8.1
   syncfusion_flutter_pdfviewer: ^31.1.19
 
+  path: any
+  syncfusion_flutter_core: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

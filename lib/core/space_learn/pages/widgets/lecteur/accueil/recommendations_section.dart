@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../data/model/bookModel.dart';
+import '../../../../data/model/book_model.dart';
 import '../../details/book_detail_page.dart';
 
 class RecommendationsSection extends StatelessWidget {

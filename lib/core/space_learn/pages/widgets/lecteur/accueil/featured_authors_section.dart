@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../data/model/userModel.dart';
+import '../../../../data/model/user_model.dart';
 
 class FeaturedAuthorsSection extends StatelessWidget {
   final List<UserModel> authors;

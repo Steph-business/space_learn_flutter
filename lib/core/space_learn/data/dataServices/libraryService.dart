@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../utils/api_routes.dart';
-import '../model/libraryModel.dart';
+import '../model/library_model.dart';
 
 class LibraryService {
   final http.Client client;
