@@ -45,8 +45,8 @@ class NavBarAuteur extends StatelessWidget {
           _buildItem(Icons.home, "Accueil", 0),
           _buildItem(Icons.add_circle_outline, "Publier", 1),
           _buildItem(Icons.book, "Mes Livres", 2),
-          _buildItem(Icons.bar_chart, "Analytics", 3),
-          _buildItem(Icons.group, "Teams", 4),
+          _buildItem(Icons.bar_chart, "Statistiques", 3),
+          _buildItem(Icons.group, "Communauté", 4),
         ],
       ),
     );
@@ -57,10 +57,7 @@ class NavBarAuteur extends StatelessWidget {
       icon: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.only(bottom: 4),
-        child: Icon(
-          icon,
-          size: currentIndex == index ? 28 : 24,
-        ),
+        child: Icon(icon, size: currentIndex == index ? 28 : 24),
       ),
       label: label,
     );

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/payment_page.dart';
 
 class PurchasePage extends StatelessWidget {

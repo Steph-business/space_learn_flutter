@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/action_rapide.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/livre_recent.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/notification_recent.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/community_events.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/revenus.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/statistique.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/boutique/section_titre.dart';
 
-class HomeContent extends StatelessWidget {
+class HomeContentAuteur extends StatelessWidget {
   final String profileId;
   final String userName;
 
-  const HomeContent({
+  const HomeContentAuteur({
     super.key,
     required this.profileId,
     required this.userName,
@@ -37,9 +37,9 @@ class HomeContent extends StatelessWidget {
           const SizedBox(height: 20),
           const AuteurLivresRecents(),
           const SizedBox(height: 50),
-          const SectionTitle(title: "Notifications récentes"),
+          const SectionTitle(title: "Événements communautaires"),
           const SizedBox(height: 20),
-          const RecentNotificationsPage(),
+          const CommunityEventsPage(),
           const SizedBox(height: 100),
         ],
       ),
