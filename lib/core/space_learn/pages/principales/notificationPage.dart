@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import '../widgets/auteur/accueil/notification_recent.dart';
 
 class NotificationPage extends StatelessWidget {
@@ -20,10 +22,7 @@ class NotificationPage extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF475569), // Lighter slate gray
-                  Color(0xFF0F172A), // Dark background matching Scaffold
-                ],
+                colors: [Color(0xFF475569), Color(0xFF0F172A)],
               ),
             ),
           ),
@@ -49,6 +48,20 @@ class NotificationPage extends StatelessWidget {
               ),
             ),
             centerTitle: true,
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  final token = await TokenStorage.getToken();
+                  if (token != null) {
+                    context.read<NotificationProvider>().markAllAsRead(token);
+                  }
+                },
+                child: const Text(
+                  "Tout lire",
+                  style: TextStyle(color: Color(0xFF06B6D4), fontSize: 13),
+                ),
+              ),
+            ],
           ),
           body: const SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),

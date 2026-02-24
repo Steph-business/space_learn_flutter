@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-
-import 'package:space_learn_flutter/core/utils/token_storage.dart';
-import '../../../../data/dataServices/authServices.dart';
-import 'dart:async';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
+import 'package:provider/provider.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
 
 class RecentNotificationsPage extends StatefulWidget {
@@ -18,99 +15,7 @@ class RecentNotificationsPage extends StatefulWidget {
 }
 
 class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
-  final NotificationService _service = NotificationService();
-  List<NotificationModel> _notifications = [];
-  bool _loading = true;
-  String? _error;
-  bool _sseConnected = false;
-  String? _sseError;
-  String? _currentUserId;
-  // filter: 0 = Tous, 1 = Auteur (paiement/achat), 2 = Lecteur (autres)
   int _selectedFilter = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadNotifications();
-    _startSse();
-  }
-
-  StreamSubscription? _sseSub;
-
-  Future<void> _startSse() async {
-    try {
-      final token = await TokenStorage.getToken();
-      if (token == null || token.isEmpty) return;
-      // cancel existing subscription if any
-      await _sseSub?.cancel();
-      _sseError = null;
-      _sseConnected = false;
-      _sseSub = _service
-          .streamNotifications(token)
-          .listen(
-            (notif) {
-              setState(() {
-                // prepend new notifications
-                _notifications.insert(0, notif);
-                _sseConnected = true;
-                _sseError = null;
-              });
-            },
-            onError: (e) {
-              setState(() {
-                _sseConnected = false;
-                _sseError = e?.toString();
-              });
-            },
-          );
-    } catch (e) {
-      setState(() {
-        _sseError = e.toString();
-        _sseConnected = false;
-      });
-    }
-  }
-
-  Future<void> _loadNotifications() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final token = await TokenStorage.getToken();
-      if (token == null || token.isEmpty) {
-        throw Exception('Utilisateur non authentifié');
-      }
-      // Load current user id for filtering decisions
-      try {
-        final auth = AuthService();
-        final user = await auth.getUser(token);
-        _currentUserId = user?.id;
-      } catch (_) {
-        _currentUserId = null;
-      }
-
-      final list = await _service.getNotifications(token);
-      setState(() {
-        // Sort by creation date descending
-        list.sort((a, b) {
-          final da = a.creeLe ?? DateTime.fromMillisecondsSinceEpoch(0);
-          final db = b.creeLe ?? DateTime.fromMillisecondsSinceEpoch(0);
-          return db.compareTo(da);
-        });
-        _notifications = list;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
-    } finally {
-      setState(() {
-        _loading = false;
-      });
-    }
-  }
 
   String _formatTimeAgo(DateTime? dt) {
     if (dt == null) return '';
@@ -138,8 +43,48 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
 
   Color _colorForRead(bool lu) => lu ? Colors.grey : Colors.blueAccent;
 
+  List<NotificationModel> _applyFilter(List<NotificationModel> items) {
+    if (_selectedFilter == 0) return items;
+
+    if (_selectedFilter == 1) {
+      final authorTypes = <String>{'paiement', 'achat', 'payment'};
+      return items
+          .where((n) => authorTypes.contains(n.type.toLowerCase()))
+          .toList();
+    }
+
+    final authorTypes = <String>{'paiement', 'achat', 'payment'};
+    return items
+        .where((n) => !authorTypes.contains(n.type.toLowerCase()))
+        .toList();
+  }
+
+  Widget _buildChoiceChip(String label, int index) {
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          color: _selectedFilter == index ? Colors.white : Colors.grey[400],
+        ),
+      ),
+      selected: _selectedFilter == index,
+      selectedColor: const Color(0xFF06B6D4),
+      backgroundColor: const Color(0xFF1E293B),
+      side: BorderSide(
+        color: _selectedFilter == index
+            ? Colors.transparent
+            : Colors.grey[700]!,
+      ),
+      onSelected: (v) => setState(() => _selectedFilter = index),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final notificationProvider = context.watch<NotificationProvider>();
+    final notifications = notificationProvider.notifications;
+    final loading = notificationProvider.isLoading;
+
     return GestureDetector(
       onTap: widget.onTapOpenNotifications,
       child: Container(
@@ -149,12 +94,10 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
         ),
         child: Column(
           children: [
-            // Header: responsive layout to avoid horizontal overflow
             Padding(
               padding: const EdgeInsets.all(16),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  // Wide layout: title + status + filters on one line
                   if (constraints.maxWidth > 300) {
                     return Row(
                       children: [
@@ -178,41 +121,6 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
                             physics: const BouncingScrollPhysics(),
                             child: Row(
                               children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.circle,
-                                      color: _sseConnected
-                                          ? Colors.green
-                                          : Colors.red,
-                                      size: 12,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      _sseConnected
-                                          ? 'Connecté'
-                                          : (_sseError == null
-                                                ? 'Déconnecté'
-                                                : 'Erreur'),
-                                      style: TextStyle(
-                                        color: _sseConnected
-                                            ? Colors.green
-                                            : Colors.red,
-                                      ),
-                                    ),
-                                    if (!_sseConnected)
-                                      ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: 120,
-                                        ),
-                                        child: TextButton(
-                                          onPressed: _startSse,
-                                          child: const Text('Reconnecter'),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(width: 8),
                                 _buildChoiceChip('Tous', 0),
                                 const SizedBox(width: 6),
                                 _buildChoiceChip('Auteur', 1),
@@ -226,7 +134,6 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
                     );
                   }
 
-                  // Narrow layout: stack title and status/filters
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -259,34 +166,6 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
                           spacing: 8,
                           runSpacing: 4,
                           children: [
-                            Icon(
-                              Icons.circle,
-                              color: _sseConnected ? Colors.green : Colors.red,
-                              size: 12,
-                            ),
-                            Text(
-                              _sseConnected
-                                  ? 'Connecté'
-                                  : (_sseError == null
-                                        ? 'Déconnecté'
-                                        : 'Erreur'),
-                              style: TextStyle(
-                                color: _sseConnected
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
-                            ),
-                            if (!_sseConnected)
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 120,
-                                ),
-                                child: TextButton(
-                                  onPressed: _startSse,
-                                  child: const Text('Reconnecter'),
-                                ),
-                              ),
-                            const SizedBox(width: 8),
                             _buildChoiceChip('Tous', 0),
                             const SizedBox(width: 6),
                             _buildChoiceChip('Auteur', 1),
@@ -301,29 +180,12 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
               ),
             ),
 
-            if (_loading) ...[
+            if (loading && notifications.isEmpty) ...[
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(child: CircularProgressIndicator()),
               ),
-            ] else if (_error != null) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 24,
-                ),
-                child: Column(
-                  children: [
-                    Text('Erreur: $_error'),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: _loadNotifications,
-                      child: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
-              ),
-            ] else if (_notifications.isEmpty) ...[
+            ] else if (notifications.isEmpty) ...[
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Text(
@@ -332,8 +194,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
                 ),
               ),
             ] else ...[
-              // List filtered according to selected filter
-              ..._applyFilter(_notifications).map(
+              ..._applyFilter(notifications).map(
                 (notif) => Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -352,50 +213,6 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
           ],
         ),
       ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _sseSub?.cancel();
-    super.dispose();
-  }
-
-  List<NotificationModel> _applyFilter(List<NotificationModel> items) {
-    if (_selectedFilter == 0) return items;
-
-    if (_selectedFilter == 1) {
-      // Auteur: types that represent purchases/payments concerning an author's book
-      final authorTypes = <String>{'paiement', 'achat', 'payment'};
-      return items
-          .where((n) => authorTypes.contains(n.type.toLowerCase()))
-          .toList();
-    }
-
-    // Lecteur: everything else (messages, reviews, recommendations, etc.)
-    final authorTypes = <String>{'paiement', 'achat', 'payment'};
-    return items
-        .where((n) => !authorTypes.contains(n.type.toLowerCase()))
-        .toList();
-  }
-
-  Widget _buildChoiceChip(String label, int index) {
-    return ChoiceChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          color: _selectedFilter == index ? Colors.white : Colors.grey[400],
-        ),
-      ),
-      selected: _selectedFilter == index,
-      selectedColor: const Color(0xFF06B6D4), // Cyan
-      backgroundColor: const Color(0xFF1E293B),
-      side: BorderSide(
-        color: _selectedFilter == index
-            ? Colors.transparent
-            : Colors.grey[700]!,
-      ),
-      onSelected: (v) => setState(() => _selectedFilter = index),
     );
   }
 }

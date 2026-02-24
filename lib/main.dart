@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
@@ -68,13 +71,19 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Space Learn',
-      theme: ThemeData(primarySwatch: Colors.orange),
-      debugShowCheckedModeBanner: false,
-      home: _isLoading
-          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-          : _getHomeWidget(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Space Learn',
+        theme: ThemeData(primarySwatch: Colors.orange),
+        debugShowCheckedModeBanner: false,
+        home: _isLoading
+            ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+            : _getHomeWidget(),
+      ),
     );
   }
 

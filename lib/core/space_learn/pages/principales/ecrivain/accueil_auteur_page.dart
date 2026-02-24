@@ -5,7 +5,6 @@ import 'package:space_learn_flutter/core/themes/layout/nav_bar_auteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/contenu_accueil_auteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/statistiques_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/communaute_page.dart';
 
 class HomePageAuteur extends StatefulWidget {
@@ -44,10 +43,6 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
           onBackPressed: () => setState(() => _currentIndex = 0),
         );
       case 3:
-        return StatsPage(
-          onBackPressed: () => setState(() => _currentIndex = 0),
-        );
-      case 4:
         return TeamsPage(
           onBackPressed: () => setState(() => _currentIndex = 0),
         );
@@ -59,36 +54,25 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
   @override
   Widget build(BuildContext context) {
     // Pages that don't need NavBarAll (they have their own AppBars)
-    final pagesWithoutNavBarAll = [
-      AjouterLivrePage,
-      LivresPage,
-      StatsPage,
-      TeamsPage,
-    ];
+    final pagesWithoutNavBarAll = [AjouterLivrePage, LivresPage, TeamsPage];
 
     // Check if current page needs NavBarAll
     final currentPageType = _getPage(_currentIndex).runtimeType;
     final showNavBarAll = !pagesWithoutNavBarAll.contains(currentPageType);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF0F172A),
       appBar: showNavBarAll
           ? PreferredSize(
               preferredSize: const Size.fromHeight(
                 100,
               ), // Adjust height as needed
-              child: NavBarAll(userName: widget.userName),
+              child: NavBarAll(userName: widget.userName, showCart: false),
             )
           : null,
       body: IndexedStack(
         index: _currentIndex,
-        children: [
-          _getPage(0),
-          _getPage(1),
-          _getPage(2),
-          _getPage(3),
-          _getPage(4),
-        ],
+        children: [_getPage(0), _getPage(1), _getPage(2), _getPage(3)],
       ),
       bottomNavigationBar: NavBarAuteur(
         currentIndex: _currentIndex,

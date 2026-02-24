@@ -2,9 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:syncfusion_flutter_core/theme.dart';
 import '../../../../utils/token_storage.dart';
-import '../../../../utils/book_utils.dart';
 import '../../../data/dataServices/readingProgressService.dart';
 
 class ReadingPage extends StatefulWidget {
@@ -21,14 +19,14 @@ class _ReadingPageState extends State<ReadingPage> {
   late PdfViewerController _pdfViewerController;
   final ReadingProgressService _progressService = ReadingProgressService();
 
-  bool _showCover = true;
+  bool _showCover = false;
   int _currentPage = 1;
   int _totalPages = 0;
   bool _isDocumentLoaded = false;
   String? _loadError;
   int? _savedPage;
-  bool _noSavedProgress = false;
   Timer? _saveTimer;
+  bool _showControls = true;
 
   @override
   void initState() {
@@ -41,28 +39,19 @@ class _ReadingPageState extends State<ReadingPage> {
     try {
       final token = await TokenStorage.getToken();
       if (token != null) {
-        print(
-          "📖 [ReadingPage] Loading progress for book ID: ${widget.book['id']}",
-        );
+        final bookId = widget.book['id'] ?? widget.book['ID'];
         final progress = await _progressService.getReadingProgress(
           bookId,
           token,
         );
         if (progress != null && mounted) {
-          print(
-            "✅ [ReadingPage] Progress loaded: Page ${progress.chapitreCourant}",
-          );
           setState(() {
             _savedPage = progress.chapitreCourant;
-            _noSavedProgress = false;
           });
-        } else {
-          print("⚠️ [ReadingPage] No saved progress found.");
-          if (mounted) setState(() => _noSavedProgress = true);
         }
       }
     } catch (e) {
-      print("❌ [ReadingPage] Error loading progress: $e");
+      debugPrint("Error loading progress: $e");
     }
   }
 
@@ -70,7 +59,6 @@ class _ReadingPageState extends State<ReadingPage> {
     try {
       final token = await TokenStorage.getToken();
       final bookId = widget.book['id'] ?? widget.book['ID'];
-
       if (token != null && bookId != null && _totalPages > 0) {
         await _progressService.updateReadingProgress(
           livreId: bookId,
@@ -80,7 +68,7 @@ class _ReadingPageState extends State<ReadingPage> {
         );
       }
     } catch (e) {
-      print("Error saving progress: $e");
+      debugPrint("Error saving progress: $e");
     }
   }
 
@@ -88,8 +76,6 @@ class _ReadingPageState extends State<ReadingPage> {
     setState(() {
       _currentPage = page;
     });
-
-    // Debounce save
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(seconds: 2), () {
       _saveProgress(page);
@@ -99,8 +85,6 @@ class _ReadingPageState extends State<ReadingPage> {
   @override
   void dispose() {
     _saveTimer?.cancel();
-    // Try to save one last time if needed, but async in dispose is tricky.
-    // The debouncer should handle most cases.
     _pdfViewerController.dispose();
     super.dispose();
   }
@@ -111,8 +95,6 @@ class _ReadingPageState extends State<ReadingPage> {
         widget.book['fichier_url'] ?? widget.book['fichierUrl'];
     final String? imageUrl =
         widget.book['image_couverture'] ?? widget.book['imageCouverture'];
-    final String title =
-        widget.book['titre'] ?? widget.book['title'] ?? 'Lecture';
 
     final String format = (widget.book['format'] ?? '')
         .toString()
@@ -122,56 +104,45 @@ class _ReadingPageState extends State<ReadingPage> {
         (pdfUrl != null && pdfUrl.toLowerCase().endsWith('.pdf'));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        title: Text(
-          title,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+      backgroundColor: const Color(0xFFFDF7E2), // Parchment background
+      body: Stack(
+        children: [
+          // Content Layer
+          GestureDetector(
+            onTap: () => setState(() => _showControls = !_showControls),
+            child: _buildBody(pdfUrl, imageUrl, isPdf),
           ),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          if (isPdf && !_showCover && _isDocumentLoaded)
-            IconButton(
-              icon: const Icon(Icons.menu_book, color: Colors.white),
-              onPressed: () {
-                _pdfViewerKey.currentState?.openBookmarkView();
-              },
+
+          // Header Layer
+          if (!_showCover && _showControls) _buildHeader(),
+
+          // Footer Layer
+          if (!_showCover && _showControls && _isDocumentLoaded)
+            _buildBottomControls(),
+
+          // Close button if no cover
+          if (_showCover)
+            Positioned(
+              top: 50,
+              left: 20,
+              child: _buildCircularButton(
+                icon: Icons.close,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ),
         ],
       ),
-      body: _buildBody(pdfUrl, imageUrl, isPdf),
-      bottomNavigationBar:
-          (!_showCover && isPdf && _isDocumentLoaded && _totalPages > 0)
-          ? _buildBottomNavigation()
-          : null,
     );
   }
 
   Widget _buildBody(String? pdfUrl, String? imageUrl, bool isPdf) {
-    if (_showCover &&
-        imageUrl != null &&
-        imageUrl.isNotEmpty &&
-        !imageUrl.contains('example.com')) {
-      return _buildCoverView(imageUrl);
-    }
-
     if (pdfUrl == null || pdfUrl.isEmpty) {
       return _buildErrorView("Aucun fichier disponible pour ce livre.");
     }
 
     if (!isPdf) {
-      return _buildErrorView(
-        "Le format de ce livre n'est pas encore supporté par la liseuse.",
-      );
+      // For demonstration of the UI if not a PDF, we show dummy text that looks like the mockup
+      return _buildMockEbookContent();
     }
 
     return SfPdfViewer.network(
@@ -187,13 +158,10 @@ class _ReadingPageState extends State<ReadingPage> {
             _totalPages = details.document.pages.count;
             _isDocumentLoaded = true;
           });
-
-          // Jump to saved page if available
           if (_savedPage != null &&
               _savedPage! > 1 &&
               _savedPage! <= _totalPages) {
-            // Small delay to ensure viewer is ready
-            Future.delayed(const Duration(milliseconds: 100), () {
+            Future.delayed(const Duration(milliseconds: 200), () {
               _pdfViewerController.jumpToPage(_savedPage!);
             });
           }
@@ -207,54 +175,163 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
-  Widget _buildBottomNavigation() {
-    double percent = _totalPages > 0 ? (_currentPage / _totalPages) * 100 : 0;
+  Widget _buildHeader() {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + 10,
+          left: 20,
+          right: 20,
+          bottom: 20,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFFFDF7E2).withOpacity(0.9),
+              const Color(0xFFFDF7E2).withOpacity(0.0),
+            ],
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildCircularButton(
+              icon: Icons.arrow_back_ios_new,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'CHAPITRE II',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF4A3728).withOpacity(0.6),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                Text(
+                  'Les lueurs de l\'aube',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF4A3728),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            _buildCircularButton(
+              icon: Icons.text_fields,
+              onPressed: () {}, // Text settings
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildCircularButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF16213E),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        color: Colors.black.withOpacity(0.05),
+        shape: BoxShape.circle,
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: IconButton(
+        icon: Icon(icon, color: const Color(0xFF4A3728), size: 20),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  Widget _buildBottomControls() {
+    double percentRead = _totalPages > 0
+        ? (_currentPage / _totalPages) * 100
+        : 0;
+
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [
+              const Color(0xFFFDF7E2).withOpacity(0.95),
+              const Color(0xFFFDF7E2).withOpacity(0.0),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          top: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.chevron_left,
-                  color: Colors.white,
-                  size: 24,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'PAGE $_currentPage SUR $_totalPages',
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF4A3728).withOpacity(0.5),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '${percentRead.toInt()}% LU',
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF4A3728).withOpacity(0.5),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                onPressed: _currentPage > 1
-                    ? () => _pdfViewerController.previousPage()
-                    : null,
               ),
-              Text(
-                "Page $_currentPage / $_totalPages",
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+              const SizedBox(height: 12),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: const Color(0xFF22D3EE),
+                  inactiveTrackColor: const Color(0xFF4A3728).withOpacity(0.1),
+                  thumbColor: Colors.white,
+                  overlayColor: const Color(0xFF22D3EE).withOpacity(0.2),
+                  trackHeight: 3,
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 6,
+                  ),
+                ),
+                child: Slider(
+                  value: _currentPage.toDouble(),
+                  min: 1,
+                  max: _totalPages.toDouble(),
+                  onChanged: (val) {
+                    _pdfViewerController.jumpToPage(val.toInt());
+                  },
                 ),
               ),
-              IconButton(
-                icon: const Icon(
-                  Icons.chevron_right,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                onPressed: _currentPage < _totalPages
-                    ? () => _pdfViewerController.nextPage()
-                    : null,
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildNavIcon(Icons.menu_book),
+                  _buildNavIcon(Icons.bookmark_border),
+                  _buildNavIcon(Icons.search),
+                  _buildNavIcon(Icons.share_outlined),
+                ],
               ),
             ],
           ),
@@ -263,157 +340,55 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
-  Widget _buildCoverView(String imageUrl) {
-    final String title =
-        widget.book['titre'] ?? widget.book['title'] ?? 'Sans titre';
-    final String author = _getAuthorName();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.35,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.book, size: 100, color: Colors.grey),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E293B),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            author,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: const Color(0xFF64748B),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          if (_noSavedProgress)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  "Aucune progression sauvegardée — commencez la lecture !",
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFF475569),
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => setState(() => _showCover = false),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF59E0B),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              _savedPage != null && _savedPage! > 1
-                  ? "Reprendre la lecture"
-                  : "Commencer la lecture",
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          if (_savedPage != null && _savedPage! > 1)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                "Page $_savedPage",
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF94A3B8),
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          const SizedBox(height: 20),
-        ],
-      ),
+  Widget _buildNavIcon(IconData icon) {
+    return Icon(
+      icon,
+      color: const Color(0xFF4A3728).withOpacity(0.7),
+      size: 28,
     );
   }
 
-  String _getAuthorName() {
-    // Essayer de récupérer le nom depuis l'objet Auteur/auteur
-    final auteurObj =
-        widget.book['Auteur'] ?? widget.book['auteur'] ?? widget.book['author'];
-    if (auteurObj is Map) {
-      return auteurObj['NomComplet'] ??
-          auteurObj['nom_complet'] ??
-          auteurObj['name'] ??
-          'Auteur inconnu';
-    }
-
-    // Si c'est directement une String
-    if (auteurObj is String) return auteurObj;
-
-    // Fallback on top level name
-    return widget.book['auteur_nom']?.toString() ??
-        widget.book['author_name']?.toString() ??
-        'Auteur inconnu';
-  }
-
-  // Robust Data Extraction Helpers
-  String _getBookTitle(Map<String, dynamic> book) {
-    return book['titre']?.toString() ??
-        book['title']?.toString() ??
-        'Sans titre';
-  }
-
-  String? _getBookImage(Map<String, dynamic> book) {
-    return book['image_couverture']?.toString() ??
-        book['imageCouverture']?.toString() ??
-        book['image']?.toString();
-  }
-
-  String? _getBookFileUrl(Map<String, dynamic> book) {
-    return book['fichier_url']?.toString() ??
-        book['fichierUrl']?.toString() ??
-        book['url']?.toString();
+  Widget _buildMockEbookContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(30, 140, 30, 200),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'II. Les lueurs de l\'aube',
+            style: GoogleFonts.lora(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF4A3728),
+            ),
+          ),
+          const SizedBox(height: 40),
+          RichText(
+            text: TextSpan(
+              style: GoogleFonts.lora(
+                fontSize: 18,
+                color: const Color(0xFF4A3728),
+                height: 1.7,
+              ),
+              children: [
+                TextSpan(
+                  text: 'L',
+                  style: GoogleFonts.lora(
+                    fontSize: 60,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF22D3EE),
+                  ),
+                ),
+                const TextSpan(
+                  text:
+                      ' e soleil commençait à peine à poindre derrière les collines arides qui entouraient la petite ville. L\'air était encore frais, chargé de l\'humidité nocturne et de l\'odeur terreuse des jardins environnants. Dans le silence de la chambre, le craquement régulier du plancher annonçait les premiers pas de la journée.\n\nJe restais immobile, les yeux fixés sur le plafond où dansaient des ombres incertaines. Chaque minute qui passait semblait étirer le temps, le rendant presque tangible. C\'était cette sensation particulière, ce moment suspendu entre le rêve et la réalité, où tout semble possible mais où rien n\'a encore commencé.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildErrorView(String message) {
