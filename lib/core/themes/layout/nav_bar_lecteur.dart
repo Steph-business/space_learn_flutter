@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/bibliotheque_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/boutique_page.dart';
@@ -24,18 +24,13 @@ class MainNavBar extends StatefulWidget {
 class MainNavBarState extends State<MainNavBar> {
   int _selectedIndex = 0;
 
-  final List<String> _titles = [
-    "Accueil",
-    "Boutique",
-    "Bibliothèque",
-    "Communauté",
-  ];
+  final List<String> _titles = ["Accueil", "Boutique", "Bibliothèque", "Forum"];
 
   final List<IconData> _icons = [
-    Icons.home,
-    Icons.store,
-    Icons.library_books,
-    Icons.group,
+    Iconsax.home,
+    Iconsax.shop,
+    Iconsax.book,
+    Iconsax.messages_1,
   ];
 
   void _onItemTapped(int index) {

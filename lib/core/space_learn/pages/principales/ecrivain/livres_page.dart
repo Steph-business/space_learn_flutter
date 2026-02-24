@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/livres/livre_stats.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/livres/publications_liste.dart';
-import 'package:space_learn_flutter/core/themes/app_colors.dart';
+
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
@@ -22,7 +23,10 @@ class LivresPage extends StatefulWidget {
 class _LivresPageState extends State<LivresPage> {
   final BookService _bookService = BookService();
   final AuthService _authService = AuthService();
+  final AuthorStatsService _statsService = AuthorStatsService();
+
   List<BookModel> _books = [];
+  Map<String, dynamic> _stats = {};
   String? _authorName;
   bool _isLoading = true;
   String? _error;
@@ -59,10 +63,12 @@ class _LivresPageState extends State<LivresPage> {
       }
 
       final books = await _bookService.getBooksByAuthorId(user.id);
+      final stats = await _statsService.getAuthorStats(user.id, 'all');
 
       if (mounted) {
         setState(() {
           _books = books;
+          _stats = stats;
           _authorName = user.nomComplet;
           _isLoading = false;
         });
@@ -81,9 +87,10 @@ class _LivresPageState extends State<LivresPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: const Color(0xFF0F172A),
+        elevation: 0,
         title: const Text(
           'Mes livres',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -107,26 +114,27 @@ class _LivresPageState extends State<LivresPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              const LivreStatsSection(),
+              LivreStatsSection(
+                publications: _books.length,
+                views: _stats['views'] ?? 0,
+                revenue: _stats['revenue'] ?? 0,
+              ),
               const SizedBox(height: 20),
               // Search Bar
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFF1E293B),
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: TextField(
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: "Rechercher un livre...",
-                    hintStyle: TextStyle(color: Colors.grey[400]),
-                    prefixIcon: Icon(Icons.search, color: AppColors.primary),
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: Color(0xFF0EA5E9),
+                    ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -163,6 +171,7 @@ class _LivresPageState extends State<LivresPage> {
                 )
               else
                 PublicationsList(books: _books, authorName: _authorName),
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -177,9 +186,12 @@ class _LivresPageState extends State<LivresPage> {
             _loadBooks();
           }
         },
-        backgroundColor: AppColors.primary,
+        backgroundColor: const Color(0xFF0EA5E9),
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text("Nouveau", style: TextStyle(color: Colors.white)),
+        label: const Text(
+          "Nouveau",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

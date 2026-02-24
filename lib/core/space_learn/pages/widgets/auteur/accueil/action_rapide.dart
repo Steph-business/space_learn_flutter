@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/statistiques_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/communaute_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
 
@@ -18,13 +17,6 @@ class AuteurActionsRapide extends StatelessWidget {
         "subtitle": "Gérer publications",
         "color": Colors.blue,
         "page": const LivresPage(),
-      },
-      {
-        "icon": Icons.bar_chart,
-        "title": "Statistiques",
-        "subtitle": "Suivi ventes",
-        "color": Colors.orange,
-        "page": const StatsPage(),
       },
       {
         "icon": Icons.people,
@@ -65,7 +57,7 @@ class AuteurActionsRapide extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),

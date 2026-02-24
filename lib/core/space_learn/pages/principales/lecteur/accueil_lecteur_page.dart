@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../../data/dataServices/notification_provider.dart';
 
 import '../../widgets/details/book_detail_page.dart';
+import '../../principales/notificationPage.dart';
+import '../../principales/lecteur/recherche_page.dart';
 
 import '../../../../themes/layout/nav_bar_all.dart';
 import '../../../../themes/layout/nav_bar_lecteur.dart';
-
 
 import '../../../data/dataServices/libraryService.dart';
 import '../../../data/dataServices/bookService.dart';
@@ -94,6 +97,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       ]);
 
       if (mounted) {
+        context
+            .read<NotificationProvider>()
+            .loadNotifications(token)
+            .catchError((e) {
+              debugPrint('⚠️ Error loading notifications: $e');
+            });
         setState(() {
           if (results[0] is ReaderStatsModel) {
             _stats = results[0] as ReaderStatsModel;
@@ -267,43 +276,103 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: 2),
-                                child: Icon(
-                                  Icons.search,
-                                  color: Colors.grey,
-                                  size: 20,
-                                ),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RecherchePage(),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  "Rechercher un livre, un auteur...",
-                                  style: GoogleFonts.poppins(
+                            );
+                          },
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E293B),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 2),
+                                  child: Icon(
+                                    Icons.search,
                                     color: Colors.grey,
-                                    fontSize: 13,
+                                    size: 20,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    "Rechercher un livre, un auteur...",
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.grey,
+                                      fontSize: 13,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      const Icon(
-                        Icons.notifications_none,
-                        color: Colors.white,
-                        size: 26,
+                      const SizedBox(width: 8),
+                      Stack(
+                        alignment: Alignment.topRight,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const NotificationPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.notifications_none,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                          ),
+                          Consumer<NotificationProvider>(
+                            builder: (context, notificationProvider, child) {
+                              final count = notificationProvider.unreadCount;
+                              if (count == 0) return const SizedBox.shrink();
+                              return Positioned(
+                                right: 6,
+                                top: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFF0F172A),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 14,
+                                    minHeight: 14,
+                                  ),
+                                  child: Text(
+                                    '$count',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),

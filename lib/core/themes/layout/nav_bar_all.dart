@@ -4,17 +4,23 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../space_learn/pages/principales/ecrivain/settings_page_auteur.dart';
 import '../../space_learn/pages/principales/notificationPage.dart';
 import '../../space_learn/pages/principales/messages_page.dart';
+import 'package:provider/provider.dart';
+import '../../space_learn/data/dataServices/cart_provider.dart';
+import '../../space_learn/data/dataServices/notification_provider.dart';
+import '../../space_learn/pages/widgets/lecteur/boutique/cart_page.dart';
 
 class NavBarAll extends StatelessWidget {
   final String userName;
   final String? greeting;
   final String? subtitle;
+  final bool showCart;
 
   const NavBarAll({
     super.key,
     this.userName = 'Steph',
     this.greeting,
     this.subtitle,
+    this.showCart = true,
   });
 
   static String getGreeting() {
@@ -30,60 +36,72 @@ class NavBarAll extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final greetingText =
-        greeting ?? '${getGreeting()}, ${getFirstName(userName)} 👋';
-    final subtitleText = subtitle ?? 'Que souhaitez-vous lire aujourd\'hui ?';
-
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 60, bottom: 16),
       decoration: const BoxDecoration(color: Colors.transparent),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  greetingText,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: -0.3,
+          Row(
+            children: [
+              Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24, width: 1),
+                  image: const DecorationImage(
+                    image: NetworkImage('https://i.pravatar.cc/150?u=auteur'),
+                    fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitleText,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.w400,
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Bonjour,",
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.white54,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  Text(
+                    userName,
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MessagesPage(),
-                    ),
-                  );
-                },
-                icon: const Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  color: Colors.white,
-                  size: 24,
+              // Chat icon currently exists in NavBarAll but not in image, I'll keep just notifications if it's Auteur
+              if (showCart) // Just a trick to distinguish Reader/Author if needed, but safer to just show icons
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MessagesPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
-              ),
               Stack(
                 alignment: Alignment.topRight,
                 children: [
@@ -102,20 +120,96 @@ class NavBarAll extends StatelessWidget {
                       size: 24,
                     ),
                   ),
-                  Positioned(
-                    right: 10,
-                    top: 8,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                  Consumer<NotificationProvider>(
+                    builder: (context, notificationProvider, child) {
+                      final count = notificationProvider.unreadCount;
+                      if (count == 0) return const SizedBox.shrink();
+                      return Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF0F172A),
+                              width: 1.5,
+                            ),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 14,
+                            minHeight: 14,
+                          ),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
+              if (showCart)
+                Stack(
+                  alignment: Alignment.topRight,
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CartPage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    Consumer<CartProvider>(
+                      builder: (context, cart, child) {
+                        if (cart.itemCount == 0) return const SizedBox.shrink();
+                        return Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF06B6D4),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFF0F172A),
+                                width: 1.5,
+                              ),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 14,
+                              minHeight: 14,
+                            ),
+                            child: Text(
+                              '${cart.itemCount}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               IconButton(
                 onPressed: () {
                   Navigator.push(

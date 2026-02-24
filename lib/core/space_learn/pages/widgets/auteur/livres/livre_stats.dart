@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 
 class LivreStatsSection extends StatelessWidget {
-  const LivreStatsSection({super.key});
+  final int publications;
+  final int views;
+  final int revenue;
+
+  const LivreStatsSection({
+    super.key,
+    this.publications = 0,
+    this.views = 0,
+    this.revenue = 0,
+  });
 
   Widget _buildSummaryItem(
     String label,
@@ -24,7 +33,7 @@ class LivreStatsSection extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.grey[600],
+            color: Colors.white.withOpacity(0.5),
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
@@ -34,30 +43,12 @@ class LivreStatsSection extends StatelessWidget {
   }
 
   Widget _buildValueWidget(String value) {
-    if (value.contains('FCFA')) {
-      final parts = value.split(' FCFA');
-      return Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '${parts[0]} ',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const TextSpan(
-              text: 'FCFA',
-              style: TextStyle(fontWeight: FontWeight.normal),
-            ),
-          ],
-          style: const TextStyle(fontSize: 16, color: Color(0xFF2D3142)),
-        ),
-      );
-    }
     return Text(
       value,
       style: const TextStyle(
         fontWeight: FontWeight.bold,
-        fontSize: 16,
-        color: Color(0xFF2D3142),
+        fontSize: 18,
+        color: Colors.white,
       ),
     );
   }
@@ -67,11 +58,11 @@ class LivreStatsSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(2),
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -82,19 +73,21 @@ class LivreStatsSection extends StatelessWidget {
         children: [
           _buildSummaryItem(
             "Publications",
-            "12",
+            publications.toString(),
             Icons.menu_book_rounded,
-            Colors.blue,
+            const Color(0xFF0EA5E9),
           ),
           _buildSummaryItem(
             "Vues",
-            "3.5k",
+            views >= 1000
+                ? "${(views / 1000).toStringAsFixed(1)}k"
+                : views.toString(),
             Icons.visibility_rounded,
             Colors.orange,
           ),
           _buildSummaryItem(
             "Revenus",
-            "1.2k FCFA",
+            "$revenue €",
             Icons.payments_rounded,
             Colors.green,
           ),

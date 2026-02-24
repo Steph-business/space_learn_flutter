@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
@@ -35,7 +34,6 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
           final books = await _bookService.getBooksByAuthor(user.id);
           if (mounted) {
             setState(() {
-              // Sort by creation date descending and take top 3
               books.sort(
                 (a, b) => (b.creeLe ?? DateTime(0)).compareTo(
                   a.creeLe ?? DateTime(0),
@@ -48,10 +46,8 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
         }
       }
     } catch (e) {
-      print("Error loading recent books: $e");
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      debugPrint("Error loading recent books: $e");
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -65,155 +61,150 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
       return Center(
         child: Text(
           "Aucun livre publié récemment.",
-          style: GoogleFonts.poppins(color: Colors.grey),
+          style: GoogleFonts.poppins(color: Colors.white54),
         ),
       );
     }
 
     return Column(
-      children: _books.map((book) {
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LivresPage()),
-            );
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Mes livres publiés (${_books.length})",
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    image:
-                        (book.imageCouverture != null &&
-                            book.imageCouverture!.isNotEmpty)
-                        ? DecorationImage(
-                            image: NetworkImage(book.imageCouverture!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
-                    color:
-                        (book.imageCouverture == null ||
-                            book.imageCouverture!.isEmpty)
-                        ? const Color(0xFF818CF8)
-                        : null,
-                  ),
-                  child:
-                      (book.imageCouverture == null ||
-                          book.imageCouverture!.isEmpty)
-                      ? const Icon(Icons.book, color: Colors.white, size: 24)
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LivresPage()),
+                );
+              },
+              child: Text(
+                "Voir tout",
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFF22D3EE),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ..._books.map((book) => _buildBookCard(book)).toList(),
+      ],
+    );
+  }
+
+  Widget _buildBookCard(BookModel book) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 60,
+                height: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image:
+                      (book.imageCouverture != null &&
+                          book.imageCouverture!.isNotEmpty)
+                      ? DecorationImage(
+                          image: NetworkImage(book.imageCouverture!),
+                          fit: BoxFit.cover,
+                        )
                       : null,
+                  color: const Color(0xFF334155),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        book.titre,
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: const Color(0xFF1E293B),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                child:
+                    (book.imageCouverture == null ||
+                        book.imageCouverture!.isEmpty)
+                    ? const Icon(Icons.book, color: Colors.white24, size: 30)
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.titre,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE0F2FE),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              "${book.telechargements} ventes",
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: const Color(0xFF1565C0),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.amber[50],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.star,
-                                  size: 14,
-                                  color: Color(0xFFF57C00),
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  (book.noteMoyenne).toStringAsFixed(1),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFFF57C00),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green[100],
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    "Publié",
-                    style: GoogleFonts.poppins(
-                      color: Colors.green[800],
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "${book.categorieId ?? 'Fiction'} • ${book.telechargements} lectures",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      }).toList(),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildButton(
+                  "MODIFIER",
+                  const Color(0xFF334155).withOpacity(0.5),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildButton(
+                  "STATS",
+                  const Color(0xFF334155).withOpacity(0.5),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildButton(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF22D3EE).withOpacity(0.8),
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            letterSpacing: 1.1,
+          ),
+        ),
+      ),
     );
   }
 }

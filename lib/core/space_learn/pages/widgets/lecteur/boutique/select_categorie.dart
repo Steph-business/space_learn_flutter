@@ -27,24 +27,31 @@ class SelectCategorie extends StatelessWidget {
 
           return GestureDetector(
             onTap: () => onCategorySelected(category),
-            child: Container(
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
                     ? const Color(0xFF06B6D4)
-                    : const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isSelected ? Colors.transparent : Colors.grey[700]!,
-                ),
+                    : const Color(0xFF1E293B).withOpacity(0.5),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF06B6D4).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
               ),
               child: Center(
                 child: Text(
                   category,
                   style: GoogleFonts.poppins(
-                    color: isSelected ? Colors.white : Colors.grey[400],
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? Colors.white : Colors.white60,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 13,
                   ),
                 ),

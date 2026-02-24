@@ -252,7 +252,7 @@ class SettingsPageAuteur extends StatelessWidget {
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF06B6D4), // Cyan
+          color: Color(0xFF0EA5E9), // Cyan
         ),
       ),
     );

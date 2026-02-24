@@ -15,23 +15,19 @@ class NavBarAuteur extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        color: const Color(0xFF0F172A),
+        border: Border(
+          top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
+        ),
       ),
       child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: currentIndex,
         onTap: onTap,
         elevation: 0,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFFF59E0B),
-        unselectedItemColor: Colors.grey[500],
+        backgroundColor: Colors.transparent,
+        selectedItemColor: const Color(0xFF0EA5E9),
+        unselectedItemColor: Colors.white.withOpacity(0.4),
         showUnselectedLabels: true,
         selectedLabelStyle: GoogleFonts.poppins(
           fontWeight: FontWeight.w600,
@@ -42,11 +38,10 @@ class NavBarAuteur extends StatelessWidget {
           fontSize: 12,
         ),
         items: [
-          _buildItem(Icons.home, "Accueil", 0),
-          _buildItem(Icons.add_circle_outline, "Publier", 1),
+          _buildItem(Icons.home_filled, "Accueil", 0),
+          _buildItem(Icons.add_circle, "Publier", 1),
           _buildItem(Icons.book, "Mes Livres", 2),
-          _buildItem(Icons.bar_chart, "Statistiques", 3),
-          _buildItem(Icons.group, "Communauté", 4),
+          _buildItem(Icons.group, "Communauté", 3),
         ],
       ),
     );
@@ -54,10 +49,9 @@ class NavBarAuteur extends StatelessWidget {
 
   BottomNavigationBarItem _buildItem(IconData icon, String label, int index) {
     return BottomNavigationBarItem(
-      icon: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+      icon: Padding(
         padding: const EdgeInsets.only(bottom: 4),
-        child: Icon(icon, size: currentIndex == index ? 28 : 24),
+        child: Icon(icon, size: currentIndex == index ? 26 : 24),
       ),
       label: label,
     );

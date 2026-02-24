@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:space_learn_flutter/core/themes/app_colors.dart';
+
 import 'package:space_learn_flutter/core/services/supabase_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/categorie_service.dart';
@@ -367,21 +367,21 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
         title: Text(
           "Publier une œuvre",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: Colors.white,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -423,7 +423,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 Text(
                   "Fichier (PDF/EPUB)",
                   style: GoogleFonts.poppins(
-                    color: Colors.grey[700],
+                    color: Colors.white70,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -443,7 +443,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 Text(
                   "Image de couverture",
                   style: GoogleFonts.poppins(
-                    color: Colors.grey[700],
+                    color: Colors.white70,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -462,13 +462,13 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 ElevatedButton(
                   onPressed: _isUploading ? null : _publishBook,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: const Color(0xFF0EA5E9),
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 4,
-                    shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                    shadowColor: const Color(0xFF0EA5E9).withValues(alpha: 0.4),
                   ),
                   child: _isUploading
                       ? const CircularProgressIndicator(color: Colors.white)
@@ -495,17 +495,16 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey[200]!),
         ),
         child: Row(
           children: [
-            const Icon(Icons.category, color: AppColors.primary),
+            const Icon(Icons.category, color: Color(0xFF0EA5E9)),
             const SizedBox(width: 16),
             Text(
               "Chargement des catégories...",
-              style: GoogleFonts.poppins(color: Colors.grey[600]),
+              style: GoogleFonts.poppins(color: Colors.white54),
             ),
             const Spacer(),
             const SizedBox(
@@ -549,18 +548,17 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[200]!),
           ),
           child: DropdownButtonFormField<String>(
             initialValue: _selectedCategorieId,
             decoration: InputDecoration(
               labelText: "Catégorie",
-              labelStyle: GoogleFonts.poppins(color: Colors.grey[600]),
-              prefixIcon: const Icon(Icons.category, color: AppColors.primary),
+              labelStyle: GoogleFonts.poppins(color: Colors.white54),
+              prefixIcon: const Icon(Icons.category, color: Color(0xFF0EA5E9)),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: const Color(0xFF1E293B),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
@@ -571,7 +569,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: AppColors.primary),
+                borderSide: const BorderSide(color: Color(0xFF0EA5E9)),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 20,
@@ -585,7 +583,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   value: categorie.id,
                   child: Text(
                     categorie.nom,
-                    style: GoogleFonts.poppins(color: Colors.black87),
+                    style: GoogleFonts.poppins(color: Colors.white),
                   ),
                 );
               }),
@@ -595,7 +593,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 child: Text(
                   'Autre (personnalisée)',
                   style: GoogleFonts.poppins(
-                    color: Colors.black87,
+                    color: Colors.white70,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -641,24 +639,24 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: Colors.black87),
+      style: GoogleFonts.poppins(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: Colors.grey[600]),
-        prefixIcon: Icon(icon, color: AppColors.primary),
+        labelStyle: GoogleFonts.poppins(color: Colors.white54),
+        prefixIcon: Icon(icon, color: const Color(0xFF0EA5E9)),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: const Color(0xFF1E293B),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey[200]!),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary),
+          borderSide: const BorderSide(color: Color(0xFF0EA5E9)),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
@@ -687,17 +685,17 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.1)
-              : Colors.white,
+              ? const Color(0xFF0EA5E9).withValues(alpha: 0.2)
+              : const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey[200]!,
+            color: isSelected ? const Color(0xFF0EA5E9) : Colors.transparent,
             width: 1.5,
           ),
           boxShadow: [
             if (!isSelected)
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -708,12 +706,12 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.grey[100],
+                color: isSelected ? const Color(0xFF0EA5E9) : Colors.white10,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 isSelected ? Icons.check : icon,
-                color: isSelected ? Colors.white : Colors.grey[500],
+                color: isSelected ? Colors.white : Colors.white54,
               ),
             ),
             const SizedBox(width: 16),
@@ -721,7 +719,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               child: Text(
                 subtitle,
                 style: GoogleFonts.poppins(
-                  color: isSelected ? AppColors.primary : Colors.grey[500],
+                  color: isSelected ? const Color(0xFF0EA5E9) : Colors.white70,
                   fontSize: 15,
                 ),
                 maxLines: 1,

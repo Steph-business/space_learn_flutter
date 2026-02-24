@@ -42,8 +42,8 @@ class CommunityEventsPage extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(2),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           children: [

@@ -14,10 +14,16 @@ class PublicationsList extends StatelessWidget {
       children: [
         const Text(
           "Publications",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 16),
-        ...books.map((book) => PublicationCard(book: book, authorName: authorName)),
+        ...books.map(
+          (book) => PublicationCard(book: book, authorName: authorName),
+        ),
       ],
     );
   }

@@ -12,7 +12,8 @@ class PublicationCard extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BookDetailPage(book: book, isOwned: false),
+        builder: (context) =>
+            BookDetailPage(book: book, isOwned: true, showCart: false),
       ),
     );
   }
@@ -33,11 +34,11 @@ class PublicationCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(2),
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withOpacity(0.2),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -52,7 +53,7 @@ class PublicationCard extends StatelessWidget {
               height: 110,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.grey[100],
+                color: Colors.white10,
               ),
               child:
                   book.imageCouverture != null &&
@@ -72,7 +73,7 @@ class PublicationCard extends StatelessWidget {
                         },
                       ),
                     )
-                  : const Icon(Icons.book, color: Colors.grey, size: 30),
+                  : const Icon(Icons.book, color: Colors.white24, size: 30),
             ),
             const SizedBox(width: 16),
             // Content Section
@@ -89,7 +90,7 @@ class PublicationCard extends StatelessWidget {
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
-                            color: Color(0xFF1E293B),
+                            color: Colors.white,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -102,16 +103,16 @@ class PublicationCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isPublished
-                              ? Colors.green.shade50
-                              : Colors.orange.shade50,
+                              ? Colors.green.withOpacity(0.2)
+                              : Colors.orange.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           isPublished ? "Publié" : book.statut,
                           style: TextStyle(
                             color: isPublished
-                                ? Colors.green.shade700
-                                : Colors.orange.shade700,
+                                ? Colors.green.shade400
+                                : Colors.orange.shade400,
                             fontWeight: FontWeight.w700,
                             fontSize: 10,
                           ),
@@ -123,7 +124,7 @@ class PublicationCard extends StatelessWidget {
                   Text(
                     authorName ?? book.authorName,
                     style: TextStyle(
-                      color: Colors.grey[500],
+                      color: Colors.grey[400],
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -139,6 +140,7 @@ class PublicationCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -150,9 +152,9 @@ class PublicationCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         "${book.telechargements}",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF64748B),
+                          color: Colors.grey[400],
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -168,8 +170,11 @@ class PublicationCard extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  BookDetailPage(book: book, isOwned: true),
+                              builder: (context) => BookDetailPage(
+                                book: book,
+                                isOwned: true,
+                                showCart: false,
+                              ),
                             ),
                           );
                         },
@@ -183,13 +188,13 @@ class PublicationCard extends StatelessWidget {
                                 ),
                               ),
                               const TextSpan(
-                                text: "FCFA",
+                                text: "€",
                                 style: TextStyle(fontWeight: FontWeight.normal),
                               ),
                             ],
                             style: const TextStyle(
                               fontSize: 15,
-                              color: Color(0xFF2563EB),
+                              color: Color(0xFF38BDF8),
                             ),
                           ),
                         ),
