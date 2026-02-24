@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'reading_page.dart';
+import 'payment_page.dart';
 
 class BookDetailPage extends StatefulWidget {
   final BookModel book;
@@ -542,18 +543,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     height: 50,
                                     child: ElevatedButton(
                                       onPressed: () {
-                                        context.read<CartProvider>().addItem(
-                                          book,
-                                        );
-                                        ScaffoldMessenger.of(
+                                        Navigator.push(
                                           context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              "${book.titre} ajouté au panier",
-                                            ),
-                                            backgroundColor: const Color(
-                                              0xFF06B6D4,
+                                          MaterialPageRoute(
+                                            builder: (context) => PaymentPage(
+                                              book: book.toJson(),
                                             ),
                                           ),
                                         );
@@ -580,7 +574,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
-                                            'Ajouter au panier',
+                                            'Acheter',
                                             style: GoogleFonts.poppins(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w600,

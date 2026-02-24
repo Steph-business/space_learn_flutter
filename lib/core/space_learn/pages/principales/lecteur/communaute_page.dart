@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
-import 'create_discussion_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
 import 'recherche_page.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
@@ -12,14 +15,56 @@ class TeamsPageLecteur extends StatefulWidget {
 }
 
 class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
-  String _selectedCategory = "Tout";
+  final LibraryService _libraryService = LibraryService();
 
-  final List<String> _categories = [
-    "Tout",
-    "Théories",
-    "Personnages",
-    "Animations",
-  ];
+  List<LibraryModel> _library = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final token = await TokenStorage.getToken();
+      if (token == null) {
+        setState(() {
+          _error = "Session expirée. Veuillez vous reconnecter.";
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final libraryItems = await _libraryService.getUserLibrary(token);
+
+      // Filtrer les entrées sans livre valide
+      final validItems = libraryItems
+          .where((item) => item.livre != null)
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _library = validItems;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = "Erreur lors du chargement des données.";
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,26 +74,14 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         backgroundColor: const Color(0xFF111827),
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: Column(
-          children: [
-            Text(
-              "FORUM",
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: 1.2,
-              ),
-            ),
-            Text(
-              "Les Chroniques d'Éléa - Tome II",
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF22D3EE),
-              ),
-            ),
-          ],
+        title: Text(
+          "COMMUNAUTÉ",
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: 1.2,
+          ),
         ),
         centerTitle: true,
         actions: [
@@ -67,320 +100,288 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Promotional Header Card
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1F2937),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(10),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF22D3EE),
+                    ),
+                    child: const Text(
+                      "Réessayer",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // En-tête Global
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      "Vos espaces d'échange",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
                       ),
-                      child: const Center(
-                        child: Icon(
-                          Iconsax.book,
-                          color: Colors.white24,
-                          size: 30,
+                    ),
+                  ),
+
+                  // Salon Principal (Espace global)
+                  _buildGlobalSalonCard(),
+
+                  // Forums par Livre
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      "Clubs de lecture de votre bibliothèque (${_library.length})",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                  if (_library.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1F2937),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            "Ajoutez des livres à votre bibliothèque pour rejoindre leurs forums de discussion.",
+                            style: TextStyle(color: Colors.white54),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: _library.length,
+                      itemBuilder: (context, index) {
+                        final libraryItem = _library[index];
+                        return _buildBookForumCard(libraryItem);
+                      },
                     ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Rejoignez la discussion",
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Partagez vos théories avec 2.4k autres lecteurs.",
-                            style: GoogleFonts.poppins(
-                              color: Colors.grey[400],
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              "COMMUNAUTÉ ACTIVE",
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFF22D3EE),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+
+                  const SizedBox(height: 100),
+                ],
               ),
             ),
+    );
+  }
 
-            // Categories
-            SizedBox(
-              height: 45,
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final cat = _categories[index];
-                  final bool isSelected = _selectedCategory == cat;
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedCategory = cat),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 12),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF22D3EE)
-                            : const Color(0xFF1F2937),
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFF22D3EE,
-                                  ).withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        cat,
-                        style: GoogleFonts.poppins(
-                          color: isSelected ? Colors.white : Colors.grey[400],
-                          fontSize: 14,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+  Widget _buildGlobalSalonCard() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ForumDiscussionPage(
+              title: "LE CAFE DES LECTEURS",
+              subtitle: "Espace global d'échange Space Learn",
             ),
-
-            const SizedBox(height: 30),
-
-            // Posts List
-            _buildPostItem(
-              username: "JeanDupont",
-              time: "2h",
-              title: "Théories sur la fin du Tome 2 : Est-...",
-              content:
-                  "J'ai remarqué un détail dans le chapitre 24 qui pourrait tout changer pour la suite de...",
-              comments: 42,
-              likes: 128,
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1F2937), Color(0xFF111827)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFF22D3EE).withOpacity(0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF22D3EE).withOpacity(0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
-            _buildPostItem(
-              username: "MarieL",
-              time: "5h",
-              title: "Votre personnage préféré du Tom...",
-              content:
-                  "Je vote pour Elara, son évolution est juste incroyable ! Et vous ?",
-              comments: 128,
-              likes: 350,
-            ),
-            _buildPostItem(
-              username: "AnonymeReader",
-              time: "8h",
-              title: "Petit bug dans le chapitre 12 sur la...",
-              content:
-                  "Le texte se superpose au niveau de la page 45, est-ce que quelqu'un d'autre a ce sou...",
-              comments: 3,
-              likes: 1,
-              isAnonymous: true,
-            ),
-
-            const SizedBox(height: 100), // Space for FAB
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CreateDiscussionPage(),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF22D3EE).withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Iconsax.coffee,
+                color: Color(0xFF22D3EE),
+                size: 30,
+              ),
             ),
-          );
-          if (result == true) {
-            // Refresh list if needed - for now just UI
-          }
-        },
-        backgroundColor: const Color(0xFF22D3EE),
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Icon(Iconsax.add, color: Colors.white, size: 28),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Le Café des Lecteurs",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Recommandations, coup de cœurs et discussions générales",
+                    style: GoogleFonts.poppins(
+                      color: Colors.grey[400],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Iconsax.arrow_right_3, color: Colors.white54, size: 20),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPostItem({
-    required String username,
-    required String time,
-    required String title,
-    required String content,
-    required int comments,
-    required int likes,
-    bool isAnonymous = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
+  Widget _buildBookForumCard(LibraryModel libraryItem) {
+    final book = libraryItem.livre!;
+    // Fake stats variables for demonstration
+    final activityScore = book.telechargements > 50
+        ? "Très actif"
+        : "Peu actif";
+    final msgCount =
+        book.telechargements * 3; // un peu plus de msg pour les lecteurs
+    final color = book.telechargements > 50
+        ? Colors.greenAccent
+        : Colors.orangeAccent;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ForumDiscussionPage(
+              title: "CLUB DE LECTURE",
+              subtitle: book.titre,
+              book: book,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1F2937),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          children: [
+            Hero(
+              tag: 'lecteur_forum_cover_${book.id}',
+              child: Container(
+                width: 50,
+                height: 70,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isAnonymous ? Colors.cyan : Colors.grey[800],
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white.withOpacity(0.05),
                 ),
-                child: isAnonymous
-                    ? const Center(
-                        child: Text(
-                          "A",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                child:
+                    book.imageCouverture != null &&
+                        !book.imageCouverture!.contains('example.com')
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          book.imageCouverture!,
+                          fit: BoxFit.cover,
                         ),
                       )
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.network(
-                          "https://i.pravatar.cc/150?u=$username",
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) =>
-                              const Icon(Icons.person, color: Colors.white),
+                    : const Icon(Iconsax.book, color: Colors.white24, size: 24),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.titre,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Iconsax.message, size: 14, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Text(
+                        "$msgCount messages",
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey[400],
+                          fontSize: 12,
                         ),
                       ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          "@$username",
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          activityScore,
                           style: GoogleFonts.poppins(
-                            color: const Color(0xFF22D3EE),
-                            fontSize: 14,
+                            color: color,
+                            fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const Spacer(),
-                        Text(
-                          "il y a $time",
-                          style: GoogleFonts.poppins(
-                            color: Colors.grey[500],
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      title,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 52, top: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  content,
-                  style: GoogleFonts.poppins(
-                    color: Colors.grey[400],
-                    fontSize: 13,
-                    height: 1.4,
+                    ],
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Iconsax.message, size: 18, color: Colors.grey[500]),
-                    const SizedBox(width: 6),
-                    Text(
-                      comments.toString(),
-                      style: GoogleFonts.poppins(
-                        color: Colors.grey[500],
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Icon(Iconsax.heart, size: 18, color: Colors.grey[500]),
-                    const SizedBox(width: 6),
-                    Text(
-                      likes.toString(),
-                      style: GoogleFonts.poppins(
-                        color: Colors.grey[500],
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Divider(color: Colors.white.withOpacity(0.05)),
-        ],
+          ],
+        ),
       ),
     );
   }

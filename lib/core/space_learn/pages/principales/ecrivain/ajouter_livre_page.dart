@@ -15,7 +15,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 class AjouterLivrePage extends StatefulWidget {
-  const AjouterLivrePage({super.key});
+  final BookModel? book;
+  const AjouterLivrePage({super.key, this.book});
 
   @override
   State<AjouterLivrePage> createState() => _AjouterLivrePageState();
@@ -57,6 +58,18 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   @override
   void initState() {
     super.initState();
+    if (widget.book != null) {
+      _titreController.text = widget.book!.titre;
+      _descriptionController.text = widget.book!.description;
+      _prixController.text = widget.book!.prix.toString();
+      _selectedCategorieId = widget.book!.categorieId;
+      _selectedFileName = widget.book!.fichierUrl != null
+          ? widget.book!.fichierUrl!.split('/').last
+          : null;
+      _selectedCoverName = widget.book!.imageCouverture != null
+          ? widget.book!.imageCouverture!.split('/').last
+          : null;
+    }
     _loadCategories();
     _loadCurrentUser();
   }
@@ -179,7 +192,8 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   Future<void> _publishBook() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedFileName == null || _selectedCoverName == null) {
+    if (widget.book == null &&
+        (_selectedFileName == null || _selectedCoverName == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -214,145 +228,135 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     setState(() => _isUploading = true);
 
     try {
+      String? coverUrl = widget.book?.imageCouverture;
+      String? bookUrl = widget.book?.fichierUrl;
+
       // 1. Upload Cover
-      print('📤 Starting cover upload...');
-      final coverExt = p.extension(_selectedCoverPath!);
-      final coverPath = '${DateTime.now().millisecondsSinceEpoch}$coverExt';
-      print('📁 Cover path: $coverPath');
+      if (_selectedCoverPath != null) {
+        print('📤 Starting cover upload...');
+        final coverExt = p.extension(_selectedCoverPath!);
+        final coverPath = '${DateTime.now().millisecondsSinceEpoch}$coverExt';
 
-      final coverUrl = await SupabaseService.uploadFile(
-        bucket: 'covers',
-        path: coverPath,
-        file: File(_selectedCoverPath!),
-      );
+        coverUrl = await SupabaseService.uploadFile(
+          bucket: 'book_covers',
+          path: coverPath,
+          file: File(_selectedCoverPath!),
+        );
 
-      print('🎯 Cover upload result: $coverUrl');
-      if (coverUrl == null) {
-        throw Exception("Erreur lors de l'upload de la couverture");
+        if (coverUrl == null) {
+          throw Exception("Erreur lors de l'upload de la couverture");
+        }
       }
-      print('✅ Cover uploaded: $coverUrl');
 
       // 2. Upload Book
-      print('📤 Starting book upload...');
-      final bookExt = p.extension(_selectedFilePath!);
-      final bookPath = '${DateTime.now().millisecondsSinceEpoch}$bookExt';
-      print('📁 Book path: $bookPath');
+      if (_selectedFilePath != null) {
+        print('📤 Starting book upload...');
+        final bookExt = p.extension(_selectedFilePath!);
+        final bookPath = '${DateTime.now().millisecondsSinceEpoch}$bookExt';
 
-      final bookUrl = await SupabaseService.uploadFile(
-        bucket: 'books',
-        path: bookPath,
-        file: File(_selectedFilePath!),
-      );
+        bookUrl = await SupabaseService.uploadFile(
+          bucket: 'books',
+          path: bookPath,
+          file: File(_selectedFilePath!),
+        );
 
-      print('🎯 Book upload result: $bookUrl');
-      if (bookUrl == null) {
-        throw Exception("Erreur lors de l'upload du livre");
+        if (bookUrl == null) {
+          throw Exception("Erreur lors de l'upload du livre");
+        }
       }
-      print('✅ Book uploaded: $bookUrl');
 
-      // 3. Determine category ID - CategorieID is required by the API
-      String categorieId;
+      // 3. Determine category ID
+      String categorieId = widget.book?.categorieId ?? '';
       if (_showCustomCategorie && _categorieController.text.isNotEmpty) {
-        // Create a new category if custom
         try {
-          final newCategorie = await _categorieService.createCategorie({
-            'nom': _categorieController.text,
+          final newCategorieMap = {
+            'nom': _categorieController.text.trim(),
             'statut': 'actif',
-          }, token);
-          categorieId = newCategorie.id;
-          print('✅ New category created: ${newCategorie.nom}');
+          };
+          final createdCat = await _categorieService.createCategorie(
+            newCategorieMap,
+            token,
+          );
+          categorieId = createdCat.id;
         } catch (e) {
-          print('⚠️ Could not create custom category: $e');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  "Erreur: Impossible de créer la catégorie personnalisée. Veuillez sélectionner une catégorie existante.",
-                ),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          setState(() => _isUploading = false);
-          return;
+          throw Exception("Impossible de créer la catégorie personnalisée: $e");
         }
       } else if (_selectedCategorieId != null &&
           _selectedCategorieId != _autreCategorieId) {
         categorieId = _selectedCategorieId!;
-        print('✅ Using selected category ID: $categorieId');
-      } else {
-        // Try to get the first available category as fallback
-        try {
-          final categories = await _categorieService.getCategories();
-          if (categories.isNotEmpty) {
-            categorieId = categories.first.id;
-            print('🔄 Using first available category: ${categories.first.nom}');
-          } else {
-            // Create a default category
-            final defaultCategorie = await _categorieService.createCategorie({
-              'nom': 'Général',
-              'statut': 'actif',
-            }, token);
-            categorieId = defaultCategorie.id;
-            print('✅ Default category created: Général');
-          }
-        } catch (e) {
-          print('❌ Could not get or create category: $e');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  "Erreur: Impossible de déterminer une catégorie. Veuillez réessayer.",
-                ),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          setState(() => _isUploading = false);
-          return;
+      } else if (categorieId.isEmpty) {
+        final categories = await _categorieService.getCategories();
+        if (categories.isNotEmpty) {
+          categorieId = categories.first.id;
+        } else {
+          final defaultCategorieMap = {'nom': 'Général', 'statut': 'actif'};
+          final defaultCategorie = await _categorieService.createCategorie(
+            defaultCategorieMap,
+            token,
+          );
+          categorieId = defaultCategorie.id;
         }
       }
 
-      // 4. Create book in database via API
-      print('📤 Creating book in database...');
-      print('📋 Final category ID being used: $categorieId');
-      final book = BookModel(
-        id: '', // Will be generated by the server
-        auteurId: _currentUserId!,
-        titre: _titreController.text.trim(),
-        description: _descriptionController.text.trim(),
-        imageCouverture: coverUrl,
-        fichierUrl: bookUrl,
-        format: _getFileFormat(_selectedFilePath),
-        prix: int.tryParse(_prixController.text) ?? 0,
-        stock: 999, // Default stock
-        categorieId: categorieId,
-        statut: 'publie',
-      );
+      final int prixParsed = int.tryParse(_prixController.text) ?? 0;
+      final format = _getFileFormat(_selectedFilePath ?? bookUrl);
 
-      print('📦 Book object created with category ID: ${book.categorieId}');
+      if (widget.book != null) {
+        // Mode modification
+        final updates = {
+          'titre': _titreController.text.trim(),
+          'description': _descriptionController.text.trim(),
+          'prix': prixParsed,
+          'categorie_id': categorieId,
+          if (_selectedFilePath != null) 'fichier_url': bookUrl,
+          if (_selectedCoverPath != null) 'image_couverture': coverUrl,
+          'format': format,
+          'statut': widget.book!.statut,
+        };
+        await _bookService.updateBook(widget.book!.id, updates, token);
 
-      final createdBook = await _bookService.createBook(book, token);
-      print('✅ Book created successfully: ${createdBook.id}');
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Livre publié avec succès !"),
-            backgroundColor: Colors.green,
-          ),
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Livre modifié avec succès !"),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context, true);
+        }
+      } else {
+        // Mode création
+        final bookToCreate = BookModel(
+          id: '',
+          auteurId: _currentUserId!,
+          titre: _titreController.text.trim(),
+          description: _descriptionController.text.trim(),
+          imageCouverture: coverUrl,
+          fichierUrl: bookUrl,
+          format: format,
+          prix: prixParsed,
+          stock: 999,
+          categorieId: categorieId,
+          statut: 'publie',
+          auteur: null,
         );
-        Navigator.pop(context, true); // Return true to indicate success
+
+        await _bookService.createBook(bookToCreate, token);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Livre publié avec succès !"),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context, true);
+        }
       }
     } catch (e) {
       print('❌ Upload error: $e');
       if (mounted) {
-        String errorMessage = "Échec de la publication : $e";
-        if (e.toString().contains('Failed host lookup') ||
-            e.toString().contains('No address associated with hostname')) {
-          errorMessage =
-              "Erreur de connexion à Supabase. Vérifiez que votre projet Supabase est actif dans le tableau de bord.";
-        }
+        String errorMessage = "Échec de l'opération : $e";
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
@@ -370,7 +374,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
         title: Text(
-          "Publier une œuvre",
+          widget.book != null ? "Modifier une œuvre" : "Publier une œuvre",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -473,7 +477,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   child: _isUploading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
-                          'Publier maintenant',
+                          widget.book != null
+                              ? 'Modifier'
+                              : 'Publier maintenant',
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontSize: 18,

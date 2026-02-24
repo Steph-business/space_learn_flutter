@@ -24,7 +24,12 @@ class MainNavBar extends StatefulWidget {
 class MainNavBarState extends State<MainNavBar> {
   int _selectedIndex = 0;
 
-  final List<String> _titles = ["Accueil", "Boutique", "Bibliothèque", "Forum"];
+  final List<String> _titles = [
+    "Accueil",
+    "Boutique",
+    "Bibliothèque",
+    "Communauté",
+  ];
 
   final List<IconData> _icons = [
     Iconsax.home,
