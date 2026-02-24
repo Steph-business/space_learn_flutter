@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'notificationService.dart';
 import '../model/notificationModel.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationService _service = NotificationService();
+  final AuthService _authService = AuthService();
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
   StreamSubscription? _subscription;
@@ -19,12 +21,24 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _notifications = await _service.getNotifications(token);
+      final user = await _authService.getUser(token);
+      final userId = user?.id;
+
+      final allNotifications = await _service.getNotifications(token);
+
+      if (userId != null) {
+        _notifications = allNotifications
+            .where((n) => n.utilisateurId == userId)
+            .toList();
+      } else {
+        _notifications = allNotifications;
+      }
+
       _isLoading = false;
       notifyListeners();
 
       // Start streaming for real-time updates
-      _startStreaming(token);
+      _startStreaming(token, userId);
     } catch (e) {
       _isLoading = false;
       notifyListeners();
@@ -32,12 +46,15 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  void _startStreaming(String token) {
+  void _startStreaming(String token, String? userId) {
     _subscription?.cancel();
     _subscription = _service
         .streamNotifications(token)
         .listen(
           (notification) {
+            if (userId != null && notification.utilisateurId != userId) {
+              return; // Ignore notifications belonging to other users
+            }
             // Add new notification at the beginning
             _notifications = [notification, ..._notifications];
             notifyListeners();

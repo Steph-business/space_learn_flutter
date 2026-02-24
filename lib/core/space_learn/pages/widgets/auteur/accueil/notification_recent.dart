@@ -15,8 +15,6 @@ class RecentNotificationsPage extends StatefulWidget {
 }
 
 class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
-  int _selectedFilter = 0;
-
   String _formatTimeAgo(DateTime? dt) {
     if (dt == null) return '';
     final diff = DateTime.now().difference(dt);
@@ -43,42 +41,6 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
 
   Color _colorForRead(bool lu) => lu ? Colors.grey : Colors.blueAccent;
 
-  List<NotificationModel> _applyFilter(List<NotificationModel> items) {
-    if (_selectedFilter == 0) return items;
-
-    if (_selectedFilter == 1) {
-      final authorTypes = <String>{'paiement', 'achat', 'payment'};
-      return items
-          .where((n) => authorTypes.contains(n.type.toLowerCase()))
-          .toList();
-    }
-
-    final authorTypes = <String>{'paiement', 'achat', 'payment'};
-    return items
-        .where((n) => !authorTypes.contains(n.type.toLowerCase()))
-        .toList();
-  }
-
-  Widget _buildChoiceChip(String label, int index) {
-    return ChoiceChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          color: _selectedFilter == index ? Colors.white : Colors.grey[400],
-        ),
-      ),
-      selected: _selectedFilter == index,
-      selectedColor: const Color(0xFF06B6D4),
-      backgroundColor: const Color(0xFF1E293B),
-      side: BorderSide(
-        color: _selectedFilter == index
-            ? Colors.transparent
-            : Colors.grey[700]!,
-      ),
-      onSelected: (v) => setState(() => _selectedFilter = index),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final notificationProvider = context.watch<NotificationProvider>();
@@ -96,87 +58,23 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth > 300) {
-                    return Row(
-                      children: [
-                        const Icon(Icons.notifications, color: Colors.white),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Notifications récentes',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        Flexible(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
-                              children: [
-                                _buildChoiceChip('Tous', 0),
-                                const SizedBox(width: 6),
-                                _buildChoiceChip('Auteur', 1),
-                                const SizedBox(width: 6),
-                                _buildChoiceChip('Lecteur', 2),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.notifications, color: Colors.white),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Notifications récentes',
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
+              child: Row(
+                children: [
+                  const Icon(Icons.notifications, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Notifications récentes',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      const SizedBox(height: 6),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: constraints.maxWidth * 0.95,
-                        ),
-                        child: Wrap(
-                          alignment: WrapAlignment.end,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            _buildChoiceChip('Tous', 0),
-                            const SizedBox(width: 6),
-                            _buildChoiceChip('Auteur', 1),
-                            const SizedBox(width: 6),
-                            _buildChoiceChip('Lecteur', 2),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -194,7 +92,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
                 ),
               ),
             ] else ...[
-              ..._applyFilter(notifications).map(
+              ...notifications.map(
                 (notif) => Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,

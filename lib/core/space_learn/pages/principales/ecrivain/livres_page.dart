@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/livres/livre_stats.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/livres/publications_liste.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
@@ -23,10 +21,8 @@ class LivresPage extends StatefulWidget {
 class _LivresPageState extends State<LivresPage> {
   final BookService _bookService = BookService();
   final AuthService _authService = AuthService();
-  final AuthorStatsService _statsService = AuthorStatsService();
 
   List<BookModel> _books = [];
-  Map<String, dynamic> _stats = {};
   String? _authorName;
   bool _isLoading = true;
   String? _error;
@@ -63,12 +59,10 @@ class _LivresPageState extends State<LivresPage> {
       }
 
       final books = await _bookService.getBooksByAuthorId(user.id);
-      final stats = await _statsService.getAuthorStats(user.id, 'all');
 
       if (mounted) {
         setState(() {
           _books = books;
-          _stats = stats;
           _authorName = user.nomComplet;
           _isLoading = false;
         });
@@ -92,7 +86,7 @@ class _LivresPageState extends State<LivresPage> {
         backgroundColor: const Color(0xFF0F172A),
         elevation: 0,
         title: const Text(
-          'Mes livres',
+          'Mes Livres Publiés',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -108,89 +102,137 @@ class _LivresPageState extends State<LivresPage> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              LivreStatsSection(
-                publications: _books.length,
-                views: _stats['views'] ?? 0,
-                revenue: _stats['revenue'] ?? 0,
-              ),
-              const SizedBox(height: 20),
-              // Search Bar
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
-                  borderRadius: BorderRadius.circular(12),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                border: Border(
+                  bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
                 ),
-                child: TextField(
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: "Rechercher un livre...",
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: Color(0xFF0EA5E9),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 15,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "${_books.length} Livres Publiés",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 30),
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else if (_error != null)
-                Center(
-                  child: Column(
-                    children: [
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
-                      ElevatedButton(
-                        onPressed: _loadBooks,
-                        child: const Text("Réessayer"),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AjouterLivrePage(),
+                        ),
+                      );
+                      if (result == true) {
+                        _loadBooks();
+                      }
+                    },
+                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                    label: const Text(
+                      "Publier",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
-                    ],
-                  ),
-                )
-              else if (_books.isEmpty)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: Text(
-                      "Vous n'avez pas encore publié de livres.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0EA5E9),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      elevation: 0,
                     ),
                   ),
-                )
-              else
-                PublicationsList(books: _books, authorName: _authorName),
-              const SizedBox(height: 100),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AjouterLivrePage()),
-          );
-          if (result == true) {
-            _loadBooks();
-          }
-        },
-        backgroundColor: const Color(0xFF0EA5E9),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          "Nouveau",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Search Bar
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E293B),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextField(
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: "Rechercher un livre...",
+                          hintStyle: TextStyle(
+                            color: Colors.white.withOpacity(0.3),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Color(0xFF0EA5E9),
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_isLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_error != null)
+                      Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              _error!,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                            ElevatedButton(
+                              onPressed: _loadBooks,
+                              child: const Text("Réessayer"),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (_books.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text(
+                            "Vous n'avez pas encore publié de livres.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    else
+                      PublicationsList(
+                        books: _books,
+                        authorName: _authorName,
+                        onBookUpdated: _loadBooks,
+                      ),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

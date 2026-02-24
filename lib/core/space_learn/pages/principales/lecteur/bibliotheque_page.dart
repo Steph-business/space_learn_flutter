@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/filtre_livres.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_card.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_grid_card.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/ajouter_grid_card.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
@@ -22,12 +22,11 @@ class BibliothequePage extends StatefulWidget {
 }
 
 class _BibliothequePageState extends State<BibliothequePage> {
-  String filtreActif = "Tous";
   final LibraryService _libraryService = LibraryService();
   final BookService _bookService = BookService();
   final AuthService _authService = AuthService();
   List<LibraryModel> _libraryItems = [];
-  List<String> _categories = ["Tous"];
+
   bool _isLoading = true;
   String? _error;
   String _userName = "Lecteur";
@@ -120,16 +119,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
         setState(() {
           _libraryItems = enriched;
 
-          // Extract unique categories
-          final Set<String> categorySet = {"Tous"};
-          for (var item in enriched) {
-            if (item.livre?.categorie != null &&
-                item.livre!.categorie!.nom.isNotEmpty) {
-              categorySet.add(item.livre!.categorie!.nom);
-            }
-          }
-          _categories = categorySet.toList();
-
           _isLoading = false;
         });
       }
@@ -144,13 +133,143 @@ class _BibliothequePageState extends State<BibliothequePage> {
     }
   }
 
+  String _selectedTab = "Tous";
+  String _sortOption = "Dernière lecture";
+
   List<LibraryModel> _getFilteredBooks() {
-    if (filtreActif == "Tous") {
-      return _libraryItems;
+    List<LibraryModel> result = _libraryItems;
+
+    // Filter by Search if we had it, but for now we focus on tabs
+    // Filter by tab
+    if (_selectedTab == "En cours") {
+      result = result.where((item) {
+        final progress =
+            (item.livre?.progressions != null &&
+                item.livre!.progressions!.isNotEmpty)
+            ? item.livre!.progressions!.first.pourcentage
+            : 0;
+        return progress > 0 && progress < 100;
+      }).toList();
+    } else if (_selectedTab == "Terminés") {
+      result = result.where((item) {
+        final progress =
+            (item.livre?.progressions != null &&
+                item.livre!.progressions!.isNotEmpty)
+            ? item.livre!.progressions!.first.pourcentage
+            : 0;
+        return progress >= 100;
+      }).toList();
     }
-    return _libraryItems
-        .where((item) => item.livre?.categorie?.nom == filtreActif)
-        .toList();
+
+    // Sort
+    if (_sortOption == "A-Z") {
+      result.sort(
+        (a, b) => (a.livre?.titre ?? "").compareTo(b.livre?.titre ?? ""),
+      );
+    }
+
+    return result;
+  }
+
+  Widget _buildTopTabs() {
+    final tabs = ["Tous", "En cours", "Terminés"];
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF1E293B), width: 1)),
+      ),
+      child: Row(
+        children: tabs.map((tab) {
+          final isSelected = _selectedTab == tab;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedTab = tab),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              margin: const EdgeInsets.only(right: 24),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isSelected
+                        ? const Color(0xFF0EA5E9)
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+              ),
+              child: Text(
+                tab,
+                style: GoogleFonts.poppins(
+                  color: isSelected ? Colors.white : Colors.grey[500],
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildFilterRow() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildActionChip(
+            "Dernière lecture",
+            Icons.swap_vert,
+            isSelected: _sortOption == "Dernière lecture",
+            onTap: () => setState(() => _sortOption = "Dernière lecture"),
+          ),
+          const SizedBox(width: 12),
+          _buildActionChip(
+            "Genre",
+            Icons.filter_list,
+            isSelected: false,
+            onTap: () {},
+          ),
+          const SizedBox(width: 12),
+          _buildActionChip(
+            "A-Z",
+            Icons.sort_by_alpha,
+            isSelected: _sortOption == "A-Z",
+            onTap: () => setState(() => _sortOption = "A-Z"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionChip(
+    String label,
+    IconData icon, {
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1E293B) : const Color(0xFF192336),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.grey[300], size: 16),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: Colors.grey[300],
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -240,13 +359,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
 
                         // Search and Filter
                         const CustomSearchBar(),
-                        const SizedBox(height: 20),
-                        FiltreLivres(
-                          filtreActif: filtreActif,
-                          categories: _categories,
-                          onFiltreChange: (f) =>
-                              setState(() => filtreActif = f),
-                        ),
+                        const SizedBox(height: 16),
+
+                        // Tabs
+                        _buildTopTabs(),
+                        const SizedBox(height: 16),
+
+                        // Filters Action Chips
+                        _buildFilterRow(),
                         const SizedBox(height: 24),
 
                         if (_isLoading)
@@ -254,7 +374,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                             child: Padding(
                               padding: EdgeInsets.all(60.0),
                               child: CircularProgressIndicator(
-                                color: Color(0xFFF59E0B),
+                                color: Color(0xFF0EA5E9),
                                 strokeWidth: 3,
                               ),
                             ),
@@ -264,19 +384,34 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         else if (_libraryItems.isEmpty)
                           _buildEmptyState()
                         else
-                          ListView.builder(
+                          GridView.builder(
                             shrinkWrap: true,
-                            padding: EdgeInsets.zero,
+                            padding: const EdgeInsets.only(bottom: 40),
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _getFilteredBooks().length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 24,
+                                  childAspectRatio: 0.55,
+                                ),
+                            itemCount: _getFilteredBooks().length + 1,
                             itemBuilder: (context, index) {
+                              if (index == _getFilteredBooks().length) {
+                                return AjouterGridCard(
+                                  onTap: () {
+                                    MainNavBar.mainNavBarKey.currentState
+                                        ?.navigateToMarketplace();
+                                  },
+                                );
+                              }
+
                               final item = _getFilteredBooks()[index];
                               final book = item.livre;
 
-                              if (book == null) return const SizedBox.shrink();
-
                               return GestureDetector(
                                 onTap: () {
+                                  if (book == null) return;
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -287,21 +422,19 @@ class _BibliothequePageState extends State<BibliothequePage> {
                                     ),
                                   );
                                 },
-                                child: LivreCard(
-                                  titre: book.titre,
-                                  auteur: book.authorName,
-                                  categorie: book.categorie?.nom,
+                                child: LivreGridCard(
+                                  titre: book?.titre ?? "Inconnu",
+                                  auteur: book?.authorName ?? "Auteur inconnu",
                                   progression:
-                                      (book.progressions != null &&
-                                          book.progressions!.isNotEmpty)
+                                      (book?.progressions != null &&
+                                          book!.progressions!.isNotEmpty)
                                       ? book.progressions!.first.pourcentage
                                       : 0,
                                   couleurs: const [
                                     Color(0xFF6A5AE0),
                                     Color(0xFF8B82F6),
                                   ],
-                                  imageUrl: book.imageCouverture,
-                                  dateAcquisition: item.creeLe,
+                                  imageUrl: book?.imageCouverture,
                                 ),
                               );
                             },
