@@ -4,6 +4,8 @@ import '../../../themes/app_colors.dart';
 import '../../data/model/user_model.dart';
 import '../../data/dataServices/authServices.dart';
 import '../../../utils/token_storage.dart';
+import '../../data/dataServices/favoriteService.dart';
+import 'lecteur/favorites_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -15,6 +17,8 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   UserModel? _user;
   bool _isLoading = true;
+  int _favoritesCount = 0;
+  final FavoriteService _favoriteService = FavoriteService();
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -296,7 +300,20 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               _buildStatItem("Livres lus", "24"),
               _buildStatItem("En cours", "3"),
-              _buildStatItem("Favoris", "12"),
+              _buildStatItem(
+                "Favorie",
+                "$_favoritesCount",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const FavoritesPage(),
+                    ),
+                  ).then(
+                    (_) => _loadUserProfile(),
+                  ); // Refresh count when coming back
+                },
+              ),
             ],
           ),
         ],
@@ -304,24 +321,27 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+  Widget _buildStatItem(String label, String value, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -341,7 +361,8 @@ class _ProfilePageState extends State<ProfilePage> {
       if (token != null) {
         final authService = AuthService();
         final user = await authService.getUser(token);
-        if (user != null) {
+        final favs = await _favoriteService.getFavorites(token);
+        if (user != null && mounted) {
           setState(() {
             _user = user;
             _nameController.text = user.nomComplet;
@@ -349,6 +370,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _bioController.text = user.biography ?? '';
             _socialLinksController.text = user.socialLinks ?? '';
             _walletAddressController.text = user.walletAddress ?? '';
+            _favoritesCount = favs.length;
             _isLoading = false;
           });
         }

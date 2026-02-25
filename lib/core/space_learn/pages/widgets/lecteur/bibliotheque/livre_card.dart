@@ -184,9 +184,7 @@ class LivreCard extends StatelessWidget {
                                       child: Container(
                                         height: 6,
                                         decoration: BoxDecoration(
-                                          gradient: const LinearGradient(
-                                            colors: [Color(0xFF06B6D4)],
-                                          ),
+                                          color: const Color(0xFF06B6D4),
                                           borderRadius: BorderRadius.circular(
                                             3,
                                           ),

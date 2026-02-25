@@ -7,8 +7,9 @@ import '../../../data/dataServices/readingProgressService.dart';
 
 class ReadingPage extends StatefulWidget {
   final Map<String, dynamic> book;
+  final int? initialPage;
 
-  const ReadingPage({super.key, required this.book});
+  const ReadingPage({super.key, required this.book, this.initialPage});
 
   @override
   State<ReadingPage> createState() => _ReadingPageState();
@@ -32,15 +33,20 @@ class _ReadingPageState extends State<ReadingPage> {
   void initState() {
     super.initState();
     _pdfViewerController = PdfViewerController();
+    _savedPage = widget.initialPage;
     _loadProgress();
   }
 
   Future<void> _loadProgress() async {
+    // Si on a déjà une page initiale, on ne surcharge pas le réseau
+    if (_savedPage != null && _savedPage! > 0) return;
+
     try {
       final token = await TokenStorage.getToken();
       if (token != null) {
         final bookId = widget.book['id'] ?? widget.book['ID'];
-        final progress = await _progressService.getReadingProgress(
+        // Utilisation de la méthode correcte confirmée par le backend
+        final progress = await _progressService.getProgressByLivre(
           bookId,
           token,
         );
@@ -48,6 +54,12 @@ class _ReadingPageState extends State<ReadingPage> {
           setState(() {
             _savedPage = progress.chapitreCourant;
           });
+          // Si le document est déjà chargé, on saute maintenant
+          if (_isDocumentLoaded &&
+              _savedPage! > 0 &&
+              _savedPage! <= _totalPages) {
+            _pdfViewerController.jumpToPage(_savedPage!);
+          }
         }
       }
     } catch (e) {
@@ -159,10 +171,14 @@ class _ReadingPageState extends State<ReadingPage> {
             _isDocumentLoaded = true;
           });
           if (_savedPage != null &&
-              _savedPage! > 1 &&
+              _savedPage! > 0 &&
               _savedPage! <= _totalPages) {
-            Future.delayed(const Duration(milliseconds: 200), () {
-              _pdfViewerController.jumpToPage(_savedPage!);
+            // Un petit délai est souvent nécessaire pour que le viewer soit prêt à sauter
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                _pdfViewerController.jumpToPage(_savedPage!);
+                debugPrint("🚀 Reprise de la lecture à la page $_savedPage");
+              }
             });
           }
         }

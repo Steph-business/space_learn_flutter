@@ -20,12 +20,13 @@ import '../../../data/model/readerStatsModel.dart';
 import '../../../data/model/activite_model.dart';
 import '../../../data/model/user_model.dart';
 import '../../../../utils/token_storage.dart';
-import '../../../data/dataServices/readingProgressService.dart';
-import '../../../data/model/readingActivityModel.dart';
 import '../../../data/dataServices/categorie_service.dart';
 import '../../../data/model/categorie.dart';
 import '../../../data/dataServices/discussionService.dart';
 import '../../../data/model/discussionModel.dart';
+import '../../../data/dataServices/recommendationService.dart';
+import '../../../data/model/recommendationModel.dart';
+import '../../../data/dataServices/relationService.dart';
 
 class HomePageLecteur extends StatefulWidget {
   final String profileId;
@@ -42,27 +43,26 @@ class HomePageLecteur extends StatefulWidget {
 }
 
 class _HomePageLecteurState extends State<HomePageLecteur> {
-  final LibraryService _libraryService = LibraryService();
   final BookService _bookService = BookService();
   final ReaderStatsService _statsService = ReaderStatsService();
   final Lectureservice _lectureService = Lectureservice();
-  final ReadingProgressService _readingProgressService =
-      ReadingProgressService();
   final CategorieService _categorieService = CategorieService();
   final DiscussionService _discussionService = DiscussionService();
+  final RecommendationService _recommendationService = RecommendationService();
+  final RelationService _relationService = RelationService();
+  final LibraryService _libraryService = LibraryService();
 
   bool _isLoading = true;
   String? _error;
 
   ReaderStatsModel? _stats;
-  BookModel? _continueReadingBook;
-  ReadingActivityModel? _readingProgress;
+  List<BookModel> _featuredBooks = [];
   List<BookModel> _recommendations = [];
 
   List<UserModel> _featuredAuthors = [];
   List<ReviewModel> _recentActivities = [];
-  List<LibraryModel> _library = [];
   List<Categorie> _categories = [];
+  Set<String> _ownedBookIds = {};
   List<Discussion> _discussions = [];
 
   @override
@@ -82,17 +82,37 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       if (token == null) throw Exception("Session expirée");
 
       final results = await Future.wait([
-        _statsService.getReaderStats(widget.profileId),
-        _libraryService.getUserLibrary(token),
-        _bookService.getAllBooks(),
-        _lectureService.getReviewsByUser(token),
+        _statsService.getReaderStats(widget.profileId).catchError((e) {
+          debugPrint('⚠️ Error loading stats: $e');
+          return ReaderStatsModel(
+            booksRead: 0,
+            totalTime: '0h',
+            goalsAchieved: 0,
+          );
+        }),
+        _bookService.getAllBooks().catchError((e) {
+          debugPrint('⚠️ Error loading books: $e');
+          return <BookModel>[];
+        }),
+        _lectureService.getAllReviews(token).catchError((e) {
+          debugPrint('⚠️ Error loading all reviews: $e');
+          return <ReviewModel>[];
+        }),
         _categorieService.getCategories().catchError((e) {
           debugPrint('⚠️ Error loading categories: $e');
           return <Categorie>[];
         }),
-        _discussionService.getDiscussionsByUser(token).catchError((e) {
-          debugPrint('⚠️ Error loading discussions: $e');
+        _discussionService.getGlobalDiscussions().catchError((e) {
+          debugPrint('⚠️ Error loading global discussions: $e');
           return <Discussion>[];
+        }),
+        _recommendationService.getRecommendations(token).catchError((e) {
+          debugPrint('⚠️ Error loading recommendations: $e');
+          return <RecommendationModel>[];
+        }),
+        _libraryService.getUserLibrary(token).catchError((e) {
+          debugPrint('⚠️ Error loading library: $e');
+          return <LibraryModel>[];
         }),
       ]);
 
@@ -109,25 +129,23 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           }
 
           if (results[1] is List) {
-            final library = (results[1] as List).cast<LibraryModel>();
-            _library = library;
-            if (library.isNotEmpty) {
-              _continueReadingBook = library.first.livre;
-            }
-          }
-
-          if (results[2] is List) {
-            final allBooks = (results[2] as List).cast<BookModel>();
-            _recommendations = allBooks.take(5).toList();
+            final allBooks = (results[1] as List).cast<BookModel>();
+            // À la une : Les derniers livres publiés
+            _featuredBooks = List.from(allBooks);
+            _featuredBooks.sort((a, b) {
+              if (a.creeLe != null && b.creeLe != null) {
+                return b.creeLe!.compareTo(a.creeLe!);
+              }
+              return b.id.compareTo(a.id);
+            });
+            _featuredBooks = _featuredBooks.take(10).toList();
 
             final authorsMap = <String, UserModel>{};
             for (var book in allBooks) {
               if (book.auteur != null && book.auteur!.id.isNotEmpty) {
-                // Auteur complet disponible
                 authorsMap[book.auteur!.id] = book.auteur!;
               } else if (book.auteurId.isNotEmpty &&
                   !authorsMap.containsKey(book.auteurId)) {
-                // Fallback : créer un UserModel avec l’auteurId
                 authorsMap[book.auteurId] = UserModel(
                   id: book.auteurId,
                   profilId: book.auteurId,
@@ -140,57 +158,39 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             _featuredAuthors = authorsMap.values.take(10).toList();
           }
 
-          if (results[3] is List) {
-            _recentActivities = (results[3] as List).cast<ReviewModel>();
+          if (results[2] is List) {
+            _recentActivities = (results[2] as List).cast<ReviewModel>();
+          }
+
+          if (results.length > 3 && results[3] is List) {
+            _categories = (results[3] as List).cast<Categorie>();
           }
 
           if (results.length > 4 && results[4] is List) {
-            _categories = (results[4] as List).cast<Categorie>();
+            _discussions = (results[4] as List).cast<Discussion>();
           }
 
           if (results.length > 5 && results[5] is List) {
-            _discussions = (results[5] as List).cast<Discussion>();
+            final recs = (results[5] as List).cast<RecommendationModel>();
+            if (recs.isNotEmpty) {
+              _recommendations = recs
+                  .where((r) => r.livre != null)
+                  .map((r) => r.livre!)
+                  .toList();
+            }
+          }
+
+          if (results.length > 6 && results[6] is List) {
+            final library = (results[6] as List).cast<LibraryModel>();
+            _ownedBookIds = library.map((item) => item.livreId).toSet();
           }
         });
 
-        if (_continueReadingBook != null) {
-          try {
-            final progress = await _readingProgressService.getReadingProgress(
-              _continueReadingBook!.id,
-              token,
-            );
-
-            bool needsAuthorFix =
-                _continueReadingBook!.auteur == null ||
-                _continueReadingBook!.authorName == 'Auteur inconnu' ||
-                _continueReadingBook!.auteur!.nomComplet.isEmpty;
-
-            if (needsAuthorFix) {
-              try {
-                final t = await TokenStorage.getToken();
-                final fullBook = await _bookService.getBookById(
-                  _continueReadingBook!.id,
-                  authToken: t,
-                );
-                _continueReadingBook = fullBook;
-              } catch (bookErr) {
-                print("⚠️ Failed to fix book author details: $bookErr");
-              }
-            }
-
-            if (mounted) {
-              setState(() {
-                _readingProgress = progress;
-              });
-            }
-          } catch (e) {
-            print("⚠️ Error enriching reading data: $e");
-          }
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
         }
-
-        setState(() {
-          _isLoading = false;
-        });
       }
     } catch (e) {
       if (mounted) {
@@ -377,6 +377,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
+                if (_stats != null) _buildQuickStats(),
                 const SizedBox(height: 24),
 
                 // À la une
@@ -406,7 +408,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 const SizedBox(height: 16),
                 _buildFeaturedHorizontalList(),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 38),
                 // Catégories
                 _buildCategoryPills(),
 
@@ -501,9 +503,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _recommendations.isNotEmpty ? _recommendations.length : 2,
+        itemCount: _featuredBooks.isNotEmpty ? _featuredBooks.length : 2,
         itemBuilder: (context, index) {
-          if (_recommendations.isEmpty) {
+          if (_featuredBooks.isEmpty) {
             final hardcoded = [
               {"title": "L'Éveil des Étoiles", "author": "Par Jean Dupont"},
               {"title": "Cœurs Sauvages", "author": "Par Marie Curie"},
@@ -517,7 +519,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               ),
             );
           } else {
-            final book = _recommendations[index];
+            final book = _featuredBooks[index];
             return Padding(
               padding: const EdgeInsets.only(right: 16),
               child: GestureDetector(
@@ -525,7 +527,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => BookDetailPage(book: book),
+                      builder: (context) => BookDetailPage(
+                        book: book,
+                        isOwned: _ownedBookIds.contains(book.id),
+                      ),
                     ),
                   );
                 },
@@ -711,7 +716,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BookDetailPage(book: book),
+                    builder: (context) => BookDetailPage(
+                      book: book,
+                      isOwned: _ownedBookIds.contains(book.id),
+                    ),
                   ),
                 );
               },
@@ -865,21 +873,24 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6), // Blue pill
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      "+ Suivre",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                  GestureDetector(
+                    onTap: () => _followAuthor(_featuredAuthors[index].id),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6), // Blue pill
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        "+ Suivre",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
@@ -890,6 +901,21 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         },
       ),
     );
+  }
+
+  Future<void> _followAuthor(String authorId) async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) return;
+      await _relationService.followUser(authorId, token);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Auteur suivi !')));
+      }
+    } catch (e) {
+      debugPrint("Error following author: $e");
+    }
   }
 
   Widget _buildClubsList() {
@@ -1046,7 +1072,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       quotes = validReviews.map((r) {
         final idx = validReviews.indexOf(r) % colors.length;
         String author = "Membre SpaceLearn";
-        if (r.livre != null) {
+
+        if (r.utilisateur != null && r.utilisateur!.libelle.isNotEmpty) {
+          author = r.utilisateur!.libelle;
+        } else if (r.livre != null) {
           author = "Avis sur ${r.livre!.titre}";
         }
 
@@ -1090,8 +1119,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        BookDetailPage(book: q["book"] as BookModel),
+                    builder: (context) => BookDetailPage(
+                      book: q["book"] as BookModel,
+                      isOwned: _ownedBookIds.contains(
+                        (q["book"] as BookModel).id,
+                      ),
+                    ),
                   ),
                 );
               }
@@ -1160,6 +1193,67 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildQuickStats() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              "${_stats!.booksRead}",
+              "Livres lus",
+              Icons.auto_stories,
+            ),
+            _buildStatSeparator(),
+            _buildStatItem(_stats!.totalTime, "Temps total", Icons.timer),
+            _buildStatSeparator(),
+            _buildStatItem(
+              "${_stats!.goalsAchieved}",
+              "Objectifs",
+              Icons.emoji_events,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String value, String label, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: const Color(0xFF38BDF8), size: 20),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 11),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatSeparator() {
+    return Container(
+      height: 40,
+      width: 1,
+      color: Colors.white.withOpacity(0.1),
     );
   }
 

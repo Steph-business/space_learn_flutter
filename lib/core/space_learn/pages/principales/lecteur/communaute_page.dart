@@ -5,10 +5,14 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/librarySe
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
+import 'package:intl/intl.dart';
 import 'recherche_page.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
-  const TeamsPageLecteur({super.key});
+  final VoidCallback? onBackPressed;
+  const TeamsPageLecteur({super.key, this.onBackPressed});
 
   @override
   State<TeamsPageLecteur> createState() => _TeamsPageLecteurState();
@@ -16,8 +20,10 @@ class TeamsPageLecteur extends StatefulWidget {
 
 class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
   final LibraryService _libraryService = LibraryService();
+  final EvenementService _evenementService = EvenementService();
 
   List<LibraryModel> _library = [];
+  List<Evenement> _evenements = [];
   bool _isLoading = true;
   String? _error;
 
@@ -45,6 +51,13 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
 
       final libraryItems = await _libraryService.getUserLibrary(token);
 
+      List<Evenement> evts = [];
+      try {
+        evts = await _evenementService.getGlobalEvenements(token);
+      } catch (e) {
+        debugPrint("Erreur evenements: $e");
+      }
+
       // Filtrer les entrées sans livre valide
       final validItems = libraryItems
           .where((item) => item.livre != null)
@@ -53,6 +66,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
       if (mounted) {
         setState(() {
           _library = validItems;
+          _evenements = evts;
           _isLoading = false;
         });
       }
@@ -74,6 +88,18 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         backgroundColor: const Color(0xFF111827),
         elevation: 0,
         automaticallyImplyLeading: false,
+        leading:
+            (widget.onBackPressed != null || Navigator.of(context).canPop())
+            ? IconButton(
+                icon: const Icon(
+                  Iconsax.arrow_left_2,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed:
+                    widget.onBackPressed ?? () => Navigator.of(context).pop(),
+              )
+            : null,
         title: Text(
           "COMMUNAUTÉ",
           style: GoogleFonts.poppins(
@@ -141,6 +167,26 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
 
                   // Salon Principal (Espace global)
                   _buildGlobalSalonCard(),
+
+                  // Section Événements & Annonces
+                  if (_evenements.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 20.0,
+                        top: 30.0,
+                        bottom: 10.0,
+                      ),
+                      child: Text(
+                        "Annonces & Événements",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    _buildEvenementsSection(),
+                  ],
 
                   // Forums par Livre
                   Padding(
@@ -382,6 +428,109 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEvenementsSection() {
+    return SizedBox(
+      height: 200,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _evenements.length,
+        itemBuilder: (context, index) {
+          final evt = _evenements[index];
+          final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
+          final colorType = isAnnonce
+              ? const Color(0xFF0EA5E9)
+              : const Color(0xFF10B981);
+          final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
+
+          return Container(
+            width: 280,
+            margin: const EdgeInsets.only(right: 16, bottom: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1F2937),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colorType.withOpacity(0.3)),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorType.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(iconType, color: colorType, size: 16),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        evt.typePublication.toUpperCase(),
+                        style: GoogleFonts.poppins(
+                          color: colorType,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (evt.dateEvenement != null)
+                      Text(
+                        DateFormat('dd/MM/yyyy').format(evt.dateEvenement!),
+                        style: GoogleFonts.poppins(
+                          color: Colors.white54,
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  evt.titre,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Expanded(
+                  child: Text(
+                    evt.contenu,
+                    style: GoogleFonts.poppins(
+                      color: Colors.grey[400],
+                      fontSize: 12,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 12, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      "Événement Communauté",
+                      style: GoogleFonts.poppins(
+                        color: Colors.grey,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

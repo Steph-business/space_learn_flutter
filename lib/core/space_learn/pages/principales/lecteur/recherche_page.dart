@@ -4,6 +4,9 @@ import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import '../../widgets/details/book_detail_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class RecherchePage extends StatefulWidget {
   const RecherchePage({super.key});
@@ -15,7 +18,9 @@ class RecherchePage extends StatefulWidget {
 class _RecherchePageState extends State<RecherchePage> {
   final _searchController = TextEditingController();
   final _bookService = BookService();
+  final _libraryService = LibraryService();
   List<BookModel> _searchResults = [];
+  Set<String> _ownedBookIds = {};
   bool _isLoading = false;
   String _query = "";
 
@@ -34,15 +39,32 @@ class _RecherchePageState extends State<RecherchePage> {
     });
 
     try {
-      final allBooks = await _bookService.getAllBooks();
-      // Simple client-side search for now
+      final token = await TokenStorage.getToken();
+      final futures = [
+        _bookService.getAllBooks(),
+        if (token != null)
+          _libraryService.getUserLibrary(token)
+        else
+          Future.value(<LibraryModel>[]),
+      ];
+
+      final results = await Future.wait(futures);
+      final allBooks = results[0] as List<BookModel>;
+      final library = results[1] as List<LibraryModel>;
+
+      if (mounted) {
+        setState(() {
+          _ownedBookIds = library.map((e) => e.livreId).toSet();
+        });
+      }
+
       final filtered = allBooks.where((book) {
         final titleMatch = book.titre.toLowerCase().contains(
           value.toLowerCase(),
         );
         final authorMatch = book.auteurId.toLowerCase().contains(
           value.toLowerCase(),
-        ); // This isn't great but works as a fallback
+        );
         return titleMatch || authorMatch;
       }).toList();
 
@@ -139,7 +161,12 @@ class _RecherchePageState extends State<RecherchePage> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => BookDetailPage(book: book)),
+          MaterialPageRoute(
+            builder: (context) => BookDetailPage(
+              book: book,
+              isOwned: _ownedBookIds.contains(book.id),
+            ),
+          ),
         );
       },
       child: Container(

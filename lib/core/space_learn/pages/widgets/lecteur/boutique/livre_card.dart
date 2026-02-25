@@ -3,12 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/reading_page.dart';
 import '../../../../data/model/book_model.dart';
 
 class LivreCard extends StatelessWidget {
   final BookModel book;
+  final bool isOwned;
 
-  const LivreCard({super.key, required this.book});
+  const LivreCard({super.key, required this.book, this.isOwned = false});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +19,7 @@ class LivreCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => BookDetailPage(book: book, isOwned: false),
+            builder: (context) => BookDetailPage(book: book, isOwned: isOwned),
           ),
         );
       },
@@ -134,6 +136,16 @@ class LivreCard extends StatelessWidget {
                           height: 38,
                           child: ElevatedButton(
                             onPressed: () {
+                              if (isOwned) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ReadingPage(book: book.toJson()),
+                                  ),
+                                );
+                                return;
+                              }
                               context.read<CartProvider>().addItem(book);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -154,9 +166,9 @@ class LivreCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
-                              "Acheter",
-                              style: TextStyle(
+                            child: Text(
+                              isOwned ? "Lire" : "Acheter",
+                              style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5,
