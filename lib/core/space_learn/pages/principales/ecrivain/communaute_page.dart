@@ -8,6 +8,9 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/communaute/nouvelle_annonce_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/communaute/creer_evenement_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
+import 'package:intl/intl.dart';
 
 class TeamsPage extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -21,8 +24,10 @@ class TeamsPage extends StatefulWidget {
 class _TeamsPageState extends State<TeamsPage> {
   final BookService _bookService = BookService();
   final AuthService _authService = AuthService();
+  final EvenementService _evenementService = EvenementService();
 
   List<BookModel> _books = [];
+  List<Evenement> _evenements = [];
   bool _isLoading = true;
   String? _error;
 
@@ -59,9 +64,17 @@ class _TeamsPageState extends State<TeamsPage> {
 
       final books = await _bookService.getBooksByAuthorId(user.id);
 
+      List<Evenement> evts = [];
+      try {
+        evts = await _evenementService.getEvenementsByAuthor(user.id, token);
+      } catch (e) {
+        debugPrint("Erreur evenements: $e");
+      }
+
       if (mounted) {
         setState(() {
           _books = books;
+          _evenements = evts;
           _isLoading = false;
         });
       }
@@ -196,6 +209,26 @@ class _TeamsPageState extends State<TeamsPage> {
                       ],
                     ),
                   ),
+
+                  // Section Événements & Annonces
+                  if (_evenements.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 20.0,
+                        top: 30.0,
+                        bottom: 10.0,
+                      ),
+                      child: Text(
+                        "Vos publications",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    _buildEvenementsSection(),
+                  ],
 
                   // Forums par Livre
                   Padding(
@@ -475,6 +508,95 @@ class _TeamsPageState extends State<TeamsPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEvenementsSection() {
+    return SizedBox(
+      height: 200,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _evenements.length,
+        itemBuilder: (context, index) {
+          final evt = _evenements[index];
+          final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
+          final colorType = isAnnonce
+              ? const Color(0xFF0EA5E9)
+              : const Color(0xFF10B981);
+          final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
+
+          return Container(
+            width: 280,
+            margin: const EdgeInsets.only(right: 16, bottom: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colorType.withOpacity(0.3)),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorType.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(iconType, color: colorType, size: 16),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        evt.typePublication.toUpperCase(),
+                        style: GoogleFonts.poppins(
+                          color: colorType,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (evt.dateEvenement != null)
+                      Text(
+                        DateFormat('dd/MM/yyyy').format(evt.dateEvenement!),
+                        style: GoogleFonts.poppins(
+                          color: Colors.white54,
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  evt.titre,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Expanded(
+                  child: Text(
+                    evt.contenu,
+                    style: GoogleFonts.poppins(
+                      color: Colors.grey[400],
+                      fontSize: 12,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

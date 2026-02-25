@@ -42,6 +42,7 @@ class NavBarAuteur extends StatelessWidget {
           _buildItem(Icons.add_circle, "Publier", 1),
           _buildItem(Icons.book, "Mes Livres", 2),
           _buildItem(Icons.group, "Communauté", 3),
+          _buildItem(Icons.settings, "Paramètres", 4),
         ],
       ),
     );

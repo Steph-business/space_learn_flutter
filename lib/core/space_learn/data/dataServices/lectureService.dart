@@ -63,6 +63,26 @@ class Lectureservice {
     }
   }
 
+  Future<List<ReviewModel>> getAllReviews([String? authToken]) async {
+    final Map<String, String> headers = {};
+    if (authToken != null) {
+      headers['Authorization'] = 'Bearer $authToken';
+    }
+
+    final response = await client.get(
+      Uri.parse(ApiRoutes.reviews),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
+      return data.map((json) => ReviewModel.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to fetch all reviews: ${response.statusCode}');
+    }
+  }
+
   Future<ReviewModel> updateReview({
     required String id,
     required String livreId,

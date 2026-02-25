@@ -145,6 +145,12 @@ class BookModel {
           ? (json['Progressions'] as List)
                 .map((i) => ReadingActivityModel.fromJson(i))
                 .toList()
+          : (json['Progression'] != null || json['progression'] != null)
+          ? [
+              ReadingActivityModel.fromJson(
+                json['Progression'] ?? json['progression'],
+              ),
+            ]
           : null,
       recommandations: json['Recommandations'] != null
           ? (json['Recommandations'] as List)

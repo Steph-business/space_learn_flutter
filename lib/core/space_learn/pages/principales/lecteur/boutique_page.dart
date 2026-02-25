@@ -6,6 +6,9 @@ import '../../widgets/lecteur/boutique/livre_card.dart';
 import '../../widgets/lecteur/boutique/select_categorie.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class MarketplacePage extends StatefulWidget {
   const MarketplacePage({super.key});
@@ -16,8 +19,10 @@ class MarketplacePage extends StatefulWidget {
 
 class _MarketplacePageState extends State<MarketplacePage> {
   final BookService _bookService = BookService();
+  final LibraryService _libraryService = LibraryService();
   List<BookModel> _books = [];
   List<String> _categories = [];
+  Set<String> _ownedBookIds = {};
   bool _isLoading = true;
   String? _error;
 
@@ -37,12 +42,22 @@ class _MarketplacePageState extends State<MarketplacePage> {
         _error = null;
       });
 
-      // Fetch all published books
-      final books = await _bookService.getAllBooks(statut: 'publie');
+      final results = await Future.wait([
+        _bookService.getAllBooks(statut: 'publie'),
+        TokenStorage.getToken().then(
+          (token) => token != null
+              ? _libraryService.getUserLibrary(token)
+              : <LibraryModel>[],
+        ),
+      ]);
+
+      final books = results[0] as List<BookModel>;
+      final library = results[1] as List<LibraryModel>;
 
       if (mounted) {
         setState(() {
           _books = books;
+          _ownedBookIds = library.map((e) => e.livreId).toSet();
 
           // Extract unique categories (excluding "Tout")
           final Set<String> categorySet = {};
@@ -181,7 +196,11 @@ class _MarketplacePageState extends State<MarketplacePage> {
               ),
               itemCount: filteredBooks.length,
               itemBuilder: (context, index) {
-                return LivreCard(book: filteredBooks[index]);
+                final book = filteredBooks[index];
+                return LivreCard(
+                  book: book,
+                  isOwned: _ownedBookIds.contains(book.id),
+                );
               },
             ),
           ),

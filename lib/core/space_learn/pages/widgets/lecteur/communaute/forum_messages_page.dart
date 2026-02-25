@@ -21,6 +21,22 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
   List<Message> _messages = [];
   bool _isLoading = true;
 
+  String _timeAgo(DateTime dateTime) {
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.inDays >= 7) {
+      final weeks = diff.inDays ~/ 7;
+      return "il y a $weeks semaine${weeks > 1 ? 's' : ''}";
+    } else if (diff.inDays >= 1) {
+      return "il y a ${diff.inDays} jour${diff.inDays > 1 ? 's' : ''}";
+    } else if (diff.inHours >= 1) {
+      return "il y a ${diff.inHours} heure${diff.inHours > 1 ? 's' : ''}";
+    } else if (diff.inMinutes >= 1) {
+      return "il y a ${diff.inMinutes} min";
+    } else {
+      return "à l'instant";
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,9 +82,36 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
       );
 
       if (mounted) {
+        String? nom;
+        String? photo;
+
+        // On récupère le nom/photo d'un message précédent si possible (même utilsateur)
+        for (var m in _messages) {
+          if (m.utilisateurId == newMessage.utilisateurId &&
+              m.nomUtilisateur != null) {
+            nom = m.nomUtilisateur;
+            photo = m.photoProfil;
+            break;
+          }
+        }
+
+        final msgToAdd = Message(
+          id: newMessage.id,
+          discussionId: newMessage.discussionId,
+          utilisateurId: newMessage.utilisateurId,
+          contenu: newMessage.contenu,
+          creeLe: newMessage.creeLe,
+          discussion: newMessage.discussion,
+          nomUtilisateur: nom ?? newMessage.nomUtilisateur,
+          photoProfil: photo ?? newMessage.photoProfil,
+        );
+
         setState(() {
-          _messages.add(newMessage);
+          _messages.add(msgToAdd);
         });
+
+        // Recharge silencieusement les messages depuis le serveur pour être 100% à jour
+        _loadMessages();
       }
     } catch (e) {
       ScaffoldMessenger.of(
@@ -129,14 +172,29 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                           children: [
                             Row(
                               children: [
-                                const Icon(
-                                  Icons.person,
-                                  color: Colors.white54,
-                                  size: 16,
+                                CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: const Color(0xFF0F172A),
+                                  backgroundImage:
+                                      (msg.photoProfil != null &&
+                                          msg.photoProfil!.isNotEmpty)
+                                      ? NetworkImage(msg.photoProfil!)
+                                      : null,
+                                  child:
+                                      (msg.photoProfil == null ||
+                                          msg.photoProfil!.isEmpty)
+                                      ? const Icon(
+                                          Icons.person,
+                                          color: Colors.white54,
+                                          size: 16,
+                                        )
+                                      : null,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 8),
                                 Text(
-                                  msg.utilisateurId.substring(0, 8),
+                                  msg.nomUtilisateur?.isNotEmpty == true
+                                      ? msg.nomUtilisateur!
+                                      : 'Utilisateur',
                                   style: GoogleFonts.poppins(
                                     color: const Color(0xFF0EA5E9),
                                     fontSize: 12,
@@ -145,7 +203,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                                 ),
                                 const Spacer(),
                                 Text(
-                                  "\${msg.creeLe.day}/\${msg.creeLe.month}",
+                                  _timeAgo(msg.creeLe),
                                   style: GoogleFonts.poppins(
                                     color: Colors.white30,
                                     fontSize: 10,

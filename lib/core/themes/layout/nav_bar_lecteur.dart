@@ -5,6 +5,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/bibliotheque_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/boutique_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/communaute_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings_page.dart';
 
 class MainNavBar extends StatefulWidget {
   final Widget? child;
@@ -29,6 +30,7 @@ class MainNavBarState extends State<MainNavBar> {
     "Boutique",
     "Bibliothèque",
     "Communauté",
+    "Paramètres",
   ];
 
   final List<IconData> _icons = [
@@ -36,6 +38,7 @@ class MainNavBarState extends State<MainNavBar> {
     Iconsax.shop,
     Iconsax.book,
     Iconsax.messages_1,
+    Iconsax.setting_2,
   ];
 
   void _onItemTapped(int index) {
@@ -63,7 +66,11 @@ class MainNavBarState extends State<MainNavBar> {
       case 2:
         return const BibliothequePage();
       case 3:
-        return const TeamsPageLecteur();
+        return TeamsPageLecteur(
+          onBackPressed: () => setState(() => _selectedIndex = 0),
+        );
+      case 4:
+        return const SettingsPage();
       default:
         return widget.child ?? const Center(child: Text('Accueil'));
     }
@@ -114,7 +121,7 @@ class MainNavBarState extends State<MainNavBar> {
                 duration: const Duration(milliseconds: 250),
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Icon(
-                  _icons[index],
+                  index == 4 ? Icons.settings_outlined : _icons[index],
                   size: _selectedIndex == index ? 28 : 24,
                 ),
               ),

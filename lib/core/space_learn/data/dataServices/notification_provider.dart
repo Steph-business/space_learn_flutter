@@ -26,12 +26,16 @@ class NotificationProvider extends ChangeNotifier {
 
       final allNotifications = await _service.getNotifications(token);
 
-      if (userId != null) {
+      if (userId != null && userId.isNotEmpty) {
         _notifications = allNotifications
             .where((n) => n.utilisateurId == userId)
             .toList();
       } else {
-        _notifications = allNotifications;
+        // Si on ne connaît pas l'utilisateur, on ne montre rien par sécurité
+        _notifications = [];
+        debugPrint(
+          "⚠️ NotificationProvider: userId est null ou vide, liste vidée.",
+        );
       }
 
       _isLoading = false;
@@ -52,8 +56,10 @@ class NotificationProvider extends ChangeNotifier {
         .streamNotifications(token)
         .listen(
           (notification) {
-            if (userId != null && notification.utilisateurId != userId) {
-              return; // Ignore notifications belonging to other users
+            if (userId == null ||
+                userId.isEmpty ||
+                notification.utilisateurId != userId) {
+              return; // Ignorer les notifications qui ne nous concernent pas
             }
             // Add new notification at the beginning
             _notifications = [notification, ..._notifications];

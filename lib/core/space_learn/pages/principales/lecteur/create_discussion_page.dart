@@ -86,9 +86,13 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
       final fullTitle = _titleController.text.trim();
 
       await _discussionService.createDiscussion(
-        _selectedBook!.id,
-        fullTitle, // The API currently only takes titre
-        token,
+        type: _selectedBook != null ? "LIVRE" : "GLOBAL",
+        titre: fullTitle,
+        token: token,
+        livreId: _selectedBook?.id,
+        description: _contentController.text.trim().isNotEmpty
+            ? _contentController.text.trim()
+            : null,
       );
 
       if (mounted) {

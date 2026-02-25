@@ -5,7 +5,7 @@ class ReadingActivityModel {
   final String utilisateurId;
   final String livreId;
   final int chapitreCourant; // chapitre_courant
-  final int pourcentage; // pourcentage
+  final num pourcentage; // pourcentage
   final DateTime? creeLe;
   final DateTime? majLe; // maj_le
   final BookModel? livre;
@@ -23,14 +23,20 @@ class ReadingActivityModel {
 
   factory ReadingActivityModel.fromJson(Map<String, dynamic> json) {
     return ReadingActivityModel(
-      id: json['id'] ?? '',
-      utilisateurId: json['utilisateur_id'] ?? '',
-      livreId: json['livre_id'] ?? '',
-      chapitreCourant: json['chapitre_courant'] ?? 0,
-      pourcentage: json['pourcentage'] ?? 0,
-      creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      majLe: json['maj_le'] != null ? DateTime.parse(json['maj_le']) : null,
-      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
+      id: json['id'] ?? json['ID'] ?? '',
+      utilisateurId: json['utilisateur_id'] ?? json['UtilisateurId'] ?? '',
+      livreId: json['livre_id'] ?? json['LivreId'] ?? '',
+      chapitreCourant: json['chapitre_courant'] ?? json['ChapitreCourant'] ?? 0,
+      pourcentage: json['pourcentage'] ?? json['Pourcentage'] ?? 0,
+      creeLe: (json['cree_le'] ?? json['CreeLe']) != null
+          ? DateTime.parse(json['cree_le'] ?? json['CreeLe'])
+          : null,
+      majLe: (json['maj_le'] ?? json['MajLe']) != null
+          ? DateTime.parse(json['maj_le'] ?? json['MajLe'])
+          : null,
+      livre: (json['Livre'] ?? json['livre']) != null
+          ? BookModel.fromJson(json['Livre'] ?? json['livre'])
+          : null,
     );
   }
 

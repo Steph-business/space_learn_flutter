@@ -70,6 +70,8 @@ class ApiRoutes {
   static const String readingActivity = "$baseUrlsGin/api/reading/activity";
   static const String readingActivities = "$baseUrlsGin/api/reading/activities";
   static const String readingProgress = "$baseUrlsGin/api/reading/progress";
+  static const String readingProgressByLivre =
+      "$baseUrlsGin/api/reading/progress/livre/:livre_id";
 
   // Recommendations routes
   static const String recommendations = "$baseUrlsGin/api/recommendations";
@@ -109,6 +111,18 @@ class ApiRoutes {
   // Discussion routes
   static const String discussions = "$baseUrlsGin/api/discussions";
   static const String discussionById = "$baseUrlsGin/api/discussions/:id";
+  static const String discussionsGlobal = "$baseUrlsGin/api/discussions/global";
+  static const String discussionsByAuthor =
+      "$baseUrlsGin/api/discussions/author/:auteur_id";
+  static const String discussionsByBook =
+      "$baseUrlsGin/api/discussions/book/:livre_id";
+
+  // Evenements routes
+  static const String evenements = "$baseUrlsGin/api/evenements";
+  static const String evenementsGlobal = "$baseUrlsGin/api/evenements/global";
+  static const String evenementsByAuthor =
+      "$baseUrlsGin/api/evenements/author/:auteur_id";
+  static const String evenementById = "$baseUrlsGin/api/evenements/:id";
 
   // Message routes
   static const String messages = "$baseUrlsGin/api/messages";

@@ -6,6 +6,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/communaute_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/settings_page_auteur.dart';
 
 class HomePageAuteur extends StatefulWidget {
   final String profileId;
@@ -46,6 +47,8 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
         return TeamsPage(
           onBackPressed: () => setState(() => _currentIndex = 0),
         );
+      case 4:
+        return const SettingsPageAuteur();
       default:
         return const HomeContentAuteur(profileId: '', userName: 'Auteur');
     }
@@ -72,7 +75,13 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
           : null,
       body: IndexedStack(
         index: _currentIndex,
-        children: [_getPage(0), _getPage(1), _getPage(2), _getPage(3)],
+        children: [
+          _getPage(0),
+          _getPage(1),
+          _getPage(2),
+          _getPage(3),
+          _getPage(4),
+        ],
       ),
       bottomNavigationBar: NavBarAuteur(
         currentIndex: _currentIndex,

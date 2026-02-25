@@ -37,6 +37,22 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
     "Animations",
   ];
 
+  String _timeAgo(DateTime dateTime) {
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.inDays >= 7) {
+      final weeks = diff.inDays ~/ 7;
+      return "il y a $weeks semaine${weeks > 1 ? 's' : ''}";
+    } else if (diff.inDays >= 1) {
+      return "il y a ${diff.inDays} jour${diff.inDays > 1 ? 's' : ''}";
+    } else if (diff.inHours >= 1) {
+      return "il y a ${diff.inHours} heure${diff.inHours > 1 ? 's' : ''}";
+    } else if (diff.inMinutes >= 1) {
+      return "il y a ${diff.inMinutes} min";
+    } else {
+      return "à l'instant";
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -48,21 +64,19 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       final token = await TokenStorage.getToken();
       if (token == null) return;
 
-      final dbDiscussions = await _discussionService.getDiscussionsByUser(
-        token,
-      );
-
-      // Filter by book if we are in a book forum
-      List<Discussion> filtered = dbDiscussions;
+      List<Discussion> dbDiscussions;
       if (widget.book != null) {
-        filtered = dbDiscussions
-            .where((d) => d.livreId == widget.book!.id)
-            .toList();
+        dbDiscussions = await _discussionService.getDiscussionsByLivre(
+          widget.book!.id,
+          token,
+        );
+      } else {
+        dbDiscussions = await _discussionService.getDiscussionsByUser(token);
       }
 
       if (mounted) {
         setState(() {
-          _discussions = filtered;
+          _discussions = dbDiscussions;
           _isLoading = false;
         });
       }
@@ -81,9 +95,10 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       if (token == null) return;
 
       final newDisc = await _discussionService.createDiscussion(
-        widget.book?.id ?? "",
-        title,
-        token,
+        type: widget.book != null ? "LIVRE" : "GLOBAL",
+        titre: title,
+        token: token,
+        livreId: widget.book?.id,
       );
 
       if (mounted) {
@@ -392,13 +407,15 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           });
                         },
                         child: _buildPostItem(
-                          username: d.creePar.isNotEmpty
-                              ? d.creePar.substring(0, 6)
+                          username: (d.creePar?.isNotEmpty ?? false)
+                              ? d.creePar!.substring(0, 6)
                               : "Anonyme",
-                          time: "\${d.creeLe.day}/\${d.creeLe.month}",
+                          time: d.creeLe != null
+                              ? _timeAgo(d.creeLe!)
+                              : "inconnu",
                           title: d.titre,
                           content: "Rejoindre la conversation...",
-                          comments: d.messages.length,
+                          comments: d.messagesCount ?? d.messages.length,
                           likes: 0,
                         ),
                       );
@@ -482,7 +499,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                         ),
                         const Spacer(),
                         Text(
-                          "il y a $time",
+                          time,
                           style: GoogleFonts.poppins(
                             color: Colors.grey[500],
                             fontSize: 11,
