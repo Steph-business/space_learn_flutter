@@ -39,6 +39,7 @@ class AuthService {
       final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
       // ✅ On sauvegarde le token après l'inscription
       await TokenStorage.saveToken(tokenUser.token);
+      await TokenStorage.saveUserName(tokenUser.user.nomComplet);
       return tokenUser;
     } else {
       String errorMessage = "Erreur d'inscription inconnue.";
@@ -75,6 +76,7 @@ class AuthService {
       final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
       // ✅ On sauvegarde le token après la connexion
       await TokenStorage.saveToken(tokenUser.token);
+      await TokenStorage.saveUserName(tokenUser.user.nomComplet);
       return tokenUser;
     } else {
       String errorMessage = "Erreur de connexion inconnue.";

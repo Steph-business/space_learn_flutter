@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/abonnes_page.dart';
 
 class Statistique extends StatefulWidget {
   const Statistique({super.key});
@@ -15,6 +16,7 @@ class _StatistiqueState extends State<Statistique> {
   final AuthorStatsService _authorStatsService = AuthorStatsService();
   final AuthService _authService = AuthService();
   Map<String, dynamic> _stats = {};
+  String? _authorId;
 
   @override
   void initState() {
@@ -32,6 +34,7 @@ class _StatistiqueState extends State<Statistique> {
           if (mounted) {
             setState(() {
               _stats = data;
+              _authorId = user.id;
             });
           }
         }
@@ -60,12 +63,31 @@ class _StatistiqueState extends State<Statistique> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _buildStatCard(
-                  "LECTEURS",
-                  "${_stats['views'] ?? 0}",
-                  "+5%",
-                  Icons.people_alt_rounded,
-                  const Color(0xFF1E293B),
+                child: GestureDetector(
+                  onTap: () {
+                    if (_authorId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              AbonnesPage(authorId: _authorId!),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Chargement de votre compte..."),
+                        ),
+                      );
+                    }
+                  },
+                  child: _buildStatCard(
+                    "LECTEURS",
+                    "${_stats['views'] ?? 0}",
+                    "+5%",
+                    Icons.people_alt_rounded,
+                    const Color(0xFF1E293B),
+                  ),
                 ),
               ),
             ],

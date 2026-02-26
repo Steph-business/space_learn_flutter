@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/reading_page.dart';
 import '../../../../data/model/book_model.dart';
 
 class LivreCard extends StatelessWidget {
@@ -94,27 +92,48 @@ class LivreCard extends StatelessWidget {
                   // Rating
                   Row(
                     children: [
-                      Row(
-                        children: List.generate(
-                          5,
-                          (index) => Icon(
-                            index < 4
-                                ? Icons.star_rounded
-                                : Icons.star_half_rounded,
-                            color: const Color(0xFFF59E0B),
-                            size: 14,
+                      if (book.telechargements > 0) ...[
+                        Row(
+                          children: List.generate(
+                            5,
+                            (index) => Icon(
+                              index < book.noteMoyenne.floor()
+                                  ? Icons.star_rounded
+                                  : (index < book.noteMoyenne
+                                        ? Icons.star_half_rounded
+                                        : Icons.star_outline_rounded),
+                              color: const Color(0xFFF59E0B),
+                              size: 14,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '4.5',
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF94A3B8),
+                        const SizedBox(width: 4),
+                        Text(
+                          book.noteMoyenne.toStringAsFixed(1),
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF94A3B8),
+                          ),
                         ),
-                      ),
+                      ],
+                      if (book.nombreMessages > 0) ...[
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Iconsax.message,
+                          color: Color(0xFF94A3B8),
+                          size: 11,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${book.nombreMessages}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -129,83 +148,7 @@ class LivreCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   // Button Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 38,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (isOwned) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ReadingPage(book: book.toJson()),
-                                  ),
-                                );
-                                return;
-                              }
-                              context.read<CartProvider>().addItem(book);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    "${book.titre} ajouté au panier",
-                                  ),
-                                  duration: const Duration(seconds: 2),
-                                  backgroundColor: const Color(0xFF06B6D4),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF06B6D4),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              isOwned ? "Lire" : "Acheter",
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        height: 38,
-                        width: 38,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF334155),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            context.read<CartProvider>().addItem(book);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("${book.titre} ajouté au panier"),
-                                duration: const Duration(seconds: 2),
-                                backgroundColor: const Color(0xFF06B6D4),
-                              ),
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.shopping_cart_outlined,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  // Boutons supprimés à la demande de l'utilisateur
                 ],
               ),
             ),

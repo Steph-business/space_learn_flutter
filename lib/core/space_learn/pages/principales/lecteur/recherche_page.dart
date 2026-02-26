@@ -6,6 +6,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart'
 import '../../widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class RecherchePage extends StatefulWidget {
@@ -52,19 +53,46 @@ class _RecherchePageState extends State<RecherchePage> {
       final allBooks = results[0] as List<BookModel>;
       final library = results[1] as List<LibraryModel>;
 
+      // Enrich author names using library data
+      final Map<String, String> authorNames = {};
+      for (var item in library) {
+        if (item.auteurNom != null && item.auteurNom!.isNotEmpty) {
+          authorNames[item.livreId] = item.auteurNom!;
+        } else if (item.livre?.auteur != null) {
+          authorNames[item.livreId] = item.livre!.auteur!.nomComplet;
+        }
+      }
+
+      final enrichedBooks = allBooks.map((book) {
+        if (authorNames.containsKey(book.id) &&
+            (book.auteur == null ||
+                book.auteur!.nomComplet == 'Auteur inconnu')) {
+          return book.copyWith(
+            auteur: UserModel(
+              id: book.auteurId,
+              profilId: book.auteurId,
+              email: '',
+              nomComplet: authorNames[book.id]!,
+              isProfileComplete: false,
+            ),
+          );
+        }
+        return book;
+      }).toList();
+
       if (mounted) {
         setState(() {
           _ownedBookIds = library.map((e) => e.livreId).toSet();
         });
       }
 
-      final filtered = allBooks.where((book) {
+      final filtered = enrichedBooks.where((book) {
         final titleMatch = book.titre.toLowerCase().contains(
           value.toLowerCase(),
         );
-        final authorMatch = book.auteurId.toLowerCase().contains(
-          value.toLowerCase(),
-        );
+        final authorMatch =
+            book.authorName.toLowerCase().contains(value.toLowerCase()) ||
+            book.auteurId.toLowerCase().contains(value.toLowerCase());
         return titleMatch || authorMatch;
       }).toList();
 
@@ -115,8 +143,11 @@ class _RecherchePageState extends State<RecherchePage> {
         ),
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF06B6D4)),
+          ? Center(
+              child: Text(
+                "Recherche en cours...",
+                style: GoogleFonts.poppins(color: Colors.white70),
+              ),
             )
           : _query.isEmpty
           ? _buildEmptyState(
@@ -212,15 +243,24 @@ class _RecherchePageState extends State<RecherchePage> {
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "Par ${book.authorName}",
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF06B6D4),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     book.description,
                     style: GoogleFonts.poppins(
                       color: Colors.grey[400],
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

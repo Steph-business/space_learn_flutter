@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:provider/provider.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'reading_page.dart';
@@ -14,6 +15,7 @@ import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/readingProgressService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/readingActivityModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'all_reviews_page.dart';
 
 class BookDetailPage extends StatefulWidget {
   final BookModel book;
@@ -41,6 +43,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
   bool _isLoadingFavorite = true;
   final FavoriteService _favoriteService = FavoriteService();
   final ReviewService _reviewService = ReviewService();
+  BookModel? _fullBook;
   List<ReviewModel> _reviews = [];
   bool _isLoadingReviews = true;
   final LibraryService _libraryService = LibraryService();
@@ -56,10 +59,28 @@ class _BookDetailPageState extends State<BookDetailPage> {
   void initState() {
     super.initState();
     _isOwned = widget.isOwned;
+    _loadFullBookDetails();
     _loadRelatedBooks();
     _checkFavoriteStatus();
     _loadReviews();
     _checkOwnershipStatus();
+  }
+
+  Future<void> _loadFullBookDetails() async {
+    try {
+      final token = await TokenStorage.getToken();
+      final fullBook = await _bookService.getBookById(
+        widget.book.id,
+        authToken: token,
+      );
+      if (mounted) {
+        setState(() {
+          _fullBook = fullBook;
+        });
+      }
+    } catch (e) {
+      print("Erreur chargement détails complets : $e");
+    }
   }
 
   Future<void> _checkOwnershipStatus() async {
@@ -219,7 +240,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final book = widget.book;
+    final book = _fullBook ?? widget.book;
     final isOwned = _isOwned;
 
     return Scaffold(
@@ -255,9 +276,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+                    child: Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Text(
+                        "...",
+                        style: TextStyle(color: Colors.white, fontSize: 10),
+                      ),
                     ),
                   )
                 : Icon(
@@ -272,7 +296,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 120), // Space for bottom bar
+            padding: const EdgeInsets.only(bottom: 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -283,67 +307,53 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xFF374151), // lighter grey
-                        Color(0xFF111827), // dark grey to match scaffold
-                      ],
-                      stops: [0.0, 1.0],
+                      colors: [Color(0xFF374151), Color(0xFF111827)],
                     ),
                   ),
                   child: Column(
                     children: [
                       const SizedBox(height: 30),
-                      // The Image Card
-                      Hero(
-                        tag: 'book-${book.id}',
-                        child: Container(
-                          height: 240,
-                          width: 168,
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFFF1F5F9,
-                            ), // Light bg for image as in mockup
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 40,
-                                offset: const Offset(0, 20),
-                              ),
-                            ],
-                          ),
-                          alignment: Alignment.center,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child:
-                                book.imageCouverture != null &&
-                                    book.imageCouverture!.isNotEmpty &&
-                                    !book.imageCouverture!.contains(
-                                      'example.com',
-                                    )
-                                ? Image.network(
-                                    book.imageCouverture!,
-                                    fit: BoxFit.cover,
-                                    height: 240,
-                                    width: 168,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(
+                      Container(
+                        height: 240,
+                        width: 168,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 40,
+                              offset: const Offset(0, 20),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child:
+                              book.imageCouverture != null &&
+                                  book.imageCouverture!.isNotEmpty &&
+                                  !book.imageCouverture!.contains('example.com')
+                              ? Image.network(
+                                  book.imageCouverture!,
+                                  fit: BoxFit.cover,
+                                  height: 240,
+                                  width: 168,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(
                                         Icons.book,
                                         size: 60,
                                         color: Color(0xFFD97706),
-                                      );
-                                    },
-                                  )
-                                : const Icon(
-                                    Icons.book,
-                                    size: 60,
-                                    color: Color(0xFFD97706),
-                                  ),
-                          ),
+                                      ),
+                                )
+                              : const Icon(
+                                  Icons.book,
+                                  size: 60,
+                                  color: Color(0xFFD97706),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 40),
-                      // Title & Author
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Text(
@@ -360,30 +370,63 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       Text(
                         book.authorName,
                         style: GoogleFonts.poppins(
-                          color: const Color(0xFF06B6D4), // Cyan
+                          color: const Color(0xFF06B6D4),
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Rating Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildStars(
-                            book.noteMoyenne > 0 ? book.noteMoyenne : 4.8,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            book.noteMoyenne > 0
-                                ? "${book.noteMoyenne.toStringAsFixed(1)} (${book.telechargements} avis)"
-                                : "4.8 (2,450 avis)",
-                            style: GoogleFonts.poppins(
-                              color: Colors.grey[400],
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                          if (book.telechargements > 0 || _reviews.isNotEmpty)
+                            Row(
+                              children: [
+                                (() {
+                                  double avg = book.noteMoyenne;
+                                  if (avg == 0 && _reviews.isNotEmpty) {
+                                    avg =
+                                        _reviews
+                                            .map((e) => e.note)
+                                            .reduce((a, b) => a + b) /
+                                        _reviews.length;
+                                  }
+                                  return _buildStars(avg);
+                                })(),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "${(() {
+                                    double avg = book.noteMoyenne;
+                                    if (avg == 0 && _reviews.isNotEmpty) {
+                                      avg = _reviews.map((e) => e.note).reduce((a, b) => a + b) / _reviews.length;
+                                    }
+                                    return avg.toStringAsFixed(1);
+                                  })()} (${book.telechargements > 0 ? book.telechargements : _reviews.length} avis)",
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.grey[400],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
+                          if (book.nombreMessages > 0) ...[
+                            const SizedBox(width: 12),
+                            Icon(
+                              Iconsax.message,
+                              color: Colors.grey[400],
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${book.nombreMessages} message${book.nombreMessages > 1 ? 's' : ''}",
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey[400],
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 30),
@@ -408,7 +451,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       const SizedBox(height: 12),
                       Text(
                         book.description.isEmpty
-                            ? "J'ai libéré des princesses. J'ai incendié la ville de Trebon. J'ai suivi des pistes au clair de lune que personne n'ose évoquer durant le jour. J'ai conversé avec des dieux, aimé des femmes et écrit des chansons qui font pleurer les ménestrels..."
+                            ? "Aucune description disponible pour ce livre."
                             : book.description,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
@@ -432,7 +475,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
                       // À propos de l'auteur
                       Text(
-                        'À propos de l\'auteur',
+                        "À propos de ${book.authorName}",
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -458,11 +501,20 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   backgroundColor: const Color(
                                     0xFF22D3EE,
                                   ).withOpacity(0.1),
-                                  child: const Icon(
-                                    Icons.person,
-                                    color: Color(0xFF22D3EE),
-                                    size: 30,
-                                  ),
+                                  backgroundImage:
+                                      (book.auteur?.profilePhoto != null &&
+                                          book.auteur!.profilePhoto!.isNotEmpty)
+                                      ? NetworkImage(book.auteur!.profilePhoto!)
+                                      : null,
+                                  child:
+                                      (book.auteur?.profilePhoto == null ||
+                                          book.auteur!.profilePhoto!.isEmpty)
+                                      ? const Icon(
+                                          Icons.person,
+                                          color: Color(0xFF22D3EE),
+                                          size: 30,
+                                        )
+                                      : null,
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
@@ -479,11 +531,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                         ),
                                       ),
                                       Text(
-                                        "Auteur de best-sellers",
+                                        book.auteur?.biography ??
+                                            "Auteur passionné sur SpaceLearn",
                                         style: GoogleFonts.poppins(
                                           color: Colors.grey[400],
                                           fontSize: 12,
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
@@ -524,12 +579,25 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               color: Colors.white,
                             ),
                           ),
-                          Text(
-                            'Voir tout',
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              color: const Color(0xFF06B6D4),
-                              fontWeight: FontWeight.w500,
+                          InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AllReviewsPage(
+                                    book: book,
+                                    reviews: _reviews,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Voir tout',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: const Color(0xFF06B6D4),
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
@@ -538,8 +606,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       // Review list
                       if (_isLoadingReviews)
                         const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF06B6D4),
+                          child: Text(
+                            "Chargement des avis...",
+                            style: TextStyle(color: Colors.white70),
                           ),
                         )
                       else if (_reviews.isEmpty)
@@ -567,50 +636,50 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         ),
                       const SizedBox(height: 24),
 
-                      // Rejoindre la discussion / Laisser un avis Button
-                      Container(
-                        width: double.infinity,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: const Color(0xFF06B6D4).withOpacity(0.3),
-                            width: 1.5,
-                          ),
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFF06B6D4).withOpacity(0.05),
-                              const Color(0xFF06B6D4).withOpacity(0.01),
-                            ],
-                          ),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
+                      if (isOwned)
+                        Container(
+                          width: double.infinity,
+                          height: 54,
+                          decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            onTap: () => _showReviewDialog(context),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.star_rounded,
-                                  color: Color(0xFF06B6D4),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Laisser un avis",
-                                  style: GoogleFonts.poppins(
-                                    color: const Color(0xFF06B6D4),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                            border: Border.all(
+                              color: const Color(0xFF06B6D4).withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF06B6D4).withOpacity(0.05),
+                                const Color(0xFF06B6D4).withOpacity(0.01),
                               ],
                             ),
                           ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _showReviewDialog(context),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    color: Color(0xFF06B6D4),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Laisser un avis",
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFF06B6D4),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
 
                       const SizedBox(height: 40),
 
@@ -619,7 +688,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         if (!_isLoadingRelated) ...[
                           if (_authorBooks.isNotEmpty)
                             _buildRelatedSection(
-                              "Du même auteur",
+                              "Autres livres de ${book.authorName}",
                               _authorBooks,
                             ),
                           if (_categoryBooks.isNotEmpty)
@@ -629,16 +698,17 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             ),
                         ] else ...[
                           const Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFF06B6D4),
+                            child: Text(
+                              "Chargement...",
+                              style: TextStyle(color: Colors.white70),
                             ),
                           ),
                         ],
                       ],
-                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -661,15 +731,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 top: false,
                 child: _isLoadingOwnership
                     ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF06B6D4),
+                        child: Text(
+                          "...",
+                          style: TextStyle(color: Colors.white),
                         ),
                       )
                     : !isOwned
                     ? widget.showCart
                           ? Row(
                               children: [
-                                // Price
                                 Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -684,7 +754,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       ),
                                     ),
                                     Text(
-                                      "${book.prix}€",
+                                      "${book.prix} FCFA",
                                       style: GoogleFonts.poppins(
                                         color: Colors.white,
                                         fontSize: 22,
@@ -694,7 +764,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   ],
                                 ),
                                 const SizedBox(width: 32),
-                                // Cart button
                                 Container(
                                   height: 50,
                                   width: 50,
@@ -730,7 +799,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                // Buy button
                                 Expanded(
                                   child: SizedBox(
                                     height: 50,
@@ -1240,7 +1308,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         );
                       }
                     } catch (e) {
-                      print("Error adding review: e");
+                      print("Error adding review: $e");
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(

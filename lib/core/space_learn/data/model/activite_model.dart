@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'book_model.dart';
 import 'profilModel.dart';
 
@@ -11,6 +12,8 @@ class ReviewModel {
   final BookModel? livre;
   final ProfilModel? utilisateur;
 
+  final String? nomUtilisateur;
+
   ReviewModel({
     required this.id,
     required this.utilisateurId,
@@ -20,20 +23,40 @@ class ReviewModel {
     this.creeLe,
     this.livre,
     this.utilisateur,
+    this.nomUtilisateur,
   });
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
+    String? name =
+        json['nom_utilisateur'] ??
+        json['username'] ??
+        json['NomComplet'] ??
+        json['nom_complet'];
+
+    final dateStr = json['cree_le'] ?? json['created_at'] ?? json['CreeLe'];
+    DateTime? creeLe;
+    if (dateStr != null) {
+      try {
+        creeLe = DateTime.parse(dateStr.toString());
+      } catch (e) {
+        debugPrint('Error parsing date in ReviewModel: $e');
+      }
+    }
+
+    final livreData = json['Livre'] ?? json['livre'] ?? json['book'];
+    final userData = json['utilisateur'] ?? json['user'] ?? json['Utilisateur'];
+
     return ReviewModel(
-      id: json['id'] ?? '',
-      utilisateurId: json['utilisateur_id'] ?? '',
-      livreId: json['livre_id'] ?? '',
+      id: json['id']?.toString() ?? '',
+      utilisateurId:
+          (json['utilisateur_id'] ?? json['user_id'])?.toString() ?? '',
+      livreId: (json['livre_id'] ?? json['book_id'])?.toString() ?? '',
       note: json['note'] ?? 0,
-      commentaire: json['commentaire'] ?? '',
-      creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
-      livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
-      utilisateur: json['utilisateur'] != null
-          ? ProfilModel.fromJson(json['utilisateur'])
-          : null,
+      commentaire: json['commentaire'] ?? json['comment'] ?? '',
+      creeLe: creeLe,
+      livre: livreData != null ? BookModel.fromJson(livreData) : null,
+      utilisateur: userData != null ? ProfilModel.fromJson(userData) : null,
+      nomUtilisateur: name,
     );
   }
 

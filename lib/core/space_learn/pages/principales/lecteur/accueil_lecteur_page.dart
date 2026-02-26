@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import '../../../data/dataServices/notification_provider.dart';
 
 import '../../widgets/details/book_detail_page.dart';
-import '../../principales/notificationPage.dart';
+import '../../widgets/details/author_profile_page.dart';
 import '../../principales/lecteur/recherche_page.dart';
+import '../../principales/lecteur/all_authors_page.dart';
 
 import '../../../../themes/layout/nav_bar_all.dart';
 import '../../../../themes/layout/nav_bar_lecteur.dart';
+import '../../widgets/lecteur/communaute/forum_messages_page.dart';
 
 import '../../../data/dataServices/libraryService.dart';
 import '../../../data/dataServices/bookService.dart';
@@ -27,6 +30,8 @@ import '../../../data/model/discussionModel.dart';
 import '../../../data/dataServices/recommendationService.dart';
 import '../../../data/model/recommendationModel.dart';
 import '../../../data/dataServices/relationService.dart';
+import '../../../data/dataServices/authServices.dart';
+import '../../../data/model/relationModel.dart';
 
 class HomePageLecteur extends StatefulWidget {
   final String profileId;
@@ -51,24 +56,40 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   final RecommendationService _recommendationService = RecommendationService();
   final RelationService _relationService = RelationService();
   final LibraryService _libraryService = LibraryService();
+  final AuthService _authService = AuthService();
 
   bool _isLoading = true;
   String? _error;
-
   ReaderStatsModel? _stats;
+
   List<BookModel> _featuredBooks = [];
   List<BookModel> _recommendations = [];
+  List<BookModel> _allBooks = [];
 
   List<UserModel> _featuredAuthors = [];
   List<ReviewModel> _recentActivities = [];
   List<Categorie> _categories = [];
   Set<String> _ownedBookIds = {};
   List<Discussion> _discussions = [];
+  String? _currentUserId;
+  Set<String> _followingIds = {};
+  String _displayName = "Utilisateur";
 
   @override
   void initState() {
     super.initState();
+    _displayName = widget.userName;
+    _initDisplayName();
     _loadData();
+  }
+
+  Future<void> _initDisplayName() async {
+    final savedName = await TokenStorage.getUserName();
+    if (savedName != null && mounted && _displayName == widget.userName) {
+      setState(() {
+        _displayName = savedName;
+      });
+    }
   }
 
   Future<void> _loadData() async {
@@ -81,6 +102,18 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       final token = await TokenStorage.getToken();
       if (token == null) throw Exception("Session expirée");
 
+      // Get current user Id to prevent self-following
+      final user = await _authService.getUser(token);
+      if (user != null && mounted) {
+        setState(() {
+          _currentUserId = user.id;
+          if (user.nomComplet.isNotEmpty) {
+            _displayName = user.nomComplet;
+            TokenStorage.saveUserName(user.nomComplet); // Sync storage
+          }
+        });
+      }
+
       final results = await Future.wait([
         _statsService.getReaderStats(widget.profileId).catchError((e) {
           debugPrint('⚠️ Error loading stats: $e');
@@ -90,7 +123,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             goalsAchieved: 0,
           );
         }),
-        _bookService.getAllBooks().catchError((e) {
+        _bookService.getAllBooks(authToken: token).catchError((e) {
           debugPrint('⚠️ Error loading books: $e');
           return <BookModel>[];
         }),
@@ -114,6 +147,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           debugPrint('⚠️ Error loading library: $e');
           return <LibraryModel>[];
         }),
+        (user != null)
+            ? _relationService.getFollowing(user.id).catchError((e) {
+                debugPrint('⚠️ Error loading following: $e');
+                return <RelationModel>[];
+              })
+            : Future.value(<RelationModel>[]),
       ]);
 
       if (mounted) {
@@ -128,36 +167,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             _stats = results[0] as ReaderStatsModel;
           }
 
-          if (results[1] is List) {
-            final allBooks = (results[1] as List).cast<BookModel>();
-            // À la une : Les derniers livres publiés
-            _featuredBooks = List.from(allBooks);
-            _featuredBooks.sort((a, b) {
-              if (a.creeLe != null && b.creeLe != null) {
-                return b.creeLe!.compareTo(a.creeLe!);
-              }
-              return b.id.compareTo(a.id);
-            });
-            _featuredBooks = _featuredBooks.take(10).toList();
-
-            final authorsMap = <String, UserModel>{};
-            for (var book in allBooks) {
-              if (book.auteur != null && book.auteur!.id.isNotEmpty) {
-                authorsMap[book.auteur!.id] = book.auteur!;
-              } else if (book.auteurId.isNotEmpty &&
-                  !authorsMap.containsKey(book.auteurId)) {
-                authorsMap[book.auteurId] = UserModel(
-                  id: book.auteurId,
-                  profilId: book.auteurId,
-                  email: '',
-                  nomComplet: 'Auteur ${authorsMap.length + 1}',
-                  isProfileComplete: false,
-                );
-              }
-            }
-            _featuredAuthors = authorsMap.values.take(10).toList();
-          }
-
           if (results[2] is List) {
             _recentActivities = (results[2] as List).cast<ReviewModel>();
           }
@@ -168,22 +177,172 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
           if (results.length > 4 && results[4] is List) {
             _discussions = (results[4] as List).cast<Discussion>();
+            if (_discussions.isNotEmpty) {
+              print(
+                '💬 HOME DISCUSSIONS LOADED: ${_discussions.length} items. First item title: ${_discussions.first.titre}, count: ${_discussions.first.messagesCount}',
+              );
+            }
+            _discussions.sort((a, b) {
+              if (a.creeLe != null && b.creeLe != null) {
+                return b.creeLe!.compareTo(a.creeLe!);
+              }
+              return b.id.compareTo(a.id);
+            });
           }
 
-          if (results.length > 5 && results[5] is List) {
-            final recs = (results[5] as List).cast<RecommendationModel>();
-            if (recs.isNotEmpty) {
-              _recommendations = recs
-                  .where((r) => r.livre != null)
-                  .map((r) => r.livre!)
-                  .toList();
+          // Data sources for enrichment
+          final allBooks = (results[1] as List).cast<BookModel>();
+          final library = (results.length > 6 && results[6] is List)
+              ? (results[6] as List).cast<LibraryModel>()
+              : <LibraryModel>[];
+          final followings = (results.length > 7 && results[7] is List)
+              ? (results[7] as List).cast<RelationModel>()
+              : <RelationModel>[];
+          final recs = (results.length > 5 && results[5] is List)
+              ? (results[5] as List).cast<RecommendationModel>()
+              : <RecommendationModel>[];
+
+          // 1. Build a comprehensive Author Map from all available sources
+          final Map<String, UserModel> knownAuthors = {};
+
+          // Source A: Following (very reliable for names)
+          for (var f in followings) {
+            if (f.nomComplet != null && f.nomComplet!.isNotEmpty) {
+              knownAuthors[f.suitId] = UserModel(
+                id: f.suitId,
+                profilId: f.suitId,
+                email: '',
+                nomComplet: f.nomComplet!,
+                profilePhoto: f.profilePhoto,
+                isProfileComplete: false,
+              );
             }
           }
 
-          if (results.length > 6 && results[6] is List) {
-            final library = (results[6] as List).cast<LibraryModel>();
-            _ownedBookIds = library.map((item) => item.livreId).toSet();
+          // Source B: Library (often contains enriched names from joins)
+          for (var item in library) {
+            final authorId = item.livre?.auteurId;
+            if (authorId != null && authorId.isNotEmpty) {
+              if (item.livre!.auteur != null &&
+                  item.livre!.auteur!.nomComplet != 'Auteur inconnu') {
+                knownAuthors[authorId] = item.livre!.auteur!;
+              } else if (item.auteurNom != null &&
+                  item.auteurNom!.isNotEmpty &&
+                  item.auteurNom != 'Auteur inconnu') {
+                knownAuthors[authorId] = UserModel(
+                  id: authorId,
+                  profilId: authorId,
+                  email: '',
+                  nomComplet: item.auteurNom!,
+                  isProfileComplete: false,
+                );
+              }
+            }
           }
+
+          // Source C: Books list
+          for (var book in allBooks) {
+            if (book.auteur != null &&
+                book.auteur!.nomComplet != 'Auteur inconnu') {
+              knownAuthors[book.auteurId] = book.auteur!;
+            }
+          }
+
+          // 2. Enrich ALL books with the best author data found
+          BookModel enrichBook(BookModel b) {
+            if (knownAuthors.containsKey(b.auteurId)) {
+              final bestAuthor = knownAuthors[b.auteurId]!;
+              // Only update if current is missing or "Auteur inconnu"
+              if (b.auteur == null ||
+                  b.auteur!.nomComplet == 'Auteur inconnu') {
+                return b.copyWith(auteur: bestAuthor);
+              }
+            }
+            return b;
+          }
+
+          _allBooks = allBooks.map(enrichBook).toList();
+
+          // 3. Enrich reviews (Recent Activities) with book data
+          final Map<String, BookModel> booksById = {
+            for (var b in _allBooks) b.id: b,
+          };
+
+          _recentActivities = _recentActivities.map((review) {
+            BookModel? book = booksById[review.livreId];
+            if (book != null) {
+              return ReviewModel(
+                id: review.id,
+                utilisateurId: review.utilisateurId,
+                livreId: review.livreId,
+                note: review.note,
+                commentaire: review.commentaire,
+                creeLe: review.creeLe,
+                livre: book,
+                utilisateur: review.utilisateur,
+                nomUtilisateur: review.nomUtilisateur,
+              );
+            }
+            return review;
+          }).toList();
+
+          // Sort reviews by date descending (Handle nulls by putting them at the end)
+          _recentActivities.sort((a, b) {
+            if (a.creeLe != null && b.creeLe != null) {
+              return b.creeLe!.compareTo(a.creeLe!);
+            } else if (a.creeLe == null && b.creeLe != null) {
+              return 1; // a is null, put it after b
+            } else if (a.creeLe != null && b.creeLe == null) {
+              return -1; // b is null, put a before b
+            }
+            return 0;
+          });
+
+          // Limit to most recent activities to avoid long lists
+          if (_recentActivities.length > 15) {
+            _recentActivities = _recentActivities.take(15).toList();
+          }
+
+          _recommendations = recs
+              .where((r) => r.livre != null)
+              .map((r) => enrichBook(r.livre!))
+              .toList();
+
+          _ownedBookIds = library.map((item) => item.livreId).toSet();
+          _followingIds = followings.map((f) => f.suitId).toSet();
+
+          // 3. Finalize Lists
+          // À la une
+          _featuredBooks = List.from(_allBooks);
+          _featuredBooks.sort((a, b) {
+            if (a.creeLe != null && b.creeLe != null) {
+              return b.creeLe!.compareTo(a.creeLe!);
+            }
+            return b.id.compareTo(a.id);
+          });
+          _featuredBooks = _featuredBooks.take(10).toList();
+
+          // Auteurs à suivre
+          final Map<String, UserModel> authorsToFollowMap = {};
+          for (var book in _allBooks) {
+            final authorId = book.auteurId;
+            if (authorId.isEmpty || authorId == _currentUserId) continue;
+
+            if (knownAuthors.containsKey(authorId)) {
+              authorsToFollowMap[authorId] = knownAuthors[authorId]!;
+            } else {
+              authorsToFollowMap[authorId] = UserModel(
+                id: authorId,
+                profilId: authorId,
+                email: '',
+                nomComplet: (book.authorName != 'Auteur inconnu')
+                    ? book.authorName
+                    : "Auteur #${authorId.length > 5 ? authorId.substring(0, 5) : authorId}",
+                isProfileComplete: false,
+              );
+            }
+          }
+          _featuredAuthors = authorsToFollowMap.values.take(10).toList();
         });
 
         if (mounted) {
@@ -231,13 +390,14 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             ),
             Column(
               children: [
-                NavBarAll(userName: widget.userName),
+                NavBarAll(userName: _displayName),
 
                 Expanded(
                   child: _isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF6366F1),
+                      ? Center(
+                          child: Text(
+                            "Chargement...",
+                            style: GoogleFonts.poppins(color: Colors.white70),
                           ),
                         )
                       : RefreshIndicator(
@@ -266,7 +426,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             color: Colors
                 .transparent, // Translucide pour voir le dégradé en dessous
             width: double.infinity,
-            padding: const EdgeInsets.only(top: 16, bottom: 32),
+            padding: const EdgeInsets.only(top: 16, bottom: 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -318,68 +478,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Stack(
-                        alignment: Alignment.topRight,
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const NotificationPage(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.notifications_none,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ),
-                          Consumer<NotificationProvider>(
-                            builder: (context, notificationProvider, child) {
-                              final count = notificationProvider.unreadCount;
-                              if (count == 0) return const SizedBox.shrink();
-                              return Positioned(
-                                right: 6,
-                                top: 6,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: const Color(0xFF0F172A),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 14,
-                                    minHeight: 14,
-                                  ),
-                                  child: Text(
-                                    '$count',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
                 if (_stats != null) _buildQuickStats(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
                 // À la une
                 Padding(
@@ -396,7 +500,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         ),
                       ),
                       Text(
-                        "Tout voir",
+                        "Voir plus",
                         style: GoogleFonts.poppins(
                           color: const Color(0xFF38BDF8),
                           fontSize: 13,
@@ -405,19 +509,19 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
                 _buildFeaturedHorizontalList(),
 
                 const SizedBox(height: 38),
                 // Catégories
                 _buildCategoryPills(),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 34),
                 // Recommandations pour vous
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
-                    "Recommandations pour vous",
+                    "Recommandations",
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontSize: 18,
@@ -425,12 +529,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 _buildRecommendationsGrid(),
               ],
             ),
           ),
-
+          const SizedBox(height: 32),
           // Section Claire (Bas) -> maintenant Sombre
           Container(
             color: Colors.transparent, // Changé pour rester cohérent
@@ -442,13 +546,35 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 // Auteurs à suivre
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    "Les auteurs à suivre",
-                    style: GoogleFonts.poppins(
-                      color: Colors.white, // Changé de black
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Auteurs",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AllAuthorsPage(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Voir plus",
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF06B6D4),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -459,7 +585,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
-                    "Clubs de lecture actifs",
+                    _discussions.isNotEmpty
+                        ? "Forums (${_discussions.length})"
+                        : "Forums",
                     style: GoogleFonts.poppins(
                       color: Colors.white, // Changé de black
                       fontSize: 18,
@@ -467,15 +595,15 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 _buildClubsList(),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
                 // Dernières citations partagées
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
-                    "Dernières citations partagées",
+                    "Citations",
                     style: GoogleFonts.poppins(
                       color: Colors.white, // Changé de black
                       fontSize: 18,
@@ -483,10 +611,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 _buildQuotesList(),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -498,50 +626,43 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   // Helpers UI du nouveau design
 
   Widget _buildFeaturedHorizontalList() {
+    List<BookModel> displayBooks = [];
+    if (_featuredBooks.isNotEmpty) {
+      displayBooks = _featuredBooks;
+    } else if (_allBooks.isNotEmpty) {
+      displayBooks = _allBooks;
+    }
+
     return SizedBox(
       height: 320,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _featuredBooks.isNotEmpty ? _featuredBooks.length : 2,
+        itemCount: displayBooks.isNotEmpty ? displayBooks.length : 0,
         itemBuilder: (context, index) {
-          if (_featuredBooks.isEmpty) {
-            final hardcoded = [
-              {"title": "L'Éveil des Étoiles", "author": "Par Jean Dupont"},
-              {"title": "Cœurs Sauvages", "author": "Par Marie Curie"},
-            ];
-            return Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: _buildSingleFeaturedCard(
-                title: hardcoded[index]["title"]!,
-                author: hardcoded[index]["author"]!,
-                imageUrl: null,
-              ),
-            );
-          } else {
-            final book = _featuredBooks[index];
-            return Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BookDetailPage(
-                        book: book,
-                        isOwned: _ownedBookIds.contains(book.id),
-                      ),
+          final book = displayBooks[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BookDetailPage(
+                      book: book,
+                      isOwned: _ownedBookIds.contains(book.id),
                     ),
-                  );
-                },
-                child: _buildSingleFeaturedCard(
-                  title: book.titre,
-                  author: "Par ${book.authorName}",
-                  imageUrl: book.imageCouverture,
-                ),
+                  ),
+                );
+              },
+              child: _buildSingleFeaturedCard(
+                title: book.titre,
+                author: "Par ${book.authorName}",
+                imageUrl: book.imageCouverture,
+                messagesCount: book.nombreMessages,
               ),
-            );
-          }
+            ),
+          );
         },
       ),
     );
@@ -551,6 +672,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     required String title,
     required String author,
     String? imageUrl,
+    int messagesCount = 0,
   }) {
     return Container(
       width: 220,
@@ -600,10 +722,26 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             const SizedBox(height: 4),
             Text(
               author,
-              style: GoogleFonts.poppins(color: Colors.grey[300], fontSize: 13),
+              style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            if (messagesCount > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Iconsax.message, color: Colors.white70, size: 11),
+                  const SizedBox(width: 4),
+                  Text(
+                    "$messagesCount message${messagesCount > 1 ? 's' : ''}",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -656,13 +794,24 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   }
 
   Widget _buildRecommendationsGrid() {
-    List<BookModel> displayBooks = _recommendations.isNotEmpty
-        ? _recommendations
-        : [];
+    List<BookModel> displayBooks = [];
+
+    if (_recommendations.isNotEmpty) {
+      displayBooks = _recommendations;
+    } else if (_allBooks.isNotEmpty) {
+      // If no recommendations, pick some different books and shuffle
+      displayBooks = List.from(_allBooks);
+      displayBooks.shuffle();
+    }
+
+    if (displayBooks.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: GridView.builder(
+        padding: const EdgeInsets.only(top: 4),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -671,67 +820,31 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           crossAxisSpacing: 16,
           mainAxisSpacing: 24,
         ),
-        itemCount: displayBooks.length > 4
-            ? 4
-            : (displayBooks.isEmpty ? 4 : displayBooks.length),
+        itemCount: displayBooks.length > 4 ? 4 : displayBooks.length,
         itemBuilder: (context, index) {
-          if (displayBooks.isEmpty) {
-            final hardcoded = [
-              {
-                "title": "Nébuleuse Alpha",
-                "author": "Cédric Villani",
-                "price": "9.99€",
-                "rating": "4.8",
-              },
-              {
-                "title": "Les Mémoires d'Hier",
-                "author": "Amélie Nothomb",
-                "price": "Gratuit",
-                "rating": "4.5",
-              },
-              {
-                "title": "Le Code Perdu",
-                "author": "Dan Brown",
-                "price": "12.50€",
-                "rating": "4.9",
-              },
-              {
-                "title": "Forêt Silencieuse",
-                "author": "Michel Bussi",
-                "price": "8.00€",
-                "rating": "4.2",
-              },
-            ];
-            return _buildRecommendationCard(
-              title: hardcoded[index]["title"]!,
-              author: hardcoded[index]["author"]!,
-              price: hardcoded[index]["price"]!,
-              rating: hardcoded[index]["rating"]!,
-              imageUrl: null,
-            );
-          } else {
-            final book = displayBooks[index];
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BookDetailPage(
-                      book: book,
-                      isOwned: _ownedBookIds.contains(book.id),
-                    ),
+          final book = displayBooks[index];
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BookDetailPage(
+                    book: book,
+                    isOwned: _ownedBookIds.contains(book.id),
                   ),
-                );
-              },
-              child: _buildRecommendationCard(
-                title: book.titre,
-                author: book.authorName,
-                price: book.prix > 0 ? "${book.prix}€" : "Gratuit",
-                rating: (book.noteMoyenne).toStringAsFixed(1),
-                imageUrl: book.imageCouverture,
-              ),
-            );
-          }
+                ),
+              );
+            },
+            child: _buildRecommendationCard(
+              title: book.titre,
+              author: book.authorName,
+              price: book.prix > 0 ? "${book.prix}  FCFA" : "Gratuit",
+              rating: (book.noteMoyenne).toStringAsFixed(1),
+              reviewsCount: book.telechargements,
+              imageUrl: book.imageCouverture,
+              messagesCount: book.nombreMessages,
+            ),
+          );
         },
       ),
     );
@@ -742,7 +855,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     required String author,
     required String price,
     required String rating,
+    int reviewsCount = 0,
     String? imageUrl,
+    int messagesCount = 0,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -775,7 +890,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         const SizedBox(height: 2),
         Text(
           author,
-          style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 11),
+          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -793,16 +908,31 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             ),
             Row(
               children: [
-                const Icon(Icons.star, color: Colors.amber, size: 12),
-                const SizedBox(width: 4),
-                Text(
-                  rating,
-                  style: GoogleFonts.poppins(
-                    color: Colors.amber,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                if (reviewsCount > 0) ...[
+                  const Icon(Icons.star, color: Colors.amber, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    rating,
+                    style: GoogleFonts.poppins(
+                      color: Colors.amber,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                ],
+                if (messagesCount > 0) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Iconsax.message, color: Colors.white70, size: 10),
+                  const SizedBox(width: 4),
+                  Text(
+                    "$messagesCount",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
@@ -834,14 +964,27 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
           return GestureDetector(
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Profil de $authorName en cours de développement',
+              if (_featuredAuthors.isNotEmpty) {
+                final author = _featuredAuthors[index];
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AuthorProfilePage(
+                      author: author,
+                      initialIsFollowing: _followingIds.contains(author.id),
+                    ),
                   ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Profil de $authorName en cours de développement',
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
             },
             child: Padding(
               padding: const EdgeInsets.only(right: 20),
@@ -874,20 +1017,65 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   ),
                   const SizedBox(height: 8),
                   GestureDetector(
-                    onTap: () => _followAuthor(_featuredAuthors[index].id),
+                    onTap: () {
+                      if (_featuredAuthors.isNotEmpty) {
+                        final authorId = _featuredAuthors[index].id;
+                        if (_followingIds.contains(authorId)) {
+                          _showAlreadyFollowingDialog(authorName);
+                        } else {
+                          _followAuthor(authorId, authorName);
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Fonctionnalité indisponible pour les auteurs de démonstration',
+                            ),
+                          ),
+                        );
+                      }
+                    },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6), // Blue pill
+                        color:
+                            _followingIds.contains(
+                              _featuredAuthors.isNotEmpty
+                                  ? _featuredAuthors[index].id
+                                  : "",
+                            )
+                            ? Colors.white.withOpacity(0.1)
+                            : const Color(0xFF3B82F6), // Blue pill
                         borderRadius: BorderRadius.circular(16),
+                        border:
+                            _followingIds.contains(
+                              _featuredAuthors.isNotEmpty
+                                  ? _featuredAuthors[index].id
+                                  : "",
+                            )
+                            ? Border.all(color: Colors.white24)
+                            : null,
                       ),
                       child: Text(
-                        "+ Suivre",
+                        _followingIds.contains(
+                              _featuredAuthors.isNotEmpty
+                                  ? _featuredAuthors[index].id
+                                  : "",
+                            )
+                            ? "Suivi"
+                            : "+ Suivre",
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
+                          color:
+                              _followingIds.contains(
+                                _featuredAuthors.isNotEmpty
+                                    ? _featuredAuthors[index].id
+                                    : "",
+                              )
+                              ? Colors.white70
+                              : Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
@@ -903,154 +1091,230 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     );
   }
 
-  Future<void> _followAuthor(String authorId) async {
+  Future<void> _followAuthor(String authorId, String authorName) async {
+    if (_followingIds.contains(authorId)) return;
     try {
       final token = await TokenStorage.getToken();
       if (token == null) return;
+
+      // Anti-self following
+      if (authorId == _currentUserId) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Vous ne pouvez pas vous suivre vous-même"),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
       await _relationService.followUser(authorId, token);
       if (mounted) {
+        setState(() {
+          _followingIds.add(authorId);
+        });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Auteur suivi !')));
+        ).showSnackBar(SnackBar(content: Text('$authorName suivi !')));
       }
     } catch (e) {
       debugPrint("Error following author: $e");
+      final errorStr = e.toString();
+      if (errorStr.contains("409") || errorStr.contains("déjà existante")) {
+        // If it's a conflict (already following), update local state and show dialog
+        if (mounted) {
+          setState(() {
+            _followingIds.add(authorId);
+          });
+          _showAlreadyFollowingDialog(authorName);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorStr.replaceFirst('Exception: ', '')),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
-  Widget _buildClubsList() {
-    List<Map<String, dynamic>> clubs = [];
+  void _showAlreadyFollowingDialog(String authorName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text("Déjà suivi", style: TextStyle(color: Colors.white)),
+        content: Text(
+          "Vous suivez déjà $authorName. Vous recevrez des notifications pour ses prochaines publications.",
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK", style: TextStyle(color: Color(0xFF3B82F6))),
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (_discussions.isNotEmpty) {
-      clubs = _discussions.map((d) {
-        return {
-          "title": d.titre.isNotEmpty
-              ? d.titre
-              : "Discussion #${d.id.substring(0, 4)}",
-          "members":
-              "${d.messages.length} messages", // On mock les membres avec les messages
-          "icon": Icons.public,
-          "color": const Color(0xFF0F172A),
-          "button": true,
-        };
-      }).toList();
-    } else {
-      clubs = [
-        {
-          "title": "Science-fiction & Futurs",
-          "members": "1.2k membres",
-          "icon": Icons.public,
-          "color": const Color(0xFF0F172A),
-          "button": true,
-        },
-        {
-          "title": "Polar & Frissons",
-          "members": "850 membres",
-          "icon": Icons.search,
-          "color": const Color(0xFFF87171),
-          "button": false,
-        },
-        {
-          "title": "Romance Historique",
-          "members": "2.1k membres",
-          "icon": Icons.favorite,
-          "color": const Color(0xFFF472B6),
-          "button": false,
-        },
-      ];
-    }
+  Widget _buildClubsList() {
+    final List<Map<String, dynamic>> hardcodedClubs = [
+      {
+        "title": "Science-fiction & Futurs",
+        "members": "12 messages",
+        "icon": Icons.public,
+        "color": const Color(0xFF0F172A),
+        "button": true,
+      },
+      {
+        "title": "Polar & Frissons",
+        "members": "8 messages",
+        "icon": Icons.search,
+        "color": const Color(0xFFF87171),
+        "button": false,
+      },
+      {
+        "title": "Romance Historique",
+        "members": "21 messages",
+        "icon": Icons.favorite,
+        "color": const Color(0xFFF472B6),
+        "button": false,
+      },
+    ];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        children: clubs.take(4).map((club) {
-          // On se limite à 4 pour l'accueil
-          return GestureDetector(
-            onTap: () {
-              MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
-            },
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
+        children: _discussions.isNotEmpty
+            ? _discussions.take(3).map((d) {
+                final club = {
+                  "title": d.titre.isNotEmpty
+                      ? d.titre
+                      : "Discussion #${d.id.substring(0, 4)}",
+                  "members": (d.messagesCount ?? 0) > 0
+                      ? "${d.messagesCount} message${d.messagesCount! > 1 ? 's' : ''}"
+                      : "${d.messages.length} message${d.messages.length > 1 ? 's' : ''}",
+                  "icon": Icons.public,
+                  "color": const Color(0xFF0F172A),
+                  "button": true,
+                };
+                return _buildClubItem(club, discussion: d);
+              }).toList()
+            : hardcodedClubs.take(3).map((club) {
+                return _buildClubItem(club);
+              }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildClubItem(Map<String, dynamic> club, {Discussion? discussion}) {
+    return GestureDetector(
+      onTap: () {
+        if (discussion != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ForumMessagesPage(discussion: discussion),
+            ),
+          );
+        } else {
+          MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B), // Changé de white
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.transparent,
-                ), // Changé à transparent
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2), // Changé à plus fort
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                color: club["color"] as Color,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
+              child: Icon(
+                club["icon"] as IconData,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: club["color"] as Color,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      club["icon"] as IconData,
+                  Text(
+                    club["title"] as String,
+                    style: GoogleFonts.poppins(
                       color: Colors.white,
-                      size: 24,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          club["title"] as String,
-                          style: GoogleFonts.poppins(
-                            color: Colors.white, // Changé de black
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          club["members"] as String,
-                          style: GoogleFonts.poppins(
-                            color: Colors.grey[400], // Changé de 600
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (club["button"] == true)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        (club["members"] as String).toLowerCase().contains(
+                              "message",
+                            )
+                            ? Iconsax.message
+                            : Icons.person_outline,
+                        color: Colors.grey[400],
+                        size: 11,
                       ),
-                      decoration: BoxDecoration(
-                        color: const Color(
-                          0xFFFFEDD5,
-                        ), // Light peach background
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        "Rejoindre",
+                      const SizedBox(width: 4),
+                      Text(
+                        club["members"] as String,
                         style: GoogleFonts.poppins(
-                          color: const Color(0xFF9A3412),
+                          color: Colors.grey[400],
                           fontSize: 12,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
+                    ],
+                  ),
                 ],
               ),
             ),
-          );
-        }).toList(),
+            if (club["button"] == true)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEDD5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  "Rejoindre",
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF9A3412),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1073,7 +1337,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         final idx = validReviews.indexOf(r) % colors.length;
         String author = "Membre SpaceLearn";
 
-        if (r.utilisateur != null && r.utilisateur!.libelle.isNotEmpty) {
+        if (r.nomUtilisateur != null && r.nomUtilisateur!.isNotEmpty) {
+          author = r.nomUtilisateur!;
+        } else if (r.utilisateur != null && r.utilisateur!.libelle.isNotEmpty) {
           author = r.utilisateur!.libelle;
         } else if (r.livre != null) {
           author = "Avis sur ${r.livre!.titre}";
@@ -1082,8 +1348,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         return {
           "quote": "“${r.commentaire}”",
           "author": author,
+          "bookTitle": r.livre?.titre ?? "",
           "gradient": colors[idx],
-          "book": r.livre, // Garde le livre pour la navigation
+          "book": r.livre,
+          "note": r.note,
         };
       }).toList();
     } else {
@@ -1094,6 +1362,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           "author": "Chloé B.",
           "gradient": [const Color(0xFF94A3B8), const Color(0xFF475569)],
           "book": null,
+          "note": 5,
         },
         {
           "quote":
@@ -1101,12 +1370,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           "author": "Marc D.",
           "gradient": [const Color(0xFFD97706), const Color(0xFF92400E)],
           "book": null,
+          "note": 4,
         },
       ];
     }
 
     return SizedBox(
-      height: 220,
+      height: 210,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1132,7 +1402,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             child: Container(
               width: 220,
               margin: const EdgeInsets.only(right: 16),
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 gradient: LinearGradient(
@@ -1145,16 +1415,46 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    q["quote"] as String,
-                    style: GoogleFonts.lora(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w500,
-                      height: 1.4,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: List.generate(5, (starIndex) {
+                          return Icon(
+                            starIndex < (q["note"] as int? ?? 0)
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: Colors.white,
+                            size: 14,
+                          );
+                        }),
+                      ),
+                      const Icon(
+                        Icons.format_quote,
+                        color: Colors.white24,
+                        size: 24,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        q["quote"] as String,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.lora(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.w500,
+                          height: 1.3,
+                        ),
+                        maxLines: 5,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       const CircleAvatar(
@@ -1167,22 +1467,31 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        "Partagé par ",
-                        style: GoogleFonts.poppins(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
-                      ),
                       Expanded(
-                        child: Text(
-                          q["author"] as String,
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              q["author"] as String,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (q["book"] != null)
+                              Text(
+                                "Livre: ${(q["book"] as BookModel).titre}",
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white70,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
                         ),
                       ),
                     ],
