@@ -4,7 +4,6 @@ import 'package:space_learn_flutter/core/space_learn/data/model/favoriteModel.da
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
-import 'package:space_learn_flutter/core/themes/app_colors.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({Key? key}) : super(key: key);
@@ -80,8 +79,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+          ? Center(
+              child: Text(
+                "Chargement...",
+                style: GoogleFonts.poppins(color: Colors.white70),
+              ),
             )
           : _favorites.isEmpty
           ? Center(

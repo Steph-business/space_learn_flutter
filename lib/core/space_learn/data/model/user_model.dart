@@ -28,15 +28,7 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    String name =
-        json['nom_complet'] ??
-        json['NomComplet'] ??
-        json['name'] ??
-        json['full_name'] ??
-        '';
-    if (name.isEmpty) {
-      name = json['email'] ?? json['Email'] ?? '';
-    }
+    String name = json['nom_complet'] ?? json['NomComplet'] ?? '';
 
     return UserModel(
       id: json['id'] ?? json['ID'] ?? '',

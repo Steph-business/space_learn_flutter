@@ -10,6 +10,7 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
   StreamSubscription? _subscription;
+  dynamic _lastStreamError;
 
   List<NotificationModel> get notifications =>
       List.unmodifiable(_notifications);
@@ -66,7 +67,11 @@ class NotificationProvider extends ChangeNotifier {
             notifyListeners();
           },
           onError: (error) {
-            debugPrint("Notification Stream Error: $error");
+            // Only log if it's a new or different error to avoid flooding
+            if (error.toString() != _lastStreamError?.toString()) {
+              debugPrint("Notification Stream Error: $error");
+              _lastStreamError = error;
+            }
           },
         );
   }

@@ -16,7 +16,7 @@ class NavBarAll extends StatelessWidget {
 
   const NavBarAll({
     super.key,
-    this.userName = 'Steph',
+    this.userName = 'Lecteur',
     this.greeting,
     this.subtitle,
     this.showCart = true,

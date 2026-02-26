@@ -21,9 +21,14 @@ class BookModel {
   final DateTime? creeLe;
   final DateTime? majLe;
 
-  // Stats
-  final double noteMoyenne;
-  final int telechargements;
+  // Stats - Made robust with gutters to avoid Null errors during Hot Reload
+  final double? _noteMoyenne;
+  final int? _telechargements;
+  final int? _nombreMessages;
+
+  double get noteMoyenne => _noteMoyenne ?? 0.0;
+  int get telechargements => _telechargements ?? 0;
+  int get nombreMessages => _nombreMessages ?? 0;
 
   // Relations
   final Categorie? categorie; // Categorie
@@ -54,56 +59,79 @@ class BookModel {
     this.auteur,
     double? noteMoyenne,
     int? telechargements,
-  }) : noteMoyenne = noteMoyenne ?? 0.0,
-       telechargements = telechargements ?? 0;
+    int? nombreMessages,
+  }) : _noteMoyenne = noteMoyenne ?? 0.0,
+       _telechargements = telechargements ?? 0,
+       _nombreMessages = nombreMessages ?? 0;
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
     // Handle author extraction
+    final String authorId =
+        (json['auteur_id'] ??
+                json['author_id'] ??
+                json['AuteurID'] ??
+                json['auteurID'] ??
+                json['AuthorID'] ??
+                json['authorID'] ??
+                '')
+            .toString();
+
     UserModel? author;
-    final authorData = json['Auteur'] ?? json['auteur'] ?? json['author'];
-    // Note: json['Utilisateur'] is intentionally excluded — it represents
-    // the library owner (reader), NOT the book author.
+    final authorData =
+        json['Auteur'] ??
+        json['auteur'] ??
+        json['Utilisateur'] ??
+        json['utilisateur'] ??
+        json['author'] ??
+        json['user'];
 
     if (authorData != null) {
       if (authorData is Map<String, dynamic>) {
         try {
           author = UserModel.fromJson(authorData);
         } catch (e) {
-          // Fallback if full parsing fails but we have the name
-          final name = authorData['nom_complet'] ?? authorData['NomComplet'];
+          // Fallback if full parsing fails but we have a name field
+          String? name = authorData['nom_complet'] ?? authorData['NomComplet'];
+
           if (name != null) {
             author = UserModel(
-              id: authorData['id'] ?? '',
-              profilId: authorData['profil_id'] ?? '',
+              id: authorData['id'] ?? authorId,
+              profilId: authorData['profil_id'] ?? authorId,
               email: authorData['email'] ?? '',
-              nomComplet: name,
+              nomComplet: name.toString(),
               isProfileComplete: false,
             );
           }
         }
       } else if (authorData is String) {
-        // If it's just a string, create a dummy UserModel with that name
         author = UserModel(
-          id: '',
-          profilId: '',
+          id: authorId,
+          profilId: authorId,
           email: '',
           nomComplet: authorData,
           isProfileComplete: false,
         );
       }
-    } else {
-      // Fallback: check for top-level name fields
+    }
+
+    // Secondary fallback using the joined field from backend (JOIN on profiles)
+    if (author == null || author.nomComplet.isEmpty) {
       final nameFallback =
-          json['auteur_nom'] ??
-          json['author_name'] ??
+          json['nom_auteur'] ??
+          json['NomAuteur'] ??
+          json['nom_complet'] ??
           json['NomComplet'] ??
-          json['nom_complet'];
-      if (nameFallback != null && nameFallback is String) {
+          json['auteur_nom'] ??
+          json['AuteurNom'] ??
+          json['display_name'] ??
+          json['displayName'];
+
+      if (nameFallback != null && nameFallback.toString().isNotEmpty) {
         author = UserModel(
-          id: '',
-          profilId: '',
-          email: '',
-          nomComplet: nameFallback,
+          id: authorId,
+          profilId: authorId,
+          email: json['email'] ?? json['Email'] ?? json['auteur_email'] ?? '',
+          nomComplet: nameFallback.toString(),
           isProfileComplete: false,
         );
       }
@@ -111,7 +139,7 @@ class BookModel {
 
     return BookModel(
       id: json['id'] ?? '',
-      auteurId: json['auteur_id'] ?? json['author_id'] ?? '',
+      auteurId: authorId,
       titre: json['titre'] ?? json['title'] ?? '',
       description: json['description'] ?? '',
       imageCouverture: _sanitizeImageUrl(
@@ -127,12 +155,38 @@ class BookModel {
       adresseContratNft: json['adresse_contrat_nft'],
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
       majLe: json['maj_le'] != null ? DateTime.parse(json['maj_le']) : null,
-      noteMoyenne: (json['note_moyenne'] != null)
-          ? (json['note_moyenne'] as num).toDouble()
-          : 0.0,
-      telechargements: (json['telechargements'] != null)
-          ? (json['telechargements'] as num).toInt()
-          : 0,
+      noteMoyenne: (() {
+        final val =
+            json['note_moyenne'] ??
+            json['NoteMoyenne'] ??
+            json['note_moyenne_avis'] ??
+            json['average_rating'] ??
+            json['rating'];
+        if (val == null) return 0.0;
+        return (val as num).toDouble();
+      })(),
+      telechargements: (() {
+        final val =
+            json['nombre_avis'] ??
+            json['NombreAvis'] ??
+            json['reviews_count'] ??
+            json['review_count'] ??
+            json['activites_count'] ??
+            json['telechargements'] ??
+            json['downloads'] ??
+            0;
+        int count = (val as num).toInt();
+        if (count == 0 && json['Activites'] is List) {
+          return (json['Activites'] as List).length;
+        }
+        return count;
+      })(),
+      nombreMessages:
+          (json['nombre_messages'] ??
+                  json['NombreMessages'] ??
+                  json['messages_count'] ??
+                  0)
+              .toInt(),
       categorie: json['Categorie'] != null
           ? Categorie.fromJson(json['Categorie'])
           : null,
@@ -165,7 +219,59 @@ class BookModel {
     return ApiRoutes.sanitizeImageUrl(url, useGin: useGin);
   }
 
-  String get authorName => auteur?.nomComplet ?? 'Auteur inconnu';
+  String get authorName => (auteur != null && auteur!.nomComplet.isNotEmpty)
+      ? auteur!.nomComplet
+      : 'Auteur inconnu';
+
+  BookModel copyWith({
+    String? id,
+    String? auteurId,
+    String? titre,
+    String? description,
+    String? imageCouverture,
+    String? fichierUrl,
+    String? format,
+    int? prix,
+    int? stock,
+    String? categorieId,
+    String? statut,
+    String? adresseContratNft,
+    DateTime? creeLe,
+    DateTime? majLe,
+    double? noteMoyenne,
+    int? telechargements,
+    int? nombreMessages,
+    Categorie? categorie,
+    List<ReviewModel>? activites,
+    List<ReadingActivityModel>? progressions,
+    List<RecommendationModel>? recommandations,
+    UserModel? auteur,
+  }) {
+    return BookModel(
+      id: id ?? this.id,
+      auteurId: auteurId ?? this.auteurId,
+      titre: titre ?? this.titre,
+      description: description ?? this.description,
+      imageCouverture: imageCouverture ?? this.imageCouverture,
+      fichierUrl: fichierUrl ?? this.fichierUrl,
+      format: format ?? this.format,
+      prix: prix ?? this.prix,
+      stock: stock ?? this.stock,
+      categorieId: categorieId ?? this.categorieId,
+      statut: statut ?? this.statut,
+      adresseContratNft: adresseContratNft ?? this.adresseContratNft,
+      creeLe: creeLe ?? this.creeLe,
+      majLe: majLe ?? this.majLe,
+      noteMoyenne: noteMoyenne ?? this.noteMoyenne,
+      telechargements: telechargements ?? this.telechargements,
+      nombreMessages: nombreMessages ?? this.nombreMessages,
+      categorie: categorie ?? this.categorie,
+      activites: activites ?? this.activites,
+      progressions: progressions ?? this.progressions,
+      recommandations: recommandations ?? this.recommandations,
+      auteur: auteur ?? this.auteur,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -185,6 +291,7 @@ class BookModel {
       'maj_le': majLe?.toIso8601String(),
       'note_moyenne': noteMoyenne,
       'telechargements': telechargements,
+      'nombre_messages': nombreMessages,
       'Categorie': categorie?.toJson(),
       'Activites': activites?.map((i) => i.toJson()).toList(),
       'Progressions': progressions?.map((i) => i.toJson()).toList(),

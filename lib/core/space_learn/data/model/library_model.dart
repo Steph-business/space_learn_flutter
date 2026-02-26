@@ -28,10 +28,13 @@ class LibraryModel {
 
     BookModel? book;
     if (bookJson != null) {
-      // Si on a un auteur_nom à la racine, on l'injecte dans le JSON du livre
-      // pour que BookModel.fromJson puisse le récupérer.
-      if (json['auteur_nom'] != null && bookJson['auteur_nom'] == null) {
-        bookJson['auteur_nom'] = json['auteur_nom'];
+      // Injection du nom de l'auteur provenant de la jointure (nom_auteur)
+      final joinName =
+          json['nom_auteur'] ?? json['NomAuteur'] ?? json['auteur_nom'];
+      if (joinName != null &&
+          (bookJson['nom_auteur'] == null ||
+              bookJson['nom_auteur'].toString().isEmpty)) {
+        bookJson['nom_auteur'] = joinName;
       }
       book = BookModel.fromJson(bookJson);
     }
@@ -41,7 +44,7 @@ class LibraryModel {
       utilisateurId: json['utilisateur_id'] ?? '',
       livreId: json['livre_id'] ?? '',
       acquisVia: json['acquis_via'] ?? '',
-      auteurNom: json['auteur_nom'],
+      auteurNom: json['nom_auteur'] ?? json['NomAuteur'] ?? json['auteur_nom'],
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
       livre: book,
     );

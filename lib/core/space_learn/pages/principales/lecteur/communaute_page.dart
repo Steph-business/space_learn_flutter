@@ -127,7 +127,12 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: Text(
+                "Chargement...",
+                style: TextStyle(color: Colors.white70),
+              ),
+            )
           : _error != null
           ? Center(
               child: Column(

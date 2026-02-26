@@ -50,7 +50,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
         final user = await _authService.getUser(token);
         if (user != null && mounted) {
           setState(() {
-            _userName = user.nomComplet.split(' ')[0];
+            _userName = user.nomComplet;
           });
         }
       }
@@ -302,12 +302,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         const SizedBox(height: 24),
 
                         if (_isLoading)
-                          const Center(
+                          Center(
                             child: Padding(
-                              padding: EdgeInsets.all(60.0),
-                              child: CircularProgressIndicator(
-                                color: Color(0xFFF59E0B),
-                                strokeWidth: 3,
+                              padding: const EdgeInsets.all(60.0),
+                              child: Text(
+                                "Chargement...",
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white70,
+                                ),
                               ),
                             ),
                           )

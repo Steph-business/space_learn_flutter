@@ -78,6 +78,9 @@ class Lectureservice {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => ReviewModel.fromJson(json)).toList();
+    } else if (response.statusCode == 404) {
+      // If the endpoint is not found or no reviews exist globally, return empty list gracefully
+      return [];
     } else {
       throw Exception('Failed to fetch all reviews: ${response.statusCode}');
     }

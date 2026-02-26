@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class LivreCard extends StatelessWidget {
   final String titre;
@@ -20,10 +21,6 @@ class LivreCard extends StatelessWidget {
     this.imageUrl,
     this.dateAcquisition,
   });
-
-  String _formatDate(DateTime date) {
-    return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,14 +125,25 @@ class LivreCard extends StatelessWidget {
                         ),
                       ],
                       if (dateAcquisition != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          "Acquis le ${_formatDate(dateAcquisition!)}",
-                          style: GoogleFonts.poppins(
-                            color: Colors.grey[500],
-                            fontSize: 11,
-                            fontWeight: FontWeight.w400,
-                          ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 10,
+                              color: const Color(0xFF06B6D4).withOpacity(0.7),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Ajouté le ${DateFormat('dd MMM yyyy').format(dateAcquisition!)}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.grey[500],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                       const SizedBox(height: 16),

@@ -58,6 +58,7 @@ class BookService {
   Future<List<BookModel>> getAllBooks({
     String? auteurId,
     String? statut,
+    String? authToken,
   }) async {
     final queryParameters = <String, String>{};
     if (auteurId != null) queryParameters['auteur_id'] = auteurId;
@@ -67,19 +68,71 @@ class BookService {
       ApiRoutes.books,
     ).replace(queryParameters: queryParameters);
 
+    final headers = <String, String>{};
+    if (authToken != null && authToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $authToken';
+    }
+
     try {
-      final response = await client.get(uri);
+      final response = await client.get(
+        uri,
+        headers: headers.isEmpty ? null : headers,
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data'] ?? [];
         return data.map((json) => BookModel.fromJson(json)).toList();
+      } else if (response.statusCode == 404 && queryParameters.isNotEmpty) {
+        // Fallback: if filtered query fails with 404, try getting all books
+        print(
+          '⚠️ BookService.getAllBooks - 404 with filters, trying without filters',
+        );
+        return getAllBooks(authToken: authToken);
       } else {
-        throw Exception('Failed to fetch books: ${response.statusCode}');
+        print(
+          '⚠️ BookService.getAllBooks - server error: ${response.statusCode}, attempting fallback host',
+        );
       }
     } catch (e) {
-      throw Exception('Failed to fetch books: $e');
+      print('❌ Error loading books: $e - attempting fallback host');
     }
+
+    // Fallback: try the main baseUrl host
+    try {
+      final fallbackUri = Uri.parse(
+        ApiRoutes.books.replaceFirst(ApiRoutes.baseUrlsGin, ApiRoutes.baseUrl),
+      ).replace(queryParameters: queryParameters);
+
+      final resp2 = await client.get(
+        fallbackUri,
+        headers: headers.isEmpty ? null : headers,
+      );
+      if (resp2.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(resp2.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+        return data.map((json) => BookModel.fromJson(json)).toList();
+      } else if (resp2.statusCode == 404 && queryParameters.isNotEmpty) {
+        final resp3 = await client.get(
+          Uri.parse(
+            ApiRoutes.books.replaceFirst(
+              ApiRoutes.baseUrlsGin,
+              ApiRoutes.baseUrl,
+            ),
+          ),
+          headers: headers.isEmpty ? null : headers,
+        );
+        if (resp3.statusCode == 200) {
+          final Map<String, dynamic> responseData = jsonDecode(resp3.body);
+          final List<dynamic> data = responseData['data'] ?? [];
+          return data.map((json) => BookModel.fromJson(json)).toList();
+        }
+      }
+    } catch (e) {
+      print('❌ Fallback error loading books: $e');
+    }
+
+    return [];
   }
 
   /// Fetch a single book by id. If [authToken] is provided, it will be sent

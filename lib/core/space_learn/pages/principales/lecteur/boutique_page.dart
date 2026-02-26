@@ -8,7 +8,11 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookServi
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 
 class MarketplacePage extends StatefulWidget {
   const MarketplacePage({super.key});
@@ -20,7 +24,10 @@ class MarketplacePage extends StatefulWidget {
 class _MarketplacePageState extends State<MarketplacePage> {
   final BookService _bookService = BookService();
   final LibraryService _libraryService = LibraryService();
+  final ReviewService _reviewService = ReviewService();
+  final AuthService _authService = AuthService();
   List<BookModel> _books = [];
+  String _userName = "Lecteur";
   List<String> _categories = [];
   Set<String> _ownedBookIds = {};
   bool _isLoading = true;
@@ -42,22 +49,56 @@ class _MarketplacePageState extends State<MarketplacePage> {
         _error = null;
       });
 
+      final token = await TokenStorage.getToken();
+
       final results = await Future.wait([
-        _bookService.getAllBooks(statut: 'publie'),
-        TokenStorage.getToken().then(
-          (token) => token != null
-              ? _libraryService.getUserLibrary(token)
-              : <LibraryModel>[],
-        ),
+        _bookService.getAllBooks(statut: 'publie', authToken: token),
+        token != null
+            ? _libraryService.getUserLibrary(token)
+            : Future.value(<LibraryModel>[]),
+        token != null
+            ? _reviewService.getUserReviews(token)
+            : Future.value(<ReviewModel>[]),
+        token != null ? _authService.getUser(token) : Future.value(null),
       ]);
 
-      final books = results[0] as List<BookModel>;
+      List<BookModel> books = results[0] as List<BookModel>;
       final library = results[1] as List<LibraryModel>;
+      final userReviews = results[2] as List<ReviewModel>;
+      final user = results[3];
 
       if (mounted) {
         setState(() {
-          _books = books;
           _ownedBookIds = library.map((e) => e.livreId).toSet();
+          if (user != null && user is UserModel && user.nomComplet.isNotEmpty) {
+            _userName = user.nomComplet;
+          }
+
+          // Enrichment: Update books with data from library and user's own ratings
+          final Map<String, BookModel> libraryBooks = {};
+          for (var item in library) {
+            if (item.livre != null) {
+              libraryBooks[item.livreId] = item.livre!;
+            }
+          }
+
+          final Map<String, double> userRatings = {};
+          for (var review in userReviews) {
+            userRatings[review.livreId] = review.note.toDouble();
+          }
+
+          books = books.map((b) {
+            var updatedBook = libraryBooks[b.id] ?? b;
+            if (userRatings.containsKey(b.id)) {
+              // Create a copy with the user's specific rating if they reviewed it
+              updatedBook = updatedBook.copyWith(
+                noteMoyenne: userRatings[b.id],
+              );
+            }
+            return updatedBook;
+          }).toList();
+
+          _books = books;
 
           // Extract unique categories (excluding "Tout")
           final Set<String> categorySet = {};
@@ -93,7 +134,10 @@ class _MarketplacePageState extends State<MarketplacePage> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(40.0),
-          child: CircularProgressIndicator(color: Color(0xFF22D3EE)),
+          child: Text(
+            "Chargement de la boutique...",
+            style: TextStyle(color: Colors.white70),
+          ),
         ),
       );
     } else if (_error != null) {
@@ -237,7 +281,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
           Column(
             children: [
               // En-tête fixe
-              const NavBarAll(),
+              NavBarAll(userName: _userName, showCart: true),
               // Contenu défilable
               Expanded(
                 child: RefreshIndicator(
