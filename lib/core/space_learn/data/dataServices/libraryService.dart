@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../utils/api_routes.dart';
-import '../model/libraryModel.dart';
+import '../model/library_model.dart';
 
 class LibraryService {
   final http.Client client;
@@ -63,14 +63,21 @@ class LibraryService {
     if (response.statusCode == 200) {
       print("📥 RAW LIBRARY RESPONSE: ${response.body}");
       final dynamic decoded = jsonDecode(response.body);
-      List<dynamic> data;
+
+      // Defensive parsing: some backends may return { data: null } when the
+      // library is empty. Treat null as empty list to avoid runtime type errors.
+      List<dynamic> data = [];
       if (decoded is List) {
         data = decoded;
-      } else if (decoded is Map && decoded.containsKey('data')) {
-        data = decoded['data'];
-      } else {
-        data = [];
+      } else if (decoded is Map) {
+        final d = decoded['data'];
+        if (d is List) {
+          data = d;
+        } else {
+          data = []; // handles null or other unexpected shapes
+        }
       }
+
       return data.map((json) => LibraryModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch user library');

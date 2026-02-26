@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/action_rapide.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/livre_recent.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/notification_recent.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/revenus.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/home/statistique.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/markeplace/section_titre.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/action_rapide.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/livre_recent.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/notification_recent.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/revenus.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/statistique.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/boutique/section_titre.dart';
 
 class HomeContent extends StatelessWidget {
   final String profileId;

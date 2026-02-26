@@ -15,11 +15,13 @@ class RelationService {
       headers: {'Authorization': 'Bearer $authToken'},
     );
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final Map<String, dynamic> data = jsonDecode(response.body);
       return RelationModel.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to follow user');
+      throw Exception(
+        'Failed to follow user: ${response.statusCode} - ${response.body}',
+      );
     }
   }
 
