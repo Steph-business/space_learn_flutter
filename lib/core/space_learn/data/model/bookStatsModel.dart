@@ -1,4 +1,4 @@
-import 'bookModel.dart';
+import 'book_model.dart';
 
 class BookStatsModel {
   final String id;

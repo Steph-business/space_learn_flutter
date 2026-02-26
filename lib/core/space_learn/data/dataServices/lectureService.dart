@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../utils/api_routes.dart';
-import '../model/activiteModel.dart';
+import '../model/activite_model.dart';
 
 class Lectureservice {
   final http.Client client;
@@ -60,6 +60,29 @@ class Lectureservice {
       return data.map((json) => ReviewModel.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch reviews by user');
+    }
+  }
+
+  Future<List<ReviewModel>> getAllReviews([String? authToken]) async {
+    final Map<String, String> headers = {};
+    if (authToken != null) {
+      headers['Authorization'] = 'Bearer $authToken';
+    }
+
+    final response = await client.get(
+      Uri.parse(ApiRoutes.reviews),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
+      return data.map((json) => ReviewModel.fromJson(json)).toList();
+    } else if (response.statusCode == 404) {
+      // If the endpoint is not found or no reviews exist globally, return empty list gracefully
+      return [];
+    } else {
+      throw Exception('Failed to fetch all reviews: ${response.statusCode}');
     }
   }
 

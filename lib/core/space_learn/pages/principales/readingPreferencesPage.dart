@@ -298,7 +298,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
         title: const Text("Activer le mode nuit"),
         subtitle: const Text("Texte blanc sur fond sombre"),
         value: _nightMode,
-        activeColor: AppColors.primary,
+        activeThumbColor: AppColors.primary,
         onChanged: (value) {
           setState(() {
             _nightMode = value;

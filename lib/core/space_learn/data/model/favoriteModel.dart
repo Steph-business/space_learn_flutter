@@ -1,4 +1,4 @@
-import 'bookModel.dart';
+import 'book_model.dart';
 
 class FavoriteModel {
   final String id;

@@ -1,7 +1,13 @@
 /// api_routes.dart
 class ApiRoutes {
-  // Base URL (dev ou prod)
-  static const String baseUrl = "http://192.168.252.193:8083";
+  // Change following IP to your machine's current IP
+  static const String host = "192.168.252.224";
+
+  // Base URL (Spring Boot server on 8083)
+  static const String baseUrl = "http://$host:8083";
+
+  // New base URL for Gin server on port 8082
+  static const String baseUrlsGin = "http://$host:8082";
 
   // Auth routes
   static const String profils = "$baseUrl/auth/profils";
@@ -13,22 +19,17 @@ class ApiRoutes {
   static const String forgotPassword = "$baseUrl/auth/forgot-password";
   static const String resetPassword = "$baseUrl/auth/reset-password";
 
-  // Exemple pour User (si tu as un contrôleur user)
+  // User routes
   static const String getUser = "$baseUrl/utilisateurs/me";
   static const String updateUser = "$baseUrl/utilisateurs/update";
-  static const String selectProfile =
-      "$baseUrl/utilisateurs/me/profil"; // Ajout de la route
-
-  // Autres routes (cours, vidéos, etc.) peuvent être ajoutées ici
-
-  // New base URL for Gin server on port 8082
-  static const String baseUrlsGin = "http://192.168.252.193:8085";
+  static const String selectProfile = "$baseUrl/utilisateurs/me/profil";
 
   // Book routes
   static const String books = "$baseUrlsGin/api/books";
   static const String bookById = "$baseUrlsGin/api/books/:id";
   static const String booksByAuthor =
       "$baseUrlsGin/api/books/author/:auteur_id";
+  static const String shareBook = "$baseUrlsGin/api/books/:id/share";
 
   // Payment routes
   static const String payments = "$baseUrlsGin/api/payments";
@@ -70,6 +71,14 @@ class ApiRoutes {
   static const String readingActivity = "$baseUrlsGin/api/reading/activity";
   static const String readingActivities = "$baseUrlsGin/api/reading/activities";
   static const String readingProgress = "$baseUrlsGin/api/reading/progress";
+  static const String readingProgressByLivre =
+      "$baseUrlsGin/api/reading/progress/livre/:livre_id";
+
+  // Bookmarks routes
+  static const String bookmarks = "$baseUrlsGin/api/reading/bookmarks";
+  static const String bookmarksByLivre =
+      "$baseUrlsGin/api/reading/bookmarks/livre/:livre_id";
+  static const String bookmarkDetail = "$baseUrlsGin/api/reading/bookmarks/:id";
 
   // Recommendations routes
   static const String recommendations = "$baseUrlsGin/api/recommendations";
@@ -78,6 +87,9 @@ class ApiRoutes {
 
   // Notifications routes
   static const String notifications = "$baseUrlsGin/api/notifications";
+  // Server-Sent Events (SSE) endpoint for streaming notifications in real-time
+  static const String notificationsStream =
+      "$baseUrlsGin/api/notifications/stream";
   static const String markNotificationAsRead =
       "$baseUrlsGin/api/notifications/:id/read";
   static const String markAllNotificationsAsRead =
@@ -106,6 +118,18 @@ class ApiRoutes {
   // Discussion routes
   static const String discussions = "$baseUrlsGin/api/discussions";
   static const String discussionById = "$baseUrlsGin/api/discussions/:id";
+  static const String discussionsGlobal = "$baseUrlsGin/api/discussions/global";
+  static const String discussionsByAuthor =
+      "$baseUrlsGin/api/discussions/author/:auteur_id";
+  static const String discussionsByBook =
+      "$baseUrlsGin/api/discussions/book/:livre_id";
+
+  // Evenements routes
+  static const String evenements = "$baseUrlsGin/api/evenements";
+  static const String evenementsGlobal = "$baseUrlsGin/api/evenements/global";
+  static const String evenementsByAuthor =
+      "$baseUrlsGin/api/evenements/author/:auteur_id";
+  static const String evenementById = "$baseUrlsGin/api/evenements/:id";
 
   // Message routes
   static const String messages = "$baseUrlsGin/api/messages";
@@ -130,6 +154,7 @@ class ApiRoutes {
       // It's already absolute. We check if it's pointing to localhost/IP and swap for current base.
       final List<String> oldBases = [
         '192.168.252.193',
+        '192.168.252.224',
         'localhost',
         '127.0.0.1',
       ];

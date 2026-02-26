@@ -7,6 +7,8 @@ class Message {
   final String contenu;
   final DateTime creeLe;
   final Discussion? discussion;
+  final String? nomUtilisateur;
+  final String? photoProfil;
 
   Message({
     required this.id,
@@ -15,6 +17,8 @@ class Message {
     required this.contenu,
     required this.creeLe,
     this.discussion,
+    this.nomUtilisateur,
+    this.photoProfil,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -24,6 +28,8 @@ class Message {
       utilisateurId: json['utilisateur_id'],
       contenu: json['contenu'],
       creeLe: DateTime.parse(json['cree_le']),
+      nomUtilisateur: json['nom_utilisateur'],
+      photoProfil: json['photo_profil'],
       discussion: json['Discussion'] != null
           ? Discussion.fromJson(json['Discussion'])
           : null,

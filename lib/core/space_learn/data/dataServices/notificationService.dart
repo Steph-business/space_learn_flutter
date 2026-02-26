@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
+import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import '../../../utils/api_routes.dart';
 import '../model/notificationModel.dart';
@@ -79,5 +82,126 @@ class NotificationService {
     if (response.statusCode != 200) {
       throw Exception('Failed to delete notification');
     }
+  }
+
+  /// Stream notifications from server using Server-Sent Events (SSE).
+  /// Returns a broadcast stream of NotificationModel.
+  Stream<NotificationModel> streamNotifications(String authToken) {
+    final controller = StreamController<NotificationModel>.broadcast();
+
+    bool cancelled = false;
+    controller.onCancel = () {
+      cancelled = true;
+    };
+
+    // Run a connection loop with simple backoff. This keeps the controller
+    // open while reconnect attempts happen. The loop stops when the stream
+    // subscription is cancelled (controller.onCancel sets `cancelled`).
+    () async {
+      int attempt = 0;
+
+      while (!cancelled) {
+        HttpClient? httpClient;
+        HttpClientRequest? request;
+        try {
+          final uri = Uri.parse(ApiRoutes.notificationsStream);
+          httpClient = HttpClient();
+          request = await httpClient.getUrl(uri);
+          request.headers.set('Authorization', 'Bearer $authToken');
+          request.headers.set('Accept', 'text/event-stream');
+
+          final response = await request.close();
+          if (response.statusCode != 200) {
+            // propagate error to consumer and retry
+            if (!controller.isClosed) controller.addError(Exception('SSE connection failed with status ${response.statusCode}'));
+            attempt = math.min(attempt + 1, 6);
+            final wait = math.min(30, 1 << attempt);
+            await Future.delayed(Duration(seconds: wait));
+            continue;
+          }
+
+          // Connected successfully
+          attempt = 0;
+
+          final utf8Stream = response.transform(utf8.decoder);
+          final lineStream = utf8Stream.transform(const LineSplitter());
+
+          StringBuffer buffer = StringBuffer();
+
+          await for (final rawLine in lineStream) {
+            if (cancelled) break;
+            final line = rawLine.trimRight();
+            if (line.isEmpty) {
+              if (buffer.isNotEmpty) {
+                final dataStr = buffer.toString();
+                try {
+                  final decoded = jsonDecode(dataStr);
+
+                  Map<String, dynamic>? payload;
+
+                  // Handle several possible envelopes:
+                  // 1) decoded is a Map and contains 'data' => use decoded['data']
+                  // 2) decoded is a Map and directly represents the notification
+                  if (decoded is Map<String, dynamic>) {
+                    if (decoded.containsKey('data')) {
+                      final d = decoded['data'];
+                      if (d is Map) {
+                        payload = Map<String, dynamic>.from(d);
+                      } else if (d is String) {
+                        // sometimes data is a stringified JSON
+                        try {
+                          final inner = jsonDecode(d);
+                          if (inner is Map) payload = Map<String, dynamic>.from(inner);
+                        } catch (_) {}
+                      }
+                    } else {
+                      payload = decoded;
+                    }
+                  }
+
+                  if (payload != null) {
+                    final model = NotificationModel.fromJson(payload);
+                    if (!controller.isClosed) controller.add(model);
+                  }
+                } catch (e) {
+                  if (!controller.isClosed) controller.addError(e);
+                }
+                buffer.clear();
+              }
+            } else if (line.startsWith(':')) {
+              // comment / keepalive; ignore
+              continue;
+            } else if (line.startsWith('data:')) {
+              buffer.write(line.substring(5).trim());
+            } else if (line.startsWith('event:')) {
+              // ignore event type for now
+              continue;
+            } else {
+              buffer.write(line);
+            }
+          }
+        } catch (e) {
+          if (!controller.isClosed) controller.addError(e);
+        } finally {
+          try {
+            request?.abort();
+          } catch (_) {}
+          try {
+            httpClient?.close(force: true);
+          } catch (_) {}
+        }
+
+        // If not cancelled, wait a bit (backoff) and retry the connection
+        if (!cancelled) {
+          attempt = math.min(attempt + 1, 6);
+          final wait = math.min(30, 1 << attempt);
+          await Future.delayed(Duration(seconds: wait));
+        }
+      }
+
+      if (!controller.isClosed) await controller.close();
+    }();
+
+    return controller.stream;
   }
 }

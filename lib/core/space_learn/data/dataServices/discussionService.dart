@@ -8,25 +8,82 @@ class DiscussionService {
 
   DiscussionService({http.Client? client}) : client = client ?? http.Client();
 
-  Future<Discussion> createDiscussion(
-    String livreId,
-    String titre,
-    String token,
-  ) async {
+  Future<Discussion> createDiscussion({
+    required String type,
+    required String titre,
+    required String token,
+    String? description,
+    String? imageBanniere,
+    String? livreId,
+    String? auteurId,
+  }) async {
+    final Map<String, dynamic> body = {'type': type, 'titre': titre};
+    if (description != null) body['description'] = description;
+    if (imageBanniere != null) body['image_banniere'] = imageBanniere;
+    if (livreId != null) body['livre_id'] = livreId;
+    if (auteurId != null) body['auteur_id'] = auteurId;
+
     final response = await client.post(
       Uri.parse(ApiRoutes.discussions),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: json.encode({'livre_id': livreId, 'titre': titre}),
+      body: json.encode(body),
     );
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 201 || response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
       return Discussion.fromJson(data['data'] ?? data);
     } else {
       throw Exception('Failed to create discussion');
+    }
+  }
+
+  Future<List<Discussion>> getGlobalDiscussions() async {
+    final response = await client.get(Uri.parse(ApiRoutes.discussionsGlobal));
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      final List<dynamic> list = responseData['data'] ?? [];
+      return list.map((json) => Discussion.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to fetch global discussions');
+    }
+  }
+
+  Future<List<Discussion>> getDiscussionsByAuthor(String auteurId) async {
+    final url = ApiRoutes.discussionsByAuthor.replaceFirst(
+      ':auteur_id',
+      auteurId,
+    );
+    final response = await client.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      final List<dynamic> list = responseData['data'] ?? [];
+      return list.map((json) => Discussion.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to fetch author discussions');
+    }
+  }
+
+  Future<List<Discussion>> getDiscussionsByLivre(
+    String livreId,
+    String token,
+  ) async {
+    final url = ApiRoutes.discussionsByBook.replaceFirst(':livre_id', livreId);
+    final response = await client.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      final List<dynamic> list = responseData['data'] ?? [];
+      return list.map((json) => Discussion.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to fetch book discussions');
     }
   }
 
