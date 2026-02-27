@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import '../../../data/dataServices/authServices.dart';
@@ -12,7 +13,7 @@ class SettingsPageAuteur extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(color: const Color(0xFF0F172A)),
+        Container(color: AppColors.scaffoldBackground),
         Positioned(
           top: 0,
           left: 0,
@@ -24,8 +25,8 @@ class SettingsPageAuteur extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF475569), // Lighter slate gray
-                  Color(0xFF0F172A), // Dark background matching Scaffold
+                  AppColors.slate, // Lighter slate gray
+                  AppColors.scaffoldBackground, // Dark background matching Scaffold
                 ],
               ),
             ),
@@ -245,7 +246,7 @@ class SettingsPageAuteur extends StatelessWidget {
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF0EA5E9), // Cyan
+          color: AppColors.secondaryVariant, // Cyan
         ),
       ),
     );
@@ -258,7 +259,7 @@ class SettingsPageAuteur extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Card(
-      color: const Color(0xFF1E293B),
+      color: AppColors.cardBackground,
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(

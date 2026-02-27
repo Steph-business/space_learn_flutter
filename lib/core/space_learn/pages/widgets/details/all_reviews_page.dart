@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -13,17 +15,13 @@ class AllReviewsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: AppColors.darkSurface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF111827),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         title: Text(
           "AVIS : ${book.titre.toUpperCase()}",
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
+          style: AppTextStyles.cardTitle,
         ),
         leading: IconButton(
           icon: const Icon(
@@ -73,7 +71,7 @@ class AllReviewsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F2937),
+        color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
@@ -84,7 +82,7 @@ class AllReviewsPage extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFF06B6D4).withOpacity(0.2),
+                backgroundColor: AppColors.primary.withOpacity(0.2),
                 backgroundImage:
                     (photoUrl != null &&
                         photoUrl.isNotEmpty &&
@@ -97,7 +95,7 @@ class AllReviewsPage extends StatelessWidget {
                         photoUrl.contains('example.com'))
                     ? const Icon(
                         Icons.person,
-                        color: Color(0xFF06B6D4),
+                        color: AppColors.primary,
                         size: 18,
                       )
                     : null,
@@ -109,11 +107,7 @@ class AllReviewsPage extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
+                      style: AppTextStyles.cardTitleSmall,
                     ),
                     Text(
                       time,
@@ -131,7 +125,7 @@ class AllReviewsPage extends StatelessWidget {
                     index < stars
                         ? Icons.star_rounded
                         : Icons.star_outline_rounded,
-                    color: const Color(0xFFF59E0B),
+                    color: AppColors.warning,
                     size: 16,
                   );
                 }),

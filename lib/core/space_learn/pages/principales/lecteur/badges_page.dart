@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../data/dataServices/badgeService.dart';
@@ -36,14 +37,14 @@ class _BadgesPageState extends State<BadgesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(),
           _isLoading
               ? const SliverFillRemaining(
                   child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+                    child: CircularProgressIndicator(color: AppColors.indigo),
                   ),
                 )
               : (_badges.isEmpty ? _buildEmptyState() : _buildBadgesGrid()),
@@ -79,7 +80,7 @@ class _BadgesPageState extends State<BadgesPage> {
       expandedHeight: 200.0,
       floating: false,
       pinned: true,
-      backgroundColor: const Color(0xFF1E293B),
+      backgroundColor: AppColors.cardBackground,
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           "Mes Récompenses",
@@ -93,7 +94,7 @@ class _BadgesPageState extends State<BadgesPage> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF6366F1), Color(0xFF4338CA)],
+                  colors: [AppColors.indigo, AppColors.indigoDark],
                 ),
               ),
             ),
@@ -158,11 +159,11 @@ class _BadgesPageState extends State<BadgesPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isUnlocked
-              ? const Color(0xFF6366F1).withOpacity(0.5)
+              ? AppColors.indigo.withOpacity(0.5)
               : Colors.white.withOpacity(0.05),
         ),
       ),
@@ -177,7 +178,7 @@ class _BadgesPageState extends State<BadgesPage> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isUnlocked
-                        ? const Color(0xFF6366F1).withOpacity(0.1)
+                        ? AppColors.indigo.withOpacity(0.1)
                         : Colors.white.withOpacity(0.05),
                     shape: BoxShape.circle,
                   ),
@@ -191,7 +192,7 @@ class _BadgesPageState extends State<BadgesPage> {
                             Icons.emoji_events,
                             size: 40,
                             color: isUnlocked
-                                ? const Color(0xFF818CF8)
+                                ? AppColors.indigoLight
                                 : Colors.white24,
                           ),
                         )
@@ -199,7 +200,7 @@ class _BadgesPageState extends State<BadgesPage> {
                           _getIconData(badge.iconUrl),
                           size: 40,
                           color: isUnlocked
-                              ? const Color(0xFF818CF8)
+                              ? AppColors.indigoLight
                               : Colors.white24,
                         ),
                 ),
@@ -234,7 +235,7 @@ class _BadgesPageState extends State<BadgesPage> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF10B981),
+                  color: AppColors.success,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check, size: 10, color: Colors.white),

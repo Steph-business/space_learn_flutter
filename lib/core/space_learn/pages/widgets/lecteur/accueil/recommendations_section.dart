@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../data/model/book_model.dart';
@@ -14,7 +15,7 @@ class RecommendationsSection extends StatelessWidget {
       return Container(
         height: 120,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.transparent),
         ),
@@ -24,14 +25,14 @@ class RecommendationsSection extends StatelessWidget {
             children: [
               Icon(
                 Icons.auto_awesome_rounded,
-                color: const Color(0xFF6366F1).withOpacity(0.4),
+                color: AppColors.indigo.withOpacity(0.4),
                 size: 32,
               ),
               const SizedBox(height: 8),
               Text(
                 "Aucune recommandation pour le moment",
                 style: GoogleFonts.poppins(
-                  color: const Color(0xFF64748B),
+                  color: AppColors.slate,
                   fontSize: 13,
                 ),
               ),
@@ -78,11 +79,11 @@ class _RecommendationCard extends StatelessWidget {
   const _RecommendationCard({required this.book, required this.index});
 
   static const List<List<Color>> _gradients = [
-    [Color(0xFF6366F1), Color(0xFF4F46E5)],
-    [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-    [Color(0xFF06B6D4), Color(0xFF0891B2)],
-    [Color(0xFFEC4899), Color(0xFFDB2777)],
-    [Color(0xFFF59E0B), Color(0xFFD97706)],
+    [AppColors.indigo, AppColors.indigoDeep],
+    [AppColors.violet, AppColors.violetDark],
+    [AppColors.primary, AppColors.primaryDark],
+    [AppColors.pinkVivid, AppColors.pinkDark],
+    [AppColors.warning, AppColors.orange],
   ];
 
   @override
@@ -91,7 +92,7 @@ class _RecommendationCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -146,7 +147,7 @@ class _RecommendationCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.star_rounded,
-                          color: Color(0xFFFBBF24),
+                          color: AppColors.yellowGold,
                           size: 12,
                         ),
                         const SizedBox(width: 2),

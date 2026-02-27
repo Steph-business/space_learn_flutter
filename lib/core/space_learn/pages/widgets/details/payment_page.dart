@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'dart:async' as java_timer;
 import 'package:google_fonts/google_fonts.dart';
@@ -42,9 +44,9 @@ class _PaymentPageState extends State<PaymentPage> {
     final String currency = '€';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF111827), // Dark slate background
+      backgroundColor: AppColors.darkSurface, // Dark slate background
       appBar: AppBar(
-        backgroundColor: const Color(0xFF111827),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -53,11 +55,7 @@ class _PaymentPageState extends State<PaymentPage> {
         ),
         title: Text(
           'Paiement Sécurisé',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
+          style: AppTextStyles.subtitle,
         ),
       ),
       body: SingleChildScrollView(
@@ -176,7 +174,7 @@ class _PaymentPageState extends State<PaymentPage> {
               child: ElevatedButton(
                 onPressed: _processPayment,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF22D3EE),
+                  backgroundColor: AppColors.primaryLight,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -239,7 +237,7 @@ class _PaymentPageState extends State<PaymentPage> {
                     fit: BoxFit.cover,
                   )
                 : Container(
-                    color: const Color(0xFF1E293B),
+                    color: AppColors.cardBackground,
                     child: const Icon(Icons.book, color: Colors.white),
                   ),
           ),
@@ -273,7 +271,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF22D3EE),
+                  color: AppColors.primaryLight,
                 ),
               ),
             ],
@@ -287,7 +285,7 @@ class _PaymentPageState extends State<PaymentPage> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F2937),
+        color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -308,7 +306,7 @@ class _PaymentPageState extends State<PaymentPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF22D3EE) : Colors.transparent,
+            color: isSelected ? AppColors.primaryLight : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
@@ -357,7 +355,7 @@ class _PaymentPageState extends State<PaymentPage> {
             prefixText: prefixText,
             prefixStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 15),
             filled: true,
-            fillColor: const Color(0xFF1F2937),
+            fillColor: AppColors.surfaceVariant,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 14,
@@ -373,7 +371,7 @@ class _PaymentPageState extends State<PaymentPage> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(
-                color: Color(0xFF22D3EE),
+                color: AppColors.primaryLight,
                 width: 1.5,
               ),
             ),
@@ -399,7 +397,7 @@ class _PaymentPageState extends State<PaymentPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF22D3EE)),
+        child: CircularProgressIndicator(color: AppColors.primaryLight),
       ),
     );
 
@@ -481,7 +479,7 @@ class _PaymentPageState extends State<PaymentPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F2937),
+        backgroundColor: AppColors.surfaceVariant,
         title: const Text(
           'Livre déjà possédé',
           style: TextStyle(color: Colors.white),
@@ -497,7 +495,7 @@ class _PaymentPageState extends State<PaymentPage> {
               Navigator.of(context).popUntil((route) => route.isFirst);
               MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace();
             },
-            child: const Text('OK', style: TextStyle(color: Color(0xFF22D3EE))),
+            child: const Text('OK', style: TextStyle(color: AppColors.primaryLight)),
           ),
         ],
       ),
@@ -549,7 +547,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: AppColors.darkSurface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -559,12 +557,12 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF22D3EE).withOpacity(0.1),
+                  color: AppColors.primaryLight.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.check_rounded,
-                  color: Color(0xFF22D3EE),
+                  color: AppColors.primaryLight,
                   size: 64,
                 ),
               ),
@@ -593,7 +591,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                 'Redirection dans $_secondsRemaining...',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: const Color(0xFF22D3EE),
+                  color: AppColors.primaryLight,
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
@@ -605,7 +603,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                 child: ElevatedButton(
                   onPressed: _navigateToLibrary,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF22D3EE),
+                    backgroundColor: AppColors.primaryLight,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),

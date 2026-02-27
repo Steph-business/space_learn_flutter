@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/favoriteModel.dart';
@@ -65,7 +67,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: AppColors.darkSurface,
       appBar: AppBar(
         title: Text(
           "Ma Favorie",
@@ -74,7 +76,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: const Color(0xFF1F2937),
+        backgroundColor: AppColors.surfaceVariant,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -115,7 +117,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 if (book == null) return const SizedBox.shrink();
 
                 return Card(
-                  color: const Color(0xFF1F2937),
+                  color: AppColors.surfaceVariant,
                   margin: const EdgeInsets.only(bottom: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -156,11 +158,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                               children: [
                                 Text(
                                   book.titre,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
+                                  style: AppTextStyles.subtitle,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -174,7 +172,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                 Text(
                                   "${book.prix} FCFA",
                                   style: GoogleFonts.poppins(
-                                    color: const Color(0xFF22D3EE),
+                                    color: AppColors.primaryLight,
                                     fontSize: 14,
                                   ),
                                 ),

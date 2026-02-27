@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
@@ -43,7 +44,7 @@ class PublicationCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
           boxShadow: [
@@ -128,7 +129,7 @@ class PublicationCard extends StatelessWidget {
                 _buildActionButton(
                   icon: Icons.edit,
                   label: "Modifier",
-                  color: const Color(0xFF0EA5E9),
+                  color: AppColors.secondaryVariant,
                   onTap: () async {
                     final result = await Navigator.push(
                       context,
@@ -145,7 +146,7 @@ class PublicationCard extends StatelessWidget {
                 _buildActionButton(
                   icon: Icons.bar_chart,
                   label: "Statistiques",
-                  color: const Color(0xFF10B981), // Green
+                  color: AppColors.success, // Green
                   onTap: () {
                     Navigator.push(
                       context,
@@ -157,7 +158,7 @@ class PublicationCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 PopupMenuButton<String>(
-                  color: const Color(0xFF1E293B),
+                  color: AppColors.cardBackground,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(color: Colors.white.withOpacity(0.05)),
@@ -289,7 +290,7 @@ class PublicationCard extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Fonction d'archivage en cours de développement."),
-        backgroundColor: Color(0xFF1E293B),
+        backgroundColor: AppColors.cardBackground,
       ),
     );
   }
@@ -298,7 +299,7 @@ class PublicationCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.cardBackground,
         title: const Text(
           "Supprimer l'œuvre",
           style: TextStyle(color: Colors.white),

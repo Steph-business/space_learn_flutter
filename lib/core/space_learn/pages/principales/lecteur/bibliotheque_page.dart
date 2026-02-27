@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
@@ -250,7 +251,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       body: Stack(
         children: [
           // Background Gradient for the top half
@@ -265,8 +266,8 @@ class _BibliothequePageState extends State<BibliothequePage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF475569), // Lighter slate gray
-                    Color(0xFF0F172A), // Dark background matching Scaffold
+                    AppColors.slate, // Lighter slate gray
+                    AppColors.scaffoldBackground, // Dark background matching Scaffold
                   ],
                 ),
               ),
@@ -280,7 +281,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _loadLibrary,
-                  color: const Color(0xFFF59E0B),
+                  color: AppColors.warning,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(
@@ -310,11 +311,11 @@ class _BibliothequePageState extends State<BibliothequePage> {
                               child: Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1E293B),
+                                  color: AppColors.cardBackground,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: _isGridView
-                                        ? const Color(0xFF06B6D4)
+                                        ? AppColors.primary
                                         : Colors.transparent,
                                     width: 1,
                                   ),
@@ -409,8 +410,8 @@ class _BibliothequePageState extends State<BibliothequePage> {
                                             .toInt()
                                       : 0,
                                   couleurs: const [
-                                    Color(0xFF6A5AE0),
-                                    Color(0xFF8B82F6),
+                                    AppColors.purple,
+                                    AppColors.indigoLight,
                                   ],
                                   imageUrl: book.imageCouverture,
                                 ),
@@ -442,8 +443,8 @@ class _BibliothequePageState extends State<BibliothequePage> {
                                             .toInt()
                                       : 0,
                                   couleurs: const [
-                                    Color(0xFF6A5AE0),
-                                    Color(0xFF8B82F6),
+                                    AppColors.purple,
+                                    AppColors.indigoLight,
                                   ],
                                   imageUrl: book.imageCouverture,
                                   dateAcquisition: item.creeLe,
@@ -490,7 +491,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? const Color(0xFF22D3EE) : Colors.grey[400],
+                color: isSelected ? AppColors.primaryLight : Colors.grey[400],
               ),
             ),
           ),
@@ -499,7 +500,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               height: 3,
               width: (label.length * 8.0) + 8, // Simple heuristic for width
               decoration: BoxDecoration(
-                color: const Color(0xFF22D3EE),
+                color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(2),
               ),
             )
@@ -517,10 +518,10 @@ class _BibliothequePageState extends State<BibliothequePage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF1E293B) : const Color(0xFF1E293B),
+          color: isActive ? AppColors.cardBackground : AppColors.cardBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isActive ? const Color(0xFF22D3EE) : Colors.transparent,
+            color: isActive ? AppColors.primaryLight : Colors.transparent,
             width: 1,
           ),
         ),
@@ -529,14 +530,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
           children: [
             Icon(
               icon,
-              color: isActive ? const Color(0xFF22D3EE) : Colors.white,
+              color: isActive ? AppColors.primaryLight : Colors.white,
               size: 18,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.poppins(
-                color: isActive ? const Color(0xFF22D3EE) : Colors.white,
+                color: isActive ? AppColors.primaryLight : Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -554,11 +555,11 @@ class _BibliothequePageState extends State<BibliothequePage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: hasActiveGenre
-                ? const Color(0xFF22D3EE)
+                ? AppColors.primaryLight
                 : Colors.transparent,
             width: 1,
           ),
@@ -568,14 +569,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
           children: [
             Icon(
               Icons.tune_rounded,
-              color: hasActiveGenre ? const Color(0xFF22D3EE) : Colors.white,
+              color: hasActiveGenre ? AppColors.primaryLight : Colors.white,
               size: 18,
             ),
             const SizedBox(width: 8),
             Text(
               hasActiveGenre ? "Genre: $filtreActif" : "Genre",
               style: GoogleFonts.poppins(
-                color: hasActiveGenre ? const Color(0xFF22D3EE) : Colors.white,
+                color: hasActiveGenre ? AppColors.primaryLight : Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -589,7 +590,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
   void _showGenrePicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -597,7 +598,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 24),
           decoration: const BoxDecoration(
-            color: Color(0xFF1E293B),
+            color: AppColors.cardBackground,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -624,7 +625,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         cat,
                         style: GoogleFonts.poppins(
                           color: isSelected
-                              ? const Color(0xFF22D3EE)
+                              ? AppColors.primaryLight
                               : Colors.white,
                           fontWeight: isSelected
                               ? FontWeight.w600
@@ -632,7 +633,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         ),
                       ),
                       trailing: isSelected
-                          ? const Icon(Icons.check, color: Color(0xFF22D3EE))
+                          ? const Icon(Icons.check, color: AppColors.primaryLight)
                           : null,
                       onTap: () {
                         setState(() => filtreActif = cat);
@@ -659,13 +660,13 @@ class _BibliothequePageState extends State<BibliothequePage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.library_books_rounded,
                 size: 48,
-                color: const Color(0xFF94A3B8),
+                color: AppColors.slateLight,
               ),
             ),
             const SizedBox(height: 24),
@@ -694,7 +695,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                 MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF06B6D4),
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -732,7 +733,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               icon: const Icon(Icons.refresh_rounded),
               label: const Text("Réessayer"),
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF06B6D4),
+                foregroundColor: AppColors.primary,
               ),
             ),
           ],

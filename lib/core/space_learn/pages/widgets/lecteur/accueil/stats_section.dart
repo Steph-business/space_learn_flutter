@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,9 +18,9 @@ class StatsSection extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) => Scaffold(
-              backgroundColor: const Color(0xFFF8FAFC),
+              backgroundColor: AppColors.lightSurfaceAlt,
               appBar: AppBar(
-                backgroundColor: const Color(0xFF0F172A),
+                backgroundColor: AppColors.scaffoldBackground,
                 elevation: 0,
                 title: Text(
                   'Statistiques Détaillées',
@@ -66,7 +67,7 @@ class StatsSection extends StatelessWidget {
               offset: const Offset(0, 8),
             ),
           ],
-          border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+          border: Border.all(color: AppColors.lightSurface, width: 1),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -75,19 +76,19 @@ class StatsSection extends StatelessWidget {
               icon: FontAwesomeIcons.bookOpen,
               value: stats?.booksRead.toString() ?? "0",
               label: "Livres lus",
-              color: const Color(0xFF3B82F6),
+              color: AppColors.secondary,
             ),
             _StatItem(
               icon: FontAwesomeIcons.hourglassHalf,
               value: stats?.totalTime ?? "0h",
               label: "Temps total",
-              color: const Color(0xFF10B981),
+              color: AppColors.success,
             ),
             _StatItem(
               icon: FontAwesomeIcons.trophy,
               value: stats?.goalsAchieved.toString() ?? "0",
               label: "Objectifs",
-              color: const Color(0xFFF59E0B),
+              color: AppColors.warning,
             ),
           ],
         ),
@@ -127,14 +128,14 @@ class _StatItem extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF1E293B),
+            color: AppColors.cardBackground,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
           style: GoogleFonts.poppins(
-            color: const Color(0xFF64748B),
+            color: AppColors.slate,
             fontSize: 11,
             fontWeight: FontWeight.w500,
           ),

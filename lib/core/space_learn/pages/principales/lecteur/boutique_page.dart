@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../themes/layout/nav_bar_all.dart';
@@ -166,7 +167,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
               ElevatedButton(
                 onPressed: _loadBooks,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF22D3EE),
+                  backgroundColor: AppColors.primaryLight,
                 ),
                 child: const Text("Réessayer"),
               ),
@@ -278,7 +279,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       body: Stack(
         children: [
           Positioned(
@@ -292,8 +293,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF475569), // Lighter slate gray
-                    Color(0xFF0F172A), // Dark background matching Scaffold
+                    AppColors.slate, // Lighter slate gray
+                    AppColors.scaffoldBackground, // Dark background matching Scaffold
                   ],
                 ),
               ),
@@ -307,8 +308,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _loadBooks,
-                  color: const Color(0xFF06B6D4),
-                  backgroundColor: const Color(0xFF1E293B),
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.cardBackground,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.zero,

@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../data/model/user_model.dart';
@@ -8,12 +9,12 @@ class FeaturedAuthorsSection extends StatelessWidget {
   const FeaturedAuthorsSection({super.key, required this.authors});
 
   static const List<Color> _ringColors = [
-    Color(0xFF6366F1),
-    Color(0xFF8B5CF6),
-    Color(0xFFEC4899),
-    Color(0xFF06B6D4),
-    Color(0xFFF59E0B),
-    Color(0xFF10B981),
+    AppColors.indigo,
+    AppColors.violet,
+    AppColors.pinkVivid,
+    AppColors.primary,
+    AppColors.warning,
+    AppColors.success,
   ];
 
   @override
@@ -103,7 +104,7 @@ class FeaturedAuthorsSection extends StatelessWidget {
                     'Auteur',
                     style: GoogleFonts.poppins(
                       fontSize: 10,
-                      color: const Color(0xFF94A3B8),
+                      color: AppColors.slateLight,
                       fontWeight: FontWeight.w400,
                     ),
                   ),

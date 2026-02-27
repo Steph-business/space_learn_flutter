@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/payment_page.dart';
@@ -14,7 +15,7 @@ class PurchasePage extends StatelessWidget {
         : "N/A";
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.lightSurfaceAlt,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -52,7 +53,7 @@ class PurchasePage extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      colors: [AppColors.warning, AppColors.orange],
                     ),
                   ),
                 ),
@@ -94,7 +95,7 @@ class PurchasePage extends StatelessWidget {
                                         child: const Icon(
                                           Icons.book,
                                           size: 50,
-                                          color: Color(0xFFD97706),
+                                          color: AppColors.orange,
                                         ),
                                       );
                                     },
@@ -104,7 +105,7 @@ class PurchasePage extends StatelessWidget {
                                     child: const Icon(
                                       Icons.book,
                                       size: 50,
-                                      color: Color(0xFFD97706),
+                                      color: AppColors.orange,
                                     ),
                                   ),
                           ),
@@ -221,7 +222,7 @@ class PurchasePage extends StatelessWidget {
                               "Prix total",
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
-                                color: const Color(0xFF64748B),
+                                color: AppColors.slate,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -244,7 +245,7 @@ class PurchasePage extends StatelessWidget {
                                 ],
                                 style: const TextStyle(
                                   fontSize: 32,
-                                  color: Color(0xFF1E293B),
+                                  color: AppColors.cardBackground,
                                 ),
                               ),
                             ),
@@ -264,7 +265,7 @@ class PurchasePage extends StatelessWidget {
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF59E0B),
+                              backgroundColor: AppColors.warning,
                               foregroundColor: Colors.white,
                               elevation: 8,
                               shadowColor: const Color(
@@ -295,7 +296,7 @@ class PurchasePage extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1E293B),
+                      color: AppColors.cardBackground,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -303,7 +304,7 @@ class PurchasePage extends StatelessWidget {
                     book['description'] ?? 'Aucune description disponible.',
                     style: GoogleFonts.poppins(
                       fontSize: 15,
-                      color: const Color(0xFF475569),
+                      color: AppColors.slate,
                       height: 1.7,
                     ),
                   ),

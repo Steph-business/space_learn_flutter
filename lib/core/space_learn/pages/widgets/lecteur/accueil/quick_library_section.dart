@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../data/model/library_model.dart';
@@ -20,12 +22,12 @@ class QuickLibrarySection extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: AppColors.cardBackground,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.transparent),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6366F1).withOpacity(0.06),
+                color: AppColors.indigo.withOpacity(0.06),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -37,7 +39,7 @@ class QuickLibrarySection extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                    colors: [AppColors.indigo, AppColors.violet],
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -64,7 +66,7 @@ class QuickLibrarySection extends StatelessWidget {
                     Text(
                       'Achetez des livres pour les retrouver ici',
                       style: GoogleFonts.poppins(
-                        color: const Color(0xFF94A3B8),
+                        color: AppColors.slateLight,
                         fontSize: 11,
                       ),
                     ),
@@ -74,7 +76,7 @@ class QuickLibrarySection extends StatelessWidget {
               const Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: Color(0xFF06B6D4),
+                color: AppColors.primary,
               ),
             ],
           ),
@@ -111,7 +113,7 @@ class QuickLibrarySection extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 13),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.transparent),
               ),
@@ -120,17 +122,13 @@ class QuickLibrarySection extends StatelessWidget {
                 children: [
                   Text(
                     'Voir tous mes livres (${validItems.length})',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF06B6D4),
-                    ),
+                    style: AppTextStyles.linkBold,
                   ),
                   const SizedBox(width: 6),
                   const Icon(
                     Icons.arrow_forward_rounded,
                     size: 16,
-                    color: Color(0xFF06B6D4),
+                    color: AppColors.primary,
                   ),
                 ],
               ),
@@ -147,12 +145,12 @@ class _QuickLibraryCard extends StatelessWidget {
   final int colorIndex;
 
   static const List<List<Color>> _placeholderGradients = [
-    [Color(0xFF6366F1), Color(0xFF4F46E5)],
-    [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-    [Color(0xFF06B6D4), Color(0xFF0891B2)],
-    [Color(0xFFEC4899), Color(0xFFDB2777)],
-    [Color(0xFFF59E0B), Color(0xFFD97706)],
-    [Color(0xFF10B981), Color(0xFF059669)],
+    [AppColors.indigo, AppColors.indigoDeep],
+    [AppColors.violet, AppColors.violetDark],
+    [AppColors.primary, AppColors.primaryDark],
+    [AppColors.pinkVivid, AppColors.pinkDark],
+    [AppColors.warning, AppColors.orange],
+    [AppColors.success, AppColors.success],
   ];
 
   const _QuickLibraryCard({
@@ -178,7 +176,7 @@ class _QuickLibraryCard extends StatelessWidget {
       child: Container(
         width: 135,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -225,7 +223,7 @@ class _QuickLibraryCard extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
+                        color: AppColors.success,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -279,8 +277,8 @@ class _QuickLibraryCard extends StatelessWidget {
                           Icons.edit_rounded,
                           size: 9,
                           color: book.auteur != null
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFFCBD5E1),
+                              ? AppColors.slateLight
+                              : AppColors.slateBorder,
                         ),
                         const SizedBox(width: 3),
                         Expanded(
@@ -291,8 +289,8 @@ class _QuickLibraryCard extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontSize: 10,
                               color: book.auteur != null
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFFCBD5E1),
+                                  ? AppColors.slateLight
+                                  : AppColors.slateBorder,
                               fontStyle: book.auteur != null
                                   ? FontStyle.normal
                                   : FontStyle.italic,

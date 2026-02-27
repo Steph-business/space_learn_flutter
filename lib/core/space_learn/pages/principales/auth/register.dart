@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -134,7 +136,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -142,7 +144,7 @@ class _RegisterPageState extends State<RegisterPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF475569), Color(0xFF1E293B), Color(0xFF0F172A)],
+            colors: [AppColors.slate, AppColors.cardBackground, AppColors.scaffoldBackground],
           ),
         ),
         child: SafeArea(
@@ -216,7 +218,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
-                          color: const Color(0xFF06B6D4),
+                          color: AppColors.primary,
                         ),
                       ),
                     ],
@@ -238,7 +240,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 // Dark form card
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white.withOpacity(0.05)),
                     boxShadow: [
@@ -317,10 +319,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF06B6D4),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 4,
-                      shadowColor: const Color(0xFF06B6D4).withOpacity(0.4),
+                      shadowColor: AppColors.primary.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -369,7 +371,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           text: 'Se connecter',
                           style: GoogleFonts.poppins(
                             fontSize: 13,
-                            color: const Color(0xFF06B6D4),
+                            color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -415,7 +417,7 @@ class _RegisterPageState extends State<RegisterPage> {
               controller: controller,
               obscureText: obscureText,
               keyboardType: keyboardType,
-              style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
+              style: AppTextStyles.bodySecondary,
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: GoogleFonts.poppins(

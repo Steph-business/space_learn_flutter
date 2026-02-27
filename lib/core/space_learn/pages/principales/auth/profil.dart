@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -82,7 +83,7 @@ class _ProfilPageState extends State<ProfilPage> {
       '--- PROFILPAGE BUILD CALLED: isLoading=$isLoading, error=$error, profiles=${_profiles.length} ---',
     );
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -90,7 +91,7 @@ class _ProfilPageState extends State<ProfilPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF475569), Color(0xFF1E293B), Color(0xFF0F172A)],
+            colors: [AppColors.slate, AppColors.cardBackground, AppColors.scaffoldBackground],
           ),
         ),
         child: SafeArea(
@@ -136,16 +137,16 @@ class _ProfilPageState extends State<ProfilPage> {
                     height: 72,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFF06B6D4).withOpacity(0.15),
+                      color: AppColors.primary.withOpacity(0.15),
                       border: Border.all(
-                        color: const Color(0xFF06B6D4).withOpacity(0.3),
+                        color: AppColors.primary.withOpacity(0.3),
                         width: 2,
                       ),
                     ),
                     child: const Icon(
                       Icons.rocket_launch,
                       size: 32,
-                      color: Color(0xFF06B6D4),
+                      color: AppColors.primary,
                     ),
                   ),
 
@@ -169,7 +170,7 @@ class _ProfilPageState extends State<ProfilPage> {
                           style: GoogleFonts.poppins(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color: const Color(0xFF06B6D4),
+                            color: AppColors.primary,
                             letterSpacing: 1,
                           ),
                         ),
@@ -218,7 +219,7 @@ class _ProfilPageState extends State<ProfilPage> {
                   if (isLoading || isUpdating)
                     const CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFF06B6D4),
+                        AppColors.primary,
                       ),
                     )
                   else if (error != null)
@@ -319,7 +320,7 @@ class _ProfilPageState extends State<ProfilPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.06)),
           boxShadow: [
@@ -337,10 +338,10 @@ class _ProfilPageState extends State<ProfilPage> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFF06B6D4).withOpacity(0.12),
+                color: AppColors.primary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, size: 22, color: const Color(0xFF06B6D4)),
+              child: Icon(icon, size: 22, color: AppColors.primary),
             ),
             const SizedBox(height: 10),
             Text(

@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -91,9 +93,9 @@ class _TeamsPageState extends State<TeamsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         automaticallyImplyLeading: false,
         leading:
@@ -177,7 +179,7 @@ class _TeamsPageState extends State<TeamsPage> {
                           child: _buildQuickAction(
                             Iconsax.edit,
                             "Nouvelle annonce",
-                            const Color(0xFF0EA5E9),
+                            AppColors.secondaryVariant,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -194,7 +196,7 @@ class _TeamsPageState extends State<TeamsPage> {
                           child: _buildQuickAction(
                             Iconsax.calendar,
                             "Événement",
-                            const Color(0xFF10B981),
+                            AppColors.success,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -235,11 +237,7 @@ class _TeamsPageState extends State<TeamsPage> {
                     padding: const EdgeInsets.all(20.0),
                     child: Text(
                       "Forums de vos œuvres (${_books.length})",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.subtitle,
                     ),
                   ),
 
@@ -249,7 +247,7 @@ class _TeamsPageState extends State<TeamsPage> {
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
+                          color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Center(
@@ -298,18 +296,18 @@ class _TeamsPageState extends State<TeamsPage> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+            colors: [AppColors.cardBackground, AppColors.scaffoldBackground],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF0EA5E9).withOpacity(0.3),
+            color: AppColors.secondaryVariant.withOpacity(0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0EA5E9).withOpacity(0.1),
+              color: AppColors.secondaryVariant.withOpacity(0.1),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -320,12 +318,12 @@ class _TeamsPageState extends State<TeamsPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF0EA5E9).withOpacity(0.2),
+                color: AppColors.secondaryVariant.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Iconsax.messages_2,
-                color: Color(0xFF0EA5E9),
+                color: AppColors.secondaryVariant,
                 size: 30,
               ),
             ),
@@ -387,7 +385,7 @@ class _TeamsPageState extends State<TeamsPage> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
@@ -523,15 +521,15 @@ class _TeamsPageState extends State<TeamsPage> {
           final evt = _evenements[index];
           final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
           final colorType = isAnnonce
-              ? const Color(0xFF0EA5E9)
-              : const Color(0xFF10B981);
+              ? AppColors.secondaryVariant
+              : AppColors.success;
           final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
 
           return Container(
             width: 280,
             margin: const EdgeInsets.only(right: 16, bottom: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: colorType.withOpacity(0.3)),
             ),

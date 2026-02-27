@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -17,12 +18,12 @@ class AjouterGridCard extends StatelessWidget {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFF0F172A), // Darker background
+                color: AppColors.scaffoldBackground, // Darker background
                 borderRadius: BorderRadius.circular(12),
                 // Dashed border is tricky without a specific package,
                 // but we can simulate it or just use a solid thin border for simplicity
                 border: Border.all(
-                  color: const Color(0xFF334155),
+                  color: AppColors.border,
                   width: 1.5,
                   style: BorderStyle.solid,
                 ),
@@ -34,12 +35,12 @@ class AjouterGridCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
-                        color: Color(0xFF94A3B8), // Muted grey/blue
+                        color: AppColors.slateLight, // Muted grey/blue
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.add,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.scaffoldBackground,
                         size: 24,
                       ),
                     ),
@@ -47,7 +48,7 @@ class AjouterGridCard extends StatelessWidget {
                     Text(
                       "Ajouter",
                       style: GoogleFonts.poppins(
-                        color: const Color(0xFF94A3B8),
+                        color: AppColors.slateLight,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),

@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -9,7 +11,7 @@ class TopLivresSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -20,11 +22,7 @@ class TopLivresSection extends StatelessWidget {
             children: [
               Text(
                 "Top Livres",
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AppTextStyles.subtitle,
               ),
               Row(
                 children: [
@@ -58,7 +56,7 @@ class TopLivresSection extends StatelessWidget {
               child: Text(
                 "Voir tous mes livres",
                 style: GoogleFonts.poppins(
-                  color: const Color(0xFF0EA5E9),
+                  color: AppColors.secondaryVariant,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -114,7 +112,7 @@ class TopLivresSection extends StatelessWidget {
         Text(
           revenue,
           style: GoogleFonts.poppins(
-            color: const Color(0xFF0EA5E9),
+            color: AppColors.secondaryVariant,
             fontSize: 13,
             fontWeight: FontWeight.bold,
           ),
@@ -143,7 +141,7 @@ class CommentairesRecentsSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -151,11 +149,7 @@ class CommentairesRecentsSection extends StatelessWidget {
         children: [
           Text(
             "Commentaires Récents",
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: AppTextStyles.subtitle,
           ),
           const SizedBox(height: 16),
           _buildComment(
@@ -201,7 +195,7 @@ class CommentairesRecentsSection extends StatelessWidget {
         ElevatedButton(
           onPressed: () {},
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0EA5E9),
+            backgroundColor: AppColors.secondaryVariant,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -230,7 +224,7 @@ class ConseilsPublicationSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -238,11 +232,7 @@ class ConseilsPublicationSection extends StatelessWidget {
         children: [
           Text(
             "Conseils de Publication",
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: AppTextStyles.subtitle,
           ),
           const SizedBox(height: 16),
           _buildTip("📣", "Promouvoir sur les réseaux sociaux (FB, Insta)"),
@@ -263,7 +253,7 @@ class ConseilsPublicationSection extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+            style: AppTextStyles.body,
           ),
         ),
       ],

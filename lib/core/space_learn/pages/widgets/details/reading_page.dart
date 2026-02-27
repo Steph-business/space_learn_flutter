@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -47,7 +48,7 @@ class _ReadingPageState extends State<ReadingPage> {
 
   // PDF Reader Settings
   double _brightness = 1.0;
-  Color _backgroundColor = const Color(0xFFFDF7E2); // Parchment filter
+  Color _backgroundColor = AppColors.parchmentLight; // Parchment filter
   double _zoomLevel = 1.0;
   bool _isHorizontal = false;
   bool _isPdf = false;
@@ -251,7 +252,7 @@ class _ReadingPageState extends State<ReadingPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Marque-page ajouté à la page $_currentPage'),
-              backgroundColor: const Color(0xFF22D3EE),
+              backgroundColor: AppColors.primaryLight,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -343,7 +344,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 child: IconButton(
                   icon: const Icon(
                     Icons.close,
-                    color: Color(0xFF4A3728),
+                    color: AppColors.readingBrown,
                     size: 20,
                   ),
                   onPressed: () => Navigator.of(context).pop(),
@@ -419,7 +420,7 @@ class _ReadingPageState extends State<ReadingPage> {
 
   Widget _buildHeader() {
     final bool isDark = _backgroundColor.computeLuminance() < 0.5;
-    final Color textColor = isDark ? Colors.white : const Color(0xFF4A3728);
+    final Color textColor = isDark ? Colors.white : AppColors.readingBrown;
 
     return Positioned(
       top: 0,
@@ -483,7 +484,7 @@ class _ReadingPageState extends State<ReadingPage> {
 
   Widget _buildBottomControls() {
     final bool isDark = _backgroundColor.computeLuminance() < 0.5;
-    final Color textColor = isDark ? Colors.white : const Color(0xFF4A3728);
+    final Color textColor = isDark ? Colors.white : AppColors.readingBrown;
 
     return Positioned(
       bottom: 24,
@@ -521,7 +522,7 @@ class _ReadingPageState extends State<ReadingPage> {
           Container(
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B), // Premium dark theme
+              color: AppColors.cardBackground, // Premium dark theme
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -635,7 +636,7 @@ class _ReadingPageState extends State<ReadingPage> {
         builder: (context, setModalState) => Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: const BoxDecoration(
-            color: Color(0xFFF2F2F7), // Light background like iOS
+            color: AppColors.iosSurface, // Light background like iOS
             borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: Column(
@@ -754,14 +755,14 @@ class _ReadingPageState extends State<ReadingPage> {
                   ),
                   _buildThemeOption(
                     "Nuit",
-                    const Color(0xFF121212),
+                    AppColors.readingDark,
                     Colors.white,
                     setModalState,
                   ),
                   _buildThemeOption(
                     "Sépia",
-                    const Color(0xFFF4ECD8),
-                    const Color(0xFF5B4636),
+                    AppColors.parchment,
+                    AppColors.readingBrownDark,
                     setModalState,
                   ),
                 ],
@@ -864,8 +865,8 @@ class _ReadingPageState extends State<ReadingPage> {
                 ),
               ),
               TabBar(
-                indicatorColor: const Color(0xFF22D3EE),
-                labelColor: const Color(0xFF22D3EE),
+                indicatorColor: AppColors.primaryLight,
+                labelColor: AppColors.primaryLight,
                 unselectedLabelColor: Colors.grey,
                 labelStyle: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
@@ -925,13 +926,13 @@ class _ReadingPageState extends State<ReadingPage> {
         return ListTile(
           leading: Icon(
             Icons.segment,
-            color: isCurrent ? const Color(0xFF22D3EE) : Colors.grey[400],
+            color: isCurrent ? AppColors.primaryLight : Colors.grey[400],
           ),
           title: Text(
             bookmark.title,
             style: GoogleFonts.poppins(
               fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-              color: isCurrent ? const Color(0xFF22D3EE) : Colors.black,
+              color: isCurrent ? AppColors.primaryLight : Colors.black,
             ),
           ),
           trailing: page != null
@@ -985,7 +986,7 @@ class _ReadingPageState extends State<ReadingPage> {
         if (index >= bookmarks.length) return const SizedBox.shrink();
         final bk = bookmarks[index];
         return ListTile(
-          leading: const Icon(Icons.bookmark, color: Color(0xFF22D3EE)),
+          leading: const Icon(Icons.bookmark, color: AppColors.primaryLight),
           title: Text(
             "Page ${bk.pageNumber}",
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
@@ -1032,13 +1033,13 @@ class _ReadingPageState extends State<ReadingPage> {
         widget.book['image_couverture'] ?? widget.book['imageCouverture'];
 
     return Drawer(
-      backgroundColor: const Color(0xFF1E293B), // Dark theme as in Bible app
+      backgroundColor: AppColors.cardBackground, // Dark theme as in Bible app
       child: Column(
         children: [
           DrawerHeader(
             padding: EdgeInsets.zero,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
+              color: AppColors.scaffoldBackground,
               image: (imageUrl != null && imageUrl.isNotEmpty)
                   ? DecorationImage(
                       image: NetworkImage(imageUrl),
@@ -1174,7 +1175,7 @@ class _ReadingPageState extends State<ReadingPage> {
               style: GoogleFonts.poppins(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF4A3728),
+                color: AppColors.readingBrown,
               ),
             ),
             const SizedBox(height: 12),
@@ -1183,14 +1184,14 @@ class _ReadingPageState extends State<ReadingPage> {
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 16,
-                color: const Color(0xFF4A3728).withOpacity(0.7),
+                color: AppColors.readingBrown.withOpacity(0.7),
               ),
             ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A3728),
+                backgroundColor: AppColors.readingBrown,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,

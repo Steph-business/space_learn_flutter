@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -100,7 +101,7 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Discussion créée avec succès !"),
-            backgroundColor: Color(0xFF06B6D4),
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -125,9 +126,9 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
@@ -146,7 +147,7 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
       ),
       body: _isLoading && _books.isEmpty
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF06B6D4)),
+              child: CircularProgressIndicator(color: AppColors.primary),
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -167,7 +168,7 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
+                      color: AppColors.cardBackground,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white.withOpacity(0.05)),
                     ),
@@ -175,7 +176,7 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
                       child: DropdownButton<BookModel>(
                         value: _selectedBook,
                         isExpanded: true,
-                        dropdownColor: const Color(0xFF1E293B),
+                        dropdownColor: AppColors.cardBackground,
                         items: _books.map((book) {
                           return DropdownMenuItem(
                             value: book,
@@ -210,7 +211,7 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
                       hintText: "De quoi souhaitez-vous discuter ?",
                       hintStyle: TextStyle(color: Colors.grey[600]),
                       filled: true,
-                      fillColor: const Color(0xFF1E293B),
+                      fillColor: AppColors.cardBackground,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -240,7 +241,7 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
                       hintText: "Détails de votre pensée...",
                       hintStyle: TextStyle(color: Colors.grey[600]),
                       filled: true,
-                      fillColor: const Color(0xFF1E293B),
+                      fillColor: AppColors.cardBackground,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -276,8 +277,8 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFF06B6D4)
-                                : const Color(0xFF1E293B),
+                                ? AppColors.primary
+                                : AppColors.cardBackground,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: isSelected
@@ -331,7 +332,7 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
                       Switch(
                         value: _isAnonymous,
                         onChanged: (val) => setState(() => _isAnonymous = val),
-                        activeColor: const Color(0xFF06B6D4),
+                        activeColor: AppColors.primary,
                       ),
                     ],
                   ),
@@ -345,7 +346,7 @@ class _CreateDiscussionPageState extends State<CreateDiscussionPage> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF06B6D4),
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),

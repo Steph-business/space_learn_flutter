@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -15,7 +16,7 @@ class NavBarAuteur extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: AppColors.scaffoldBackground,
         border: Border(
           top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
         ),
@@ -26,7 +27,7 @@ class NavBarAuteur extends StatelessWidget {
         onTap: onTap,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        selectedItemColor: const Color(0xFF0EA5E9),
+        selectedItemColor: AppColors.secondaryVariant,
         unselectedItemColor: Colors.white.withOpacity(0.4),
         showUnselectedLabels: true,
         selectedLabelStyle: GoogleFonts.poppins(

@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -60,21 +61,21 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
       case 'payment':
       case 'paiement':
       case 'vente':
-        return const Color(0xFF10B981); // Emerald
+        return AppColors.success; // Emerald
       case 'review':
       case 'avis':
-        return const Color(0xFFF59E0B); // Amber
+        return AppColors.warning; // Amber
       case 'message':
       case 'reponse':
-        return const Color(0xFF3B82F6); // Blue
+        return AppColors.secondary; // Blue
       case 'chapitre':
       case 'livre':
-        return const Color(0xFF8B5CF6); // Violet
+        return AppColors.violet; // Violet
       case 'abonné':
       case 'follow':
-        return const Color(0xFFEC4899); // Pink
+        return AppColors.pinkVivid; // Pink
       default:
-        return const Color(0xFF06B6D4); // Cyan
+        return AppColors.primary; // Cyan
     }
   }
 
@@ -90,7 +91,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
         padding: EdgeInsets.symmetric(vertical: 40),
         child: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF22D3EE)),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
           ),
         ),
       );
@@ -225,7 +226,7 @@ class _NotificationCardFromModel extends StatelessWidget {
                                   color: accentColor,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: const Color(0xFF0F172A),
+                                    color: AppColors.scaffoldBackground,
                                     width: 1.5,
                                   ),
                                 ),

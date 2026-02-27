@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../data/model/goalModel.dart';
@@ -27,11 +28,11 @@ class DailyGoalSection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withOpacity(0.08),
+            color: AppColors.indigo.withOpacity(0.08),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -49,7 +50,7 @@ class DailyGoalSection extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        colors: [AppColors.indigo, AppColors.violet],
                       ),
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -75,7 +76,7 @@ class DailyGoalSection extends StatelessWidget {
                         goal!.description,
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color: const Color(0xFF94A3B8),
+                          color: AppColors.slateLight,
                         ),
                       ),
                     ],
@@ -89,8 +90,8 @@ class DailyGoalSection extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isCompleted
-                      ? const Color(0xFF10B981).withOpacity(0.1)
-                      : const Color(0xFF6366F1).withOpacity(0.1),
+                      ? AppColors.success.withOpacity(0.1)
+                      : AppColors.indigo.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -99,8 +100,8 @@ class DailyGoalSection extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: isCompleted
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFF6366F1),
+                        ? AppColors.success
+                        : AppColors.indigo,
                   ),
                 ),
               ),
@@ -112,7 +113,7 @@ class DailyGoalSection extends StatelessWidget {
               Container(
                 height: 10,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
+                  color: AppColors.scaffoldBackground,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -124,8 +125,8 @@ class DailyGoalSection extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: isCompleted
-                          ? [const Color(0xFF10B981), const Color(0xFF059669)]
-                          : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
+                          ? [AppColors.success, AppColors.success]
+                          : [AppColors.indigo, AppColors.violet],
                     ),
                     borderRadius: BorderRadius.circular(10),
                   ),

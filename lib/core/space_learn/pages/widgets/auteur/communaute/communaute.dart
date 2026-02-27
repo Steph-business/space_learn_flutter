@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class Communaute extends StatelessWidget {
@@ -59,7 +60,7 @@ class Communaute extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6),
@@ -93,7 +94,7 @@ class Communaute extends StatelessWidget {
                 children: [
                   const Icon(
                     Icons.bookmark,
-                    color: Color(0xFF06B6D4),
+                    color: AppColors.primary,
                     size: 18,
                   ),
                   const SizedBox(width: 4),
@@ -101,7 +102,7 @@ class Communaute extends StatelessWidget {
                     child: Text(
                       title,
                       style: const TextStyle(
-                        color: Color(0xFF06B6D4),
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w500,
                       ),
                       overflow: TextOverflow.ellipsis,

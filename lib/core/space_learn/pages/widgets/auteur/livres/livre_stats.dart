@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class LivreStatsSection extends StatelessWidget {
@@ -58,7 +59,7 @@ class LivreStatsSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -75,7 +76,7 @@ class LivreStatsSection extends StatelessWidget {
             "Publications",
             publications.toString(),
             Icons.menu_book_rounded,
-            const Color(0xFF0EA5E9),
+            AppColors.secondaryVariant,
           ),
           _buildSummaryItem(
             "Vues",

@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
@@ -51,17 +53,13 @@ class _AbonnesPageState extends State<AbonnesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
           "MES ABONNÉS",
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: AppTextStyles.subtitle,
         ),
         leading: IconButton(
           icon: const Icon(
@@ -74,7 +72,7 @@ class _AbonnesPageState extends State<AbonnesPage> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF0EA5E9)),
+              child: CircularProgressIndicator(color: AppColors.secondaryVariant),
             )
           : _error != null
           ? Center(
@@ -134,16 +132,16 @@ class _AbonnesPageState extends State<AbonnesPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: const Color(0xFF0EA5E9).withOpacity(0.2),
+            backgroundColor: AppColors.secondaryVariant.withOpacity(0.2),
             backgroundImage: photo != null ? NetworkImage(photo) : null,
             child: photo == null
-                ? const Icon(Icons.person, color: Color(0xFF0EA5E9))
+                ? const Icon(Icons.person, color: AppColors.secondaryVariant)
                 : null,
           ),
           const SizedBox(width: 16),
@@ -174,7 +172,7 @@ class _AbonnesPageState extends State<AbonnesPage> {
             onPressed: () {},
             child: const Text(
               "Profil",
-              style: TextStyle(color: Color(0xFF0EA5E9)),
+              style: TextStyle(color: AppColors.secondaryVariant),
             ),
           ),
         ],

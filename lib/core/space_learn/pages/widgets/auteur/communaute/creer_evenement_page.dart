@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -33,12 +35,12 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         return Theme(
           data: ThemeData.dark().copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF10B981),
+              primary: AppColors.success,
               onPrimary: Colors.white,
-              surface: Color(0xFF1E293B),
+              surface: AppColors.cardBackground,
             ),
             dialogTheme: const DialogThemeData(
-              backgroundColor: Color(0xFF0F172A),
+              backgroundColor: AppColors.scaffoldBackground,
             ),
           ),
           child: child!,
@@ -58,8 +60,8 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         return Theme(
           data: ThemeData.dark().copyWith(
             timePickerTheme: const TimePickerThemeData(
-              backgroundColor: Color(0xFF1E293B),
-              dialHandColor: Color(0xFF10B981),
+              backgroundColor: AppColors.cardBackground,
+              dialHandColor: AppColors.success,
             ),
           ),
           child: child!,
@@ -74,9 +76,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
@@ -109,7 +111,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
@@ -117,13 +119,13 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                 child: DropdownButton<String>(
                   value: _eventType,
                   isExpanded: true,
-                  dropdownColor: const Color(0xFF1E293B),
+                  dropdownColor: AppColors.cardBackground,
                   icon: const Icon(
                     Iconsax.arrow_down_1,
                     color: Colors.white54,
                     size: 18,
                   ),
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+                  style: AppTextStyles.body,
                   items:
                       [
                         "Séance de Dédicace",
@@ -170,7 +172,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                             vertical: 16,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
+                            color: AppColors.cardBackground,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.1),
@@ -217,7 +219,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                             vertical: 16,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
+                            color: AppColors.cardBackground,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.1),
@@ -283,18 +285,14 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF10B981),
+                  backgroundColor: AppColors.success,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 child: Text(
                   "Créer l'événement",
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: AppTextStyles.subtitle,
                 ),
               ),
             ),
@@ -323,12 +321,12 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+      style: AppTextStyles.body,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: GoogleFonts.poppins(color: Colors.white30, fontSize: 14),
         filled: true,
-        fillColor: const Color(0xFF1E293B),
+        fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
@@ -339,7 +337,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF10B981)),
+          borderSide: const BorderSide(color: AppColors.success),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

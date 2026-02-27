@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -58,7 +59,7 @@ class NavBarAll extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white24, width: 1),
-                  color: const Color(0xFF1E293B),
+                  color: AppColors.cardBackground,
                 ),
                 child: ClipOval(
                   child: (userUrl != null && userUrl!.isNotEmpty)
@@ -169,7 +170,7 @@ class NavBarAll extends StatelessWidget {
                             color: Colors.red,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFF0F172A),
+                              color: AppColors.scaffoldBackground,
                               width: 1.5,
                             ),
                           ),
@@ -220,10 +221,10 @@ class NavBarAll extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF06B6D4),
+                              color: AppColors.primary,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: const Color(0xFF0F172A),
+                                color: AppColors.scaffoldBackground,
                                 width: 1.5,
                               ),
                             ),

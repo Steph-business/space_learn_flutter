@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -30,13 +31,13 @@ class FiltreLivres extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 color: actif
-                    ? const Color(0xFF06B6D4)
-                    : const Color(0xFF1E293B),
+                    ? AppColors.primary
+                    : AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: actif
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF1E293B).withOpacity(0.2),
+                          color: AppColors.cardBackground.withOpacity(0.2),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

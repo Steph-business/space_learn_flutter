@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -133,7 +134,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
+          backgroundColor: AppColors.cardBackground,
           title: Text(
             "Nouveau sujet",
             style: GoogleFonts.poppins(color: Colors.white),
@@ -161,7 +162,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0EA5E9),
+                backgroundColor: AppColors.secondaryVariant,
               ),
               child: const Text("Créer"),
             ),
@@ -174,9 +175,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
@@ -217,7 +218,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF0EA5E9),
+                      color: AppColors.secondaryVariant,
                     ),
                   ),
                 ],
@@ -251,7 +252,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withOpacity(0.05)),
                 ),
@@ -318,7 +319,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             child: Text(
                               "COMMUNAUTÉ ACTIVE",
                               style: GoogleFonts.poppins(
-                                color: const Color(0xFF0EA5E9),
+                                color: AppColors.secondaryVariant,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.5,
@@ -353,8 +354,8 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF0EA5E9)
-                            : const Color(0xFF1E293B),
+                            ? AppColors.secondaryVariant
+                            : AppColors.cardBackground,
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: isSelected
                             ? [
@@ -389,7 +390,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             // Posts List
             if (_isLoading)
               const Center(
-                child: CircularProgressIndicator(color: Color(0xFF0EA5E9)),
+                child: CircularProgressIndicator(color: AppColors.secondaryVariant),
               )
             else if (_discussions.isEmpty)
               Padding(
@@ -489,7 +490,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'forum_discussion_fab_\${widget.book?.id ?? "global"}',
         onPressed: _showNewDiscussionDialog,
-        backgroundColor: const Color(0xFF0EA5E9),
+        backgroundColor: AppColors.secondaryVariant,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: const Icon(Iconsax.add, color: Colors.white, size: 28),
@@ -505,13 +506,13 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
 
     if (hash > 80) {
       rank = "Maître";
-      color = const Color(0xFFFACC15);
+      color = AppColors.yellow;
     } else if (hash > 50) {
       rank = "Érudit";
-      color = const Color(0xFFC084FC);
+      color = AppColors.violetLight;
     } else if (hash > 20) {
       rank = "Explorateur";
-      color = const Color(0xFF22D3EE);
+      color = AppColors.primaryLight;
     } else {
       rank = "Novice";
       color = Colors.grey;
@@ -592,7 +593,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             Text(
                               "@$username",
                               style: GoogleFonts.poppins(
-                                color: const Color(0xFF0EA5E9),
+                                color: AppColors.secondaryVariant,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -646,7 +647,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           Iconsax.message_text,
                           size: 20,
                           color: comments > 0
-                              ? const Color(0xFF0EA5E9)
+                              ? AppColors.secondaryVariant
                               : Colors.grey[500],
                         ),
                         const SizedBox(width: 6),
@@ -695,7 +696,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF06B6D4),
+                  color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
               ),

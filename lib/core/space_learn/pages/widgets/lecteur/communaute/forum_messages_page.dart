@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -126,9 +128,9 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
@@ -172,7 +174,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
           ),
           Container(
             padding: const EdgeInsets.all(16),
-            color: const Color(0xFF1E293B),
+            color: AppColors.cardBackground,
             child: Row(
               children: [
                 Expanded(
@@ -185,7 +187,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                         color: Colors.white.withValues(alpha: 0.4),
                       ),
                       filled: true,
-                      fillColor: const Color(0xFF0F172A),
+                      fillColor: AppColors.scaffoldBackground,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
@@ -203,7 +205,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: const BoxDecoration(
-                      color: Color(0xFF0EA5E9),
+                      color: AppColors.secondaryVariant,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -230,14 +232,14 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
       switch (rank.toLowerCase()) {
         case 'maître':
         case 'maitre':
-          color = const Color(0xFFFACC15);
+          color = AppColors.yellow;
           break;
         case 'érudit':
         case 'erudit':
-          color = const Color(0xFFC084FC);
+          color = AppColors.violetLight;
           break;
         case 'explorateur':
-          color = const Color(0xFF22D3EE);
+          color = AppColors.primaryLight;
           break;
         case 'novice':
           color = Colors.grey;
@@ -250,13 +252,13 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
       final int hash = username.hashCode.abs() % 100;
       if (hash > 80) {
         rankTitle = "Maître";
-        color = const Color(0xFFFACC15);
+        color = AppColors.yellow;
       } else if (hash > 50) {
         rankTitle = "Érudit";
-        color = const Color(0xFFC084FC);
+        color = AppColors.violetLight;
       } else if (hash > 20) {
         rankTitle = "Explorateur";
-        color = const Color(0xFF22D3EE);
+        color = AppColors.primaryLight;
       } else {
         rankTitle = "Novice";
         color = Colors.grey;
@@ -288,7 +290,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -298,7 +300,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
             children: [
               CircleAvatar(
                 radius: 12,
-                backgroundColor: const Color(0xFF0F172A),
+                backgroundColor: AppColors.scaffoldBackground,
                 backgroundImage:
                     (msg.photoProfil != null && msg.photoProfil!.isNotEmpty)
                     ? NetworkImage(msg.photoProfil!)
@@ -311,7 +313,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
               Text(
                 username,
                 style: GoogleFonts.poppins(
-                  color: const Color(0xFF0EA5E9),
+                  color: AppColors.secondaryVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -328,7 +330,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
           const SizedBox(height: 8),
           Text(
             msg.contenu,
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+            style: AppTextStyles.body,
           ),
         ],
       ),

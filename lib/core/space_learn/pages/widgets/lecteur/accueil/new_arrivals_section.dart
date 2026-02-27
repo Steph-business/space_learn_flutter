@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
@@ -61,7 +62,7 @@ class _NewArrivalCard extends StatelessWidget {
               offset: const Offset(0, 5),
             ),
           ],
-          border: Border.all(color: const Color(0xFFF1F5F9)),
+          border: Border.all(color: AppColors.lightSurface),
         ),
         child: Row(
           children: [
@@ -110,7 +111,7 @@ class _NewArrivalCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFDCFCE7),
+                      color: AppColors.greenLightBg,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -118,7 +119,7 @@ class _NewArrivalCard extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF166534),
+                        color: AppColors.greenDark,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -129,7 +130,7 @@ class _NewArrivalCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1E293B),
+                      color: AppColors.cardBackground,
                       height: 1.2,
                     ),
                     maxLines: 2,
@@ -141,7 +142,7 @@ class _NewArrivalCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.slate,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -159,7 +160,7 @@ class _NewArrivalCard extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
-                                color: const Color(0xFF2563EB),
+                                color: AppColors.blueRoyal,
                               ),
                             ),
                             TextSpan(
@@ -167,7 +168,7 @@ class _NewArrivalCard extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w500,
                                 fontSize: 10,
-                                color: const Color(0xFF64748B),
+                                color: AppColors.slate,
                               ),
                             ),
                           ],
@@ -177,7 +178,7 @@ class _NewArrivalCard extends StatelessWidget {
                         children: [
                           const Icon(
                             Icons.star_rounded,
-                            color: Color(0xFFF59E0B),
+                            color: AppColors.warning,
                             size: 16,
                           ),
                           const SizedBox(width: 4),
@@ -186,7 +187,7 @@ class _NewArrivalCard extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1E293B),
+                              color: AppColors.cardBackground,
                             ),
                           ),
                         ],
@@ -204,9 +205,9 @@ class _NewArrivalCard extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return Container(
-      color: const Color(0xFFF1F5F9),
+      color: AppColors.lightSurface,
       child: const Center(
-        child: Icon(Icons.book_rounded, color: Color(0xFFCBD5E1), size: 32),
+        child: Icon(Icons.book_rounded, color: AppColors.slateBorder, size: 32),
       ),
     );
   }
