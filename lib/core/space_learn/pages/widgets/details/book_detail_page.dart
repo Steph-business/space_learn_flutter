@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
@@ -244,9 +246,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
     final isOwned = _isOwned;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF111827), // Dark slate UI background
+      backgroundColor: AppColors.darkSurface, // Dark slate UI background
       appBar: AppBar(
-        backgroundColor: const Color(0xFF111827),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         centerTitle: true,
         title: Text(
@@ -307,7 +309,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0xFF374151), Color(0xFF111827)],
+                      colors: [AppColors.surfaceVariant, AppColors.darkSurface],
                     ),
                   ),
                   child: Column(
@@ -317,7 +319,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         height: 240,
                         width: 168,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: AppColors.lightSurface,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
@@ -343,13 +345,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       const Icon(
                                         Icons.book,
                                         size: 60,
-                                        color: Color(0xFFD97706),
+                                        color: AppColors.orange,
                                       ),
                                 )
                               : const Icon(
                                   Icons.book,
                                   size: 60,
-                                  color: Color(0xFFD97706),
+                                  color: AppColors.orange,
                                 ),
                         ),
                       ),
@@ -359,18 +361,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         child: Text(
                           book.titre,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTextStyles.pageTitle,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         book.authorName,
                         style: GoogleFonts.poppins(
-                          color: const Color(0xFF06B6D4),
+                          color: AppColors.primary,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -442,11 +440,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     children: [
                       Text(
                         'Description',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style: AppTextStyles.sectionTitle,
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -465,7 +459,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       Text(
                         'Lire la suite ⌄',
                         style: GoogleFonts.poppins(
-                          color: const Color(0xFF06B6D4),
+                          color: AppColors.primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -476,17 +470,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       // À propos de l'auteur
                       Text(
                         "À propos de ${book.authorName}",
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style: AppTextStyles.sectionTitle,
                       ),
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1F2937),
+                          color: AppColors.surfaceVariant,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.05),
@@ -511,7 +501,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                           book.auteur!.profilePhoto!.isEmpty)
                                       ? const Icon(
                                           Icons.person,
-                                          color: Color(0xFF22D3EE),
+                                          color: AppColors.primaryLight,
                                           size: 30,
                                         )
                                       : null,
@@ -524,11 +514,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     children: [
                                       Text(
                                         book.authorName,
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        style: AppTextStyles.subtitle,
                                       ),
                                       Text(
                                         book.auteur?.biography ??
@@ -573,11 +559,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         children: [
                           Text(
                             'Avis de la communauté',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                            style: AppTextStyles.subtitle,
                           ),
                           InkWell(
                             onTap: () {
@@ -595,7 +577,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               'Voir tout',
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
-                                color: const Color(0xFF06B6D4),
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -643,13 +625,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: const Color(0xFF06B6D4).withOpacity(0.3),
+                              color: AppColors.primary.withOpacity(0.3),
                               width: 1.5,
                             ),
                             gradient: LinearGradient(
                               colors: [
-                                const Color(0xFF06B6D4).withOpacity(0.05),
-                                const Color(0xFF06B6D4).withOpacity(0.01),
+                                AppColors.primary.withOpacity(0.05),
+                                AppColors.primary.withOpacity(0.01),
                               ],
                             ),
                           ),
@@ -663,14 +645,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 children: [
                                   const Icon(
                                     Icons.star_rounded,
-                                    color: Color(0xFF06B6D4),
+                                    color: AppColors.primary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     "Laisser un avis",
                                     style: GoogleFonts.poppins(
-                                      color: const Color(0xFF06B6D4),
+                                      color: AppColors.primary,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -719,7 +701,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF111827),
+                color: AppColors.darkSurface,
                 border: Border(
                   top: BorderSide(
                     color: Colors.white.withOpacity(0.05),
@@ -768,7 +750,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   height: 50,
                                   width: 50,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1F2937),
+                                    color: AppColors.surfaceVariant,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: Colors.white.withOpacity(0.1),
@@ -880,7 +862,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       Text(
                                         "${_readingProgress!.pourcentage}%",
                                         style: GoogleFonts.poppins(
-                                          color: const Color(0xFF06B6D4),
+                                          color: AppColors.primary,
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -898,7 +880,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       ),
                                       valueColor:
                                           const AlwaysStoppedAnimation<Color>(
-                                            Color(0xFF06B6D4),
+                                            AppColors.primary,
                                           ),
                                       minHeight: 6,
                                     ),
@@ -924,7 +906,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 );
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF06B6D4),
+                                backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -967,11 +949,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
         const SizedBox(height: 32),
         Text(
           title,
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: AppTextStyles.sectionTitle,
         ),
         const SizedBox(height: 20),
         SizedBox(
@@ -1068,7 +1046,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF06B6D4),
+                    color: AppColors.primary,
                   ),
                 ),
                 Row(
@@ -1076,7 +1054,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     if (book.noteMoyenne > 0) ...[
                       const Icon(
                         Icons.star_rounded,
-                        color: Color(0xFFF59E0B),
+                        color: AppColors.warning,
                         size: 10,
                       ),
                       const SizedBox(width: 2),
@@ -1118,9 +1096,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
   Widget _buildPlaceholderCover() {
     return Container(
-      color: const Color(0xFF1F2937),
+      color: AppColors.surfaceVariant,
       child: const Center(
-        child: Icon(Icons.book, color: Color(0xFF06B6D4), size: 30),
+        child: Icon(Icons.book, color: AppColors.primary, size: 30),
       ),
     );
   }
@@ -1132,17 +1110,17 @@ class _BookDetailPageState extends State<BookDetailPage> {
       mainAxisSize: MainAxisSize.min,
       children: List.generate(5, (index) {
         if (index < fullStars) {
-          return const Icon(Icons.star, color: Color(0xFFF59E0B), size: 18);
+          return const Icon(Icons.star, color: AppColors.warning, size: 18);
         } else if (index == fullStars && hasHalfStar) {
           return const Icon(
             Icons.star_half,
-            color: Color(0xFFF59E0B),
+            color: AppColors.warning,
             size: 18,
           );
         } else {
           return const Icon(
             Icons.star_border,
-            color: Color(0xFFF59E0B),
+            color: AppColors.warning,
             size: 18,
           );
         }
@@ -1160,7 +1138,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F2937),
+        color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
         boxShadow: [
@@ -1178,7 +1156,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFF06B6D4).withOpacity(0.2),
+                backgroundColor: AppColors.primary.withOpacity(0.2),
                 backgroundImage:
                     (photoUrl != null &&
                         photoUrl.isNotEmpty &&
@@ -1191,7 +1169,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         photoUrl.contains('example.com'))
                     ? const Icon(
                         Icons.person,
-                        color: Color(0xFF06B6D4),
+                        color: AppColors.primary,
                         size: 18,
                       )
                     : null,
@@ -1203,11 +1181,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   children: [
                     Text(
                       name,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
+                      style: AppTextStyles.cardTitleSmall,
                     ),
                     Text(
                       time,
@@ -1226,7 +1200,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     index < stars
                         ? Icons.star_rounded
                         : Icons.star_outline_rounded,
-                    color: const Color(0xFFF59E0B),
+                    color: AppColors.warning,
                     size: 16,
                   );
                 }),
@@ -1258,17 +1232,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1F2937),
+              backgroundColor: AppColors.surfaceVariant,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               title: Text(
                 "Laisser un avis",
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+                style: AppTextStyles.sectionTitle,
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1281,7 +1251,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           index < selectedStars
                               ? Icons.star
                               : Icons.star_border,
-                          color: const Color(0xFFF59E0B),
+                          color: AppColors.warning,
                           size: 32,
                         ),
                         onPressed: () {
@@ -1303,7 +1273,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         color: Colors.white.withOpacity(0.5),
                       ),
                       filled: true,
-                      fillColor: const Color(0xFF374151),
+                      fillColor: AppColors.surfaceVariant,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -1322,7 +1292,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF06B6D4),
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

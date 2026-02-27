@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +14,7 @@ class CartPage extends StatelessWidget {
     final cart = context.watch<CartProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -49,7 +51,7 @@ class CartPage extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
+                          color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -59,7 +61,7 @@ class CartPage extends StatelessWidget {
                               child: Container(
                                 width: 70,
                                 height: 90,
-                                color: const Color(0xFF0F172A),
+                                color: AppColors.scaffoldBackground,
                                 child:
                                     book.imageCouverture != null &&
                                         book.imageCouverture!.isNotEmpty
@@ -91,7 +93,7 @@ class CartPage extends StatelessWidget {
                                   Text(
                                     book.authorName,
                                     style: GoogleFonts.poppins(
-                                      color: const Color(0xFF94A3B8),
+                                      color: AppColors.slateLight,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -99,7 +101,7 @@ class CartPage extends StatelessWidget {
                                   Text(
                                     "${book.prix} FCFA",
                                     style: GoogleFonts.poppins(
-                                      color: const Color(0xFF06B6D4),
+                                      color: AppColors.primary,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 14,
                                     ),
@@ -134,13 +136,13 @@ class CartPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              color: AppColors.cardBackground,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.shopping_cart_outlined,
               size: 64,
-              color: Color(0xFF94A3B8),
+              color: AppColors.slateLight,
             ),
           ),
           const SizedBox(height: 24),
@@ -156,7 +158,7 @@ class CartPage extends StatelessWidget {
           Text(
             "Explorez la boutique pour y ajouter des livres",
             style: GoogleFonts.poppins(
-              color: const Color(0xFF94A3B8),
+              color: AppColors.slateLight,
               fontSize: 14,
             ),
           ),
@@ -164,7 +166,7 @@ class CartPage extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF06B6D4),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
@@ -182,7 +184,7 @@ class CartPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
@@ -202,17 +204,13 @@ class CartPage extends StatelessWidget {
                 Text(
                   "Total",
                   style: GoogleFonts.poppins(
-                    color: const Color(0xFF94A3B8),
+                    color: AppColors.slateLight,
                     fontSize: 16,
                   ),
                 ),
                 Text(
                   "${cart.totalPrice.toInt()} FCFA",
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppTextStyles.pageTitle,
                 ),
               ],
             ),
@@ -235,7 +233,7 @@ class CartPage extends StatelessWidget {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF06B6D4),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

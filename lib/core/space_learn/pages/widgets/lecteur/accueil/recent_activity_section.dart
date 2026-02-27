@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../../themes/layout/nav_bar_lecteur.dart';
@@ -20,11 +21,11 @@ class RecentActivitySection extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6366F1).withOpacity(0.06),
+              color: AppColors.indigo.withOpacity(0.06),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -38,7 +39,7 @@ class RecentActivitySection extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFFEF3C7), Color(0xFFFDE68A)],
+                  colors: [AppColors.yellowBg, AppColors.yellowLight],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -46,7 +47,7 @@ class RecentActivitySection extends StatelessWidget {
               ),
               child: const Icon(
                 Icons.chat_bubble_rounded,
-                color: Color(0xFFD97706),
+                color: AppColors.orange,
                 size: 20,
               ),
             ),
@@ -71,7 +72,7 @@ class RecentActivitySection extends StatelessWidget {
                     activity.commentaire,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.slate,
                       fontWeight: FontWeight.w400,
                     ),
                     maxLines: 1,
@@ -84,12 +85,12 @@ class RecentActivitySection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF0F172A),
+                color: AppColors.scaffoldBackground,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.chevron_right_rounded,
-                color: Color(0xFF06B6D4),
+                color: AppColors.primary,
                 size: 18,
               ),
             ),

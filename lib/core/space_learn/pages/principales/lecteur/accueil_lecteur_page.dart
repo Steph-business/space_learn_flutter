@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -449,7 +451,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       key: MainNavBar.mainNavBarKey,
       child: Scaffold(
         key: const PageStorageKey('homePageLecteur'),
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         body: Stack(
           children: [
             Positioned(
@@ -463,8 +465,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0xFF475569), // Lighter slate gray
-                      Color(0xFF0F172A), // Dark background matching Scaffold
+                      AppColors.slate, // Lighter slate gray
+                      AppColors.scaffoldBackground, // Dark background matching Scaffold
                     ],
                   ),
                 ),
@@ -487,7 +489,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         )
                       : RefreshIndicator(
                           onRefresh: _loadData,
-                          color: const Color(0xFF6366F1),
+                          color: AppColors.indigo,
                           child: _error != null
                               ? _buildErrorState()
                               : _isSearching
@@ -512,7 +514,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             child: Container(
               height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white.withOpacity(0.05)),
               ),
@@ -525,10 +527,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     child: TextField(
                       controller: _searchController,
                       onChanged: _onSearch,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
+                      style: AppTextStyles.body,
                       decoration: InputDecoration(
                         hintText: "Rechercher un livre, un auteur...",
                         hintStyle: GoogleFonts.poppins(
@@ -562,24 +561,24 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               height: 48,
               width: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _selectedSection != "Tout"
-                      ? const Color(0xFF38BDF8)
+                      ? AppColors.secondary
                       : Colors.white.withOpacity(0.05),
                 ),
               ),
               child: Icon(
                 Icons.tune,
                 color: _selectedSection != "Tout"
-                    ? const Color(0xFF38BDF8)
+                    ? AppColors.secondary
                     : Colors.white70,
                 size: 20,
               ),
             ),
             offset: const Offset(0, 52),
-            color: const Color(0xFF1E293B),
+            color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -607,7 +606,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         item['icon'],
                         size: 16,
                         color: isSelected
-                            ? const Color(0xFF38BDF8)
+                            ? AppColors.secondary
                             : Colors.white38,
                       ),
                       const SizedBox(width: 12),
@@ -678,11 +677,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       children: [
                         Text(
                           "À la une",
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTextStyles.sectionTitle,
                         ),
                         GestureDetector(
                           onTap: () {
@@ -691,10 +686,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                           },
                           child: Text(
                             "Voir plus",
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF38BDF8),
-                              fontSize: 13,
-                            ),
+                            style: AppTextStyles.link,
                           ),
                         ),
                       ],
@@ -724,11 +716,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       children: [
                         Text(
                           "Recommandations",
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTextStyles.sectionTitle,
                         ),
                         TextButton(
                           onPressed: () {
@@ -737,11 +725,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                           },
                           child: Text(
                             "Voir plus",
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF06B6D4),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
+                            style: AppTextStyles.linkBold,
                           ),
                         ),
                       ],
@@ -776,11 +760,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         children: [
                           Text(
                             "Auteurs",
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AppTextStyles.sectionTitle,
                           ),
                           TextButton(
                             onPressed: () {
@@ -793,10 +773,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                             },
                             child: Text(
                               "Voir plus",
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFF06B6D4),
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AppTextStyles.linkBold,
                             ),
                           ),
                         ],
@@ -819,11 +796,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                             _discussions.isNotEmpty
                                 ? "Forums (${_discussions.length})"
                                 : "Forums",
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AppTextStyles.sectionTitle,
                           ),
                           TextButton(
                             onPressed: () {
@@ -832,11 +805,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                             },
                             child: Text(
                               "Voir plus",
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFF06B6D4),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
+                              style: AppTextStyles.linkBold,
                             ),
                           ),
                         ],
@@ -853,11 +822,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Text(
                         "Citations",
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppTextStyles.sectionTitle,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -926,7 +891,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     return Container(
       width: 220,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         image: imageUrl != null && imageUrl.isNotEmpty
             ? DecorationImage(
@@ -960,18 +925,14 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           children: [
             Text(
               title,
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTextStyles.subtitle,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               author,
-              style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
+              style: AppTextStyles.bodySecondary,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1043,12 +1004,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF38BDF8)
-                    : const Color(0xFF1E293B),
+                    ? AppColors.secondary
+                    : AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isSelected
-                      ? const Color(0xFF38BDF8)
+                      ? AppColors.secondary
                       : Colors.white.withOpacity(0.05),
                 ),
               ),
@@ -1148,7 +1109,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(12),
               image: imageUrl != null && imageUrl.isNotEmpty
                   ? DecorationImage(
@@ -1162,18 +1123,14 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         const SizedBox(height: 12),
         Text(
           title,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
+          style: AppTextStyles.cardTitleSmall,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 2),
         Text(
           author,
-          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
+          style: AppTextStyles.bodySmall,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -1183,11 +1140,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           children: [
             Text(
               price,
-              style: GoogleFonts.poppins(
-                color: const Color(0xFF38BDF8),
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTextStyles.price,
             ),
             Row(
               children: [
@@ -1276,14 +1229,14 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 children: [
                   CircleAvatar(
                     radius: 36,
-                    backgroundColor: const Color(0xFF3B82F6).withOpacity(0.15),
+                    backgroundColor: AppColors.secondary.withOpacity(0.15),
                     child: Text(
                       authorName.isNotEmpty
                           ? authorName.substring(0, 1).toUpperCase()
                           : "?",
                       style: GoogleFonts.poppins(
                         fontSize: 24,
-                        color: const Color(0xFF1E40AF),
+                        color: AppColors.secondary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1332,7 +1285,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                                   : "",
                             )
                             ? Colors.white.withOpacity(0.1)
-                            : const Color(0xFF3B82F6), // Blue pill
+                            : AppColors.secondary, // Blue pill
                         borderRadius: BorderRadius.circular(16),
                         border:
                             _followingIds.contains(
@@ -1431,7 +1384,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.cardBackground,
         title: const Text("Déjà suivi", style: TextStyle(color: Colors.white)),
         content: Text(
           "Vous suivez déjà $authorName. Vous recevrez des notifications pour ses prochaines publications.",
@@ -1440,7 +1393,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK", style: TextStyle(color: Color(0xFF3B82F6))),
+            child: const Text("OK", style: TextStyle(color: AppColors.secondary)),
           ),
         ],
       ),
@@ -1453,21 +1406,21 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         "title": "Science-fiction & Futurs",
         "members": "12 messages",
         "icon": Icons.public,
-        "color": const Color(0xFF0F172A),
+        "color": AppColors.scaffoldBackground,
         "button": true,
       },
       {
         "title": "Polar & Frissons",
         "members": "8 messages",
         "icon": Icons.search,
-        "color": const Color(0xFFF87171),
+        "color": AppColors.redLight,
         "button": false,
       },
       {
         "title": "Romance Historique",
         "members": "21 messages",
         "icon": Icons.favorite,
-        "color": const Color(0xFFF472B6),
+        "color": AppColors.pink,
         "button": false,
       },
     ];
@@ -1485,7 +1438,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       ? "${d.messagesCount} message${d.messagesCount! > 1 ? 's' : ''}"
                       : "${d.messages.length} message${d.messages.length > 1 ? 's' : ''}",
                   "icon": Icons.public,
-                  "color": const Color(0xFF0F172A),
+                  "color": AppColors.scaffoldBackground,
                   "button": true,
                 };
                 return _buildClubItem(club, discussion: d);
@@ -1516,7 +1469,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -1548,11 +1501,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 children: [
                   Text(
                     club["title"] as String,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                    style: AppTextStyles.cardTitle,
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -1586,13 +1535,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFEDD5),
+                  color: AppColors.joinBadgeBg,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   "Rejoindre",
                   style: GoogleFonts.poppins(
-                    color: const Color(0xFF9A3412),
+                    color: AppColors.joinBadgeText,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1613,9 +1562,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           .where((r) => r.commentaire.isNotEmpty)
           .toList();
       final colors = [
-        [const Color(0xFF94A3B8), const Color(0xFF475569)],
-        [const Color(0xFFD97706), const Color(0xFF92400E)],
-        [const Color(0xFF06B6D4), const Color(0xFF0891B2)],
+        [AppColors.slateLight, AppColors.slate],
+        [AppColors.orange, AppColors.orangeDark],
+        [AppColors.primary, AppColors.primaryDark],
       ];
 
       quotes = validReviews.map((r) {
@@ -1645,7 +1594,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           "quote":
               "“Longtemps, je me suis couché de bonne heure.”\n— Marcel Proust, À la recherche du temps perdu",
           "author": "Chloé B.",
-          "gradient": [const Color(0xFF94A3B8), const Color(0xFF475569)],
+          "gradient": [AppColors.slateLight, AppColors.slate],
           "book": null,
           "note": 5,
         },
@@ -1653,7 +1602,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           "quote":
               "“Il est grand temps de rallumer les étoiles.”\n— Guillaume Apollinaire",
           "author": "Marc D.",
-          "gradient": [const Color(0xFFD97706), const Color(0xFF92400E)],
+          "gradient": [AppColors.orange, AppColors.orangeDark],
           "book": null,
           "note": 4,
         },
@@ -1797,7 +1746,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
@@ -1857,15 +1806,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       behavior: HitTestBehavior.opaque,
       child: Column(
         children: [
-          Icon(icon, color: const Color(0xFF38BDF8), size: 20),
+          Icon(icon, color: AppColors.secondary, size: 20),
           const SizedBox(height: 8),
           Text(
             value,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: AppTextStyles.subtitle,
           ),
           Text(
             label,
@@ -1961,7 +1906,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
@@ -2004,7 +1949,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   Text(
                     "Par ${book.authorName}",
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFF38BDF8),
+                      color: AppColors.secondary,
                       fontSize: 12,
                     ),
                   ),

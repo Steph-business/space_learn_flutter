@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -65,12 +66,12 @@ class DailyQuoteSection extends StatelessWidget {
   ];
 
   static const List<List<Color>> _gradients = [
-    [Color(0xFF1E1B4B), Color(0xFF4338CA)],
-    [Color(0xFF7C3AED), Color(0xFF4F46E5)],
-    [Color(0xFF0F766E), Color(0xFF0284C7)],
-    [Color(0xFFB45309), Color(0xFFD97706)],
-    [Color(0xFF9D174D), Color(0xFFDB2777)],
-    [Color(0xFF065F46), Color(0xFF059669)],
+    [AppColors.indigoVeryDark, AppColors.indigoDark],
+    [AppColors.violetDark, AppColors.indigoDeep],
+    [AppColors.tealDark, AppColors.blueSkyDark],
+    [AppColors.amberDark, AppColors.orange],
+    [AppColors.pinkDeepDark, AppColors.pinkDark],
+    [AppColors.greenDeep, AppColors.success],
   ];
 
   @override

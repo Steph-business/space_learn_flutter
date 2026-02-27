@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/livres/publications_liste.dart';
@@ -82,9 +83,9 @@ class _LivresPageState extends State<LivresPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         title: const Text(
           'Mes Livres Publiés',
@@ -108,7 +109,7 @@ class _LivresPageState extends State<LivresPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 border: Border(
                   bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
                 ),
@@ -145,7 +146,7 @@ class _LivresPageState extends State<LivresPage> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0EA5E9),
+                      backgroundColor: AppColors.secondaryVariant,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -171,7 +172,7 @@ class _LivresPageState extends State<LivresPage> {
                     // Search Bar
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
+                        color: AppColors.cardBackground,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextField(
@@ -188,7 +189,7 @@ class _LivresPageState extends State<LivresPage> {
                           ),
                           prefixIcon: const Icon(
                             Icons.search,
-                            color: Color(0xFF0EA5E9),
+                            color: AppColors.secondaryVariant,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(

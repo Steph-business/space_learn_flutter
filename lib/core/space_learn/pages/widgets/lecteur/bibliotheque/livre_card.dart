@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -27,7 +28,7 @@ class LivreCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
@@ -111,7 +112,7 @@ class LivreCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
+                            color: AppColors.scaffoldBackground,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -131,7 +132,7 @@ class LivreCard extends StatelessWidget {
                             Icon(
                               Icons.calendar_today_outlined,
                               size: 10,
-                              color: const Color(0xFF06B6D4).withOpacity(0.7),
+                              color: AppColors.primary.withOpacity(0.7),
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -171,7 +172,7 @@ class LivreCard extends StatelessWidget {
                                       style: GoogleFonts.poppins(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF06B6D4),
+                                        color: AppColors.primary,
                                       ),
                                     ),
                                   ],
@@ -183,7 +184,7 @@ class LivreCard extends StatelessWidget {
                                       height: 6,
                                       width: double.infinity,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF0F172A),
+                                        color: AppColors.scaffoldBackground,
                                         borderRadius: BorderRadius.circular(3),
                                       ),
                                     ),
@@ -192,7 +193,7 @@ class LivreCard extends StatelessWidget {
                                       child: Container(
                                         height: 6,
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF06B6D4),
+                                          color: AppColors.primary,
                                           borderRadius: BorderRadius.circular(
                                             3,
                                           ),
@@ -209,12 +210,12 @@ class LivreCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF06B6D4).withOpacity(0.1),
+                              color: AppColors.primary.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.play_arrow_rounded,
-                              color: Color(0xFF06B6D4),
+                              color: AppColors.primary,
                               size: 20,
                             ),
                           ),
@@ -274,7 +275,7 @@ class LivreGridCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -331,7 +332,7 @@ class LivreGridCard extends StatelessWidget {
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
                         widthFactor: progression / 100,
-                        child: Container(color: const Color(0xFF06B6D4)),
+                        child: Container(color: AppColors.primary),
                       ),
                     ),
                   ),

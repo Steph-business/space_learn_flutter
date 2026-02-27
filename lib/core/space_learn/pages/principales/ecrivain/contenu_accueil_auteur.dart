@@ -1,5 +1,6 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/revenus.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/statistique.dart';
@@ -53,14 +54,10 @@ class HomeContentAuteur extends StatelessWidget {
                 ),
                 label: Text(
                   "Publier un nouveau livre",
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: AppTextStyles.subtitle,
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0EA5E9),
+                  backgroundColor: AppColors.secondaryVariant,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

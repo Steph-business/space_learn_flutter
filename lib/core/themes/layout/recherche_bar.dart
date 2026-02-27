@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/recherche_page.dart';
@@ -22,7 +23,7 @@ class CustomSearchBar extends StatelessWidget {
           child: Container(
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B).withOpacity(0.8),
+              color: AppColors.cardBackground.withOpacity(0.8),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white.withOpacity(0.05)),
             ),
@@ -31,7 +32,7 @@ class CustomSearchBar extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.search_rounded,
-                  color: Color(0xFF06B6D4),
+                  color: AppColors.primary,
                   size: 20,
                 ),
                 const SizedBox(width: 12),

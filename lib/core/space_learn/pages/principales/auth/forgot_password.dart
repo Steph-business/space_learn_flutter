@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -64,7 +66,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -72,7 +74,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF475569), Color(0xFF1E293B), Color(0xFF0F172A)],
+            colors: [AppColors.slate, AppColors.cardBackground, AppColors.scaffoldBackground],
           ),
         ),
         child: SafeArea(
@@ -123,16 +125,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF06B6D4).withOpacity(0.15),
+                    color: AppColors.primary.withOpacity(0.15),
                     border: Border.all(
-                      color: const Color(0xFF06B6D4).withOpacity(0.3),
+                      color: AppColors.primary.withOpacity(0.3),
                       width: 1.5,
                     ),
                   ),
                   child: const Icon(
                     Icons.mark_email_read_outlined,
                     size: 30,
-                    color: Color(0xFF06B6D4),
+                    color: AppColors.primary,
                   ),
                 ),
 
@@ -141,11 +143,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 // Title
                 Text(
                   'Mot de passe oublié',
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: AppTextStyles.pageTitle,
                 ),
                 const SizedBox(height: 8),
 
@@ -164,7 +162,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 // Form Card
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white.withOpacity(0.05)),
                     boxShadow: [
@@ -194,10 +192,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           child: TextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            style: GoogleFonts.poppins(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
+                            style: AppTextStyles.bodySecondary,
                             decoration: InputDecoration(
                               hintText: 'entrez votre e-mail...',
                               hintStyle: GoogleFonts.poppins(
@@ -226,10 +221,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleSendCode,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF06B6D4),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 4,
-                      shadowColor: const Color(0xFF06B6D4).withOpacity(0.4),
+                      shadowColor: AppColors.primary.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -259,11 +254,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text(
                     'Retour à la connexion',
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF06B6D4),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+                    style: AppTextStyles.linkBold,
                   ),
                 ),
 

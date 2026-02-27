@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -34,7 +35,7 @@ class _NotificationPageState extends State<NotificationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
@@ -69,9 +70,9 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               actions: [
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Color(0xFF22D3EE)),
+                  icon: const Icon(Icons.more_vert, color: AppColors.primaryLight),
                   offset: const Offset(0, 45),
-                  color: const Color(0xFF1E293B),
+                  color: AppColors.cardBackground,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -99,7 +100,7 @@ class _NotificationPageState extends State<NotificationPage> {
                             Icons.list,
                             size: 16,
                             color: _filter == 'tous'
-                                ? const Color(0xFF22D3EE)
+                                ? AppColors.primaryLight
                                 : Colors.white70,
                           ),
                           const SizedBox(width: 8),
@@ -122,7 +123,7 @@ class _NotificationPageState extends State<NotificationPage> {
                             Icons.mark_email_unread_outlined,
                             size: 16,
                             color: _filter == 'non_read'
-                                ? const Color(0xFF22D3EE)
+                                ? AppColors.primaryLight
                                 : Colors.white70,
                           ),
                           const SizedBox(width: 8),
@@ -145,7 +146,7 @@ class _NotificationPageState extends State<NotificationPage> {
                             Icons.archive_outlined,
                             size: 16,
                             color: _filter == 'archives'
-                                ? const Color(0xFF22D3EE)
+                                ? AppColors.primaryLight
                                 : Colors.white70,
                           ),
                           const SizedBox(width: 8),
@@ -168,13 +169,13 @@ class _NotificationPageState extends State<NotificationPage> {
                           const Icon(
                             Icons.checklist,
                             size: 16,
-                            color: Color(0xFF22D3EE),
+                            color: AppColors.primaryLight,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             "Tout lire",
                             style: GoogleFonts.poppins(
-                              color: const Color(0xFF22D3EE),
+                              color: AppColors.primaryLight,
                               fontSize: 13,
                             ),
                           ),
@@ -194,7 +195,7 @@ class _NotificationPageState extends State<NotificationPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+            colors: [AppColors.cardBackground, AppColors.scaffoldBackground],
           ),
         ),
         child: _buildNotificationList(context, widget.role ?? 'lecteur'),
@@ -216,8 +217,8 @@ class _NotificationPageState extends State<NotificationPage> {
 
         return RefreshIndicator(
           onRefresh: _fetchGrouped,
-          color: const Color(0xFF22D3EE),
-          backgroundColor: const Color(0xFF1E293B),
+          color: AppColors.primaryLight,
+          backgroundColor: AppColors.cardBackground,
           edgeOffset: 100,
           child: ListView(
             physics: const BouncingScrollPhysics(

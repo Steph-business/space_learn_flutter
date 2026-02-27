@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
@@ -58,7 +60,7 @@ class _StatistiqueState extends State<Statistique> {
                   "${_stats['revenue'] ?? 0} €",
                   "+12%",
                   Icons.account_balance_wallet_rounded,
-                  const Color(0xFF1E293B),
+                  AppColors.cardBackground,
                 ),
               ),
               const SizedBox(width: 16),
@@ -86,7 +88,7 @@ class _StatistiqueState extends State<Statistique> {
                     "${_stats['views'] ?? 0}",
                     "+5%",
                     Icons.people_alt_rounded,
-                    const Color(0xFF1E293B),
+                    AppColors.cardBackground,
                   ),
                 ),
               ),
@@ -131,11 +133,7 @@ class _StatistiqueState extends State<Statistique> {
           const SizedBox(height: 12),
           Text(
             value,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: AppTextStyles.pageTitle,
           ),
           const SizedBox(height: 4),
           Row(

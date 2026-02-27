@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -215,9 +217,9 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
@@ -225,17 +227,13 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
         ),
         title: Text(
           "Tous les auteurs",
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: AppTextStyles.sectionTitle,
         ),
         centerTitle: true,
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF06B6D4)),
+              child: CircularProgressIndicator(color: AppColors.primary),
             )
           : _error != null
           ? Center(
@@ -269,7 +267,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white.withOpacity(0.05)),
                   ),
@@ -299,7 +297,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                                       .substring(0, 1)
                                       .toUpperCase(),
                                   style: const TextStyle(
-                                    color: Color(0xFF06B6D4),
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 20,
                                   ),
@@ -326,11 +324,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                             children: [
                               Text(
                                 author.nomComplet,
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: AppTextStyles.subtitle,
                               ),
                               Text(
                                 author.biography ?? "Auteur SpaceLearn",
@@ -351,7 +345,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isFollowing
                               ? Colors.white.withOpacity(0.1)
-                              : const Color(0xFF06B6D4),
+                              : AppColors.primary,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 16),

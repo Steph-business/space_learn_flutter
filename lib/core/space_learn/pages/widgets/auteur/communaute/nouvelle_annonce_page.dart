@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -24,9 +26,9 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
@@ -67,7 +69,7 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white.withOpacity(0.1)),
               ),
@@ -75,13 +77,13 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
                 child: DropdownButton<String>(
                   value: _selectedScope,
                   isExpanded: true,
-                  dropdownColor: const Color(0xFF1E293B),
+                  dropdownColor: AppColors.cardBackground,
                   icon: const Icon(
                     Iconsax.arrow_down_1,
                     color: Colors.white54,
                     size: 18,
                   ),
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+                  style: AppTextStyles.body,
                   items:
                       [
                         "Tous les lecteurs",
@@ -123,18 +125,14 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0EA5E9),
+                  backgroundColor: AppColors.secondaryVariant,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 child: Text(
                   "Publier",
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: AppTextStyles.subtitle,
                 ),
               ),
             ),
@@ -163,12 +161,12 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+      style: AppTextStyles.body,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: GoogleFonts.poppins(color: Colors.white30, fontSize: 14),
         filled: true,
-        fillColor: const Color(0xFF1E293B),
+        fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
@@ -179,7 +177,7 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF0EA5E9)),
+          borderSide: const BorderSide(color: AppColors.secondaryVariant),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

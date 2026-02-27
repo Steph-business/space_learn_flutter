@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
@@ -89,24 +91,24 @@ class _OtpPageState extends State<OtpPage> {
         fontWeight: FontWeight.w600,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         border: Border.all(color: Colors.white.withOpacity(0.1)),
         borderRadius: BorderRadius.circular(12),
       ),
     );
 
     final focusedPinTheme = defaultPinTheme.copyDecorationWith(
-      border: Border.all(color: const Color(0xFF06B6D4), width: 2),
+      border: Border.all(color: AppColors.primary, width: 2),
       borderRadius: BorderRadius.circular(12),
     );
 
     final submittedPinTheme = defaultPinTheme.copyDecorationWith(
-      border: Border.all(color: const Color(0xFF06B6D4).withOpacity(0.5)),
+      border: Border.all(color: AppColors.primary.withOpacity(0.5)),
       borderRadius: BorderRadius.circular(12),
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -114,7 +116,7 @@ class _OtpPageState extends State<OtpPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF475569), Color(0xFF1E293B), Color(0xFF0F172A)],
+            colors: [AppColors.slate, AppColors.cardBackground, AppColors.scaffoldBackground],
           ),
         ),
         child: SafeArea(
@@ -165,16 +167,16 @@ class _OtpPageState extends State<OtpPage> {
                   height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF06B6D4).withOpacity(0.15),
+                    color: AppColors.primary.withOpacity(0.15),
                     border: Border.all(
-                      color: const Color(0xFF06B6D4).withOpacity(0.3),
+                      color: AppColors.primary.withOpacity(0.3),
                       width: 1.5,
                     ),
                   ),
                   child: const Icon(
                     Icons.pin_outlined,
                     size: 30,
-                    color: Color(0xFF06B6D4),
+                    color: AppColors.primary,
                   ),
                 ),
 
@@ -183,11 +185,7 @@ class _OtpPageState extends State<OtpPage> {
                 // Title
                 Text(
                   'Vérification',
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: AppTextStyles.pageTitle,
                 ),
                 const SizedBox(height: 8),
 
@@ -215,7 +213,7 @@ class _OtpPageState extends State<OtpPage> {
                   cursor: Container(
                     width: 2,
                     height: 24,
-                    color: const Color(0xFF06B6D4),
+                    color: AppColors.primary,
                   ),
                   onCompleted: (pin) => _handleVerifyCode(),
                 ),
@@ -229,10 +227,10 @@ class _OtpPageState extends State<OtpPage> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleVerifyCode,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF06B6D4),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 4,
-                      shadowColor: const Color(0xFF06B6D4).withOpacity(0.4),
+                      shadowColor: AppColors.primary.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -262,11 +260,7 @@ class _OtpPageState extends State<OtpPage> {
                   onPressed: _isLoading ? null : _handleResendCode,
                   child: Text(
                     'Renvoyer le code',
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF06B6D4),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+                    style: AppTextStyles.linkBold,
                   ),
                 ),
 

@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
@@ -64,7 +65,7 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
     final showNavBarAll = !pagesWithoutNavBarAll.contains(currentPageType);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: showNavBarAll
           ? PreferredSize(
               preferredSize: const Size.fromHeight(
