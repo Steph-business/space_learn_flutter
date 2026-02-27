@@ -137,6 +137,8 @@ class NotificationProvider extends ChangeNotifier {
               lu: notification.lu,
               creeLe: notification.creeLe,
               role: assignedRole,
+              referenceId: notification.referenceId,
+              data: notification.data,
             );
 
             // Add new notification at the beginning
@@ -147,6 +149,13 @@ class NotificationProvider extends ChangeNotifier {
               final list = _groupedNotifications[assignedRole] ?? [];
               _groupedNotifications[assignedRole] = [taggedNotif, ...list];
             }
+
+            // Afficher l'alerte locale
+            NotificationService.showLocalNotification(
+              id: taggedNotif.id,
+              title: taggedNotif.type,
+              body: taggedNotif.contenu,
+            );
 
             notifyListeners();
           },
@@ -180,6 +189,9 @@ class NotificationProvider extends ChangeNotifier {
           contenu: old.contenu,
           lu: true,
           creeLe: old.creeLe,
+          role: old.role,
+          referenceId: old.referenceId,
+          data: old.data,
         );
         notifyListeners();
       }
@@ -200,6 +212,9 @@ class NotificationProvider extends ChangeNotifier {
               contenu: n.contenu,
               lu: true,
               creeLe: n.creeLe,
+              role: n.role,
+              referenceId: n.referenceId,
+              data: n.data,
             ),
           )
           .toList();

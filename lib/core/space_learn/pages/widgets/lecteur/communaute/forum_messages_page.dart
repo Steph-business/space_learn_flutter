@@ -141,11 +141,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
         ),
         title: Text(
           widget.discussion.titre,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: AppTextStyles.button14,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

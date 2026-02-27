@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -993,7 +994,7 @@ class _ReadingPageState extends State<ReadingPage> {
           ),
           subtitle: Text(
             bk.label ?? "Repère de lecture",
-            style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+            style: AppTextStyles.greyBody12,
           ),
           trailing: IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),

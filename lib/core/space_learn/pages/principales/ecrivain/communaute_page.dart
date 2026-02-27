@@ -13,6 +13,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/commun
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
 import 'package:intl/intl.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/evenement_detail_page.dart';
 
 class TeamsPage extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -180,14 +181,15 @@ class _TeamsPageState extends State<TeamsPage> {
                             Iconsax.edit,
                             "Nouvelle annonce",
                             AppColors.secondaryVariant,
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       const NouvelleAnnoncePage(),
                                 ),
                               );
+                              if (result == true) _loadData();
                             },
                           ),
                         ),
@@ -197,14 +199,15 @@ class _TeamsPageState extends State<TeamsPage> {
                             Iconsax.calendar,
                             "Événement",
                             AppColors.success,
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       const CreerEvenementPage(),
                                 ),
                               );
+                              if (result == true) _loadData();
                             },
                           ),
                         ),
@@ -213,24 +216,56 @@ class _TeamsPageState extends State<TeamsPage> {
                   ),
 
                   // Section Événements & Annonces
-                  if (_evenements.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 20.0,
-                        top: 30.0,
-                        bottom: 10.0,
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 20.0,
+                      top: 30.0,
+                      bottom: 15.0,
+                    ),
+                    child: Text(
+                      "Vos publications (${_evenements.length})",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
-                      child: Text(
-                        "Vos publications",
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (_evenements.isNotEmpty)
+                    _buildEvenementsSection()
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Container(
+                        height: 120,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBackground,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.05),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Iconsax.notification_status,
+                              color: Colors.white24,
+                              size: 32,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              "Aucune annonce ou événement pour le moment.",
+                              style: GoogleFonts.poppins(
+                                color: Colors.white38,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    _buildEvenementsSection(),
-                  ],
 
                   // Forums par Livre
                   Padding(
@@ -525,73 +560,84 @@ class _TeamsPageState extends State<TeamsPage> {
               : AppColors.success;
           final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
 
-          return Container(
-            width: 280,
-            margin: const EdgeInsets.only(right: 16, bottom: 10),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colorType.withOpacity(0.3)),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colorType.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(iconType, color: colorType, size: 16),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        evt.typePublication.toUpperCase(),
-                        style: GoogleFonts.poppins(
-                          color: colorType,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    if (evt.dateEvenement != null)
-                      Text(
-                        DateFormat('dd/MM/yyyy').format(evt.dateEvenement!),
-                        style: GoogleFonts.poppins(
-                          color: Colors.white54,
-                          fontSize: 10,
-                        ),
-                      ),
-                  ],
+          return GestureDetector(
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EvenementDetailPage(evenement: evt),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  evt.titre,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+              );
+              if (result == true) _loadData();
+            },
+            child: Container(
+              width: 280,
+              margin: const EdgeInsets.only(right: 16, bottom: 10),
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colorType.withOpacity(0.3)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colorType.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(iconType, color: colorType, size: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          evt.typePublication.toUpperCase(),
+                          style: GoogleFonts.poppins(
+                            color: colorType,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (evt.dateEvenement != null)
+                        Text(
+                          DateFormat('dd/MM/yyyy').format(evt.dateEvenement!),
+                          style: GoogleFonts.poppins(
+                            color: Colors.white54,
+                            fontSize: 10,
+                          ),
+                        ),
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Expanded(
-                  child: Text(
-                    evt.contenu,
+                  const SizedBox(height: 12),
+                  Text(
+                    evt.titre,
                     style: GoogleFonts.poppins(
-                      color: Colors.grey[400],
-                      fontSize: 12,
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
                     ),
-                    maxLines: 3,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Expanded(
+                    child: Text(
+                      evt.contenu,
+                      style: GoogleFonts.poppins(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

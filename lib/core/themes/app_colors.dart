@@ -8,7 +8,7 @@ class AppColors {
 
   // ───────────────────────── Backgrounds ─────────────────────────
   /// Fond principal du Scaffold
-  static const Color scaffoldBackground = Color(0xFF0F172A);
+  static const Color scaffoldBackground = Color(0xFF111827);
 
   /// Fond des cartes, conteneurs, champs de saisie
   static const Color cardBackground = Color(0xFF1E293B);

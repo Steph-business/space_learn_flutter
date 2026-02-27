@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../data/dataServices/badgeService.dart';
@@ -63,7 +64,7 @@ class _BadgesPageState extends State<BadgesPage> {
             const SizedBox(height: 16),
             Text(
               "Aucun badge débloqué",
-              style: GoogleFonts.poppins(color: Colors.white54, fontSize: 16),
+              style: AppTextStyles.bodyFaded16,
             ),
             Text(
               "Continuez à lire pour en obtenir !",
@@ -122,10 +123,7 @@ class _BadgesPageState extends State<BadgesPage> {
                   ),
                   Text(
                     "Badges débloqués",
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
+                    style: AppTextStyles.bodySecondary14,
                   ),
                 ],
               ),

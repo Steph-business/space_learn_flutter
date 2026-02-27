@@ -148,10 +148,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
                     const SizedBox(height: 4),
                     Text(
                       "${book.categorieId ?? 'Fiction'} • ${book.telechargements} lectures",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white54,
-                        fontSize: 12,
-                      ),
+                      style: AppTextStyles.bodyFaded12,
                     ),
                   ],
                 ),

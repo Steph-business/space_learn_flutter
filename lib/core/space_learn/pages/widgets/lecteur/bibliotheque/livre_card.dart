@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -350,11 +351,7 @@ class LivreGridCard extends StatelessWidget {
                   children: [
                     Text(
                       titre,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                      style: AppTextStyles.cardTitle12W700,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

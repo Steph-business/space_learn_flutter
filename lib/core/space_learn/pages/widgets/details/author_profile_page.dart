@@ -151,11 +151,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                             widget.author.nomComplet
                                 .substring(0, 1)
                                 .toUpperCase(),
-                            style: GoogleFonts.poppins(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.secondary,
-                            ),
+                            style: AppTextStyles.statBig,
                           )
                         : null,
                   ),
@@ -181,7 +177,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
           Text(
             widget.author.biography ?? "Écrivain passionné sur SpaceLearn",
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 14),
+            style: AppTextStyles.grey14,
           ),
           const SizedBox(height: 24),
           Row(
@@ -234,7 +230,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
         ),
         Text(
           label,
-          style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 12),
+          style: AppTextStyles.greyMedium12,
         ),
       ],
     );
@@ -332,7 +328,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                           style: AppTextStyles.cardTitle,
                         ),
                         Text(
-                          book.prix == 0 ? "Gratuit" : "${book.prix}€",
+                          book.prix == 0 ? "Gratuit" : "${book.prix}FCFA",
                           style: GoogleFonts.poppins(
                             color: AppColors.secondary,
                             fontSize: 12,

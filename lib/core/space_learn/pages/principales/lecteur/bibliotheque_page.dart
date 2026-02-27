@@ -252,212 +252,182 @@ class _BibliothequePageState extends State<BibliothequePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      body: Stack(
+      body: Column(
         children: [
-          // Background Gradient for the top half
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: MediaQuery.of(context).size.height * 0.45,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.slate, // Lighter slate gray
-                    AppColors.scaffoldBackground, // Dark background matching Scaffold
+          // En-tête fixe
+          NavBarAll(userName: _userName),
+          // Contenu défilable
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadLibrary,
+              color: AppColors.warning,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Row with Search and Views Toggle
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomSearchBar(
+                            controller: _searchController,
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _isGridView = !_isGridView),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardBackground,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _isGridView
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(
+                              _isGridView
+                                  ? Icons.list_rounded
+                                  : Icons.grid_view_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Status Filter Tabs
+                    Row(
+                      children: [
+                        _buildStatusTab("Tous"),
+                        const SizedBox(width: 32),
+                        _buildStatusTab("En cours"),
+                        const SizedBox(width: 32),
+                        _buildStatusTab("Terminés"),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Sort and Genre Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildSortChip("Dernière lecture", Icons.swap_vert),
+                          const SizedBox(width: 12),
+                          _buildGenreChip(),
+                          const SizedBox(width: 12),
+                          _buildSortChip("A-Z", Icons.sort_by_alpha),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    if (_isLoading)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(60.0),
+                          child: Text(
+                            "Chargement...",
+                            style: GoogleFonts.poppins(color: Colors.white70),
+                          ),
+                        ),
+                      )
+                    else if (_error != null)
+                      _buildErrorState()
+                    else if (_libraryItems.isEmpty)
+                      _buildEmptyState()
+                    else if (_isGridView)
+                      GridView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.7,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                            ),
+                        itemCount: _getFilteredBooks().length,
+                        itemBuilder: (context, index) {
+                          final item = _getFilteredBooks()[index];
+                          final book = item.livre;
+                          if (book == null) return const SizedBox.shrink();
+
+                          return GestureDetector(
+                            onTap: () => _openBookDetails(book),
+                            child: LivreGridCard(
+                              titre: book.titre,
+                              auteur: book.authorName,
+                              progression:
+                                  (book.progressions != null &&
+                                      book.progressions!.isNotEmpty)
+                                  ? book.progressions!.first.pourcentage.toInt()
+                                  : 0,
+                              couleurs: const [
+                                AppColors.purple,
+                                AppColors.indigoLight,
+                              ],
+                              imageUrl: book.imageCouverture,
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _getFilteredBooks().length,
+                        itemBuilder: (context, index) {
+                          final item = _getFilteredBooks()[index];
+                          final book = item.livre;
+
+                          if (book == null) return const SizedBox.shrink();
+
+                          return GestureDetector(
+                            onTap: () => _openBookDetails(book),
+                            child: LivreCard(
+                              titre: book.titre,
+                              auteur: book.authorName,
+                              categorie: book.categorie?.nom,
+                              progression:
+                                  (book.progressions != null &&
+                                      book.progressions!.isNotEmpty)
+                                  ? book.progressions!.first.pourcentage.toInt()
+                                  : 0,
+                              couleurs: const [
+                                AppColors.purple,
+                                AppColors.indigoLight,
+                              ],
+                              imageUrl: book.imageCouverture,
+                              dateAcquisition: item.creeLe,
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
             ),
-          ),
-          Column(
-            children: [
-              // En-tête fixe
-              NavBarAll(userName: _userName),
-              // Contenu défilable
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _loadLibrary,
-                  color: AppColors.warning,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 24,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header Row with Search and Views Toggle
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomSearchBar(
-                                controller: _searchController,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _searchQuery = value;
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            GestureDetector(
-                              onTap: () =>
-                                  setState(() => _isGridView = !_isGridView),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: AppColors.cardBackground,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: _isGridView
-                                        ? AppColors.primary
-                                        : Colors.transparent,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Icon(
-                                  _isGridView
-                                      ? Icons.list_rounded
-                                      : Icons.grid_view_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Status Filter Tabs
-                        Row(
-                          children: [
-                            _buildStatusTab("Tous"),
-                            const SizedBox(width: 32),
-                            _buildStatusTab("En cours"),
-                            const SizedBox(width: 32),
-                            _buildStatusTab("Terminés"),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Sort and Genre Chips
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          child: Row(
-                            children: [
-                              _buildSortChip(
-                                "Dernière lecture",
-                                Icons.swap_vert,
-                              ),
-                              const SizedBox(width: 12),
-                              _buildGenreChip(),
-                              const SizedBox(width: 12),
-                              _buildSortChip("A-Z", Icons.sort_by_alpha),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        if (_isLoading)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(60.0),
-                              child: Text(
-                                "Chargement...",
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ),
-                          )
-                        else if (_error != null)
-                          _buildErrorState()
-                        else if (_libraryItems.isEmpty)
-                          _buildEmptyState()
-                        else if (_isGridView)
-                          GridView.builder(
-                            shrinkWrap: true,
-                            padding: EdgeInsets.zero,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  childAspectRatio: 0.7,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                ),
-                            itemCount: _getFilteredBooks().length,
-                            itemBuilder: (context, index) {
-                              final item = _getFilteredBooks()[index];
-                              final book = item.livre;
-                              if (book == null) return const SizedBox.shrink();
-
-                              return GestureDetector(
-                                onTap: () => _openBookDetails(book),
-                                child: LivreGridCard(
-                                  titre: book.titre,
-                                  auteur: book.authorName,
-                                  progression:
-                                      (book.progressions != null &&
-                                          book.progressions!.isNotEmpty)
-                                      ? book.progressions!.first.pourcentage
-                                            .toInt()
-                                      : 0,
-                                  couleurs: const [
-                                    AppColors.purple,
-                                    AppColors.indigoLight,
-                                  ],
-                                  imageUrl: book.imageCouverture,
-                                ),
-                              );
-                            },
-                          )
-                        else
-                          ListView.builder(
-                            shrinkWrap: true,
-                            padding: EdgeInsets.zero,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _getFilteredBooks().length,
-                            itemBuilder: (context, index) {
-                              final item = _getFilteredBooks()[index];
-                              final book = item.livre;
-
-                              if (book == null) return const SizedBox.shrink();
-
-                              return GestureDetector(
-                                onTap: () => _openBookDetails(book),
-                                child: LivreCard(
-                                  titre: book.titre,
-                                  auteur: book.authorName,
-                                  categorie: book.categorie?.nom,
-                                  progression:
-                                      (book.progressions != null &&
-                                          book.progressions!.isNotEmpty)
-                                      ? book.progressions!.first.pourcentage
-                                            .toInt()
-                                      : 0,
-                                  couleurs: const [
-                                    AppColors.purple,
-                                    AppColors.indigoLight,
-                                  ],
-                                  imageUrl: book.imageCouverture,
-                                  dateAcquisition: item.creeLe,
-                                ),
-                              );
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -558,9 +528,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: hasActiveGenre
-                ? AppColors.primaryLight
-                : Colors.transparent,
+            color: hasActiveGenre ? AppColors.primaryLight : Colors.transparent,
             width: 1,
           ),
         ),
@@ -633,7 +601,10 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         ),
                       ),
                       trailing: isSelected
-                          ? const Icon(Icons.check, color: AppColors.primaryLight)
+                          ? const Icon(
+                              Icons.check,
+                              color: AppColors.primaryLight,
+                            )
                           : null,
                       onTap: () {
                         setState(() => filtreActif = cat);
@@ -732,9 +703,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               onPressed: _loadLibrary,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text("Réessayer"),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
           ],
         ),

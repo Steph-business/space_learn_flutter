@@ -50,6 +50,8 @@ dependencies:
   syncfusion_flutter_core: any
   provider: ^6.1.5+1
   share_plus: ^12.0.1
+  flutter_local_notifications: ^20.1.0
+  flutter_client_sse: ^2.0.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

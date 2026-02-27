@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+
 class Revenus extends StatefulWidget {
-  const Revenus({super.key});
+  final List<BookModel> books;
+  const Revenus({super.key, required this.books});
 
   @override
   State<Revenus> createState() => _RevenusState();
@@ -12,6 +15,11 @@ class Revenus extends StatefulWidget {
 
 class _RevenusState extends State<Revenus> {
   bool isRevenueSelected = true;
+
+  double get totalRevenue => widget.books.fold(
+    0,
+    (sum, book) => sum + (book.prix * book.telechargements),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +58,7 @@ class _RevenusState extends State<Revenus> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "Total: 1,450 €",
+                    "Total: ${totalRevenue.toStringAsFixed(0)} FCFA",
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontSize: 15,
@@ -58,7 +66,7 @@ class _RevenusState extends State<Revenus> {
                     ),
                   ),
                   Text(
-                    "Croissance: +12%",
+                    "Croissance: --",
                     style: GoogleFonts.poppins(
                       color: Colors.green,
                       fontSize: 14,

@@ -280,47 +280,25 @@ class _MarketplacePageState extends State<MarketplacePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      body: Stack(
+      body: Column(
         children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: MediaQuery.of(context).size.height * 0.45,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.slate, // Lighter slate gray
-                    AppColors.scaffoldBackground, // Dark background matching Scaffold
-                  ],
+          // En-tête fixe
+          NavBarAll(userName: _userName, showCart: true),
+          // Contenu défilable
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadBooks,
+              color: AppColors.primary,
+              backgroundColor: AppColors.cardBackground,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [_buildBody(context)],
                 ),
               ),
             ),
-          ),
-          Column(
-            children: [
-              // En-tête fixe
-              NavBarAll(userName: _userName, showCart: true),
-              // Contenu défilable
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _loadBooks,
-                  color: AppColors.primary,
-                  backgroundColor: AppColors.cardBackground,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [_buildBody(context)],
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),

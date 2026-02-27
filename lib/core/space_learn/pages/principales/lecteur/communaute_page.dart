@@ -324,10 +324,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                   const SizedBox(height: 4),
                   Text(
                     "Recommandations, coup de cœurs et discussions générales",
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey[400],
-                      fontSize: 12,
-                    ),
+                    style: AppTextStyles.grey12,
                   ),
                   if (_cafeMsgCount > 0) ...[
                     const SizedBox(height: 4),
@@ -426,11 +423,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                 children: [
                   Text(
                     book.titre,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.button15,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -441,10 +434,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                       const SizedBox(width: 4),
                       Text(
                         "$msgCount messages",
-                        style: GoogleFonts.poppins(
-                          color: Colors.grey[400],
-                          fontSize: 12,
-                        ),
+                        style: AppTextStyles.grey12,
                       ),
                       const Spacer(),
                       Container(
@@ -549,10 +539,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                 Expanded(
                   child: Text(
                     evt.contenu,
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey[400],
-                      fontSize: 12,
-                    ),
+                    style: AppTextStyles.grey12,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),

@@ -12,6 +12,8 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
 class HomePageAuteur extends StatefulWidget {
   final String profileId;
   final String userName;
+  static final GlobalKey<_HomePageAuteurState> navKey =
+      GlobalKey<_HomePageAuteurState>();
 
   const HomePageAuteur({
     super.key,
@@ -26,6 +28,12 @@ class HomePageAuteur extends StatefulWidget {
 class _HomePageAuteurState extends State<HomePageAuteur> {
   int _currentIndex = 0;
 
+  void setIndex(int index) {
+    if (mounted) {
+      setState(() => _currentIndex = index);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,11 +47,11 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
           userName: widget.userName,
         );
       case 1:
-        return const AjouterLivrePage();
-      case 2:
         return LivresPage(
           onBackPressed: () => setState(() => _currentIndex = 0),
         );
+      case 2:
+        return const AjouterLivrePage();
       case 3:
         return TeamsPage(
           onBackPressed: () => setState(() => _currentIndex = 0),
@@ -91,7 +99,7 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
       bottomNavigationBar: NavBarAuteur(
         currentIndex: _currentIndex,
         onTap: (index) {
-          if (index == 1) {
+          if (index == 2) {
             // "Publier" action: Open AjouterLivrePage directly
             Navigator.push(
               context,

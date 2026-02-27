@@ -20,18 +20,7 @@ class SettingsPage extends StatelessWidget {
           left: 0,
           right: 0,
           height: MediaQuery.of(context).size.height * 0.45,
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.slate, // Lighter slate gray
-                  AppColors.scaffoldBackground, // Dark background matching Scaffold
-                ],
-              ),
-            ),
-          ),
+          child: Container(color: AppColors.scaffoldBackground),
         ),
         Scaffold(
           backgroundColor: Colors.transparent,
@@ -53,15 +42,6 @@ class SettingsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Titre principal
-                const Text(
-                  "Paramètres",
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
                 const SizedBox(height: 20),
 
                 // Section Profil

@@ -92,10 +92,7 @@ class CartPage extends StatelessWidget {
                                   ),
                                   Text(
                                     book.authorName,
-                                    style: GoogleFonts.poppins(
-                                      color: AppColors.slateLight,
-                                      fontSize: 12,
-                                    ),
+                                    style: AppTextStyles.withColor(AppTextStyles.body12, AppColors.slateLight),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
@@ -157,10 +154,7 @@ class CartPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             "Explorez la boutique pour y ajouter des livres",
-            style: GoogleFonts.poppins(
-              color: AppColors.slateLight,
-              fontSize: 14,
-            ),
+            style: AppTextStyles.withColor(AppTextStyles.body, AppColors.slateLight),
           ),
           const SizedBox(height: 32),
           ElevatedButton(

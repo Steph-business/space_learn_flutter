@@ -36,7 +36,7 @@ class AllReviewsPage extends StatelessWidget {
           ? Center(
               child: Text(
                 "Aucun avis pour le moment.",
-                style: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
+                style: AppTextStyles.greyBody14,
               ),
             )
           : ListView.builder(

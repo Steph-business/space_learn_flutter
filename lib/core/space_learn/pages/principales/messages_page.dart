@@ -17,16 +17,7 @@ class MessagesPage extends StatelessWidget {
           right: 0,
           height: MediaQuery.of(context).size.height * 0.45,
           child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.slate, // Lighter slate gray
-                  AppColors.scaffoldBackground, // Dark background matching Scaffold
-                ],
-              ),
-            ),
+            color: AppColors.scaffoldBackground,
           ),
         ),
         Scaffold(

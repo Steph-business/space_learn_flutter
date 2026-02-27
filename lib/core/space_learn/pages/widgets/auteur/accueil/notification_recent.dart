@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class RecentNotificationsPage extends StatefulWidget {
   final VoidCallback? onTapOpenNotifications;
@@ -34,49 +36,70 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
   }
 
   IconData _iconForType(String type) {
-    switch (type.toLowerCase()) {
-      case 'payment':
-      case 'paiement':
-      case 'vente':
-        return Iconsax.wallet_3;
-      case 'review':
-      case 'avis':
-        return Iconsax.star;
-      case 'message':
-      case 'reponse':
-        return Iconsax.message_2;
-      case 'chapitre':
-      case 'livre':
-        return Iconsax.book;
-      case 'abonné':
-      case 'follow':
-        return Iconsax.user_add;
-      default:
-        return Iconsax.notification;
+    final t = type.toLowerCase();
+    if (t.contains('payment') ||
+        t.contains('paiement') ||
+        t.contains('vente') ||
+        t.contains('achat')) {
+      return Iconsax.wallet_3;
     }
+    if (t.contains('review') || t.contains('avis')) {
+      return Iconsax.star;
+    }
+    if (t.contains('message') || t.contains('reponse')) {
+      return Iconsax.message_2;
+    }
+    if (t.contains('chapitre') ||
+        t.contains('livre') ||
+        t.contains('lecture')) {
+      return Iconsax.book;
+    }
+    if (t.contains('abonné') || t.contains('follow')) {
+      return Iconsax.user_add;
+    }
+    return Iconsax.notification;
   }
 
   Color _accentColorForType(String type) {
-    switch (type.toLowerCase()) {
-      case 'payment':
-      case 'paiement':
-      case 'vente':
-        return AppColors.success; // Emerald
-      case 'review':
-      case 'avis':
-        return AppColors.warning; // Amber
-      case 'message':
-      case 'reponse':
-        return AppColors.secondary; // Blue
-      case 'chapitre':
-      case 'livre':
-        return AppColors.violet; // Violet
-      case 'abonné':
-      case 'follow':
-        return AppColors.pinkVivid; // Pink
-      default:
-        return AppColors.primary; // Cyan
+    final t = type.toLowerCase();
+    if (t.contains('payment') ||
+        t.contains('paiement') ||
+        t.contains('vente') ||
+        t.contains('achat')) {
+      return AppColors.success;
     }
+    if (t.contains('review') || t.contains('avis')) {
+      return AppColors.warning;
+    }
+    if (t.contains('message') || t.contains('reponse')) {
+      return AppColors.secondary;
+    }
+    if (t.contains('chapitre') || t.contains('livre')) {
+      return AppColors.violet;
+    }
+    if (t.contains('lecture')) {
+      return AppColors.primary;
+    }
+    if (t.contains('abonné') || t.contains('follow')) {
+      return AppColors.pinkVivid;
+    }
+    return AppColors.primary;
+  }
+
+  /// Navigate based on notification type and reference
+  Future<void> _handleNotificationTap(
+    BuildContext context,
+    NotificationModel notif,
+  ) async {
+    debugPrint("🔔 Notification Tap Detected: ${notif.type}");
+
+    final token = await TokenStorage.getToken();
+    if (token != null && !notif.lu) {
+      context.read<NotificationProvider>().markAsRead(notif.id, token);
+    }
+
+    // Use centralized logic from NotificationService
+    NotificationService.handleNotificationTap(notif);
   }
 
   @override
@@ -149,6 +172,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
               icon: _iconForType(notif.type),
               accentColor: _accentColorForType(notif.type),
               timeAgo: _formatTimeAgo(notif.creeLe),
+              onTap: () => _handleNotificationTap(context, notif),
             );
           },
         ),
@@ -162,12 +186,14 @@ class _NotificationCardFromModel extends StatelessWidget {
   final IconData icon;
   final Color accentColor;
   final String timeAgo;
+  final VoidCallback onTap;
 
   const _NotificationCardFromModel({
     required this.model,
     required this.icon,
     required this.accentColor,
     required this.timeAgo,
+    required this.onTap,
   });
 
   @override
@@ -196,9 +222,8 @@ class _NotificationCardFromModel extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {
-                  // Mark as read or navigate
-                },
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(16),
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Row(
@@ -275,6 +300,14 @@ class _NotificationCardFromModel extends StatelessWidget {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(top: 12, left: 4),
+                        child: Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.white24,
+                          size: 20,
                         ),
                       ),
                     ],

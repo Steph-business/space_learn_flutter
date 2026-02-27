@@ -41,7 +41,7 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   Widget build(BuildContext context) {
     final String price = widget.book['prix']?.toString() ?? '9,99';
-    final String currency = '€';
+    final String currency = 'FCFA';
 
     return Scaffold(
       backgroundColor: AppColors.darkSurface, // Dark slate background
@@ -155,10 +155,7 @@ class _PaymentPageState extends State<PaymentPage> {
                     const SizedBox(height: 12),
                     Text(
                       'Vous recevrez une demande de confirmation sur votre téléphone.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
+                      style: AppTextStyles.greyMedium12,
                     ),
                   ],
                 ),
@@ -195,10 +192,7 @@ class _PaymentPageState extends State<PaymentPage> {
             Center(
               child: Text(
                 'Paiement sécurisé par Stripe',
-                style: GoogleFonts.poppins(
-                  color: Colors.grey[500],
-                  fontSize: 12,
-                ),
+                style: AppTextStyles.greyMedium12,
               ),
             ),
           ],
@@ -260,10 +254,7 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
               Text(
                 widget.book['authorName'] ?? 'Claire Dubois',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Colors.grey[400],
-                ),
+                style: AppTextStyles.grey14,
               ),
               const SizedBox(height: 4),
               Text(
@@ -337,23 +328,19 @@ class _PaymentPageState extends State<PaymentPage> {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: AppTextStyles.button14,
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
-          style: GoogleFonts.poppins(fontSize: 15, color: Colors.white),
+          style: AppTextStyles.body15,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.poppins(color: Colors.grey[600]),
             prefixText: prefixText,
-            prefixStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 15),
+            prefixStyle: AppTextStyles.body15,
             filled: true,
             fillColor: AppColors.surfaceVariant,
             contentPadding: const EdgeInsets.symmetric(
@@ -569,11 +556,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
               const SizedBox(height: 32),
               Text(
                 'Paiement réussi !',
-                style: GoogleFonts.poppins(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
+                style: AppTextStyles.heroTitle,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
