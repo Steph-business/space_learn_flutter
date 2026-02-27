@@ -2,9 +2,10 @@
 class ApiRoutes {
   // Change following IP to your machine's current IP
   static const String host = "192.168.252.224";
+  static const String hosts = "192.168.252.193";
 
   // Base URL (Spring Boot server on 8083)
-  static const String baseUrl = "http://$host:8083";
+  static const String baseUrl = "http://$hosts:8083";
 
   // New base URL for Gin server on port 8082
   static const String baseUrlsGin = "http://$host:8082";
@@ -67,18 +68,23 @@ class ApiRoutes {
   static const String updateDetailedStats =
       "$baseUrlsGin/api/detailed-stats/:livre_id";
 
+  // Reading settings routes
+  static const String readingSettings =
+      "$baseUrlsGin/api/user/settings/reading";
+
   // Reading activity routes
   static const String readingActivity = "$baseUrlsGin/api/reading/activity";
   static const String readingActivities = "$baseUrlsGin/api/reading/activities";
-  static const String readingProgress = "$baseUrlsGin/api/reading/progress";
-  static const String readingProgressByLivre =
-      "$baseUrlsGin/api/reading/progress/livre/:livre_id";
+  static const String readingProgress =
+      "$baseUrlsGin/api/library/progress/:livre_id";
 
   // Bookmarks routes
   static const String bookmarks = "$baseUrlsGin/api/reading/bookmarks";
   static const String bookmarksByLivre =
       "$baseUrlsGin/api/reading/bookmarks/livre/:livre_id";
   static const String bookmarkDetail = "$baseUrlsGin/api/reading/bookmarks/:id";
+  static const String bookmarksClearAll =
+      "$baseUrlsGin/api/reading/bookmarks/all/:livre_id";
 
   // Recommendations routes
   static const String recommendations = "$baseUrlsGin/api/recommendations";
@@ -98,6 +104,14 @@ class ApiRoutes {
 
   // Analytics route
   static const String analytics = "$baseUrlsGin/api/analytics";
+
+  // Gamification & Badges routes
+  static const String gamificationBadges =
+      "$baseUrlsGin/api/gamification/badges";
+  static const String gamificationGoals =
+      "$baseUrlsGin/api/gamification/objectifs";
+  static const String updateGoal =
+      "$baseUrlsGin/api/gamification/objectifs/:id";
 
   // Community routes
   static const String communityEvents = "$baseUrlsGin/api/community/events";

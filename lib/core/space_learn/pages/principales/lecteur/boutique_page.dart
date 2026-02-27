@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../themes/layout/nav_bar_all.dart';
@@ -35,11 +36,19 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
   // State variables for category filtering
   String _selectedCategory = "Tout";
+  String _searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadBooks();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadBooks() async {
@@ -158,7 +167,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
               ElevatedButton(
                 onPressed: _loadBooks,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF22D3EE),
+                  backgroundColor: AppColors.primaryLight,
                 ),
                 child: const Text("Réessayer"),
               ),
@@ -176,10 +185,16 @@ class _MarketplacePageState extends State<MarketplacePage> {
         ),
       );
     } else {
-      // Filter books based on category
-      final filteredBooks = _selectedCategory == "Tout"
-          ? _books
-          : _books.where((b) => b.categorie?.nom == _selectedCategory).toList();
+      // Filter books based on category and search
+      final filteredBooks = _books.where((b) {
+        final matchesCategory =
+            _selectedCategory == "Tout" ||
+            b.categorie?.nom == _selectedCategory;
+        final matchesSearch =
+            _searchQuery.isEmpty ||
+            b.titre.toLowerCase().contains(_searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      }).toList();
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +206,14 @@ class _MarketplacePageState extends State<MarketplacePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CustomSearchBar(),
+                CustomSearchBar(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
                 const SizedBox(height: 22),
                 SelectCategorie(
                   categories: ["Tout", ..._categories],
@@ -257,48 +279,26 @@ class _MarketplacePageState extends State<MarketplacePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: Stack(
+      backgroundColor: AppColors.scaffoldBackground,
+      body: Column(
         children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: MediaQuery.of(context).size.height * 0.45,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF475569), // Lighter slate gray
-                    Color(0xFF0F172A), // Dark background matching Scaffold
-                  ],
+          // En-tête fixe
+          NavBarAll(userName: _userName, showCart: true),
+          // Contenu défilable
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadBooks,
+              color: AppColors.primary,
+              backgroundColor: AppColors.cardBackground,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [_buildBody(context)],
                 ),
               ),
             ),
-          ),
-          Column(
-            children: [
-              // En-tête fixe
-              NavBarAll(userName: _userName, showCart: true),
-              // Contenu défilable
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _loadBooks,
-                  color: const Color(0xFF06B6D4),
-                  backgroundColor: const Color(0xFF1E293B),
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [_buildBody(context)],
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),

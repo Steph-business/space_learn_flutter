@@ -1,5 +1,6 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 
@@ -15,18 +16,14 @@ class StatistiquesLivrePage extends StatelessWidget {
     final int estimatedRevenue = book.telechargements * book.prix;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         title: Text(
           "Statistiques : ${book.titre}",
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 16,
-          ),
+          style: AppTextStyles.subtitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -117,7 +114,7 @@ class StatistiquesLivrePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Prix : ${book.prix} €",
+                        "Prix : ${book.prix} FCFA",
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.white70,
@@ -138,7 +135,7 @@ class StatistiquesLivrePage extends StatelessWidget {
                     title: "Téléchargements",
                     value: "${book.telechargements}",
                     icon: Icons.download_rounded,
-                    color: const Color(0xFF0EA5E9),
+                    color: AppColors.secondaryVariant,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -155,27 +152,23 @@ class StatistiquesLivrePage extends StatelessWidget {
             const SizedBox(height: 16),
             _buildKpiCard(
               title: "Revenus (Estimés)",
-              value: "$estimatedRevenue €",
+              value: "$estimatedRevenue FCFA",
               icon: Icons.account_balance_wallet_rounded,
-              color: const Color(0xFF10B981), // Green
+              color: AppColors.success, // Green
             ),
             const SizedBox(height: 30),
 
             // Graphique des Ventes (Mocks)
             Text(
               "Évolution (30 derniers jours)",
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+              style: AppTextStyles.subtitle,
             ),
             const SizedBox(height: 16),
             Container(
               height: 250,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: _buildChart(),
@@ -195,7 +188,7 @@ class StatistiquesLivrePage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
@@ -298,13 +291,13 @@ class StatistiquesLivrePage extends StatelessWidget {
               FlSpot(3, 80),
             ],
             isCurved: true,
-            color: const Color(0xFF0EA5E9),
+            color: AppColors.secondaryVariant,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: const Color(0xFF0EA5E9).withOpacity(0.2),
+              color: AppColors.secondaryVariant.withOpacity(0.2),
             ),
           ),
         ],

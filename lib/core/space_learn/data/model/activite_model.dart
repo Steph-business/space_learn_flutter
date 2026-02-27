@@ -68,7 +68,7 @@ class ReviewModel {
       'note': note,
       'commentaire': commentaire,
       'cree_le': creeLe?.toIso8601String(),
-      'Livre': livre?.toJson(),
+      // 'Livre': livre?.toJson(), // Removed to avoid infinite recursion
       'utilisateur': utilisateur?.toJson(),
     };
   }

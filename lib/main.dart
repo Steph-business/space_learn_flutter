@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
@@ -18,6 +19,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('--- BINDING INITIALIZED ---');
 
+  // Initialize Local Notifications
+  NotificationService.initializeLocalNotifications();
+
   try {
     debugPrint('--- INITIALIZING SUPABASE ---');
     await Supabase.initialize(
@@ -32,6 +36,8 @@ Future<void> main() async {
 
   runApp(const MyApp());
 }
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -77,6 +83,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: 'Space Learn',
         theme: ThemeData(primarySwatch: Colors.orange),
         debugShowCheckedModeBanner: false,

@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -5,6 +7,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart'
 import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import '../../../../../themes/layout/nav_bar_lecteur.dart';
 import 'forum_messages_page.dart';
 
 class ForumDiscussionPage extends StatefulWidget {
@@ -26,6 +29,7 @@ class ForumDiscussionPage extends StatefulWidget {
 class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
   final DiscussionService _discussionService = DiscussionService();
   List<Discussion> _discussions = [];
+  Map<String, DateTime?> _lastViewedDates = {};
   bool _isLoading = true;
 
   String _selectedCategory = "Tout";
@@ -36,6 +40,10 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
     "Personnages",
     "Animations",
   ];
+
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
 
   String _timeAgo(DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
@@ -71,12 +79,18 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
           token,
         );
       } else {
-        dbDiscussions = await _discussionService.getDiscussionsByUser(token);
+        dbDiscussions = await _discussionService.getGlobalDiscussions();
       }
 
       if (mounted) {
+        final Map<String, DateTime?> viewedDates = {};
+        for (var d in dbDiscussions) {
+          viewedDates[d.id] = await TokenStorage.getDiscussionLastViewed(d.id);
+        }
+
         setState(() {
           _discussions = dbDiscussions;
+          _lastViewedDates = viewedDates;
           _isLoading = false;
         });
       }
@@ -121,7 +135,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
+          backgroundColor: AppColors.cardBackground,
           title: Text(
             "Nouveau sujet",
             style: GoogleFonts.poppins(color: Colors.white),
@@ -149,7 +163,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0EA5E9),
+                backgroundColor: AppColors.secondaryVariant,
               ),
               child: const Text("Créer"),
             ),
@@ -162,44 +176,71 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
+            Navigator.of(context).pop();
+          },
         ),
-        title: Column(
-          children: [
-            Text(
-              widget.title.toUpperCase(),
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: 1.2,
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: "Rechercher...",
+                  hintStyle: TextStyle(color: Colors.white54),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              )
+            : Column(
+                children: [
+                  Text(
+                    widget.title.toUpperCase(),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  Text(
+                    widget.subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.secondaryVariant,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              widget.subtitle,
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF0EA5E9),
-              ),
-            ),
-          ],
-        ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(
-              Iconsax.search_normal_1,
+            icon: Icon(
+              _isSearching ? Icons.close : Iconsax.search_normal_1,
               color: Colors.white,
               size: 20,
             ),
-            onPressed: () {},
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  _searchQuery = "";
+                }
+              });
+            },
           ),
         ],
       ),
@@ -212,7 +253,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withOpacity(0.05)),
                 ),
@@ -261,10 +302,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           const SizedBox(height: 4),
                           Text(
                             "Partagez vos théories avec la communauté.",
-                            style: GoogleFonts.poppins(
-                              color: Colors.grey[400],
-                              fontSize: 12,
-                            ),
+                            style: AppTextStyles.grey12,
                           ),
                           const SizedBox(height: 12),
                           Container(
@@ -279,7 +317,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             child: Text(
                               "COMMUNAUTÉ ACTIVE",
                               style: GoogleFonts.poppins(
-                                color: const Color(0xFF0EA5E9),
+                                color: AppColors.secondaryVariant,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.5,
@@ -314,8 +352,8 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF0EA5E9)
-                            : const Color(0xFF1E293B),
+                            ? AppColors.secondaryVariant
+                            : AppColors.cardBackground,
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: isSelected
                             ? [
@@ -350,7 +388,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             // Posts List
             if (_isLoading)
               const Center(
-                child: CircularProgressIndicator(color: Color(0xFF0EA5E9)),
+                child: CircularProgressIndicator(color: AppColors.secondaryVariant),
               )
             else if (_discussions.isEmpty)
               Padding(
@@ -367,7 +405,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             else
               Builder(
                 builder: (context) {
-                  final filtered = _selectedCategory == "Tout"
+                  var filtered = _selectedCategory == "Tout"
                       ? _discussions
                       : _discussions
                             .where(
@@ -376,6 +414,16 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                               ),
                             )
                             .toList();
+
+                  if (_searchQuery.isNotEmpty) {
+                    filtered = filtered
+                        .where(
+                          (d) => d.titre.toLowerCase().contains(
+                            _searchQuery.toLowerCase(),
+                          ),
+                        )
+                        .toList();
+                  }
 
                   if (filtered.isEmpty) {
                     return Padding(
@@ -402,8 +450,11 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                                   ForumMessagesPage(discussion: d),
                             ),
                           ).then((_) {
-                            // Refresh just in case messages were added
-                            _loadDiscussions();
+                            TokenStorage.saveDiscussionLastViewed(d.id).then((
+                              _,
+                            ) {
+                              _loadDiscussions();
+                            });
                           });
                         },
                         child: _buildPostItem(
@@ -416,7 +467,13 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           title: d.titre,
                           content: "Rejoindre la conversation...",
                           comments: d.messagesCount ?? d.messages.length,
-                          likes: 0,
+                          likes: d.likesCount ?? 0,
+                          hasNewNotification: (() {
+                            if (d.dernierMessageLe == null) return false;
+                            final lastViewed = _lastViewedDates[d.id];
+                            if (lastViewed == null) return true;
+                            return d.dernierMessageLe!.isAfter(lastViewed);
+                          })(),
                         ),
                       );
                     }).toList(),
@@ -431,10 +488,49 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'forum_discussion_fab_\${widget.book?.id ?? "global"}',
         onPressed: _showNewDiscussionDialog,
-        backgroundColor: const Color(0xFF0EA5E9),
+        backgroundColor: AppColors.secondaryVariant,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: const Icon(Iconsax.add, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
+  Widget _getUserRankBadge(String username) {
+    // Simulation d'un rang basé sur le nom pour la démo
+    final int hash = username.hashCode.abs() % 100;
+    String rank;
+    Color color;
+
+    if (hash > 80) {
+      rank = "Maître";
+      color = AppColors.yellow;
+    } else if (hash > 50) {
+      rank = "Érudit";
+      color = AppColors.violetLight;
+    } else if (hash > 20) {
+      rank = "Explorateur";
+      color = AppColors.primaryLight;
+    } else {
+      rank = "Novice";
+      color = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+      ),
+      child: Text(
+        rank,
+        style: GoogleFonts.poppins(
+          color: color,
+          fontSize: 8,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
@@ -447,125 +543,158 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
     required int comments,
     required int likes,
     bool isAnonymous = false,
+    bool hasNewNotification = false,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isAnonymous ? Colors.cyan : Colors.grey[800],
-                ),
-                child: isAnonymous
-                    ? const Center(
-                        child: Text(
-                          "A",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isAnonymous ? Colors.cyan : Colors.grey[800],
+                    ),
+                    child: isAnonymous
+                        ? const Center(
+                            child: Text(
+                              "A",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.network(
+                              "https://i.pravatar.cc/150?u=$username",
+                              fit: BoxFit.cover,
+                              errorBuilder: (c, e, s) =>
+                                  const Icon(Icons.person, color: Colors.white),
+                            ),
                           ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              "@$username",
+                              style: GoogleFonts.poppins(
+                                color: AppColors.secondaryVariant,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _getUserRankBadge(username),
+                            const Spacer(),
+                            Text(
+                              time,
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey[500],
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
-                      )
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.network(
-                          "https://i.pravatar.cc/150?u=$username",
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) =>
-                              const Icon(Icons.person, color: Colors.white),
+                        Text(
+                          title,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.only(left: 52, top: 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      content,
+                      style: AppTextStyles.grey13,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
+                        Icon(
+                          Iconsax.message_text,
+                          size: 20,
+                          color: comments > 0
+                              ? AppColors.secondaryVariant
+                              : Colors.grey[500],
+                        ),
+                        const SizedBox(width: 6),
                         Text(
-                          "@$username",
+                          comments.toString(),
                           style: GoogleFonts.poppins(
-                            color: const Color(0xFF0EA5E9),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            color: comments > 0
+                                ? Colors.white
+                                : Colors.grey[500],
+                            fontSize: 13,
+                            fontWeight: comments > 0
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 20),
+                        Icon(
+                          likes > 0 ? Iconsax.heart5 : Iconsax.heart,
+                          size: 20,
+                          color: likes > 0
+                              ? Colors.redAccent
+                              : Colors.grey[500],
+                        ),
+                        const SizedBox(width: 6),
                         Text(
-                          time,
+                          likes.toString(),
                           style: GoogleFonts.poppins(
-                            color: Colors.grey[500],
-                            fontSize: 11,
+                            color: likes > 0 ? Colors.white : Colors.grey[500],
+                            fontSize: 13,
                           ),
                         ),
                       ],
                     ),
-                    Text(
-                      title,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              Divider(color: Colors.white.withOpacity(0.05)),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 52, top: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  content,
-                  style: GoogleFonts.poppins(
-                    color: Colors.grey[400],
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+          if (hasNewNotification)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Iconsax.message, size: 18, color: Colors.grey[500]),
-                    const SizedBox(width: 6),
-                    Text(
-                      comments.toString(),
-                      style: GoogleFonts.poppins(
-                        color: Colors.grey[500],
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Icon(Iconsax.heart, size: 18, color: Colors.grey[500]),
-                    const SizedBox(width: 6),
-                    Text(
-                      likes.toString(),
-                      style: GoogleFonts.poppins(
-                        color: Colors.grey[500],
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Divider(color: Colors.white.withOpacity(0.05)),
         ],
       ),
     );

@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
@@ -94,7 +96,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(),
@@ -104,11 +106,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
             sliver: SliverToBoxAdapter(
               child: Text(
                 "Ses livres",
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AppTextStyles.sectionTitle,
               ),
             ),
           ),
@@ -123,7 +121,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
-      backgroundColor: const Color(0xFF1E293B),
+      backgroundColor: AppColors.cardBackground,
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
@@ -133,7 +131,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF3B82F6), Color(0xFF0F172A)],
+                  colors: [AppColors.secondary, AppColors.scaffoldBackground],
                 ),
               ),
             ),
@@ -153,11 +151,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                             widget.author.nomComplet
                                 .substring(0, 1)
                                 .toUpperCase(),
-                            style: GoogleFonts.poppins(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF3B82F6),
-                            ),
+                            style: AppTextStyles.statBig,
                           )
                         : null,
                   ),
@@ -178,16 +172,12 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
           const SizedBox(height: 16),
           Text(
             widget.author.nomComplet,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: AppTextStyles.pageTitle,
           ),
           Text(
             widget.author.biography ?? "Écrivain passionné sur SpaceLearn",
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 14),
+            style: AppTextStyles.grey14,
           ),
           const SizedBox(height: 24),
           Row(
@@ -206,7 +196,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isFollowing
                     ? Colors.white10
-                    : const Color(0xFF3B82F6),
+                    : AppColors.secondary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -240,7 +230,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
         ),
         Text(
           label,
-          style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 12),
+          style: AppTextStyles.greyMedium12,
         ),
       ],
     );
@@ -294,7 +284,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
             },
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -335,16 +325,12 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                           book.titre,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTextStyles.cardTitle,
                         ),
                         Text(
-                          book.prix == 0 ? "Gratuit" : "${book.prix}€",
+                          book.prix == 0 ? "Gratuit" : "${book.prix}FCFA",
                           style: GoogleFonts.poppins(
-                            color: const Color(0xFF38BDF8),
+                            color: AppColors.secondary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
