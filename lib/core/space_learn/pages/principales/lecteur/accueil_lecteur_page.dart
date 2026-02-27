@@ -452,52 +452,30 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       child: Scaffold(
         key: const PageStorageKey('homePageLecteur'),
         backgroundColor: AppColors.scaffoldBackground,
-        body: Stack(
+        body: Column(
           children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: MediaQuery.of(context).size.height * 0.45,
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.slate, // Lighter slate gray
-                      AppColors.scaffoldBackground, // Dark background matching Scaffold
-                    ],
-                  ),
-                ),
-              ),
+            NavBarAll(
+              userName: _displayName,
+              userUrl: _profilePhoto,
+              role: 'lecteur',
             ),
-            Column(
-              children: [
-                NavBarAll(
-                  userName: _displayName,
-                  userUrl: _profilePhoto,
-                  role: 'lecteur',
-                ),
-                Expanded(
-                  child: _isLoading
-                      ? Center(
-                          child: Text(
-                            "Chargement...",
-                            style: GoogleFonts.poppins(color: Colors.white70),
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadData,
-                          color: AppColors.indigo,
-                          child: _error != null
-                              ? _buildErrorState()
-                              : _isSearching
-                              ? _buildSearchResults()
-                              : _buildContent(),
-                        ),
-                ),
-              ],
+            Expanded(
+              child: _isLoading
+                  ? Center(
+                      child: Text(
+                        "Chargement...",
+                        style: GoogleFonts.poppins(color: Colors.white70),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadData,
+                      color: AppColors.indigo,
+                      child: _error != null
+                          ? _buildErrorState()
+                          : _isSearching
+                          ? _buildSearchResults()
+                          : _buildContent(),
+                    ),
             ),
           ],
         ),
@@ -530,10 +508,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       style: AppTextStyles.body,
                       decoration: InputDecoration(
                         hintText: "Rechercher un livre, un auteur...",
-                        hintStyle: GoogleFonts.poppins(
-                          color: Colors.grey,
-                          fontSize: 13,
-                        ),
+                        hintStyle: AppTextStyles.greyBody13,
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
@@ -675,19 +650,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "À la une",
-                          style: AppTextStyles.sectionTitle,
-                        ),
+                        Text("À la une", style: AppTextStyles.sectionTitle),
                         GestureDetector(
                           onTap: () {
                             MainNavBar.mainNavBarKey.currentState
                                 ?.navigateToMarketplace();
                           },
-                          child: Text(
-                            "Voir plus",
-                            style: AppTextStyles.link,
-                          ),
+                          child: Text("Voir plus", style: AppTextStyles.link),
                         ),
                       ],
                     ),
@@ -758,10 +727,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            "Auteurs",
-                            style: AppTextStyles.sectionTitle,
-                          ),
+                          Text("Auteurs", style: AppTextStyles.sectionTitle),
                           TextButton(
                             onPressed: () {
                               Navigator.push(
@@ -944,10 +910,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   const SizedBox(width: 4),
                   Text(
                     "$messagesCount message${messagesCount > 1 ? 's' : ''}",
-                    style: GoogleFonts.poppins(
-                      color: Colors.white70,
-                      fontSize: 11,
-                    ),
+                    style: AppTextStyles.bodySmall11,
                   ),
                 ],
               ),
@@ -1138,23 +1101,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              price,
-              style: AppTextStyles.price,
-            ),
+            Text(price, style: AppTextStyles.price),
             Row(
               children: [
                 if (reviewsCount > 0) ...[
                   const Icon(Icons.star, color: Colors.amber, size: 12),
                   const SizedBox(width: 4),
-                  Text(
-                    rating,
-                    style: GoogleFonts.poppins(
-                      color: Colors.amber,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text(rating, style: AppTextStyles.ratingAmber),
                 ],
                 if (messagesCount > 0) ...[
                   const SizedBox(width: 8),
@@ -1393,7 +1346,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK", style: TextStyle(color: AppColors.secondary)),
+            child: const Text(
+              "OK",
+              style: TextStyle(color: AppColors.secondary),
+            ),
           ),
         ],
       ),
@@ -1499,10 +1455,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    club["title"] as String,
-                    style: AppTextStyles.cardTitle,
-                  ),
+                  Text(club["title"] as String, style: AppTextStyles.cardTitle),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -1518,10 +1471,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       const SizedBox(width: 4),
                       Text(
                         club["members"] as String,
-                        style: GoogleFonts.poppins(
-                          color: Colors.grey[400],
-                          fontSize: 12,
-                        ),
+                        style: AppTextStyles.grey12,
                       ),
                     ],
                   ),
@@ -1808,14 +1758,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         children: [
           Icon(icon, color: AppColors.secondary, size: 20),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: AppTextStyles.subtitle,
-          ),
-          Text(
-            label,
-            style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 11),
-          ),
+          Text(value, style: AppTextStyles.subtitle),
+          Text(label, style: AppTextStyles.grey11),
         ],
       ),
     );
@@ -1872,7 +1816,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             const SizedBox(height: 16),
             Text(
               "Aucun résultat trouvé pour \"$_searchQuery\"",
-              style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 14),
+              style: AppTextStyles.greyMedium14,
             ),
           ],
         ),
@@ -1938,21 +1882,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 children: [
                   Text(
                     book.titre,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.button14,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    "Par ${book.authorName}",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.secondary,
-                      fontSize: 12,
-                    ),
-                  ),
+                  Text("Par ${book.authorName}", style: AppTextStyles.link12),
                 ],
               ),
             ),

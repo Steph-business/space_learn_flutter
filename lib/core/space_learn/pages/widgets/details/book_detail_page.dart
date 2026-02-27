@@ -253,12 +253,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
         centerTitle: true,
         title: Text(
           'DÉTAILS DU LIVRE',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-            letterSpacing: 1.2,
-          ),
+          style: AppTextStyles.cardTitle12SemiBold,
         ),
         leading: IconButton(
           icon: const Icon(
@@ -367,11 +362,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       const SizedBox(height: 8),
                       Text(
                         book.authorName,
-                        style: GoogleFonts.poppins(
-                          color: AppColors.primary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppTextStyles.withColor(AppTextStyles.subtitle, AppColors.primary),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -519,10 +510,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       Text(
                                         book.auteur?.biography ??
                                             "Auteur passionné sur SpaceLearn",
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.grey[400],
-                                          fontSize: 12,
-                                        ),
+                                        style: AppTextStyles.grey12,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -596,10 +584,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       else if (_reviews.isEmpty)
                         Text(
                           "Soyez le premier à donner votre avis !",
-                          style: GoogleFonts.poppins(
-                            color: Colors.grey[400],
-                            fontSize: 13,
-                          ),
+                          style: AppTextStyles.grey13,
                         )
                       else
                         ..._reviews.map(
@@ -651,11 +636,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   const SizedBox(width: 8),
                                   Text(
                                     "Laisser un avis",
-                                    style: GoogleFonts.poppins(
-                                      color: AppColors.primary,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: AppTextStyles.withColor(AppTextStyles.button14, AppColors.primary),
                                   ),
                                 ],
                               ),
@@ -737,11 +718,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     ),
                                     Text(
                                       "${book.prix} FCFA",
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                      style: AppTextStyles.heroTitle22,
                                     ),
                                   ],
                                 ),
@@ -1020,11 +997,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
             // Title
             Text(
               book.titre,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+              style: AppTextStyles.cardTitleSmallSemiBold,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

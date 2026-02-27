@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -181,7 +182,7 @@ class _RecherchePageState extends State<RecherchePage> {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 14),
+            style: AppTextStyles.greyMedium14,
           ),
         ],
       ),
@@ -239,11 +240,7 @@ class _RecherchePageState extends State<RecherchePage> {
                 children: [
                   Text(
                     book.titre,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.button15,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -259,21 +256,14 @@ class _RecherchePageState extends State<RecherchePage> {
                   const SizedBox(height: 4),
                   Text(
                     book.description,
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey[400],
-                      fontSize: 11,
-                    ),
+                    style: AppTextStyles.grey11,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     "${book.prix} FCFA",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTextStyles.withColor(AppTextStyles.cardTitle, AppColors.primary),
                   ),
                 ],
               ),

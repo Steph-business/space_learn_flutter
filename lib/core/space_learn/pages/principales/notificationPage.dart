@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -70,7 +71,10 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               actions: [
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.primaryLight),
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: AppColors.primaryLight,
+                  ),
                   offset: const Offset(0, 45),
                   color: AppColors.cardBackground,
                   shape: RoundedRectangleBorder(
@@ -104,13 +108,7 @@ class _NotificationPageState extends State<NotificationPage> {
                                 : Colors.white70,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            "Toutes",
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
-                          ),
+                          Text("Toutes", style: AppTextStyles.body13),
                         ],
                       ),
                     ),
@@ -127,13 +125,7 @@ class _NotificationPageState extends State<NotificationPage> {
                                 : Colors.white70,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            "Non lues",
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
-                          ),
+                          Text("Non lues", style: AppTextStyles.body13),
                         ],
                       ),
                     ),
@@ -150,13 +142,7 @@ class _NotificationPageState extends State<NotificationPage> {
                                 : Colors.white70,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            "Archives",
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
-                          ),
+                          Text("Archives", style: AppTextStyles.body13),
                         ],
                       ),
                     ),
@@ -190,16 +176,7 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.cardBackground, AppColors.scaffoldBackground],
-          ),
-        ),
-        child: _buildNotificationList(context, widget.role ?? 'lecteur'),
-      ),
+      body: _buildNotificationList(context, widget.role ?? 'lecteur'),
     );
   }
 

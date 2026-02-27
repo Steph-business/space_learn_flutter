@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -301,10 +302,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           const SizedBox(height: 4),
                           Text(
                             "Partagez vos théories avec la communauté.",
-                            style: GoogleFonts.poppins(
-                              color: Colors.grey[400],
-                              fontSize: 12,
-                            ),
+                            style: AppTextStyles.grey12,
                           ),
                           const SizedBox(height: 12),
                           Container(
@@ -632,11 +630,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                   children: [
                     Text(
                       content,
-                      style: GoogleFonts.poppins(
-                        color: Colors.grey[400],
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
+                      style: AppTextStyles.grey13,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

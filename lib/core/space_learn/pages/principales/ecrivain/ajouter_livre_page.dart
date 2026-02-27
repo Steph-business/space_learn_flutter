@@ -305,15 +305,23 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
 
       if (widget.book != null) {
         // Mode modification
+        if (widget.book!.id.isEmpty) {
+          throw Exception(
+            "Erreur : Impossible de modifier un livre sans identifiant valide.",
+          );
+        }
+
         final updates = {
+          'id': widget.book!.id,
           'titre': _titreController.text.trim(),
           'description': _descriptionController.text.trim(),
           'prix': prixParsed,
           'categorie_id': categorieId,
-          if (_selectedFilePath != null) 'fichier_url': bookUrl,
-          if (_selectedCoverPath != null) 'image_couverture': coverUrl,
+          'fichier_url': bookUrl,
+          'image_couverture': coverUrl,
           'format': format,
           'statut': widget.book!.statut,
+          'stock': widget.book!.stock,
         };
         await _bookService.updateBook(widget.book!.id, updates, token);
 
@@ -413,16 +421,16 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Champ de catégorie avec dropdown
-                _buildCategorieField(),
-
-                const SizedBox(height: 16),
                 _buildTextField(
                   controller: _prixController,
                   label: "Prix",
-                  icon: Icons.euro,
+                  icon: Icons.money,
                   keyboardType: TextInputType.number,
                 ),
+                const SizedBox(height: 16),
+
+                // Champ de catégorie avec dropdown
+                _buildCategorieField(),
                 const SizedBox(height: 20),
 
                 // File Upload Area
@@ -436,11 +444,14 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 ),
                 const SizedBox(height: 8),
                 _buildUploadCard(
-                  title: "Fichier(PDF/EPUB)",
+                  title: "Fichier (PDF/EPUB)",
                   subtitle: _selectedFileName ?? "Sélectionner un fichier",
                   icon: Icons.upload_file,
                   isSelected: _selectedFileName != null,
                   onTap: _pickFile,
+                  currentUrl: _selectedFilePath == null
+                      ? widget.book?.fichierUrl
+                      : null,
                 ),
 
                 const SizedBox(height: 16),
@@ -461,6 +472,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   icon: Icons.image,
                   isSelected: _selectedCoverName != null,
                   onTap: _pickCover,
+                  currentUrl: _selectedCoverPath == null
+                      ? widget.book?.imageCouverture
+                      : null,
+                  localPath: _selectedCoverPath,
+                  isImage: true,
                 ),
 
                 const SizedBox(height: 40),
@@ -474,10 +490,19 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 4,
-                    shadowColor: AppColors.secondaryVariant.withValues(alpha: 0.4),
+                    shadowColor: AppColors.secondaryVariant.withValues(
+                      alpha: 0.4,
+                    ),
                   ),
                   child: _isUploading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
                       : Text(
                           widget.book != null
                               ? 'Modifier'
@@ -556,11 +581,17 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: DropdownButtonFormField<String>(
+            dropdownColor: AppColors.cardBackground,
+            iconEnabledColor: AppColors.secondaryVariant,
+            style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
             initialValue: _selectedCategorieId,
             decoration: InputDecoration(
               labelText: "Catégorie",
               labelStyle: GoogleFonts.poppins(color: Colors.white54),
-              prefixIcon: const Icon(Icons.category, color: AppColors.secondaryVariant),
+              prefixIcon: const Icon(
+                Icons.category,
+                color: AppColors.secondaryVariant,
+              ),
               filled: true,
               fillColor: AppColors.cardBackground,
               border: OutlineInputBorder(
@@ -682,54 +713,107 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     required IconData icon,
     required bool isSelected,
     required VoidCallback onTap,
+    String? currentUrl,
+    String? localPath,
+    bool isImage = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.secondaryVariant.withValues(alpha: 0.2)
+              ? AppColors.secondaryVariant.withValues(alpha: 0.1)
               : AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.secondaryVariant : Colors.transparent,
+            color: isSelected
+                ? AppColors.secondaryVariant.withOpacity(0.5)
+                : Colors.transparent,
             width: 1.5,
           ),
-          boxShadow: [
-            if (!isSelected)
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-          ],
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.secondaryVariant : Colors.white10,
-                shape: BoxShape.circle,
+            // Preview / Icon
+            if (isImage && (localPath != null || currentUrl != null))
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 44,
+                  height: 60,
+                  child: localPath != null
+                      ? Image.file(File(localPath), fit: BoxFit.cover)
+                      : Image.network(
+                          currentUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, error, stack) => Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.orangeAccent,
+                                size: 20,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Erreur 400\n(Vérifier bucket)",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 8,
+                                  color: Colors.white38,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.secondaryVariant
+                      : Colors.white10,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isSelected ? Icons.check : icon,
+                  color: isSelected ? Colors.white : Colors.white54,
+                  size: 20,
+                ),
               ),
-              child: Icon(
-                isSelected ? Icons.check : icon,
-                color: isSelected ? Colors.white : Colors.white54,
-              ),
-            ),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                subtitle,
-                style: GoogleFonts.poppins(
-                  color: isSelected ? AppColors.secondaryVariant : Colors.white70,
-                  fontSize: 15,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      color: isSelected ? Colors.white : Colors.white70,
+                      fontSize: 14,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (currentUrl != null && localPath == null)
+                    Text(
+                      "(Fichier actuel conservé)",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.secondaryVariant,
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                ],
               ),
             ),
+            const Icon(Icons.edit_rounded, color: Colors.white24, size: 16),
           ],
         ),
       ),

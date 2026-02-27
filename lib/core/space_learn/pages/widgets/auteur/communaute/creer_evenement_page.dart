@@ -3,9 +3,14 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
+
+import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 
 class CreerEvenementPage extends StatefulWidget {
-  const CreerEvenementPage({super.key});
+  final Evenement? initialEvenement;
+  const CreerEvenementPage({super.key, this.initialEvenement});
 
   @override
   State<CreerEvenementPage> createState() => _CreerEvenementPageState();
@@ -14,9 +19,27 @@ class CreerEvenementPage extends StatefulWidget {
 class _CreerEvenementPageState extends State<CreerEvenementPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  final EvenementService _evenementService = EvenementService();
   String _eventType = "Séance de Dédicace";
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+  bool _isCreating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialEvenement != null) {
+      _titleController.text = widget.initialEvenement!.titre;
+      _descController.text = widget.initialEvenement!.contenu;
+      _eventType = widget.initialEvenement!.typePublication;
+      _selectedDate = widget.initialEvenement!.dateEvenement;
+      if (widget.initialEvenement!.dateEvenement != null) {
+        _selectedTime = TimeOfDay.fromDateTime(
+          widget.initialEvenement!.dateEvenement!,
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -85,7 +108,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "NOUVEL ÉVÉNEMENT",
+          widget.initialEvenement != null
+              ? "MODIFIER L'ÉVÉNEMENT"
+              : "NOUVEL ÉVÉNEMENT",
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -102,7 +127,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
           children: [
             Text(
               "Organisez un événement pour réunir votre communauté (virtuel ou physique).",
-              style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 14),
+              style: AppTextStyles.grey14,
             ),
             const SizedBox(height: 30),
 
@@ -268,32 +293,28 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () {
-                  if (_selectedDate == null || _selectedTime == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Veuillez sélectionner une date et une heure.",
-                        ),
-                      ),
-                    );
-                    return;
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Événement planifié !")),
-                  );
-                  Navigator.pop(context);
-                },
+                onPressed: _isCreating ? null : _createEvent,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: Text(
-                  "Créer l'événement",
-                  style: AppTextStyles.subtitle,
-                ),
+                child: _isCreating
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        widget.initialEvenement != null
+                            ? "Sauvegarder les modifications"
+                            : "Créer l'événement",
+                        style: AppTextStyles.subtitle,
+                      ),
               ),
             ),
           ],
@@ -302,15 +323,79 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
     );
   }
 
+  Future<void> _createEvent() async {
+    final title = _titleController.text.trim();
+    final desc = _descController.text.trim();
+
+    if (title.isEmpty ||
+        desc.isEmpty ||
+        _selectedDate == null ||
+        _selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez remplir tous les champs.")),
+      );
+      return;
+    }
+
+    setState(() => _isCreating = true);
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) throw Exception("Session expirée");
+
+      // Combine date and time
+      final eventDate = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+
+      if (widget.initialEvenement != null) {
+        await _evenementService.updateEvenement(
+          id: widget.initialEvenement!.id,
+          typePublication: _eventType,
+          titre: title,
+          contenu: desc,
+          token: token,
+          dateEvenement: eventDate,
+        );
+      } else {
+        await _evenementService.createEvenement(
+          typePublication: "Evenement",
+          titre: title,
+          contenu: desc,
+          token: token,
+          dateEvenement: eventDate,
+        );
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.initialEvenement != null
+                  ? "Événement mis à jour !"
+                  : "Événement créé avec succès !",
+            ),
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Erreur : ${e.toString()}")));
+      }
+    } finally {
+      if (mounted) setState(() => _isCreating = false);
+    }
+  }
+
   Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(
-        color: Colors.white,
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    return Text(text, style: AppTextStyles.button14);
   }
 
   Widget _buildTextField({

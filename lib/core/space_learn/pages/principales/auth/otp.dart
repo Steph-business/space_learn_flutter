@@ -112,13 +112,7 @@ class _OtpPageState extends State<OtpPage> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.slate, AppColors.cardBackground, AppColors.scaffoldBackground],
-          ),
-        ),
+        color: AppColors.scaffoldBackground,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28),

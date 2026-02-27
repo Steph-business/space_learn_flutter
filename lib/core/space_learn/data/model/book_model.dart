@@ -138,7 +138,7 @@ class BookModel {
     }
 
     return BookModel(
-      id: json['id'] ?? '',
+      id: (json['id'] ?? json['ID'] ?? json['_id'] ?? '').toString(),
       auteurId: authorId,
       titre: json['titre'] ?? json['title'] ?? '',
       description: json['description'] ?? '',

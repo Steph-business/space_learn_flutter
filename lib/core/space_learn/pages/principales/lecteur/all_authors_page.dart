@@ -328,10 +328,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                               ),
                               Text(
                                 author.biography ?? "Auteur SpaceLearn",
-                                style: GoogleFonts.poppins(
-                                  color: Colors.grey[400],
-                                  fontSize: 12,
-                                ),
+                                style: AppTextStyles.grey12,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),

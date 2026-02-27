@@ -163,10 +163,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                 const SizedBox(height: 4),
                                 Text(
                                   book.authorName,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.grey[400],
-                                    fontSize: 13,
-                                  ),
+                                  style: AppTextStyles.grey13,
                                 ),
                                 const SizedBox(height: 8),
                                 Text(

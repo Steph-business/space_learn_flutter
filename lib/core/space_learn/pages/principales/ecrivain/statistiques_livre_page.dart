@@ -114,7 +114,7 @@ class StatistiquesLivrePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Prix : ${book.prix} €",
+                        "Prix : ${book.prix} FCFA",
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.white70,
@@ -152,7 +152,7 @@ class StatistiquesLivrePage extends StatelessWidget {
             const SizedBox(height: 16),
             _buildKpiCard(
               title: "Revenus (Estimés)",
-              value: "$estimatedRevenue €",
+              value: "$estimatedRevenue FCFA",
               icon: Icons.account_balance_wallet_rounded,
               color: AppColors.success, // Green
             ),

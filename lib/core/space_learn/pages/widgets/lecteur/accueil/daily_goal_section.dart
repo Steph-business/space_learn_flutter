@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../data/model/goalModel.dart';
@@ -74,10 +75,7 @@ class DailyGoalSection extends StatelessWidget {
                       ),
                       Text(
                         goal!.description,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: AppColors.slateLight,
-                        ),
+                        style: AppTextStyles.withColor(AppTextStyles.body11, AppColors.slateLight),
                       ),
                     ],
                   ),

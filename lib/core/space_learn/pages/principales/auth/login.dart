@@ -148,13 +148,7 @@ class _LoginPageState extends State<LoginPage> {
         body: Container(
           width: double.infinity,
           height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppColors.slate, AppColors.cardBackground, AppColors.scaffoldBackground],
-            ),
-          ),
+          color: AppColors.scaffoldBackground,
           child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -274,11 +268,7 @@ class _LoginPageState extends State<LoginPage> {
                                 width: 110,
                                 child: Text(
                                   'E-mail',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: AppTextStyles.cardTitleSmallSemiBold,
                                 ),
                               ),
                               Expanded(
@@ -321,11 +311,7 @@ class _LoginPageState extends State<LoginPage> {
                                 width: 110,
                                 child: Text(
                                   'Mot de passe',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: AppTextStyles.cardTitleSmallSemiBold,
                                 ),
                               ),
                               Expanded(

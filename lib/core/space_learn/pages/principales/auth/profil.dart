@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -87,13 +88,7 @@ class _ProfilPageState extends State<ProfilPage> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.slate, AppColors.cardBackground, AppColors.scaffoldBackground],
-          ),
-        ),
+        color: AppColors.scaffoldBackground,
         child: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
@@ -233,10 +228,7 @@ class _ProfilPageState extends State<ProfilPage> {
                   else if (_profiles.isEmpty)
                     Text(
                       'Aucun profil disponible.',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+                      style: AppTextStyles.bodySecondary14,
                     )
                   else
                     Row(
@@ -346,11 +338,7 @@ class _ProfilPageState extends State<ProfilPage> {
             const SizedBox(height: 10),
             Text(
               title,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
+              style: AppTextStyles.cardTitleW700,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),

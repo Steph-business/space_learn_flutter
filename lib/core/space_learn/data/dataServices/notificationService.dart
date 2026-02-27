@@ -1,16 +1,155 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../../../utils/api_routes.dart';
-import '../model/notificationModel.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:space_learn_flutter/main.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/bibliotheque_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/communaute_page.dart'
+    as ecrivainTeams;
+import 'package:space_learn_flutter/core/utils/api_routes.dart';
 
 class NotificationService {
   final http.Client client;
+  static final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
 
   NotificationService({http.Client? client}) : client = client ?? http.Client();
+
+  static void initializeLocalNotifications() {
+    debugPrint("🔔 Initializing Local Notifications...");
+    const initializationSettings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      iOS: DarwinInitializationSettings(),
+    );
+
+    _localNotifications.initialize(
+      settings: initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        debugPrint("🔔 System Notification clicked: ${response.payload}");
+        if (response.payload != null) {
+          try {
+            final Map<String, dynamic> data = jsonDecode(response.payload!);
+            final notif = NotificationModel.fromJson(data);
+            handleNotificationTap(notif);
+          } catch (e) {
+            debugPrint("❌ Error parsing notification payload: $e");
+          }
+        }
+      },
+    );
+  }
+
+  /// Centralized logic to handle notification redirection
+  static void handleNotificationTap(NotificationModel notif) {
+    debugPrint("🔔 Handling Notification: ${notif.type} (role: ${notif.role})");
+
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      debugPrint("❌ No context available for navigation");
+      return;
+    }
+
+    final type = notif.type.toLowerCase();
+
+    // Helper to clear nav stack until root shell
+    void popToRoot() {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+
+    // Role check (normalization)
+    final isLecteur = (notif.role == 'lecteur' || notif.role == null);
+
+    if (type.contains('message') || type.contains('reponse')) {
+      if (isLecteur) {
+        popToRoot();
+        MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ForumDiscussionPage(
+              title: "Le Café des Lecteurs",
+              subtitle: "Discussions générales",
+            ),
+          ),
+        );
+      }
+    } else if (type.contains('annonce') || type.contains('evenement')) {
+      if (!isLecteur) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ecrivainTeams.TeamsPage(),
+          ),
+        );
+      } else {
+        popToRoot();
+        MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
+      }
+    } else if (type.contains('paiement') ||
+        type.contains('achat') ||
+        type.contains('vente') ||
+        type.contains('rappel_lecture') ||
+        type.contains('livre') ||
+        type.contains('chapitre')) {
+      if (isLecteur) {
+        popToRoot();
+        MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                LivresPage(onBackPressed: () => Navigator.of(context).pop()),
+          ),
+        );
+      }
+    } else {
+      // Default fallback
+      if (isLecteur) {
+        popToRoot();
+        MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const BibliothequePage()),
+        );
+      }
+    }
+  }
+
+  static Future<void> showLocalNotification({
+    required String id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    const notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'high_importance_channel',
+        'Notifications Importantes',
+        channelDescription: 'Canal pour les notifications de l\'application',
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    await _localNotifications.show(
+      id: id.hashCode,
+      title: title.toUpperCase(),
+      body: body,
+      notificationDetails: notificationDetails,
+      payload: payload,
+    );
+  }
 
   Future<dynamic> getNotifications(
     String authToken, {
@@ -36,7 +175,6 @@ class NotificationService {
       final rawData = data['data'] ?? data;
 
       if (groupByRole && rawData is Map<String, dynamic>) {
-        // Handle grouped response: { "auteur": [...], "lecteur": [...] }
         final Map<String, List<NotificationModel>> grouped = {};
         rawData.forEach((key, value) {
           if (value is List) {
@@ -47,7 +185,6 @@ class NotificationService {
         });
         return grouped;
       } else if (rawData is List) {
-        // Handle standard list response
         return rawData.map((json) => NotificationModel.fromJson(json)).toList();
       }
       return <NotificationModel>[];
@@ -112,8 +249,6 @@ class NotificationService {
     }
   }
 
-  /// Stream notifications from server using Server-Sent Events (SSE).
-  /// Returns a broadcast stream of NotificationModel.
   Stream<NotificationModel> streamNotifications(String authToken) {
     final controller = StreamController<NotificationModel>.broadcast();
 
@@ -122,9 +257,6 @@ class NotificationService {
       cancelled = true;
     };
 
-    // Run a connection loop with simple backoff. This keeps the controller
-    // open while reconnect attempts happen. The loop stops when the stream
-    // subscription is cancelled (controller.onCancel sets `cancelled`).
     () async {
       int attempt = 0;
 
@@ -137,23 +269,16 @@ class NotificationService {
           request = await httpClient.getUrl(uri);
           request.headers.set('Authorization', 'Bearer $authToken');
           request.headers.set('Accept', 'text/event-stream');
+          request.headers.set('Cache-Control', 'no-cache');
 
           final response = await request.close();
           if (response.statusCode != 200) {
-            // propagate error to consumer and retry
-            if (!controller.isClosed)
-              controller.addError(
-                Exception(
-                  'SSE connection failed with status ${response.statusCode}',
-                ),
-              );
             attempt = math.min(attempt + 1, 6);
             final wait = math.min(30, 1 << attempt);
             await Future.delayed(Duration(seconds: wait));
             continue;
           }
 
-          // Connected successfully
           attempt = 0;
 
           final utf8Stream = response.transform(utf8.decoder);
@@ -163,25 +288,20 @@ class NotificationService {
 
           await for (final rawLine in lineStream) {
             if (cancelled) break;
-            final line = rawLine.trimRight();
+            final line = rawLine.trim();
             if (line.isEmpty) {
               if (buffer.isNotEmpty) {
                 final dataStr = buffer.toString();
                 try {
                   final decoded = jsonDecode(dataStr);
-
                   Map<String, dynamic>? payload;
 
-                  // Handle several possible envelopes:
-                  // 1) decoded is a Map and contains 'data' => use decoded['data']
-                  // 2) decoded is a Map and directly represents the notification
                   if (decoded is Map<String, dynamic>) {
                     if (decoded.containsKey('data')) {
                       final d = decoded['data'];
                       if (d is Map) {
                         payload = Map<String, dynamic>.from(d);
                       } else if (d is String) {
-                        // sometimes data is a stringified JSON
                         try {
                           final inner = jsonDecode(d);
                           if (inner is Map)
@@ -198,32 +318,19 @@ class NotificationService {
                     if (!controller.isClosed) controller.add(model);
                   }
                 } catch (e) {
-                  if (!controller.isClosed) controller.addError(e);
+                  debugPrint("📡 SSE Parsing Error: $e");
                 }
                 buffer.clear();
               }
-            } else if (line.startsWith(':')) {
-              // comment / keepalive; ignore
-              continue;
             } else if (line.startsWith('data:')) {
               buffer.write(line.substring(5).trim());
-            } else if (line.startsWith('event:')) {
-              // ignore event type for now
-              continue;
-            } else {
+            } else if (!line.startsWith(':') && !line.startsWith('event:')) {
               buffer.write(line);
             }
           }
         } catch (e) {
-          // Reduce noise for common connection issues when server is down
-          if (e is SocketException || e is HttpException) {
-            if (attempt == 0) {
-              debugPrint(
-                "📡 Notification Server unreachable (Gin @ ${ApiRoutes.host}:8082). Retrying in background...",
-              );
-            }
-          } else {
-            if (!controller.isClosed) controller.addError(e);
+          if (e is! SocketException && e is! HttpException) {
+            debugPrint("📡 SSE Stream Connection Error: $e");
           }
         } finally {
           try {
@@ -234,10 +341,9 @@ class NotificationService {
           } catch (_) {}
         }
 
-        // Exponential backoff: 2s, 4s, 8s, 16s, 30s
         if (!cancelled) {
           attempt = math.min(attempt + 1, 6);
-          final wait = math.min(30, 1 << attempt);
+          final wait = math.min(10, 1 << attempt);
           await Future.delayed(Duration(seconds: wait));
         }
       }

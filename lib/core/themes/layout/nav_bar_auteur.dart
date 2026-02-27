@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 
 class NavBarAuteur extends StatelessWidget {
   final int currentIndex;
@@ -20,42 +21,131 @@ class NavBarAuteur extends StatelessWidget {
         border: Border(
           top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
         ),
-      ),
-      child: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: currentIndex,
-        onTap: onTap,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        selectedItemColor: AppColors.secondaryVariant,
-        unselectedItemColor: Colors.white.withOpacity(0.4),
-        showUnselectedLabels: true,
-        selectedLabelStyle: GoogleFonts.poppins(
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-        unselectedLabelStyle: GoogleFonts.poppins(
-          fontWeight: FontWeight.w400,
-          fontSize: 12,
-        ),
-        items: [
-          _buildItem(Icons.home_filled, "Accueil", 0),
-          _buildItem(Icons.add_circle, "Publier", 1),
-          _buildItem(Icons.book, "Mes Livres", 2),
-          _buildItem(Icons.group, "Communauté", 3),
-          _buildItem(Icons.settings, "Paramètres", 4),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(
+                icon: Iconsax.home_2,
+                activeIcon: Iconsax.home_25,
+                label: "Accueil",
+                index: 0,
+              ),
+              _buildNavItem(
+                icon: Iconsax.book,
+                activeIcon: Iconsax.book_1,
+                label: "Mes Livres",
+                index: 1,
+              ),
+              _buildNavItem(
+                icon: Iconsax.add_circle,
+                activeIcon: Iconsax.add_circle5,
+                label: "Publier",
+                index: 2,
+                isSpecial: true,
+              ),
+              _buildNavItem(
+                icon: Iconsax.people,
+                activeIcon: Iconsax.people4,
+                label: "Communauté",
+                index: 3,
+              ),
+              _buildNavItem(
+                icon: Iconsax.setting_2,
+                activeIcon: Iconsax.setting_25,
+                label: "Paramètres",
+                index: 4,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  BottomNavigationBarItem _buildItem(IconData icon, String label, int index) {
-    return BottomNavigationBarItem(
-      icon: Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Icon(icon, size: currentIndex == index ? 26 : 24),
+  Widget _buildNavItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required int index,
+    bool isSpecial = false,
+  }) {
+    final isActive = currentIndex == index;
+
+    return GestureDetector(
+      onTap: () => onTap(index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: isActive && !isSpecial
+            ? BoxDecoration(
+                color: AppColors.secondaryVariant.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              )
+            : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSpecial)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.secondaryVariant, AppColors.secondary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondaryVariant.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isActive ? activeIcon : icon,
+                  size: 20,
+                  color: Colors.white,
+                ),
+              )
+            else
+              Icon(
+                isActive ? activeIcon : icon,
+                size: 22,
+                color: isActive
+                    ? AppColors.secondaryVariant
+                    : Colors.white.withOpacity(0.35),
+              ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: isSpecial ? 10 : 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isSpecial
+                    ? AppColors.secondaryVariant
+                    : isActive
+                    ? AppColors.secondaryVariant
+                    : Colors.white.withOpacity(0.35),
+              ),
+            ),
+          ],
+        ),
       ),
-      label: label,
     );
   }
 }

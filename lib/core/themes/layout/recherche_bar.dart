@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/recherche_page.dart';
@@ -51,10 +52,7 @@ class CustomSearchBar extends StatelessWidget {
                             );
                           }
                         : null,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: AppTextStyles.body,
                     decoration: InputDecoration(
                       hintText: "Rechercher des livres...",
                       hintStyle: GoogleFonts.poppins(
