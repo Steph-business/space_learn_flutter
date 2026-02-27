@@ -1,9 +1,13 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+
 class Revenus extends StatefulWidget {
-  const Revenus({super.key});
+  final List<BookModel> books;
+  const Revenus({super.key, required this.books});
 
   @override
   State<Revenus> createState() => _RevenusState();
@@ -12,12 +16,17 @@ class Revenus extends StatefulWidget {
 class _RevenusState extends State<Revenus> {
   bool isRevenueSelected = true;
 
+  double get totalRevenue => widget.books.fold(
+    0,
+    (sum, book) => sum + (book.prix * book.telechargements),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B), // Dark slate
+        color: AppColors.cardBackground, // Dark slate
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -49,7 +58,7 @@ class _RevenusState extends State<Revenus> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "Total: 1,450 €",
+                    "Total: ${totalRevenue.toStringAsFixed(0)} FCFA",
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontSize: 15,
@@ -57,7 +66,7 @@ class _RevenusState extends State<Revenus> {
                     ),
                   ),
                   Text(
-                    "Croissance: +12%",
+                    "Croissance: --",
                     style: GoogleFonts.poppins(
                       color: Colors.green,
                       fontSize: 14,
@@ -110,7 +119,7 @@ class _RevenusState extends State<Revenus> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: !isRevenueSelected
-                            ? const Color(0xFF1E293B)
+                            ? AppColors.cardBackground
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(6),
                       ),
@@ -134,7 +143,7 @@ class _RevenusState extends State<Revenus> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: isRevenueSelected
-                            ? const Color(0xFF1E293B)
+                            ? AppColors.cardBackground
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(6),
                       ),
@@ -198,7 +207,7 @@ class _RevenusState extends State<Revenus> {
             FlSpot(14, 8),
           ],
           isCurved: true,
-          color: const Color(0xFF3B82F6), // Blue as in image
+          color: AppColors.secondary, // Blue as in image
           barWidth: 3,
           isStrokeCapRound: true,
           dotData: FlDotData(
@@ -215,8 +224,8 @@ class _RevenusState extends State<Revenus> {
             show: true,
             gradient: LinearGradient(
               colors: [
-                const Color(0xFF3B82F6).withOpacity(0.2),
-                const Color(0xFF3B82F6).withOpacity(0.0),
+                AppColors.secondary.withOpacity(0.2),
+                AppColors.secondary.withOpacity(0.0),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,

@@ -1,99 +1,168 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/abonnes_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart';
 
 class Statistique extends StatefulWidget {
-  const Statistique({super.key});
+  final List<BookModel> books;
+  const Statistique({super.key, required this.books});
 
   @override
   State<Statistique> createState() => _StatistiqueState();
 }
 
 class _StatistiqueState extends State<Statistique> {
-  final AuthorStatsService _authorStatsService = AuthorStatsService();
   final AuthService _authService = AuthService();
-  Map<String, dynamic> _stats = {};
+  final RelationService _relationService = RelationService();
   String? _authorId;
+  int _followersCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    _loadUserInfo();
   }
 
-  Future<void> _loadStats() async {
+  Future<void> _loadUserInfo() async {
     try {
       final token = await TokenStorage.getToken();
       if (token != null) {
         final user = await _authService.getUser(token);
-        if (user != null) {
-          final data = await _authorStatsService.getAuthorStats(user.id, '30d');
-          if (mounted) {
-            setState(() {
-              _stats = data;
-              _authorId = user.id;
-            });
-          }
+        if (user != null && mounted) {
+          setState(() {
+            _authorId = user.id;
+          });
+          _loadFollowers(user.id);
         }
       }
     } catch (e) {
-      debugPrint("Error loading home stats: $e");
+      debugPrint("Error loading user info: $e");
+    }
+  }
+
+  Future<void> _loadFollowers(String userId) async {
+    try {
+      final followers = await _relationService.getFollowers(userId);
+      if (mounted) {
+        setState(() => _followersCount = followers.length);
+      }
+    } catch (e) {
+      debugPrint("Error loading followers: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
+    // Calcul dynamic
+    final double totalRevenue = widget.books.fold(
+      0,
+      (sum, b) => sum + (b.prix * b.telechargements),
+    );
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                "VENTES",
+                "${totalRevenue.toStringAsFixed(0)} FCFA",
+                "+12%",
+                Icons.account_balance_wallet_rounded,
+                AppColors.cardBackground,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  if (_authorId != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AbonnesPage(authorId: _authorId!),
+                      ),
+                    );
+                  }
+                },
                 child: _buildStatCard(
-                  "VENTES",
-                  "${_stats['revenue'] ?? 0} €",
-                  "+12%",
-                  Icons.account_balance_wallet_rounded,
-                  const Color(0xFF1E293B),
+                  "LECTEURS",
+                  "$_followersCount",
+                  "+5%",
+                  Icons.people_alt_rounded,
+                  AppColors.cardBackground,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    if (_authorId != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              AbonnesPage(authorId: _authorId!),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Chargement de votre compte..."),
-                        ),
-                      );
-                    }
-                  },
-                  child: _buildStatCard(
-                    "LECTEURS",
-                    "${_stats['views'] ?? 0}",
-                    "+5%",
-                    Icons.people_alt_rounded,
-                    const Color(0xFF1E293B),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: () {
+            HomePageAuteur.navKey.currentState?.setIndex(3);
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryVariant.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.campaign_rounded,
+                    color: AppColors.secondaryVariant,
+                    size: 20,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 15),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "COMMUNAUTÉ",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white.withOpacity(0.5),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    Text(
+                      "Gérer mes annonces & évènements",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white24,
+                  size: 14,
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -129,14 +198,7 @@ class _StatistiqueState extends State<Statistique> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(value, style: AppTextStyles.pageTitle),
           const SizedBox(height: 4),
           Row(
             children: [

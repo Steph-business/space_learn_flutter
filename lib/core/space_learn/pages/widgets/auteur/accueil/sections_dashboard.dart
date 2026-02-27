@@ -1,15 +1,31 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
 
 class TopLivresSection extends StatelessWidget {
-  const TopLivresSection({super.key});
+  final List<BookModel> books;
+  final bool isLoading;
+
+  const TopLivresSection({
+    super.key,
+    required this.books,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Sort books by downloads (views) descending and take top 2 (original design had 2 items)
+    final sortedBooks = List<BookModel>.from(books);
+    sortedBooks.sort((a, b) => b.telechargements.compareTo(a.telechargements));
+    final topBooks = sortedBooks.take(2).toList();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -18,14 +34,7 @@ class TopLivresSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Top Livres",
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text("Top Livres", style: AppTextStyles.subtitle),
               Row(
                 children: [
                   Text(
@@ -48,20 +57,42 @@ class TopLivresSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _buildItem("1", "Le Secret des Étoiles", "12,500", "680 €"),
-          const Divider(color: Colors.white10, height: 24),
-          _buildItem("2", "Chroniques du Vent", "9,800", "420 €"),
+          if (isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else if (topBooks.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  "Aucun livre publié",
+                  style: GoogleFonts.poppins(color: Colors.white38),
+                ),
+              ),
+            )
+          else
+            ...List.generate(topBooks.length, (index) {
+              final book = topBooks[index];
+              return Column(
+                children: [
+                  _buildItem(context, "${index + 1}", book),
+                  if (index < topBooks.length - 1)
+                    const Divider(color: Colors.white10, height: 24),
+                ],
+              );
+            }),
           const SizedBox(height: 8),
           Center(
-            child: TextButton(
-              onPressed: () {},
-              child: Text(
-                "Voir tous mes livres",
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF0EA5E9),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+            child: Text(
+              "Voir tous mes livres",
+              style: GoogleFonts.poppins(
+                color: AppColors.secondaryVariant,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -70,7 +101,11 @@ class TopLivresSection extends StatelessWidget {
     );
   }
 
-  Widget _buildItem(String rank, String title, String views, String revenue) {
+  Widget _buildItem(BuildContext context, String rank, BookModel book) {
+    final views = book.telechargements.toString();
+    final revenue =
+        "${(book.prix * book.telechargements).toStringAsFixed(0)} FCFA";
+
     return Row(
       children: [
         Text(
@@ -94,7 +129,7 @@ class TopLivresSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title,
+                book.titre,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 13,
@@ -114,14 +149,21 @@ class TopLivresSection extends StatelessWidget {
         Text(
           revenue,
           style: GoogleFonts.poppins(
-            color: const Color(0xFF0EA5E9),
+            color: AppColors.secondaryVariant,
             fontSize: 13,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(width: 8),
         IconButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AjouterLivrePage(book: book),
+              ),
+            );
+          },
           icon: const Icon(
             Icons.edit_note_rounded,
             color: Colors.white54,
@@ -143,20 +185,13 @@ class CommentairesRecentsSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Commentaires Récents",
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text("Commentaires Récents", style: AppTextStyles.subtitle),
           const SizedBox(height: 16),
           _buildComment(
             "Sophie L.",
@@ -201,7 +236,7 @@ class CommentairesRecentsSection extends StatelessWidget {
         ElevatedButton(
           onPressed: () {},
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0EA5E9),
+            backgroundColor: AppColors.secondaryVariant,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -230,20 +265,13 @@ class ConseilsPublicationSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Conseils de Publication",
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text("Conseils de Publication", style: AppTextStyles.subtitle),
           const SizedBox(height: 16),
           _buildTip("📣", "Promouvoir sur les réseaux sociaux (FB, Insta)"),
           const SizedBox(height: 12),
@@ -260,12 +288,7 @@ class ConseilsPublicationSection extends StatelessWidget {
       children: [
         Text(icon, style: const TextStyle(fontSize: 18)),
         const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
-          ),
-        ),
+        Expanded(child: Text(text, style: AppTextStyles.body)),
       ],
     );
   }

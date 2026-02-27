@@ -1,8 +1,8 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/filtre_livres.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_card.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
@@ -14,7 +14,6 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/readingProgressService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/readingActivityModel.dart';
 
 class BibliothequePage extends StatefulWidget {
@@ -35,12 +34,23 @@ class _BibliothequePageState extends State<BibliothequePage> {
   bool _isLoading = true;
   String? _error;
   String _userName = "Lecteur";
+  String _statusFiltre = "Tous";
+  String _sortOption = "Dernière lecture";
+  String _searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
+  bool _isGridView = false;
 
   @override
   void initState() {
     super.initState();
     _loadLibrary();
     _loadUserInfo();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserInfo() async {
@@ -132,36 +142,19 @@ class _BibliothequePageState extends State<BibliothequePage> {
         for (var p in allProgress) p.livreId: p,
       };
 
-      // 💉 Map progressions to books
+      // 💉 Map progressions to books using a robust approach
       final finalItems = enriched.map((item) {
         if (item.livre != null) {
           final p = progressMap[item.livre!.id];
           if (p != null) {
-            // Reconstruct book with progress if found
+            // Use copyWith to preserve all book fields while updating progressions
             return LibraryModel(
               id: item.id,
               utilisateurId: item.utilisateurId,
               livreId: item.livreId,
               acquisVia: item.acquisVia,
               creeLe: item.creeLe,
-              livre: BookModel(
-                id: item.livre!.id,
-                auteurId: item.livre!.auteurId,
-                titre: item.livre!.titre,
-                description: item.livre!.description,
-                imageCouverture: item.livre!.imageCouverture,
-                fichierUrl: item.livre!.fichierUrl,
-                format: item.livre!.format,
-                prix: item.livre!.prix,
-                stock: item.livre!.stock,
-                statut: item.livre!.statut,
-                categorieId: item.livre!.categorieId,
-                noteMoyenne: item.livre!.noteMoyenne,
-                telechargements: item.livre!.telechargements,
-                categorie: item.livre!.categorie,
-                auteur: item.livre!.auteur,
-                progressions: [p],
-              ),
+              livre: item.livre!.copyWith(progressions: [p]),
             );
           }
         }
@@ -197,179 +190,434 @@ class _BibliothequePageState extends State<BibliothequePage> {
   }
 
   List<LibraryModel> _getFilteredBooks() {
-    if (filtreActif == "Tous") {
-      return _libraryItems;
+    List<LibraryModel> filtered = List.from(_libraryItems);
+
+    // Apply Search Filter
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((item) {
+        final title = item.livre?.titre.toLowerCase() ?? "";
+        return title.contains(_searchQuery.toLowerCase());
+      }).toList();
     }
-    return _libraryItems
-        .where((item) => item.livre?.categorie?.nom == filtreActif)
-        .toList();
+
+    // Apply Status Filter
+    if (_statusFiltre != "Tous") {
+      filtered = filtered.where((item) {
+        final progress =
+            (item.livre?.progressions != null &&
+                item.livre!.progressions!.isNotEmpty)
+            ? item.livre!.progressions!.first.pourcentage.toDouble()
+            : 0.0;
+        if (_statusFiltre == "En cours") {
+          return progress > 0 && progress < 100;
+        } else if (_statusFiltre == "Terminés") {
+          return progress >= 100;
+        }
+        return true;
+      }).toList();
+    }
+
+    // Apply Category Filter
+    if (filtreActif != "Tous") {
+      filtered = filtered
+          .where((item) => item.livre?.categorie?.nom == filtreActif)
+          .toList();
+    }
+
+    // Apply Sorting
+    if (_sortOption == "Dernière lecture") {
+      filtered.sort((a, b) {
+        final dateA =
+            (a.livre?.progressions != null && a.livre!.progressions!.isNotEmpty)
+            ? a.livre!.progressions!.first.majLe ?? DateTime(0)
+            : a.creeLe ?? DateTime(0);
+        final dateB =
+            (b.livre?.progressions != null && b.livre!.progressions!.isNotEmpty)
+            ? b.livre!.progressions!.first.majLe ?? DateTime(0)
+            : b.creeLe ?? DateTime(0);
+        return dateB.compareTo(dateA); // Newest first
+      });
+    } else if (_sortOption == "A-Z") {
+      filtered.sort((a, b) {
+        final titleA = a.livre?.titre.toLowerCase() ?? "";
+        final titleB = b.livre?.titre.toLowerCase() ?? "";
+        return titleA.compareTo(titleB);
+      });
+    }
+
+    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: Stack(
+      backgroundColor: AppColors.scaffoldBackground,
+      body: Column(
         children: [
-          // Background Gradient for the top half
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: MediaQuery.of(context).size.height * 0.45,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF475569), // Lighter slate gray
-                    Color(0xFF0F172A), // Dark background matching Scaffold
+          // En-tête fixe
+          NavBarAll(userName: _userName),
+          // Contenu défilable
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadLibrary,
+              color: AppColors.warning,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Row with Search and Views Toggle
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomSearchBar(
+                            controller: _searchController,
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _isGridView = !_isGridView),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardBackground,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _isGridView
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(
+                              _isGridView
+                                  ? Icons.list_rounded
+                                  : Icons.grid_view_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Status Filter Tabs
+                    Row(
+                      children: [
+                        _buildStatusTab("Tous"),
+                        const SizedBox(width: 32),
+                        _buildStatusTab("En cours"),
+                        const SizedBox(width: 32),
+                        _buildStatusTab("Terminés"),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Sort and Genre Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildSortChip("Dernière lecture", Icons.swap_vert),
+                          const SizedBox(width: 12),
+                          _buildGenreChip(),
+                          const SizedBox(width: 12),
+                          _buildSortChip("A-Z", Icons.sort_by_alpha),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    if (_isLoading)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(60.0),
+                          child: Text(
+                            "Chargement...",
+                            style: GoogleFonts.poppins(color: Colors.white70),
+                          ),
+                        ),
+                      )
+                    else if (_error != null)
+                      _buildErrorState()
+                    else if (_libraryItems.isEmpty)
+                      _buildEmptyState()
+                    else if (_isGridView)
+                      GridView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.7,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                            ),
+                        itemCount: _getFilteredBooks().length,
+                        itemBuilder: (context, index) {
+                          final item = _getFilteredBooks()[index];
+                          final book = item.livre;
+                          if (book == null) return const SizedBox.shrink();
+
+                          return GestureDetector(
+                            onTap: () => _openBookDetails(book),
+                            child: LivreGridCard(
+                              titre: book.titre,
+                              auteur: book.authorName,
+                              progression:
+                                  (book.progressions != null &&
+                                      book.progressions!.isNotEmpty)
+                                  ? book.progressions!.first.pourcentage.toInt()
+                                  : 0,
+                              couleurs: const [
+                                AppColors.purple,
+                                AppColors.indigoLight,
+                              ],
+                              imageUrl: book.imageCouverture,
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _getFilteredBooks().length,
+                        itemBuilder: (context, index) {
+                          final item = _getFilteredBooks()[index];
+                          final book = item.livre;
+
+                          if (book == null) return const SizedBox.shrink();
+
+                          return GestureDetector(
+                            onTap: () => _openBookDetails(book),
+                            child: LivreCard(
+                              titre: book.titre,
+                              auteur: book.authorName,
+                              categorie: book.categorie?.nom,
+                              progression:
+                                  (book.progressions != null &&
+                                      book.progressions!.isNotEmpty)
+                                  ? book.progressions!.first.pourcentage.toInt()
+                                  : 0,
+                              couleurs: const [
+                                AppColors.purple,
+                                AppColors.indigoLight,
+                              ],
+                              imageUrl: book.imageCouverture,
+                              dateAcquisition: item.creeLe,
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
             ),
           ),
-          Column(
+        ],
+      ),
+    );
+  }
+
+  void _openBookDetails(dynamic book) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BookDetailPage(book: book, isOwned: true),
+      ),
+    ).then((_) {
+      // Refresh library to show updated progress
+      _loadLibrary();
+    });
+  }
+
+  Widget _buildStatusTab(String label) {
+    bool isSelected = _statusFiltre == label;
+    return GestureDetector(
+      onTap: () => setState(() => _statusFiltre = label),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? AppColors.primaryLight : Colors.grey[400],
+              ),
+            ),
+          ),
+          if (isSelected)
+            Container(
+              height: 3,
+              width: (label.length * 8.0) + 8, // Simple heuristic for width
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            )
+          else
+            const SizedBox(height: 3),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSortChip(String label, IconData icon) {
+    bool isActive = _sortOption == label;
+    return GestureDetector(
+      onTap: () => setState(() => _sortOption = label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.cardBackground : AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? AppColors.primaryLight : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isActive ? AppColors.primaryLight : Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: isActive ? AppColors.primaryLight : Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenreChip() {
+    bool hasActiveGenre = filtreActif != "Tous";
+    return GestureDetector(
+      onTap: _showGenrePicker,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: hasActiveGenre ? AppColors.primaryLight : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.tune_rounded,
+              color: hasActiveGenre ? AppColors.primaryLight : Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              hasActiveGenre ? "Genre: $filtreActif" : "Genre",
+              style: GoogleFonts.poppins(
+                color: hasActiveGenre ? AppColors.primaryLight : Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showGenrePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.scaffoldBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: const BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // En-tête fixe
-              NavBarAll(userName: _userName),
-              // Contenu défilable
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _loadLibrary,
-                  color: const Color(0xFFF59E0B),
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 24,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header Section
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Ma Bibliothèque",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                                Text(
-                                  "Continuez vos lectures en cours",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: Colors.grey[400],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1E293B),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.grid_view_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ],
+              Text(
+                "Sélectionner un Genre",
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _categories.length,
+                  itemBuilder: (context, index) {
+                    final cat = _categories[index];
+                    final isSelected = cat == filtreActif;
+                    return ListTile(
+                      title: Text(
+                        cat,
+                        style: GoogleFonts.poppins(
+                          color: isSelected
+                              ? AppColors.primaryLight
+                              : Colors.white,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                         ),
-                        const SizedBox(height: 24),
-
-                        // Search and Filter
-                        const CustomSearchBar(),
-                        const SizedBox(height: 20),
-                        FiltreLivres(
-                          filtreActif: filtreActif,
-                          categories: _categories,
-                          onFiltreChange: (f) =>
-                              setState(() => filtreActif = f),
-                        ),
-                        const SizedBox(height: 24),
-
-                        if (_isLoading)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(60.0),
-                              child: Text(
-                                "Chargement...",
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ),
-                          )
-                        else if (_error != null)
-                          _buildErrorState()
-                        else if (_libraryItems.isEmpty)
-                          _buildEmptyState()
-                        else
-                          ListView.builder(
-                            shrinkWrap: true,
-                            padding: EdgeInsets.zero,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _getFilteredBooks().length,
-                            itemBuilder: (context, index) {
-                              final item = _getFilteredBooks()[index];
-                              final book = item.livre;
-
-                              if (book == null) return const SizedBox.shrink();
-
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => BookDetailPage(
-                                        book: book,
-                                        isOwned: true,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: LivreCard(
-                                  titre: book.titre,
-                                  auteur: book.authorName,
-                                  categorie: book.categorie?.nom,
-                                  progression:
-                                      (book.progressions != null &&
-                                          book.progressions!.isNotEmpty)
-                                      ? book.progressions!.first.pourcentage
-                                            .toInt()
-                                      : 0,
-                                  couleurs: const [
-                                    Color(0xFF6A5AE0),
-                                    Color(0xFF8B82F6),
-                                  ],
-                                  imageUrl: book.imageCouverture,
-                                  dateAcquisition: item.creeLe,
-                                ),
-                              );
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(
+                              Icons.check,
+                              color: AppColors.primaryLight,
+                            )
+                          : null,
+                      onTap: () {
+                        setState(() => filtreActif = cat);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
                 ),
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -383,13 +631,13 @@ class _BibliothequePageState extends State<BibliothequePage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.library_books_rounded,
                 size: 48,
-                color: const Color(0xFF94A3B8),
+                color: AppColors.slateLight,
               ),
             ),
             const SizedBox(height: 24),
@@ -418,7 +666,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                 MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF06B6D4),
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -455,9 +703,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               onPressed: _loadLibrary,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text("Réessayer"),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF06B6D4),
-              ),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
           ],
         ),

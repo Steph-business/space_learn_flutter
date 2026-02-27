@@ -1,70 +1,71 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/recherche_page.dart';
 
 class CustomSearchBar extends StatelessWidget {
-  const CustomSearchBar({super.key});
+  final ValueChanged<String>? onChanged;
+  final TextEditingController? controller;
+  final VoidCallback? onFilterTap;
+
+  const CustomSearchBar({
+    super.key,
+    this.onChanged,
+    this.controller,
+    this.onFilterTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const RecherchePage()),
-              );
-            },
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B).withOpacity(0.8),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFF06B6D4),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    "Rechercher des livres...",
-                    style: GoogleFonts.poppins(
-                      color: Colors.white.withOpacity(0.4),
-                      fontSize: 14,
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    onChanged: onChanged,
+                    readOnly: onChanged == null,
+                    onTap: onChanged == null
+                        ? () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RecherchePage(),
+                              ),
+                            );
+                          }
+                        : null,
+                    style: AppTextStyles.body,
+                    decoration: InputDecoration(
+                      hintText: "Rechercher des livres...",
+                      hintStyle: GoogleFonts.poppins(
+                        color: Colors.white.withOpacity(0.4),
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Container(
-          height: 48,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const RecherchePage()),
-              );
-            },
-            icon: const Icon(Icons.tune_rounded, size: 18),
-            label: const Text("Filtrer"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF06B6D4),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+                ),
+              ],
             ),
           ),
         ),

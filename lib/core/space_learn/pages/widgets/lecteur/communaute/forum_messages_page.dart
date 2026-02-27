@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -5,6 +7,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.
 import 'package:space_learn_flutter/core/space_learn/data/model/messageModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/messageService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import '../../../../../themes/layout/nav_bar_lecteur.dart';
 
 class ForumMessagesPage extends StatefulWidget {
   final Discussion discussion;
@@ -84,14 +87,15 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
       if (mounted) {
         String? nom;
         String? photo;
+        String? rang;
 
-        // On récupère le nom/photo d'un message précédent si possible (même utilsateur)
+        // On récupère le nom/photo/rang d'un message précédent si possible (même utilisateur)
         for (var m in _messages) {
-          if (m.utilisateurId == newMessage.utilisateurId &&
-              m.nomUtilisateur != null) {
-            nom = m.nomUtilisateur;
-            photo = m.photoProfil;
-            break;
+          if (m.utilisateurId == newMessage.utilisateurId) {
+            if (m.nomUtilisateur != null) nom = m.nomUtilisateur;
+            if (m.photoProfil != null) photo = m.photoProfil;
+            if (m.rangUtilisateur != null) rang = m.rangUtilisateur;
+            if (nom != null && photo != null && rang != null) break;
           }
         }
 
@@ -104,6 +108,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
           discussion: newMessage.discussion,
           nomUtilisateur: nom ?? newMessage.nomUtilisateur,
           photoProfil: photo ?? newMessage.photoProfil,
+          rangUtilisateur: rang ?? newMessage.rangUtilisateur,
         );
 
         setState(() {
@@ -123,21 +128,20 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
+            Navigator.of(context).pop();
+          },
         ),
         title: Text(
           widget.discussion.titre,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: AppTextStyles.button14,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -160,74 +164,13 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: const Color(0xFF0F172A),
-                                  backgroundImage:
-                                      (msg.photoProfil != null &&
-                                          msg.photoProfil!.isNotEmpty)
-                                      ? NetworkImage(msg.photoProfil!)
-                                      : null,
-                                  child:
-                                      (msg.photoProfil == null ||
-                                          msg.photoProfil!.isEmpty)
-                                      ? const Icon(
-                                          Icons.person,
-                                          color: Colors.white54,
-                                          size: 16,
-                                        )
-                                      : null,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  msg.nomUtilisateur?.isNotEmpty == true
-                                      ? msg.nomUtilisateur!
-                                      : 'Utilisateur',
-                                  style: GoogleFonts.poppins(
-                                    color: const Color(0xFF0EA5E9),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  _timeAgo(msg.creeLe),
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white30,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              msg.contenu,
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+                      return _buildMessageItem(msg);
                     },
                   ),
           ),
           Container(
             padding: const EdgeInsets.all(16),
-            color: const Color(0xFF1E293B),
+            color: AppColors.cardBackground,
             child: Row(
               children: [
                 Expanded(
@@ -240,7 +183,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                         color: Colors.white.withValues(alpha: 0.4),
                       ),
                       filled: true,
-                      fillColor: const Color(0xFF0F172A),
+                      fillColor: AppColors.scaffoldBackground,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
@@ -258,7 +201,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: const BoxDecoration(
-                      color: Color(0xFF0EA5E9),
+                      color: AppColors.secondaryVariant,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -270,6 +213,120 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _getUserRankBadge(String username, {String? rank}) {
+    String rankTitle;
+    Color color;
+
+    if (rank != null) {
+      rankTitle = rank;
+      switch (rank.toLowerCase()) {
+        case 'maître':
+        case 'maitre':
+          color = AppColors.yellow;
+          break;
+        case 'érudit':
+        case 'erudit':
+          color = AppColors.violetLight;
+          break;
+        case 'explorateur':
+          color = AppColors.primaryLight;
+          break;
+        case 'novice':
+          color = Colors.grey;
+          break;
+        default:
+          color = Colors.cyan;
+      }
+    } else {
+      // Simulation fallback
+      final int hash = username.hashCode.abs() % 100;
+      if (hash > 80) {
+        rankTitle = "Maître";
+        color = AppColors.yellow;
+      } else if (hash > 50) {
+        rankTitle = "Érudit";
+        color = AppColors.violetLight;
+      } else if (hash > 20) {
+        rankTitle = "Explorateur";
+        color = AppColors.primaryLight;
+      } else {
+        rankTitle = "Novice";
+        color = Colors.grey;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+      ),
+      child: Text(
+        rankTitle,
+        style: GoogleFonts.poppins(
+          color: color,
+          fontSize: 7,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageItem(Message msg) {
+    final String username = msg.nomUtilisateur ?? 'Utilisateur';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: AppColors.scaffoldBackground,
+                backgroundImage:
+                    (msg.photoProfil != null && msg.photoProfil!.isNotEmpty)
+                    ? NetworkImage(msg.photoProfil!)
+                    : null,
+                child: (msg.photoProfil == null || msg.photoProfil!.isEmpty)
+                    ? const Icon(Icons.person, color: Colors.white54, size: 16)
+                    : null,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                username,
+                style: GoogleFonts.poppins(
+                  color: AppColors.secondaryVariant,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 6),
+              _getUserRankBadge(username, rank: msg.rangUtilisateur),
+              const Spacer(),
+              Text(
+                _timeAgo(msg.creeLe),
+                style: GoogleFonts.poppins(color: Colors.white30, fontSize: 10),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            msg.contenu,
+            style: AppTextStyles.body,
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -109,9 +111,9 @@ class _RecherchePageState extends State<RecherchePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
@@ -120,7 +122,7 @@ class _RecherchePageState extends State<RecherchePage> {
         title: Container(
           height: 40,
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: AppColors.cardBackground,
             borderRadius: BorderRadius.circular(10),
           ),
           child: TextField(
@@ -180,7 +182,7 @@ class _RecherchePageState extends State<RecherchePage> {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 14),
+            style: AppTextStyles.greyMedium14,
           ),
         ],
       ),
@@ -204,7 +206,7 @@ class _RecherchePageState extends State<RecherchePage> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
@@ -238,11 +240,7 @@ class _RecherchePageState extends State<RecherchePage> {
                 children: [
                   Text(
                     book.titre,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.button15,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -250,7 +248,7 @@ class _RecherchePageState extends State<RecherchePage> {
                   Text(
                     "Par ${book.authorName}",
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFF06B6D4),
+                      color: AppColors.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -258,21 +256,14 @@ class _RecherchePageState extends State<RecherchePage> {
                   const SizedBox(height: 4),
                   Text(
                     book.description,
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey[400],
-                      fontSize: 11,
-                    ),
+                    style: AppTextStyles.grey11,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     "${book.prix} FCFA",
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF06B6D4),
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTextStyles.withColor(AppTextStyles.cardTitle, AppColors.primary),
                   ),
                 ],
               ),

@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
@@ -33,13 +34,13 @@ class SelectCategorie extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF06B6D4)
-                    : const Color(0xFF1E293B).withOpacity(0.5),
+                    ? AppColors.primary
+                    : AppColors.cardBackground.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF06B6D4).withOpacity(0.3),
+                          color: AppColors.primary.withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),

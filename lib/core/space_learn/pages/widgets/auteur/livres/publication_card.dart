@@ -1,4 +1,7 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
@@ -30,106 +33,210 @@ class PublicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine an appropriate format for the date
+    const mois = [
+      "",
+      "jan",
+      "fév",
+      "mars",
+      "avr",
+      "mai",
+      "juin",
+      "juil",
+      "août",
+      "sept",
+      "oct",
+      "nov",
+      "déc",
+    ];
     final String formattedDate = book.creeLe != null
-        ? "${_monthName(book.creeLe!.month)} ${book.creeLe!.year}"
+        ? "${book.creeLe!.day} ${mois[book.creeLe!.month]} ${book.creeLe!.year} à ${book.creeLe!.hour.toString().padLeft(2, '0')}:${book.creeLe!.minute.toString().padLeft(2, '0')}"
         : "N/A";
 
+    final isPublished = book.statut.toLowerCase() == 'publie';
+    final statusColor = isPublished ? AppColors.success : AppColors.warning;
+    final statusText = isPublished ? "Publié" : book.statut;
+
     return GestureDetector(
-      onTap: () {
-        _navigateToBookDetail(context, book);
-      },
+      onTap: () => _navigateToBookDetail(context, book),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.04)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Section
-            Container(
-              width: 70,
-              height: 90,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.white10,
+            // Cover Image
+            Hero(
+              tag: 'book_cover_${book.id}',
+              child: Container(
+                width: 72,
+                height: 100,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondaryVariant.withOpacity(0.1),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child:
+                    book.imageCouverture != null &&
+                        book.imageCouverture!.isNotEmpty &&
+                        !book.imageCouverture!.contains('example.com')
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          book.imageCouverture!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildPlaceholderCover();
+                          },
+                        ),
+                      )
+                    : _buildPlaceholderCover(),
               ),
-              child:
-                  book.imageCouverture != null &&
-                      book.imageCouverture!.isNotEmpty &&
-                      !book.imageCouverture!.contains('example.com')
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        book.imageCouverture!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.book,
-                            color: Colors.white24,
-                            size: 30,
-                          );
-                        },
-                      ),
-                    )
-                  : const Icon(Icons.book, color: Colors.white24, size: 30),
             ),
             const SizedBox(width: 16),
 
-            // Content Section
+            // Book Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title
                   Text(
                     book.titre,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
                       color: Colors.white,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    formattedDate,
-                    style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                  // Date + Status
+                  Row(
+                    children: [
+                      Icon(
+                        Iconsax.calendar_1,
+                        size: 12,
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        formattedDate,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white.withOpacity(0.4),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: GoogleFonts.poppins(
+                            color: statusColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "${book.prix} €",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "${book.prix} FCFA",
+                          style: GoogleFonts.poppins(
+                            color: AppColors.secondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Icon(
+                        Iconsax.eye,
+                        size: 14,
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        "${book.telechargements} lectures",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white.withOpacity(0.4),
+                          fontSize: 11,
+                        ),
+                      ),
+                      if (book.noteMoyenne > 0) ...[
+                        const SizedBox(width: 12),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 14,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          "${book.noteMoyenne}",
+                          style: GoogleFonts.poppins(
+                            color: AppColors.warning,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
 
-            // Action Buttons Section
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildActionButton(
-                  icon: Icons.edit,
-                  label: "Modifier",
-                  color: const Color(0xFF0EA5E9),
-                  onTap: () async {
+            // ── Three-dot menu (top right) ──
+            PopupMenuButton<String>(
+              color: AppColors.cardBackground,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(maxWidth: 140),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.white.withOpacity(0.06)),
+              ),
+              position: PopupMenuPosition.under,
+              offset: const Offset(0, 4),
+              onSelected: (value) async {
+                switch (value) {
+                  case 'edit':
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -139,88 +246,115 @@ class PublicationCard extends StatelessWidget {
                     if (result == true && onBookUpdated != null) {
                       onBookUpdated!();
                     }
-                  },
-                ),
-                const SizedBox(width: 12),
-                _buildActionButton(
-                  icon: Icons.bar_chart,
-                  label: "Statistiques",
-                  color: const Color(0xFF10B981), // Green
-                  onTap: () {
+                    break;
+                  case 'stats':
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => StatistiquesLivrePage(book: book),
                       ),
                     );
-                  },
-                ),
-                const SizedBox(width: 12),
-                PopupMenuButton<String>(
-                  color: const Color(0xFF1E293B),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.white.withOpacity(0.05)),
+                    break;
+                  case 'archive':
+                    _handleArchive(context);
+                    break;
+                  case 'delete':
+                    _handleDelete(context);
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'edit',
+                  height: 32,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Iconsax.edit_2,
+                        color: AppColors.secondaryVariant,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "modifier",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
                   ),
-                  offset: const Offset(0, 40),
-                  onSelected: (value) {
-                    if (value == 'archive') {
-                      _handleArchive(context);
-                    } else if (value == 'delete') {
-                      _handleDelete(context);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'archive',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.archive_outlined,
-                            color: Colors.white70,
-                            size: 20,
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            "Archiver",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ],
+                ),
+                PopupMenuItem(
+                  value: 'stats',
+                  height: 32,
+                  child: Row(
+                    children: [
+                      Icon(Iconsax.chart_1, color: AppColors.success, size: 14),
+                      const SizedBox(width: 8),
+                      Text(
+                        "statistiques",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
                       ),
-                    ),
-                    const PopupMenuDivider(height: 1),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.delete_outline,
-                            color: Colors.redAccent,
-                            size: 20,
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            "Supprimer",
-                            style: TextStyle(color: Colors.redAccent),
-                          ),
-                        ],
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(height: 1),
+                PopupMenuItem(
+                  value: 'archive',
+                  height: 32,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Iconsax.archive_2,
+                        color: Colors.white.withOpacity(0.5),
+                        size: 14,
                       ),
-                    ),
-                  ],
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.more_horiz,
-                      color: Colors.white70,
-                      size: 20,
-                    ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "archiver",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white70,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(height: 1),
+                PopupMenuItem(
+                  value: 'delete',
+                  height: 32,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Iconsax.trash,
+                        color: AppColors.error.withOpacity(0.7),
+                        size: 14,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "supprimer",
+                        style: GoogleFonts.poppins(
+                          color: AppColors.error,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  Iconsax.more,
+                  color: Colors.white.withOpacity(0.3),
+                  size: 18,
+                ),
+              ),
             ),
           ],
         ),
@@ -228,68 +362,36 @@ class PublicationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-    Color iconColor = Colors.white,
-    bool isIconOnly = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: EdgeInsets.all(isIconOnly ? 6 : 10),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          if (!isIconOnly) ...[
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey[400],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+  Widget _buildPlaceholderCover() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.secondaryVariant.withOpacity(0.15),
+            AppColors.violet.withOpacity(0.1),
           ],
-        ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.secondaryVariant.withOpacity(0.15)),
+      ),
+      child: const Center(
+        child: Icon(Iconsax.book_1, color: Colors.white30, size: 28),
       ),
     );
   }
 
-  String _monthName(int month) {
-    const months = [
-      "",
-      "Jan",
-      "Fév",
-      "Mars",
-      "Avr",
-      "Mai",
-      "Juin",
-      "Juil",
-      "Août",
-      "Sept",
-      "Oct",
-      "Nov",
-      "Déc",
-    ];
-    if (month >= 1 && month <= 12) return months[month];
-    return "$month";
-  }
-
   void _handleArchive(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Fonction d'archivage en cours de développement."),
-        backgroundColor: Color(0xFF1E293B),
+      SnackBar(
+        content: Text(
+          "Fonction d'archivage en cours de développement.",
+          style: GoogleFonts.poppins(fontSize: 13),
+        ),
+        backgroundColor: AppColors.cardBackground,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -297,61 +399,140 @@ class PublicationCard extends StatelessWidget {
   void _handleDelete(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text(
-          "Supprimer l'œuvre",
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          "Êtes-vous sûr de vouloir supprimer ce livre ? Cette action est irréversible.",
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Annuler",
-              style: TextStyle(color: Colors.white54),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                final token = await TokenStorage.getToken();
-                if (token != null) {
-                  await BookService().deleteBook(book.id, token);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Livre supprimé avec succès"),
-                        backgroundColor: Colors.green,
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Iconsax.trash,
+                  color: AppColors.error.withOpacity(0.8),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "Supprimer l'œuvre",
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Êtes-vous sûr de vouloir supprimer \"${book.titre}\" ? Cette action est irréversible.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "Annuler",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white.withOpacity(0.6),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
-                    );
-                  }
-                  if (onBookUpdated != null) {
-                    onBookUpdated!();
-                  }
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Erreur lors de la suppression : $e"),
-                      backgroundColor: Colors.red,
                     ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text(
-              "Supprimer",
-              style: TextStyle(color: Colors.white),
-            ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        Navigator.pop(context);
+                        try {
+                          final token = await TokenStorage.getToken();
+                          if (token != null) {
+                            await BookService().deleteBook(book.id, token);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    "Livre supprimé avec succès",
+                                    style: GoogleFonts.poppins(fontSize: 13),
+                                  ),
+                                  backgroundColor: AppColors.success,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            }
+                            if (onBookUpdated != null) {
+                              onBookUpdated!();
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  "Erreur lors de la suppression : $e",
+                                  style: GoogleFonts.poppins(fontSize: 13),
+                                ),
+                                backgroundColor: AppColors.error,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppColors.error.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "Supprimer",
+                            style: GoogleFonts.poppins(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

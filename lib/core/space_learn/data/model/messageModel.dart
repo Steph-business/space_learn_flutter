@@ -9,6 +9,7 @@ class Message {
   final Discussion? discussion;
   final String? nomUtilisateur;
   final String? photoProfil;
+  final String? rangUtilisateur;
 
   Message({
     required this.id,
@@ -19,6 +20,7 @@ class Message {
     this.discussion,
     this.nomUtilisateur,
     this.photoProfil,
+    this.rangUtilisateur,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,7 @@ class Message {
       creeLe: DateTime.parse(json['cree_le']),
       nomUtilisateur: json['nom_utilisateur'],
       photoProfil: json['photo_profil'],
+      rangUtilisateur: json['rang_utilisateur'] ?? json['RangUtilisateur'],
       discussion: json['Discussion'] != null
           ? Discussion.fromJson(json['Discussion'])
           : null,

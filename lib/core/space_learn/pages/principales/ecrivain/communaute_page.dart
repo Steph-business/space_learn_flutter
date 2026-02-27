@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -11,6 +13,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/commun
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
 import 'package:intl/intl.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/evenement_detail_page.dart';
 
 class TeamsPage extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -91,9 +94,9 @@ class _TeamsPageState extends State<TeamsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         automaticallyImplyLeading: false,
         leading:
@@ -177,15 +180,16 @@ class _TeamsPageState extends State<TeamsPage> {
                           child: _buildQuickAction(
                             Iconsax.edit,
                             "Nouvelle annonce",
-                            const Color(0xFF0EA5E9),
-                            onTap: () {
-                              Navigator.push(
+                            AppColors.secondaryVariant,
+                            onTap: () async {
+                              final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       const NouvelleAnnoncePage(),
                                 ),
                               );
+                              if (result == true) _loadData();
                             },
                           ),
                         ),
@@ -194,15 +198,16 @@ class _TeamsPageState extends State<TeamsPage> {
                           child: _buildQuickAction(
                             Iconsax.calendar,
                             "Événement",
-                            const Color(0xFF10B981),
-                            onTap: () {
-                              Navigator.push(
+                            AppColors.success,
+                            onTap: () async {
+                              final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       const CreerEvenementPage(),
                                 ),
                               );
+                              if (result == true) _loadData();
                             },
                           ),
                         ),
@@ -211,35 +216,63 @@ class _TeamsPageState extends State<TeamsPage> {
                   ),
 
                   // Section Événements & Annonces
-                  if (_evenements.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 20.0,
-                        top: 30.0,
-                        bottom: 10.0,
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 20.0,
+                      top: 30.0,
+                      bottom: 15.0,
+                    ),
+                    child: Text(
+                      "Vos publications (${_evenements.length})",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
-                      child: Text(
-                        "Vos publications",
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (_evenements.isNotEmpty)
+                    _buildEvenementsSection()
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Container(
+                        height: 120,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBackground,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.05),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Iconsax.notification_status,
+                              color: Colors.white24,
+                              size: 32,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              "Aucune annonce ou événement pour le moment.",
+                              style: GoogleFonts.poppins(
+                                color: Colors.white38,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    _buildEvenementsSection(),
-                  ],
 
                   // Forums par Livre
                   Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Text(
                       "Forums de vos œuvres (${_books.length})",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.subtitle,
                     ),
                   ),
 
@@ -249,7 +282,7 @@ class _TeamsPageState extends State<TeamsPage> {
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
+                          color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Center(
@@ -298,18 +331,18 @@ class _TeamsPageState extends State<TeamsPage> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+            colors: [AppColors.cardBackground, AppColors.scaffoldBackground],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF0EA5E9).withOpacity(0.3),
+            color: AppColors.secondaryVariant.withOpacity(0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0EA5E9).withOpacity(0.1),
+              color: AppColors.secondaryVariant.withOpacity(0.1),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -320,12 +353,12 @@ class _TeamsPageState extends State<TeamsPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF0EA5E9).withOpacity(0.2),
+                color: AppColors.secondaryVariant.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Iconsax.messages_2,
-                color: Color(0xFF0EA5E9),
+                color: AppColors.secondaryVariant,
                 size: 30,
               ),
             ),
@@ -387,7 +420,7 @@ class _TeamsPageState extends State<TeamsPage> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
@@ -523,77 +556,88 @@ class _TeamsPageState extends State<TeamsPage> {
           final evt = _evenements[index];
           final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
           final colorType = isAnnonce
-              ? const Color(0xFF0EA5E9)
-              : const Color(0xFF10B981);
+              ? AppColors.secondaryVariant
+              : AppColors.success;
           final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
 
-          return Container(
-            width: 280,
-            margin: const EdgeInsets.only(right: 16, bottom: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colorType.withOpacity(0.3)),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colorType.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(iconType, color: colorType, size: 16),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        evt.typePublication.toUpperCase(),
-                        style: GoogleFonts.poppins(
-                          color: colorType,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    if (evt.dateEvenement != null)
-                      Text(
-                        DateFormat('dd/MM/yyyy').format(evt.dateEvenement!),
-                        style: GoogleFonts.poppins(
-                          color: Colors.white54,
-                          fontSize: 10,
-                        ),
-                      ),
-                  ],
+          return GestureDetector(
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EvenementDetailPage(evenement: evt),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  evt.titre,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+              );
+              if (result == true) _loadData();
+            },
+            child: Container(
+              width: 280,
+              margin: const EdgeInsets.only(right: 16, bottom: 10),
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colorType.withOpacity(0.3)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colorType.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(iconType, color: colorType, size: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          evt.typePublication.toUpperCase(),
+                          style: GoogleFonts.poppins(
+                            color: colorType,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (evt.dateEvenement != null)
+                        Text(
+                          DateFormat('dd/MM/yyyy').format(evt.dateEvenement!),
+                          style: GoogleFonts.poppins(
+                            color: Colors.white54,
+                            fontSize: 10,
+                          ),
+                        ),
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Expanded(
-                  child: Text(
-                    evt.contenu,
+                  const SizedBox(height: 12),
+                  Text(
+                    evt.titre,
                     style: GoogleFonts.poppins(
-                      color: Colors.grey[400],
-                      fontSize: 12,
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
                     ),
-                    maxLines: 3,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Expanded(
+                    child: Text(
+                      evt.contenu,
+                      style: GoogleFonts.poppins(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';
@@ -73,11 +75,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
           children: [
             Text(
               "Mes livres publiés (${_books.length})",
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTextStyles.sectionTitle,
             ),
             TextButton(
               onPressed: () {
@@ -89,7 +87,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
               child: Text(
                 "Voir tout",
                 style: GoogleFonts.poppins(
-                  color: const Color(0xFF22D3EE),
+                  color: AppColors.primaryLight,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -107,7 +105,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -128,7 +126,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
                           fit: BoxFit.cover,
                         )
                       : null,
-                  color: const Color(0xFF334155),
+                  color: AppColors.border,
                 ),
                 child:
                     (book.imageCouverture == null ||
@@ -143,21 +141,14 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
                   children: [
                     Text(
                       book.titre,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                      style: AppTextStyles.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       "${book.categorieId ?? 'Fiction'} • ${book.telechargements} lectures",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white54,
-                        fontSize: 12,
-                      ),
+                      style: AppTextStyles.bodyFaded12,
                     ),
                   ],
                 ),
@@ -170,14 +161,14 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
               Expanded(
                 child: _buildButton(
                   "MODIFIER",
-                  const Color(0xFF334155).withOpacity(0.5),
+                  AppColors.border.withOpacity(0.5),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildButton(
                   "STATS",
-                  const Color(0xFF334155).withOpacity(0.5),
+                  AppColors.border.withOpacity(0.5),
                 ),
               ),
             ],
@@ -198,7 +189,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
         child: Text(
           label,
           style: GoogleFonts.poppins(
-            color: const Color(0xFF22D3EE).withOpacity(0.8),
+            color: AppColors.primaryLight.withOpacity(0.8),
             fontWeight: FontWeight.bold,
             fontSize: 12,
             letterSpacing: 1.1,

@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/auteur/communaute/message.dart';
@@ -9,23 +10,14 @@ class MessagesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(color: const Color(0xFF0F172A)),
+        Container(color: AppColors.scaffoldBackground),
         Positioned(
           top: 0,
           left: 0,
           right: 0,
           height: MediaQuery.of(context).size.height * 0.45,
           child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF475569), // Lighter slate gray
-                  Color(0xFF0F172A), // Dark background matching Scaffold
-                ],
-              ),
-            ),
+            color: AppColors.scaffoldBackground,
           ),
         ),
         Scaffold(

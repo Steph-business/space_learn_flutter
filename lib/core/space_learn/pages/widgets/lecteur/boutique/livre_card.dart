@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -23,7 +24,7 @@ class LivreCard extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B), // Dark card background
+          color: AppColors.cardBackground, // Dark card background
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -44,7 +45,7 @@ class LivreCard extends StatelessWidget {
                 ),
                 child: Container(
                   width: double.infinity,
-                  color: const Color(0xFF0F172A),
+                  color: AppColors.scaffoldBackground,
                   child:
                       book.imageCouverture != null &&
                           book.imageCouverture!.isNotEmpty &&
@@ -83,7 +84,7 @@ class LivreCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w500,
                       fontSize: 11,
-                      color: const Color(0xFF94A3B8), // Slate-400 for author
+                      color: AppColors.slateLight, // Slate-400 for author
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -102,7 +103,7 @@ class LivreCard extends StatelessWidget {
                                   : (index < book.noteMoyenne
                                         ? Icons.star_half_rounded
                                         : Icons.star_outline_rounded),
-                              color: const Color(0xFFF59E0B),
+                              color: AppColors.warning,
                               size: 14,
                             ),
                           ),
@@ -113,7 +114,7 @@ class LivreCard extends StatelessWidget {
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF94A3B8),
+                            color: AppColors.slateLight,
                           ),
                         ),
                       ],
@@ -121,7 +122,7 @@ class LivreCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         const Icon(
                           Iconsax.message,
-                          color: Color(0xFF94A3B8),
+                          color: AppColors.slateLight,
                           size: 11,
                         ),
                         const SizedBox(width: 4),
@@ -130,7 +131,7 @@ class LivreCard extends StatelessWidget {
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF94A3B8),
+                            color: AppColors.slateLight,
                           ),
                         ),
                       ],
@@ -143,7 +144,7 @@ class LivreCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: const Color(0xFF06B6D4), // Cyan for price
+                      color: AppColors.primary, // Cyan for price
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -160,7 +161,7 @@ class LivreCard extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return const Center(
-      child: Icon(Icons.book_rounded, color: Color(0xFF334155), size: 40),
+      child: Icon(Icons.book_rounded, color: AppColors.border, size: 40),
     );
   }
 }

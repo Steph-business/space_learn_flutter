@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -29,16 +30,16 @@ class MainNavBarState extends State<MainNavBar> {
     "Accueil",
     "Boutique",
     "Bibliothèque",
-    "Communauté",
-    "Paramètres",
+    "Teams",
+    "Profil",
   ];
 
   final List<IconData> _icons = [
-    Iconsax.home,
+    Icons.home_filled,
     Iconsax.shop,
     Iconsax.book,
     Iconsax.messages_1,
-    Iconsax.setting_2,
+    Icons.settings,
   ];
 
   void _onItemTapped(int index) {
@@ -84,11 +85,11 @@ class MainNavBarState extends State<MainNavBar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       body: _getPage(_selectedIndex),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.cardBackground,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
@@ -102,8 +103,8 @@ class MainNavBarState extends State<MainNavBar> {
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
           elevation: 0,
-          backgroundColor: const Color(0xFF1E293B),
-          selectedItemColor: const Color(0xFF06B6D4), // Cyan
+          backgroundColor: AppColors.cardBackground,
+          selectedItemColor: AppColors.primary, // Cyan
           unselectedItemColor: Colors.grey[500],
           showUnselectedLabels: true,
           selectedLabelStyle: GoogleFonts.poppins(
@@ -117,11 +118,10 @@ class MainNavBarState extends State<MainNavBar> {
           items: List.generate(
             _titles.length,
             (index) => BottomNavigationBarItem(
-              icon: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+              icon: Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Icon(
-                  index == 4 ? Icons.settings_outlined : _icons[index],
+                  _icons[index],
                   size: _selectedIndex == index ? 28 : 24,
                 ),
               ),

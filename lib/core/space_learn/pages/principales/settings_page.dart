@@ -1,3 +1,4 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/dataServices/authServices.dart';
@@ -13,38 +14,20 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(color: const Color(0xFF0F172A)),
+        Container(color: AppColors.scaffoldBackground),
         Positioned(
           top: 0,
           left: 0,
           right: 0,
           height: MediaQuery.of(context).size.height * 0.45,
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF475569), // Lighter slate gray
-                  Color(0xFF0F172A), // Dark background matching Scaffold
-                ],
-              ),
-            ),
-          ),
+          child: Container(color: AppColors.scaffoldBackground),
         ),
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            leading: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
-                size: 20,
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            automaticallyImplyLeading: false,
             title: const Text(
               "Paramètres",
               style: TextStyle(
@@ -59,15 +42,6 @@ class SettingsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Titre principal
-                const Text(
-                  "Paramètres",
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
                 const SizedBox(height: 20),
 
                 // Section Profil
@@ -253,7 +227,7 @@ class SettingsPage extends StatelessWidget {
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF06B6D4), // Cyan
+          color: AppColors.primary, // Cyan
         ),
       ),
     );
@@ -266,7 +240,7 @@ class SettingsPage extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Card(
-      color: const Color(0xFF1E293B),
+      color: AppColors.cardBackground,
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(

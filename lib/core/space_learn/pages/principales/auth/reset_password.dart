@@ -1,5 +1,6 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
-
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -113,134 +114,248 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const ProfilPage()),
-              );
-            }
-          },
-        ),
-      ),
+      backgroundColor: AppColors.scaffoldBackground,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFB453),
-              Color.fromARGB(255, 249, 196, 126),
-              Color.fromARGB(255, 248, 226, 196),
-            ],
-          ),
-        ),
+        width: double.infinity,
+        height: double.infinity,
+        color: AppColors.scaffoldBackground,
         child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 20.0,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Réinitialiser le mot de passe',
-                    style: GoogleFonts.poppins(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+
+                // Close button
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (_) => const ProfilPage()),
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.15),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Veuillez entrer votre nouveau mot de passe.',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Icon
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary.withOpacity(0.15),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                      width: 1.5,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 40),
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: InputDecoration(
-                            hintText: 'Nouveau mot de passe',
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
+                  child: const Icon(
+                    Icons.lock_reset_outlined,
+                    size: 30,
+                    color: AppColors.primary,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  'Nouveau mot de passe',
+                  style: AppTextStyles.pageTitle,
+                ),
+                const SizedBox(height: 8),
+
+                Text(
+                  'Veuillez entrer votre\nnouveau mot de passe',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.65),
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 36),
+
+                // Form Card
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Password field
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 110,
+                              child: Text(
+                                'Mot de passe',
+                                style: AppTextStyles.cardTitleSmallSemiBold,
                               ),
-                              onPressed: _togglePasswordVisibility,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: _confirmPasswordController,
-                          obscureText: _obscureConfirmPassword,
-                          decoration: InputDecoration(
-                            hintText: 'Confirmer le mot de passe',
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscureConfirmPassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                              ),
-                              onPressed: _toggleConfirmPasswordVisibility,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleResetPassword,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF59E0B),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : Text(
-                                    'Réinitialiser',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            Expanded(
+                              child: TextField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                style: AppTextStyles.bodySecondary,
+                                decoration: InputDecoration(
+                                  hintText: 'nouveau mot de passe...',
+                                  hintStyle: GoogleFonts.poppins(
+                                    color: Colors.white30,
+                                    fontSize: 13,
                                   ),
-                          ),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      color: Colors.white30,
+                                      size: 18,
+                                    ),
+                                    onPressed: _togglePasswordVisibility,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+
+                      // Divider
+                      Divider(
+                        color: Colors.white.withOpacity(0.08),
+                        height: 1,
+                        indent: 16,
+                        endIndent: 16,
+                      ),
+
+                      // Confirm Password field
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 110,
+                              child: Text(
+                                'Confirmer',
+                                style: AppTextStyles.cardTitleSmallSemiBold,
+                              ),
+                            ),
+                            Expanded(
+                              child: TextField(
+                                controller: _confirmPasswordController,
+                                obscureText: _obscureConfirmPassword,
+                                style: AppTextStyles.bodySecondary,
+                                decoration: InputDecoration(
+                                  hintText: 'confirmer le mot de...',
+                                  hintStyle: GoogleFonts.poppins(
+                                    color: Colors.white30,
+                                    fontSize: 13,
+                                  ),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscureConfirmPassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      color: Colors.white30,
+                                      size: 18,
+                                    ),
+                                    onPressed: _toggleConfirmPasswordVisibility,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // Reset Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _handleResetPassword,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shadowColor: AppColors.primary.withOpacity(0.4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Text(
+                            'Réinitialiser',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+              ],
             ),
           ),
         ),

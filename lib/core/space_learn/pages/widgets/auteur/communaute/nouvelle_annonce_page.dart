@@ -1,9 +1,17 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
+
+import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
+
 class NouvelleAnnoncePage extends StatefulWidget {
-  const NouvelleAnnoncePage({super.key});
+  final Evenement? initialEvenement;
+  const NouvelleAnnoncePage({super.key, this.initialEvenement});
 
   @override
   State<NouvelleAnnoncePage> createState() => _NouvelleAnnoncePageState();
@@ -12,7 +20,18 @@ class NouvelleAnnoncePage extends StatefulWidget {
 class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  final EvenementService _evenementService = EvenementService();
   String _selectedScope = "Tous les lecteurs";
+  bool _isPublishing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialEvenement != null) {
+      _titleController.text = widget.initialEvenement!.titre;
+      _contentController.text = widget.initialEvenement!.contenu;
+    }
+  }
 
   @override
   void dispose() {
@@ -24,16 +43,18 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "NOUVELLE ANNONCE",
+          widget.initialEvenement != null
+              ? "MODIFIER L'ANNONCE"
+              : "NOUVELLE ANNONCE",
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -50,7 +71,7 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
           children: [
             Text(
               "Publiez une annonce pour informer votre communauté des nouveautés, promotions, ou de l'avancement de vos projets.",
-              style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 14),
+              style: AppTextStyles.grey14,
             ),
             const SizedBox(height: 30),
 
@@ -67,7 +88,7 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white.withOpacity(0.1)),
               ),
@@ -75,13 +96,13 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
                 child: DropdownButton<String>(
                   value: _selectedScope,
                   isExpanded: true,
-                  dropdownColor: const Color(0xFF1E293B),
+                  dropdownColor: AppColors.cardBackground,
                   icon: const Icon(
                     Iconsax.arrow_down_1,
                     color: Colors.white54,
                     size: 18,
                   ),
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+                  style: AppTextStyles.body,
                   items:
                       [
                         "Tous les lecteurs",
@@ -116,26 +137,28 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Annonce publiée !")),
-                  );
-                  Navigator.pop(context);
-                },
+                onPressed: _isPublishing ? null : _publishAnnonce,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0EA5E9),
+                  backgroundColor: AppColors.secondaryVariant,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: Text(
-                  "Publier",
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                child: _isPublishing
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        widget.initialEvenement != null
+                            ? "Sauvegarder les modifications"
+                            : "Publier",
+                        style: AppTextStyles.subtitle,
+                      ),
               ),
             ),
           ],
@@ -144,15 +167,65 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
     );
   }
 
+  Future<void> _publishAnnonce() async {
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+
+    if (title.isEmpty || content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez remplir tous les champs.")),
+      );
+      return;
+    }
+
+    setState(() => _isPublishing = true);
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) throw Exception("Session expirée");
+
+      if (widget.initialEvenement != null) {
+        await _evenementService.updateEvenement(
+          id: widget.initialEvenement!.id,
+          typePublication: "Annonce",
+          titre: title,
+          contenu: content,
+          token: token,
+        );
+      } else {
+        await _evenementService.createEvenement(
+          typePublication: "Annonce",
+          titre: title,
+          contenu: content,
+          token: token,
+        );
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.initialEvenement != null
+                  ? "Annonce mise à jour !"
+                  : "Annonce publiée avec succès !",
+            ),
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Erreur : ${e.toString()}")));
+      }
+    } finally {
+      if (mounted) setState(() => _isPublishing = false);
+    }
+  }
+
   Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(
-        color: Colors.white,
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    return Text(text, style: AppTextStyles.button14);
   }
 
   Widget _buildTextField({
@@ -163,12 +236,12 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+      style: AppTextStyles.body,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: GoogleFonts.poppins(color: Colors.white30, fontSize: 14),
         filled: true,
-        fillColor: const Color(0xFF1E293B),
+        fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
@@ -179,7 +252,7 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF0EA5E9)),
+          borderSide: const BorderSide(color: AppColors.secondaryVariant),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

@@ -1,3 +1,5 @@
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -8,6 +10,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/commu
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
 import 'package:intl/intl.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'recherche_page.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
@@ -21,9 +24,11 @@ class TeamsPageLecteur extends StatefulWidget {
 class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
   final LibraryService _libraryService = LibraryService();
   final EvenementService _evenementService = EvenementService();
+  final DiscussionService _discussionService = DiscussionService();
 
   List<LibraryModel> _library = [];
   List<Evenement> _evenements = [];
+  int _cafeMsgCount = 0;
   bool _isLoading = true;
   String? _error;
 
@@ -58,6 +63,20 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         debugPrint("Erreur evenements: $e");
       }
 
+      int totalCafeMsgs = 0;
+      try {
+        final globalDiscussions = await _discussionService
+            .getGlobalDiscussions();
+        for (var d in globalDiscussions) {
+          final count = (d.messagesCount ?? 0) > 0
+              ? d.messagesCount!
+              : d.messages.length;
+          totalCafeMsgs += count;
+        }
+      } catch (e) {
+        debugPrint("Erreur global discussions: $e");
+      }
+
       // Filtrer les entrées sans livre valide
       final validItems = libraryItems
           .where((item) => item.livre != null)
@@ -67,6 +86,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         setState(() {
           _library = validItems;
           _evenements = evts;
+          _cafeMsgCount = totalCafeMsgs;
           _isLoading = false;
         });
       }
@@ -83,9 +103,9 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: AppColors.darkSurface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF111827),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         automaticallyImplyLeading: false,
         leading:
@@ -143,7 +163,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                   ElevatedButton(
                     onPressed: _loadData,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF22D3EE),
+                      backgroundColor: AppColors.primaryLight,
                     ),
                     child: const Text(
                       "Réessayer",
@@ -198,11 +218,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                     padding: const EdgeInsets.all(20.0),
                     child: Text(
                       "Clubs de lecture de votre bibliothèque (${_library.length})",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.subtitle,
                     ),
                   ),
 
@@ -212,7 +228,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1F2937),
+                          color: AppColors.surfaceVariant,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Center(
@@ -261,18 +277,18 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF1F2937), Color(0xFF111827)],
+            colors: [AppColors.surfaceVariant, AppColors.darkSurface],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF22D3EE).withOpacity(0.3),
+            color: AppColors.primaryLight.withOpacity(0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF22D3EE).withOpacity(0.1),
+              color: AppColors.primaryLight.withOpacity(0.1),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -283,12 +299,12 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF22D3EE).withOpacity(0.2),
+                color: AppColors.primaryLight.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Iconsax.coffee,
-                color: Color(0xFF22D3EE),
+                color: AppColors.primaryLight,
                 size: 30,
               ),
             ),
@@ -308,11 +324,29 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                   const SizedBox(height: 4),
                   Text(
                     "Recommandations, coup de cœurs et discussions générales",
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey[400],
-                      fontSize: 12,
-                    ),
+                    style: AppTextStyles.grey12,
                   ),
+                  if (_cafeMsgCount > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.message,
+                          size: 10,
+                          color: Colors.grey[500],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$_cafeMsgCount messages",
+                          style: GoogleFonts.poppins(
+                            color: Colors.grey[500],
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -325,15 +359,17 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
 
   Widget _buildBookForumCard(LibraryModel libraryItem) {
     final book = libraryItem.livre!;
-    // Fake stats variables for demonstration
-    final activityScore = book.telechargements > 50
+    final activityScore = book.nombreMessages > 20
         ? "Très actif"
-        : "Peu actif";
-    final msgCount =
-        book.telechargements * 3; // un peu plus de msg pour les lecteurs
-    final color = book.telechargements > 50
+        : book.nombreMessages > 0
+        ? "Actif"
+        : "Nouveau";
+    final msgCount = book.nombreMessages;
+    final color = book.nombreMessages > 20
         ? Colors.greenAccent
-        : Colors.orangeAccent;
+        : book.nombreMessages > 0
+        ? Colors.cyanAccent
+        : Colors.grey;
 
     return GestureDetector(
       onTap: () {
@@ -352,7 +388,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1F2937),
+          color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
@@ -387,11 +423,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                 children: [
                   Text(
                     book.titre,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.button15,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -402,10 +434,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                       const SizedBox(width: 4),
                       Text(
                         "$msgCount messages",
-                        style: GoogleFonts.poppins(
-                          color: Colors.grey[400],
-                          fontSize: 12,
-                        ),
+                        style: AppTextStyles.grey12,
                       ),
                       const Spacer(),
                       Container(
@@ -448,15 +477,15 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
           final evt = _evenements[index];
           final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
           final colorType = isAnnonce
-              ? const Color(0xFF0EA5E9)
-              : const Color(0xFF10B981);
+              ? AppColors.secondaryVariant
+              : AppColors.success;
           final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
 
           return Container(
             width: 280,
             margin: const EdgeInsets.only(right: 16, bottom: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1F2937),
+              color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: colorType.withOpacity(0.3)),
             ),
@@ -510,10 +539,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                 Expanded(
                   child: Text(
                     evt.contenu,
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey[400],
-                      fontSize: 12,
-                    ),
+                    style: AppTextStyles.grey12,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
