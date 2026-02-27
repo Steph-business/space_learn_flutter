@@ -29,14 +29,18 @@ class ReadingProgressService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic>? data = responseData['data'];
-        if (data != null) {
-          return data
-              .map((item) => ReadingActivityModel.fromJson(item))
-              .toList();
+        final dynamic decoded = jsonDecode(response.body);
+        List<dynamic> data = [];
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map) {
+          final d = decoded['data'];
+          if (d is List) {
+            data = d;
+          }
         }
-        return [];
+
+        return data.map((item) => ReadingActivityModel.fromJson(item)).toList();
       } else if (response.statusCode == 404) {
         return [];
       } else {
@@ -54,7 +58,7 @@ class ReadingProgressService {
     String authToken,
   ) async {
     final uri = Uri.parse(
-      ApiRoutes.readingProgressByLivre.replaceFirst(':livre_id', livreId),
+      ApiRoutes.readingProgress.replaceFirst(':livre_id', livreId),
     );
 
     try {
@@ -88,11 +92,13 @@ class ReadingProgressService {
     required int totalPages,
     required String authToken,
   }) async {
-    final int percentage = (currentPage / totalPages * 100).round();
-    final uri = Uri.parse(ApiRoutes.readingProgress);
+    final double percentage = (currentPage / totalPages * 100);
+    final uri = Uri.parse(
+      ApiRoutes.readingProgress.replaceFirst(':livre_id', livreId),
+    );
 
     try {
-      final response = await client.post(
+      final response = await client.put(
         uri,
         headers: {
           'Content-Type': 'application/json',
@@ -100,8 +106,9 @@ class ReadingProgressService {
         },
         body: jsonEncode({
           'livre_id': livreId,
-          'chapitre_courant': currentPage,
-          'pourcentage': percentage,
+          'last_page': currentPage,
+          'total_pages': totalPages,
+          'percentage': percentage,
         }),
       );
 

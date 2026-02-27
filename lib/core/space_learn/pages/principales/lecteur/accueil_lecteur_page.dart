@@ -6,7 +6,10 @@ import '../../../data/dataServices/notification_provider.dart';
 
 import '../../widgets/details/book_detail_page.dart';
 import '../../widgets/details/author_profile_page.dart';
-import '../../principales/lecteur/recherche_page.dart';
+import 'badges_page.dart';
+import '../../widgets/lecteur/accueil/daily_goal_section.dart';
+import '../../../data/dataServices/badgeService.dart';
+import '../../../data/model/goalModel.dart';
 import '../../principales/lecteur/all_authors_page.dart';
 
 import '../../../../themes/layout/nav_bar_all.dart';
@@ -57,6 +60,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   final RelationService _relationService = RelationService();
   final LibraryService _libraryService = LibraryService();
   final AuthService _authService = AuthService();
+  final BadgeService _badgeService = BadgeService();
+
+  GoalModel? _dailyGoal;
 
   bool _isLoading = true;
   String? _error;
@@ -74,6 +80,49 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   String? _currentUserId;
   Set<String> _followingIds = {};
   String _displayName = "Utilisateur";
+  String? _profilePhoto;
+  String _selectedCategory = "Tous";
+  String _selectedSection = "Tout";
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+  List<BookModel> _searchResults = [];
+  bool _isSearching = false;
+
+  void _onSearch(String value) {
+    setState(() {
+      _searchQuery = value;
+      _isSearching = value.isNotEmpty;
+    });
+
+    if (value.isEmpty) {
+      setState(() {
+        _searchResults = [];
+      });
+      return;
+    }
+
+    // Direct local search for speed
+    final filtered = _allBooks.where((book) {
+      final titleMatch = book.titre.toLowerCase().contains(value.toLowerCase());
+      final authorMatch = book.authorName.toLowerCase().contains(
+        value.toLowerCase(),
+      );
+      return titleMatch || authorMatch;
+    }).toList();
+
+    setState(() {
+      _searchResults = filtered;
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = "";
+      _isSearching = false;
+      _searchResults = [];
+    });
+  }
 
   @override
   void initState() {
@@ -111,6 +160,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             _displayName = user.nomComplet;
             TokenStorage.saveUserName(user.nomComplet); // Sync storage
           }
+          _profilePhoto = user.profilePhoto;
         });
       }
 
@@ -153,6 +203,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 return <RelationModel>[];
               })
             : Future.value(<RelationModel>[]),
+        _badgeService.getGoals().catchError((e) {
+          debugPrint('⚠️ Error loading goals: $e');
+          return <GoalModel>[];
+        }),
       ]);
 
       if (mounted) {
@@ -163,12 +217,19 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               debugPrint('⚠️ Error loading notifications: $e');
             });
         setState(() {
-          if (results[0] is ReaderStatsModel) {
-            _stats = results[0] as ReaderStatsModel;
-          }
+          // 1. Get stats from API
+          ReaderStatsModel apiStats = results[0] as ReaderStatsModel;
+          _stats = apiStats;
 
           if (results[2] is List) {
             _recentActivities = (results[2] as List).cast<ReviewModel>();
+          }
+
+          if (results.length > 8 && results[8] is List) {
+            final goals = (results[8] as List).cast<GoalModel>();
+            if (goals.isNotEmpty) {
+              _dailyGoal = goals.first;
+            }
           }
 
           if (results.length > 3 && results[3] is List) {
@@ -201,6 +262,27 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           final recs = (results.length > 5 && results[5] is List)
               ? (results[5] as List).cast<RecommendationModel>()
               : <RecommendationModel>[];
+
+          // 1.5 Local stats fallback if API is unavailable or returns mock data
+          if (_stats!.booksRead == 0 || _stats!.booksRead == 12) {
+            int totalInLibrary = library.length;
+            int finishedReading = library.where((item) {
+              final p = item.livre?.progressions;
+              return p != null && p.isNotEmpty && p.first.pourcentage >= 100;
+            }).length;
+
+            int displayedBooksRead = finishedReading > 0
+                ? finishedReading
+                : totalInLibrary;
+
+            _stats = ReaderStatsModel(
+              booksRead: displayedBooksRead,
+              totalTime: _stats!.totalTime == '34h' ? '0h' : _stats!.totalTime,
+              goalsAchieved: _stats!.goalsAchieved == 5
+                  ? 0
+                  : _stats!.goalsAchieved,
+            );
+          }
 
           // 1. Build a comprehensive Author Map from all available sources
           final Map<String, UserModel> knownAuthors = {};
@@ -390,8 +472,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             ),
             Column(
               children: [
-                NavBarAll(userName: _displayName),
-
+                NavBarAll(
+                  userName: _displayName,
+                  userUrl: _profilePhoto,
+                  role: 'lecteur',
+                ),
                 Expanded(
                   child: _isLoading
                       ? Center(
@@ -405,6 +490,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                           color: const Color(0xFF6366F1),
                           child: _error != null
                               ? _buildErrorState()
+                              : _isSearching
+                              ? _buildSearchResults()
                               : _buildContent(),
                         ),
                 ),
@@ -416,208 +503,370 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 4, 16, 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.05)),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.search, color: Colors.grey, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _onSearch,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "Rechercher un livre, un auteur...",
+                        hintStyle: GoogleFonts.poppins(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_searchQuery.isNotEmpty)
+                    GestureDetector(
+                      onTap: _clearSearch,
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.grey,
+                        size: 18,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          PopupMenuButton<String>(
+            icon: Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _selectedSection != "Tout"
+                      ? const Color(0xFF38BDF8)
+                      : Colors.white.withOpacity(0.05),
+                ),
+              ),
+              child: Icon(
+                Icons.tune,
+                color: _selectedSection != "Tout"
+                    ? const Color(0xFF38BDF8)
+                    : Colors.white70,
+                size: 20,
+              ),
+            ),
+            offset: const Offset(0, 52),
+            color: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onSelected: (value) {
+              setState(() {
+                _selectedSection = value;
+              });
+            },
+            itemBuilder: (context) {
+              final List<Map<String, dynamic>> menuItems = [
+                {'label': 'Tout', 'icon': Icons.dashboard_outlined},
+                {'label': 'À la une', 'icon': Icons.star_outline},
+                {'label': 'Recommandations', 'icon': Icons.recommend},
+                {'label': 'Auteurs', 'icon': Icons.people_outline},
+                {'label': 'Forum', 'icon': Icons.forum_outlined},
+              ];
+              return menuItems.map((item) {
+                final isSelected = _selectedSection == item['label'];
+                return PopupMenuItem<String>(
+                  value: item['label'],
+                  height: 40,
+                  child: Row(
+                    children: [
+                      Icon(
+                        item['icon'],
+                        size: 16,
+                        color: isSelected
+                            ? const Color(0xFF38BDF8)
+                            : Colors.white38,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        item['label'],
+                        style: GoogleFonts.poppins(
+                          color: isSelected ? Colors.white : Colors.white70,
+                          fontSize: 13,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildContent() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
+          // Search bar (scrollable)
+          _buildSearchBar(),
           // Section Sombre (Haut)
           Container(
-            color: Colors
-                .transparent, // Translucide pour voir le dégradé en dessous
+            color: Colors.transparent,
             width: double.infinity,
-            padding: const EdgeInsets.only(top: 16, bottom: 0),
+            padding: const EdgeInsets.only(top: 8, bottom: 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Barre de recherche
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const RecherchePage(),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E293B),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: 2),
-                                  child: Icon(
-                                    Icons.search,
-                                    color: Colors.grey,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    "Rechercher un livre, un auteur...",
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.grey,
-                                      fontSize: 13,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
+                if (_selectedSection == "Tout") ...[
+                  const SizedBox(height: 16),
+                  if (_stats != null) _buildQuickStats(),
+                  if (_dailyGoal != null) ...[
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                BadgesPage(userId: widget.profileId),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                if (_stats != null) _buildQuickStats(),
-                const SizedBox(height: 32),
+                        );
+                      },
+                      child: DailyGoalSection(goal: _dailyGoal),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                ],
 
                 // À la une
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "À la une",
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        "Voir plus",
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFF38BDF8),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                _buildFeaturedHorizontalList(),
-
-                const SizedBox(height: 38),
-                // Catégories
-                _buildCategoryPills(),
-
-                const SizedBox(height: 34),
-                // Recommandations pour vous
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    "Recommandations",
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _buildRecommendationsGrid(),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          // Section Claire (Bas) -> maintenant Sombre
-          Container(
-            color: Colors.transparent, // Changé pour rester cohérent
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Auteurs à suivre
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Auteurs",
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AllAuthorsPage(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          "Voir plus",
+                if (_selectedSection == "Tout" ||
+                    _selectedSection == "À la une") ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "À la une",
                           style: GoogleFonts.poppins(
-                            color: const Color(0xFF06B6D4),
-                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildAuthorsList(),
-
-                const SizedBox(height: 32),
-                // Clubs de lecture actifs
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    _discussions.isNotEmpty
-                        ? "Forums (${_discussions.length})"
-                        : "Forums",
-                    style: GoogleFonts.poppins(
-                      color: Colors.white, // Changé de black
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                        GestureDetector(
+                          onTap: () {
+                            MainNavBar.mainNavBarKey.currentState
+                                ?.navigateToMarketplace();
+                          },
+                          child: Text(
+                            "Voir plus",
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF38BDF8),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
-                _buildClubsList(),
+                  const SizedBox(height: 16),
+                  _buildFeaturedHorizontalList(),
+                  const SizedBox(height: 20),
+                ],
 
-                const SizedBox(height: 20),
-                // Dernières citations partagées
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    "Citations",
-                    style: GoogleFonts.poppins(
-                      color: Colors.white, // Changé de black
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                // Catégories (Persistent or only in section?)
+                // Usually better to keep categories only when book sections are shown
+                if (_selectedSection == "Tout" ||
+                    _selectedSection == "À la une" ||
+                    _selectedSection == "Recommandations") ...[
+                  _buildCategoryPills(),
+                  const SizedBox(height: 18),
+                ],
+
+                // Recommandations pour vous
+                if (_selectedSection == "Tout" ||
+                    _selectedSection == "Recommandations") ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Recommandations",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            MainNavBar.mainNavBarKey.currentState
+                                ?.navigateToMarketplace();
+                          },
+                          child: Text(
+                            "Voir plus",
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF06B6D4),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _buildQuotesList(),
-
-                const SizedBox(height: 20),
+                  const SizedBox(height: 12),
+                  _buildRecommendationsGrid(),
+                  if (_selectedSection == "Tout") const SizedBox(height: 20),
+                ],
               ],
             ),
           ),
+
+          // Section Basse
+          if (_selectedSection == "Tout" ||
+              _selectedSection == "Auteurs" ||
+              _selectedSection == "Forum")
+            Container(
+              color: Colors.transparent,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Auteurs
+                  if (_selectedSection == "Tout" ||
+                      _selectedSection == "Auteurs") ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Auteurs",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AllAuthorsPage(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              "Voir plus",
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF06B6D4),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildAuthorsList(),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // Clubs / Forum
+                  if (_selectedSection == "Tout" ||
+                      _selectedSection == "Forum") ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _discussions.isNotEmpty
+                                ? "Forums (${_discussions.length})"
+                                : "Forums",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              MainNavBar.mainNavBarKey.currentState
+                                  ?.navigateToCommunaute();
+                            },
+                            child: Text(
+                              "Voir plus",
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF06B6D4),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildClubsList(),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // Citations (toujours à la fin si mode Tout)
+                  if (_selectedSection == "Tout") ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        "Citations",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildQuotesList(),
+                    const SizedBox(height: 20),
+                  ],
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -749,12 +998,30 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   }
 
   Widget _buildCategoryPills() {
+    final List<BookModel> pool = _recommendations.isNotEmpty
+        ? _recommendations
+        : _allBooks;
+
+    // Get names of categories that actually contain books
+    final Set<String> activeCategoryNames = pool
+        .map((b) => b.categorie?.nom)
+        .whereType<String>()
+        .map((name) => name.trim())
+        .toSet();
+
     final List<String> categories = ["Tous"];
     if (_categories.isNotEmpty) {
-      categories.addAll(_categories.map((c) => c.nom));
-    } else {
-      categories.addAll(["Science-fiction", "Romance", "Thriller"]);
+      categories.addAll(
+        _categories
+            .map((c) => c.nom)
+            .where((name) => activeCategoryNames.contains(name.trim()))
+            .toList(),
+      );
+    } else if (pool.isNotEmpty) {
+      categories.addAll(activeCategoryNames.toList());
     }
+
+    if (categories.length <= 1 && pool.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
       height: 36,
@@ -763,23 +1030,31 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: categories.length,
         itemBuilder: (context, index) {
-          final isSelected = index == 0;
+          final catName = categories[index];
+          final isSelected = _selectedCategory == catName;
           return GestureDetector(
             onTap: () {
-              MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace();
+              setState(() {
+                _selectedCategory = catName;
+              });
             },
             child: Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              margin: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF06B6D4)
-                    : const Color(0xFF1E293B), // Cyan pour sélectionné
-                borderRadius: BorderRadius.circular(20),
+                    ? const Color(0xFF38BDF8)
+                    : const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFF38BDF8)
+                      : Colors.white.withOpacity(0.05),
+                ),
               ),
               alignment: Alignment.center,
               child: Text(
-                categories[index],
+                catName,
                 style: GoogleFonts.poppins(
                   color: isSelected ? Colors.white : Colors.grey[300],
                   fontSize: 13,
@@ -799,9 +1074,17 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     if (_recommendations.isNotEmpty) {
       displayBooks = _recommendations;
     } else if (_allBooks.isNotEmpty) {
-      // If no recommendations, pick some different books and shuffle
       displayBooks = List.from(_allBooks);
-      displayBooks.shuffle();
+    }
+
+    // Filter by category locally
+    if (_selectedCategory != "Tous") {
+      displayBooks = displayBooks.where((book) {
+        // Try to match by category name
+        final bookCategory = book.categorie?.nom;
+        return bookCategory != null &&
+            bookCategory.toLowerCase() == _selectedCategory.toLowerCase();
+      }).toList();
     }
 
     if (displayBooks.isEmpty) {
@@ -952,6 +1235,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     return SizedBox(
       height: 135, // Adjust for fitting content comfortably
       child: ListView.builder(
+        physics: const ClampingScrollPhysics(),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _featuredAuthors.isNotEmpty
@@ -1217,6 +1501,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     return GestureDetector(
       onTap: () {
         if (discussion != null) {
+          MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -1378,6 +1663,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     return SizedBox(
       height: 210,
       child: ListView.builder(
+        physics: const ClampingScrollPhysics(),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: quotes.length,
@@ -1522,14 +1808,37 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               "${_stats!.booksRead}",
               "Livres lus",
               Icons.auto_stories,
+              onTap: () {
+                MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
+              },
             ),
             _buildStatSeparator(),
-            _buildStatItem(_stats!.totalTime, "Temps total", Icons.timer),
+            _buildStatItem(
+              _stats!.totalTime,
+              "Temps total",
+              Icons.timer,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BadgesPage(userId: widget.profileId),
+                  ),
+                );
+              },
+            ),
             _buildStatSeparator(),
             _buildStatItem(
               "${_stats!.goalsAchieved}",
               "Objectifs",
               Icons.emoji_events,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BadgesPage(userId: widget.profileId),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -1537,24 +1846,33 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     );
   }
 
-  Widget _buildStatItem(String value, String label, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: const Color(0xFF38BDF8), size: 20),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+  Widget _buildStatItem(
+    String value,
+    String label,
+    IconData icon, {
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Icon(icon, color: const Color(0xFF38BDF8), size: 20),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 11),
-        ),
-      ],
+          Text(
+            label,
+            style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 11),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1589,6 +1907,111 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               onPressed: _loadData,
               child: const Text("Réessayer"),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Iconsax.search_status,
+              size: 64,
+              color: Colors.white.withOpacity(0.1),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "Aucun résultat trouvé pour \"$_searchQuery\"",
+              style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final book = _searchResults[index];
+        return _buildSearchResultCard(book);
+      },
+    );
+  }
+
+  Widget _buildSearchResultCard(BookModel book) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookDetailPage(
+              book: book,
+              isOwned: _ownedBookIds.contains(book.id),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 70,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.white10,
+              ),
+              child:
+                  book.imageCouverture != null &&
+                      book.imageCouverture!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        book.imageCouverture!,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : const Icon(Icons.book, color: Colors.white24, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.titre,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    "Par ${book.authorName}",
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF38BDF8),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white24),
           ],
         ),
       ),

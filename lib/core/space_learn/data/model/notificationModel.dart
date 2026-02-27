@@ -5,6 +5,7 @@ class NotificationModel {
   final String contenu;
   final bool lu;
   final DateTime? creeLe;
+  final String? role; // 'auteur' or 'lecteur'
 
   NotificationModel({
     required this.id,
@@ -13,9 +14,13 @@ class NotificationModel {
     required this.contenu,
     required this.lu,
     this.creeLe,
+    this.role,
   });
 
-  factory NotificationModel.fromJson(Map<String, dynamic> json) {
+  factory NotificationModel.fromJson(
+    Map<String, dynamic> json, {
+    String? role,
+  }) {
     return NotificationModel(
       id: json['id'] ?? '',
       utilisateurId: json['utilisateur_id'] ?? '',
@@ -23,6 +28,7 @@ class NotificationModel {
       contenu: json['contenu'] ?? '',
       lu: json['lu'] ?? false,
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
+      role: role ?? json['role'],
     );
   }
 

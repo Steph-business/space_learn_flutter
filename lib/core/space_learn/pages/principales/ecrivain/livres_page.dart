@@ -26,6 +26,7 @@ class _LivresPageState extends State<LivresPage> {
   String? _authorName;
   bool _isLoading = true;
   String? _error;
+  String _searchQuery = "";
 
   @override
   void initState() {
@@ -175,6 +176,11 @@ class _LivresPageState extends State<LivresPage> {
                       ),
                       child: TextField(
                         style: const TextStyle(color: Colors.white),
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value.toLowerCase();
+                          });
+                        },
                         decoration: InputDecoration(
                           hintText: "Rechercher un livre...",
                           hintStyle: TextStyle(
@@ -223,7 +229,15 @@ class _LivresPageState extends State<LivresPage> {
                       )
                     else
                       PublicationsList(
-                        books: _books,
+                        books: _searchQuery.isEmpty
+                            ? _books
+                            : _books
+                                  .where(
+                                    (b) => b.titre.toLowerCase().contains(
+                                      _searchQuery,
+                                    ),
+                                  )
+                                  .toList(),
                         authorName: _authorName,
                         onBookUpdated: _loadBooks,
                       ),

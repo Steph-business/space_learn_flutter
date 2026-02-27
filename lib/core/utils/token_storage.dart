@@ -40,4 +40,21 @@ class TokenStorage {
     final prefs = await SharedPreferences.getInstance();
     return prefs.containsKey(_tokenKey);
   }
+
+  /// Sauvegarder la date de dernière vue d'une discussion
+  static Future<void> saveDiscussionLastViewed(String discussionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      "discussion_viewed_$discussionId",
+      DateTime.now().toIso8601String(),
+    );
+  }
+
+  /// Récupérer la date de dernière vue d'une discussion
+  static Future<DateTime?> getDiscussionLastViewed(String discussionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final val = prefs.getString("discussion_viewed_$discussionId");
+    if (val != null) return DateTime.tryParse(val);
+    return null;
+  }
 }

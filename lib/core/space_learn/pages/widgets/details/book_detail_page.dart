@@ -975,7 +975,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
         ),
         const SizedBox(height: 20),
         SizedBox(
-          height: 260,
+          height: 280,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: books.length,
@@ -1050,13 +1050,65 @@ class _BookDetailPageState extends State<BookDetailPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 1),
             // Author
             Text(
               book.authorName,
               style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500]),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            // Price and Stats Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  book.prix > 0 ? "${book.prix} F" : "Gratuit",
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF06B6D4),
+                  ),
+                ),
+                Row(
+                  children: [
+                    if (book.noteMoyenne > 0) ...[
+                      const Icon(
+                        Icons.star_rounded,
+                        color: Color(0xFFF59E0B),
+                        size: 10,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        book.noteMoyenne.toStringAsFixed(1),
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    if (book.nombreMessages > 0) ...[
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Iconsax.message,
+                        color: Colors.white38,
+                        size: 10,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        "${book.nombreMessages}",
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: Colors.white38,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
           ],
         ),

@@ -35,11 +35,19 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
   // State variables for category filtering
   String _selectedCategory = "Tout";
+  String _searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadBooks();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadBooks() async {
@@ -176,10 +184,16 @@ class _MarketplacePageState extends State<MarketplacePage> {
         ),
       );
     } else {
-      // Filter books based on category
-      final filteredBooks = _selectedCategory == "Tout"
-          ? _books
-          : _books.where((b) => b.categorie?.nom == _selectedCategory).toList();
+      // Filter books based on category and search
+      final filteredBooks = _books.where((b) {
+        final matchesCategory =
+            _selectedCategory == "Tout" ||
+            b.categorie?.nom == _selectedCategory;
+        final matchesSearch =
+            _searchQuery.isEmpty ||
+            b.titre.toLowerCase().contains(_searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      }).toList();
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +205,14 @@ class _MarketplacePageState extends State<MarketplacePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CustomSearchBar(),
+                CustomSearchBar(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
                 const SizedBox(height: 22),
                 SelectCategorie(
                   categories: ["Tout", ..._categories],

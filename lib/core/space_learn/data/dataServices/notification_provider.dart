@@ -8,16 +8,28 @@ class NotificationProvider extends ChangeNotifier {
   final NotificationService _service = NotificationService();
   final AuthService _authService = AuthService();
   List<NotificationModel> _notifications = [];
+  Map<String, List<NotificationModel>> _groupedNotifications = {};
   bool _isLoading = false;
   StreamSubscription? _subscription;
   dynamic _lastStreamError;
 
   List<NotificationModel> get notifications =>
       List.unmodifiable(_notifications);
+  Map<String, List<NotificationModel>> get groupedNotifications =>
+      _groupedNotifications;
   bool get isLoading => _isLoading;
   int get unreadCount => _notifications.where((n) => !n.lu).length;
 
-  Future<void> loadNotifications(String token) async {
+  int getUnreadCountByRole(String role) {
+    return _notifications
+        .where((n) => !n.lu && (n.role == null || n.role == role))
+        .length;
+  }
+
+  Future<void> loadNotifications(
+    String token, {
+    bool onlyUnread = false,
+  }) async {
     _isLoading = true;
     notifyListeners();
 
@@ -25,7 +37,14 @@ class NotificationProvider extends ChangeNotifier {
       final user = await _authService.getUser(token);
       final userId = user?.id;
 
-      final allNotifications = await _service.getNotifications(token);
+      final result = await _service.getNotifications(
+        token,
+        onlyUnread: onlyUnread,
+      );
+      List<NotificationModel> allNotifications = [];
+      if (result is List<NotificationModel>) {
+        allNotifications = result;
+      }
 
       if (userId != null && userId.isNotEmpty) {
         _notifications = allNotifications
@@ -51,6 +70,38 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> loadGroupedNotifications(String token) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final user = await _authService.getUser(token);
+      final userId = user?.id;
+
+      final result = await _service.getNotifications(token, groupByRole: true);
+
+      if (result is Map<String, List<NotificationModel>>) {
+        _groupedNotifications = result;
+        // Also update the flat list for unread count and backward compatibility
+        _notifications = result.values.expand((element) => element).toList();
+        // Server already sorts by DESC, but we can ensure it
+        _notifications.sort(
+          (a, b) => (b.creeLe ?? DateTime.now()).compareTo(
+            a.creeLe ?? DateTime.now(),
+          ),
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+
+      if (userId != null) _startStreaming(token, userId);
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void _startStreaming(String token, String? userId) {
     _subscription?.cancel();
     _subscription = _service
@@ -62,13 +113,53 @@ class NotificationProvider extends ChangeNotifier {
                 notification.utilisateurId != userId) {
               return; // Ignorer les notifications qui ne nous concernent pas
             }
+
+            // Heuristic to assign role if missing
+            String? assignedRole = notification.role;
+            if (assignedRole == null) {
+              final type = notification.type.toLowerCase();
+              if (type.contains('vente') ||
+                  type.contains('abonné') ||
+                  type.contains('payment')) {
+                assignedRole = 'auteur';
+              } else if (type.contains('chapitre') ||
+                  type.contains('message') ||
+                  type.contains('reponse')) {
+                assignedRole = 'lecteur';
+              }
+            }
+
+            final taggedNotif = NotificationModel(
+              id: notification.id,
+              utilisateurId: notification.utilisateurId,
+              type: notification.type,
+              contenu: notification.contenu,
+              lu: notification.lu,
+              creeLe: notification.creeLe,
+              role: assignedRole,
+            );
+
             // Add new notification at the beginning
-            _notifications = [notification, ..._notifications];
+            _notifications = [taggedNotif, ..._notifications];
+
+            // Also update grouped map if it exists
+            if (assignedRole != null) {
+              final list = _groupedNotifications[assignedRole] ?? [];
+              _groupedNotifications[assignedRole] = [taggedNotif, ...list];
+            }
+
             notifyListeners();
           },
           onError: (error) {
-            // Only log if it's a new or different error to avoid flooding
-            if (error.toString() != _lastStreamError?.toString()) {
+            final errorStr = error.toString();
+            // Don't flood logs with connection issues if server is down
+            if (errorStr.contains("SocketException") ||
+                errorStr.contains("HttpException") ||
+                errorStr.contains("Connection refused") ||
+                errorStr.contains("Connection closed")) {
+              return;
+            }
+            if (errorStr != _lastStreamError?.toString()) {
               debugPrint("Notification Stream Error: $error");
               _lastStreamError = error;
             }

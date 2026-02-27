@@ -29,16 +29,16 @@ class MainNavBarState extends State<MainNavBar> {
     "Accueil",
     "Boutique",
     "Bibliothèque",
-    "Communauté",
-    "Paramètres",
+    "Teams",
+    "Profil",
   ];
 
   final List<IconData> _icons = [
-    Iconsax.home,
+    Icons.home_filled,
     Iconsax.shop,
     Iconsax.book,
     Iconsax.messages_1,
-    Iconsax.setting_2,
+    Icons.settings,
   ];
 
   void _onItemTapped(int index) {
@@ -117,11 +117,10 @@ class MainNavBarState extends State<MainNavBar> {
           items: List.generate(
             _titles.length,
             (index) => BottomNavigationBarItem(
-              icon: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+              icon: Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Icon(
-                  index == 4 ? Icons.settings_outlined : _icons[index],
+                  _icons[index],
                   size: _selectedIndex == index ? 28 : 24,
                 ),
               ),

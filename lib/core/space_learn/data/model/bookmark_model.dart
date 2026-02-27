@@ -2,19 +2,19 @@ class BookmarkModel {
   final String id;
   final String utilisateurId;
   final String livreId;
-  final int page;
-  final int chapitre;
-  final String? note;
+  final int pageNumber;
+  final String? label;
   final DateTime? createdAt;
+  final int? chapitre; // Keeping for compatibility if needed
 
   BookmarkModel({
     required this.id,
     required this.utilisateurId,
     required this.livreId,
-    required this.page,
-    required this.chapitre,
-    this.note,
+    required this.pageNumber,
+    this.label,
     this.createdAt,
+    this.chapitre,
   });
 
   factory BookmarkModel.fromJson(Map<String, dynamic> json) {
@@ -22,9 +22,9 @@ class BookmarkModel {
       id: json['id'] ?? '',
       utilisateurId: json['utilisateur_id'] ?? json['UtilisateurID'] ?? '',
       livreId: json['livre_id'] ?? json['LivreID'] ?? '',
-      page: (json['page'] ?? 0).toInt(),
+      pageNumber: (json['page_number'] ?? json['page'] ?? 0).toInt(),
+      label: json['label'] ?? json['note'],
       chapitre: (json['chapitre'] ?? 0).toInt(),
-      note: json['note'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : (json['CreatedAt'] != null
@@ -36,9 +36,9 @@ class BookmarkModel {
   Map<String, dynamic> toJson() {
     return {
       'livre_id': livreId,
-      'page': page,
-      'chapitre': chapitre,
-      if (note != null) 'note': note,
+      'page_number': pageNumber,
+      if (label != null) 'label': label,
+      if (chapitre != null) 'chapitre': chapitre,
     };
   }
 }
