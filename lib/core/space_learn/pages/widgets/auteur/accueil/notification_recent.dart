@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
@@ -6,8 +8,15 @@ import 'package:space_learn_flutter/core/space_learn/data/model/notificationMode
 
 class RecentNotificationsPage extends StatefulWidget {
   final VoidCallback? onTapOpenNotifications;
+  final List<NotificationModel>? customNotifications;
+  final String? title;
 
-  const RecentNotificationsPage({super.key, this.onTapOpenNotifications});
+  const RecentNotificationsPage({
+    super.key,
+    this.onTapOpenNotifications,
+    this.customNotifications,
+    this.title,
+  });
 
   @override
   State<RecentNotificationsPage> createState() =>
@@ -18,99 +27,131 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
   String _formatTimeAgo(DateTime? dt) {
     if (dt == null) return '';
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} minutes';
-    if (diff.inHours < 24) return 'Il y a ${diff.inHours} heures';
-    return 'Il y a ${diff.inDays} jours';
+    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes}m';
+    if (diff.inHours < 24) return 'Il y a ${diff.inHours}h';
+    return 'Il y a ${diff.inDays}j';
   }
 
   IconData _iconForType(String type) {
     switch (type.toLowerCase()) {
       case 'payment':
       case 'paiement':
-        return Iconsax.coin;
+      case 'vente':
+        return Iconsax.wallet_3;
       case 'review':
       case 'avis':
-        return Iconsax.star5;
-      case 'report':
-      case 'rapport':
-        return Iconsax.graph;
+        return Iconsax.star;
+      case 'message':
+      case 'reponse':
+        return Iconsax.message_2;
+      case 'chapitre':
+      case 'livre':
+        return Iconsax.book;
+      case 'abonné':
+      case 'follow':
+        return Iconsax.user_add;
       default:
         return Iconsax.notification;
     }
   }
 
-  Color _colorForRead(bool lu) => lu ? Colors.grey : Colors.blueAccent;
+  Color _accentColorForType(String type) {
+    switch (type.toLowerCase()) {
+      case 'payment':
+      case 'paiement':
+      case 'vente':
+        return const Color(0xFF10B981); // Emerald
+      case 'review':
+      case 'avis':
+        return const Color(0xFFF59E0B); // Amber
+      case 'message':
+      case 'reponse':
+        return const Color(0xFF3B82F6); // Blue
+      case 'chapitre':
+      case 'livre':
+        return const Color(0xFF8B5CF6); // Violet
+      case 'abonné':
+      case 'follow':
+        return const Color(0xFFEC4899); // Pink
+      default:
+        return const Color(0xFF06B6D4); // Cyan
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final notificationProvider = context.watch<NotificationProvider>();
-    final notifications = notificationProvider.notifications;
+    final notifications =
+        widget.customNotifications ?? notificationProvider.notifications;
     final loading = notificationProvider.isLoading;
 
-    return GestureDetector(
-      onTap: widget.onTapOpenNotifications,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(2),
+    if (loading && notifications.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF22D3EE)),
+          ),
         ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.notifications, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Notifications récentes',
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      );
+    }
 
-            if (loading && notifications.isEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ] else if (notifications.isEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Text(
-                  'Aucune notification pour le moment.',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ] else ...[
-              ...notifications.map(
-                (notif) => Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  child: _NotificationCardFromModel(
-                    model: notif,
-                    icon: _iconForType(notif.type),
-                    borderColor: _colorForRead(notif.lu),
-                    timeAgo: _formatTimeAgo(notif.creeLe),
-                  ),
-                ),
+    if (notifications.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 60),
+          child: Column(
+            children: [
+              Icon(
+                Iconsax.notification_bing,
+                size: 64,
+                color: Colors.white.withOpacity(0.2),
               ),
               const SizedBox(height: 16),
+              Text(
+                'Aucune notification.',
+                style: GoogleFonts.poppins(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 16,
+                ),
+              ),
             ],
-          ],
+          ),
         ),
-      ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.title != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 20),
+            child: Text(
+              widget.title!,
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white.withOpacity(0.9),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: notifications.length,
+          itemBuilder: (context, index) {
+            final notif = notifications[index];
+            return _NotificationCardFromModel(
+              model: notif,
+              icon: _iconForType(notif.type),
+              accentColor: _accentColorForType(notif.type),
+              timeAgo: _formatTimeAgo(notif.creeLe),
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -118,66 +159,130 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
 class _NotificationCardFromModel extends StatelessWidget {
   final NotificationModel model;
   final IconData icon;
-  final Color borderColor;
+  final Color accentColor;
   final String timeAgo;
 
   const _NotificationCardFromModel({
     required this.model,
     required this.icon,
-    required this.borderColor,
+    required this.accentColor,
     required this.timeAgo,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isUnread = !model.lu;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        border: Border(left: BorderSide(width: 5, color: borderColor)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 6,
-            offset: const Offset(2, 3),
-          ),
-        ],
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: borderColor.withOpacity(0.15),
-          child: Icon(icon, color: borderColor, size: 22),
-        ),
-        title: Text(
-          model.type,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: Colors.white,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              model.contenu,
-              style: TextStyle(color: Colors.grey[400], fontSize: 13),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isUnread
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isUnread
+                    ? accentColor.withOpacity(0.3)
+                    : Colors.white.withOpacity(0.05),
+                width: 1,
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              timeAgo,
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  // Mark as read or navigate
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Stack(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: accentColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(icon, color: accentColor, size: 20),
+                          ),
+                          if (isUnread)
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: accentColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFF0F172A),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  model.type.toUpperCase(),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: accentColor,
+                                    letterSpacing: 1.1,
+                                  ),
+                                ),
+                                Text(
+                                  timeAgo,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 10,
+                                    color: Colors.white.withOpacity(0.4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              model.contenu,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                height: 1.3,
+                                color: isUnread
+                                    ? Colors.white
+                                    : Colors.white.withOpacity(0.7),
+                                fontWeight: isUnread
+                                    ? FontWeight.w500
+                                    : FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ],
+          ),
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Notification : ${model.contenu}")),
-          );
-        },
       ),
     );
   }

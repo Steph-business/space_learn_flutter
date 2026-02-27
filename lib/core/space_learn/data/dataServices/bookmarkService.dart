@@ -12,14 +12,14 @@ class BookmarkService {
     required String livreId,
     required int page,
     required int chapitre,
-    String? note,
+    String? label,
     required String authToken,
   }) async {
     final Map<String, dynamic> data = {
       'livre_id': livreId,
-      'page': page,
+      'page_number': page,
       'chapitre': chapitre,
-      if (note != null) 'note': note,
+      if (label != null) 'label': label,
     };
 
     final response = await client.post(
@@ -69,6 +69,19 @@ class BookmarkService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to delete bookmark');
+    }
+  }
+
+  Future<void> clearAllBookmarks(String livreId, String authToken) async {
+    final url = ApiRoutes.bookmarksClearAll.replaceFirst(':livre_id', livreId);
+
+    final response = await client.delete(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $authToken'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to clear bookmarks');
     }
   }
 }

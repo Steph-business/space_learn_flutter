@@ -28,7 +28,7 @@ class LibraryModel {
 
     BookModel? book;
     if (bookJson != null) {
-      // Injection du nom de l'auteur provenant de la jointure (nom_auteur)
+      // Injecter le nom de l'auteur provenant de la jointure si manquant
       final joinName =
           json['nom_auteur'] ?? json['NomAuteur'] ?? json['auteur_nom'];
       if (joinName != null &&
@@ -36,6 +36,27 @@ class LibraryModel {
               bookJson['nom_auteur'].toString().isEmpty)) {
         bookJson['nom_auteur'] = joinName;
       }
+
+      // Injecter la progression si elle est au niveau parent (LibraryModel) mais absente dans le livre
+      final parentProg = json['progression'] ?? json['Progression'];
+      if (parentProg != null &&
+          bookJson['progression'] == null &&
+          bookJson['Progression'] == null &&
+          bookJson['progressions'] == null) {
+        bookJson['progression'] = parentProg;
+      }
+
+      // Injecter le nombre de messages si présent au niveau parent
+      final parentMsgCount =
+          json['nombre_messages'] ??
+          json['NombreMessages'] ??
+          json['messages_count'];
+      if (parentMsgCount != null &&
+          (bookJson['nombre_messages'] == null ||
+              bookJson['nombre_messages'] == 0)) {
+        bookJson['nombre_messages'] = parentMsgCount;
+      }
+
       book = BookModel.fromJson(bookJson);
     }
 

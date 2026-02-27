@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
@@ -11,18 +12,45 @@ class NotificationService {
 
   NotificationService({http.Client? client}) : client = client ?? http.Client();
 
-  Future<List<NotificationModel>> getNotifications(String authToken) async {
+  Future<dynamic> getNotifications(
+    String authToken, {
+    bool onlyUnread = false,
+    bool groupByRole = false,
+  }) async {
+    String url = ApiRoutes.notifications;
+    List<String> queryParams = [];
+    if (onlyUnread) queryParams.add("lu=false");
+    if (groupByRole) queryParams.add("group_by_role=true");
+
+    if (queryParams.isNotEmpty) {
+      url += "?${queryParams.join("&")}";
+    }
+
     final response = await client.get(
-      Uri.parse(ApiRoutes.notifications),
+      Uri.parse(url),
       headers: {'Authorization': 'Bearer $authToken'},
     );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = jsonDecode(response.body);
-      final List<dynamic> notificationsJson = data['data'] ?? [];
-      return notificationsJson
-          .map((json) => NotificationModel.fromJson(json))
-          .toList();
+      final rawData = data['data'] ?? data;
+
+      if (groupByRole && rawData is Map<String, dynamic>) {
+        // Handle grouped response: { "auteur": [...], "lecteur": [...] }
+        final Map<String, List<NotificationModel>> grouped = {};
+        rawData.forEach((key, value) {
+          if (value is List) {
+            grouped[key] = value
+                .map((json) => NotificationModel.fromJson(json, role: key))
+                .toList();
+          }
+        });
+        return grouped;
+      } else if (rawData is List) {
+        // Handle standard list response
+        return rawData.map((json) => NotificationModel.fromJson(json)).toList();
+      }
+      return <NotificationModel>[];
     } else {
       throw Exception('Failed to fetch notifications');
     }
@@ -113,7 +141,12 @@ class NotificationService {
           final response = await request.close();
           if (response.statusCode != 200) {
             // propagate error to consumer and retry
-            if (!controller.isClosed) controller.addError(Exception('SSE connection failed with status ${response.statusCode}'));
+            if (!controller.isClosed)
+              controller.addError(
+                Exception(
+                  'SSE connection failed with status ${response.statusCode}',
+                ),
+              );
             attempt = math.min(attempt + 1, 6);
             final wait = math.min(30, 1 << attempt);
             await Future.delayed(Duration(seconds: wait));
@@ -151,7 +184,8 @@ class NotificationService {
                         // sometimes data is a stringified JSON
                         try {
                           final inner = jsonDecode(d);
-                          if (inner is Map) payload = Map<String, dynamic>.from(inner);
+                          if (inner is Map)
+                            payload = Map<String, dynamic>.from(inner);
                         } catch (_) {}
                       }
                     } else {
@@ -181,7 +215,16 @@ class NotificationService {
             }
           }
         } catch (e) {
-          if (!controller.isClosed) controller.addError(e);
+          // Reduce noise for common connection issues when server is down
+          if (e is SocketException || e is HttpException) {
+            if (attempt == 0) {
+              debugPrint(
+                "📡 Notification Server unreachable (Gin @ ${ApiRoutes.host}:8082). Retrying in background...",
+              );
+            }
+          } else {
+            if (!controller.isClosed) controller.addError(e);
+          }
         } finally {
           try {
             request?.abort();
@@ -191,7 +234,7 @@ class NotificationService {
           } catch (_) {}
         }
 
-        // If not cancelled, wait a bit (backoff) and retry the connection
+        // Exponential backoff: 2s, 4s, 8s, 16s, 30s
         if (!cancelled) {
           attempt = math.min(attempt + 1, 6);
           final wait = math.min(30, 1 << attempt);

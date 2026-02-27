@@ -8,6 +8,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/commu
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
 import 'package:intl/intl.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'recherche_page.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
@@ -21,9 +22,11 @@ class TeamsPageLecteur extends StatefulWidget {
 class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
   final LibraryService _libraryService = LibraryService();
   final EvenementService _evenementService = EvenementService();
+  final DiscussionService _discussionService = DiscussionService();
 
   List<LibraryModel> _library = [];
   List<Evenement> _evenements = [];
+  int _cafeMsgCount = 0;
   bool _isLoading = true;
   String? _error;
 
@@ -58,6 +61,20 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         debugPrint("Erreur evenements: $e");
       }
 
+      int totalCafeMsgs = 0;
+      try {
+        final globalDiscussions = await _discussionService
+            .getGlobalDiscussions();
+        for (var d in globalDiscussions) {
+          final count = (d.messagesCount ?? 0) > 0
+              ? d.messagesCount!
+              : d.messages.length;
+          totalCafeMsgs += count;
+        }
+      } catch (e) {
+        debugPrint("Erreur global discussions: $e");
+      }
+
       // Filtrer les entrées sans livre valide
       final validItems = libraryItems
           .where((item) => item.livre != null)
@@ -67,6 +84,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         setState(() {
           _library = validItems;
           _evenements = evts;
+          _cafeMsgCount = totalCafeMsgs;
           _isLoading = false;
         });
       }
@@ -313,6 +331,27 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                       fontSize: 12,
                     ),
                   ),
+                  if (_cafeMsgCount > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.message,
+                          size: 10,
+                          color: Colors.grey[500],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$_cafeMsgCount messages",
+                          style: GoogleFonts.poppins(
+                            color: Colors.grey[500],
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -325,15 +364,17 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
 
   Widget _buildBookForumCard(LibraryModel libraryItem) {
     final book = libraryItem.livre!;
-    // Fake stats variables for demonstration
-    final activityScore = book.telechargements > 50
+    final activityScore = book.nombreMessages > 20
         ? "Très actif"
-        : "Peu actif";
-    final msgCount =
-        book.telechargements * 3; // un peu plus de msg pour les lecteurs
-    final color = book.telechargements > 50
+        : book.nombreMessages > 0
+        ? "Actif"
+        : "Nouveau";
+    final msgCount = book.nombreMessages;
+    final color = book.nombreMessages > 20
         ? Colors.greenAccent
-        : Colors.orangeAccent;
+        : book.nombreMessages > 0
+        ? Colors.cyanAccent
+        : Colors.grey;
 
     return GestureDetector(
       onTap: () {

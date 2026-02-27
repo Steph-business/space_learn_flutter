@@ -10,16 +10,20 @@ import '../../space_learn/pages/widgets/lecteur/boutique/cart_page.dart';
 
 class NavBarAll extends StatelessWidget {
   final String userName;
+  final String? userUrl;
   final String? greeting;
   final String? subtitle;
   final bool showCart;
+  final String role; // 'lecteur' or 'auteur'
 
   const NavBarAll({
     super.key,
     this.userName = 'Lecteur',
+    this.userUrl,
     this.greeting,
     this.subtitle,
     this.showCart = true,
+    this.role = 'lecteur',
   });
 
   static String getGreeting() {
@@ -30,11 +34,16 @@ class NavBarAll extends StatelessWidget {
   }
 
   static String getFirstName(String fullName) {
+    if (fullName.isEmpty) return 'Lecteur';
     return fullName.split(' ').first;
   }
 
   @override
   Widget build(BuildContext context) {
+    final String initial = userName.isNotEmpty
+        ? userName[0].toUpperCase()
+        : 'L';
+
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 60, bottom: 16),
       decoration: const BoxDecoration(color: Colors.transparent),
@@ -49,10 +58,34 @@ class NavBarAll extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white24, width: 1),
-                  image: const DecorationImage(
-                    image: NetworkImage('https://i.pravatar.cc/150?u=auteur'),
-                    fit: BoxFit.cover,
-                  ),
+                  color: const Color(0xFF1E293B),
+                ),
+                child: ClipOval(
+                  child: (userUrl != null && userUrl!.isNotEmpty)
+                      ? Image.network(
+                          userUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Text(
+                              initial,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            initial,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -61,7 +94,7 @@ class NavBarAll extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    "Bonjour,",
+                    "${greeting ?? getGreeting()},",
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       color: Colors.white54,
@@ -109,7 +142,7 @@ class NavBarAll extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const NotificationPage(),
+                          builder: (context) => NotificationPage(role: role),
                         ),
                       );
                     },
@@ -121,7 +154,11 @@ class NavBarAll extends StatelessWidget {
                   ),
                   Consumer<NotificationProvider>(
                     builder: (context, notificationProvider, child) {
-                      final count = notificationProvider.unreadCount;
+                      final currentRole =
+                          role; // Use currentRole local to avoid any field access issues if possible
+                      final count = notificationProvider.getUnreadCountByRole(
+                        currentRole,
+                      );
                       if (count == 0) return const SizedBox.shrink();
                       return Positioned(
                         right: 8,

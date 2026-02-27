@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +13,8 @@ import '../../../data/dataServices/bookmarkService.dart';
 import '../../../data/model/bookmark_model.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../data/dataServices/readingSettingsService.dart';
+import '../../../data/dataServices/readerStatsService.dart';
 
 class ReadingPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -28,6 +31,8 @@ class _ReadingPageState extends State<ReadingPage> {
   late PdfViewerController _pdfViewerController;
   final ReadingProgressService _progressService = ReadingProgressService();
   final BookmarkService _bookmarkService = BookmarkService();
+  final ReadingSettingsService _settingsService = ReadingSettingsService();
+  final ReaderStatsService _statsService = ReaderStatsService();
 
   bool _showCover = false;
   int _currentPage = 1;
@@ -36,18 +41,26 @@ class _ReadingPageState extends State<ReadingPage> {
   String? _loadError;
   int? _savedPage;
   Timer? _saveTimer;
+  Timer? _settingsTimer;
+  Timer? _heartbeatTimer;
   bool _showControls = true;
 
-  // Local Settings
-  double _fontSize = 18.0;
+  // PDF Reader Settings
   double _brightness = 1.0;
-  String _fontFamily = 'Lora'; // Lora (Serif) or Poppins (Sans)
-  Color _backgroundColor = const Color(0xFFFDF7E2); // Parchment
+  Color _backgroundColor = const Color(0xFFFDF7E2); // Parchment filter
+  double _zoomLevel = 1.0;
+  bool _isHorizontal = false;
+  bool _isPdf = false;
 
   List<BookmarkModel> _bookmarks = [];
   List<PdfBookmark> _pdfBookmarks = [];
   Map<String, int> _bookmarkPageMap = {};
   String _currentChapterTitle = "Début du livre";
+
+  // Search
+  bool _isSearching = false;
+  PdfTextSearchResult? _searchResult;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -57,27 +70,83 @@ class _ReadingPageState extends State<ReadingPage> {
     _loadProgress();
     _loadSettings();
     _loadBookmarks();
+    _startHeartbeat();
   }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Load from local first for instant UI response
+    _applyPrefs(prefs);
+
+    // Then try to sync from backend
+    try {
+      final token = await TokenStorage.getToken();
+      if (token != null) {
+        final backendSettings = await _settingsService.getSettings(token);
+        if (backendSettings != null) {
+          setState(() {
+            _backgroundColor = Color(backendSettings.readingBgColor);
+            _brightness = backendSettings.brightness;
+            _zoomLevel = backendSettings.zoomLevel;
+            _isHorizontal = backendSettings.isHorizontal;
+          });
+          // Update local with backend data
+          _saveToLocal(prefs);
+        }
+      }
+    } catch (e) {
+      debugPrint("Error syncing settings: $e");
+    }
+  }
+
+  void _applyPrefs(SharedPreferences prefs) {
     setState(() {
-      _fontSize = prefs.getDouble('reading_font_size') ?? 18.0;
       _brightness = prefs.getDouble('reading_brightness') ?? 1.0;
-      _fontFamily = prefs.getString('reading_font_family') ?? 'Lora';
       final bgColorHex = prefs.getInt('reading_bg_color');
       if (bgColorHex != null) {
         _backgroundColor = Color(bgColorHex);
       }
+      _zoomLevel = prefs.getDouble('reading_zoom_level') ?? 1.0;
+      _isHorizontal = prefs.getBool('reading_is_horizontal') ?? false;
     });
+  }
+
+  Future<void> _saveToLocal(SharedPreferences prefs) async {
+    await prefs.setDouble('reading_brightness', _brightness);
+    await prefs.setInt('reading_bg_color', _backgroundColor.value);
+    await prefs.setDouble('reading_zoom_level', _zoomLevel);
+    await prefs.setBool('reading_is_horizontal', _isHorizontal);
   }
 
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('reading_font_size', _fontSize);
-    await prefs.setDouble('reading_brightness', _brightness);
-    await prefs.setString('reading_font_family', _fontFamily);
-    await prefs.setInt('reading_bg_color', _backgroundColor.value);
+    await _saveToLocal(prefs);
+
+    // Sync to backend
+    try {
+      final token = await TokenStorage.getToken();
+      if (token != null) {
+        await _settingsService.saveSettings(
+          ReadingSettings(
+            readingBgColor: _backgroundColor.value,
+            brightness: _brightness,
+            zoomLevel: _zoomLevel,
+            isHorizontal: _isHorizontal,
+          ),
+          token,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error saving settings to backend: $e");
+    }
+  }
+
+  void _saveSettingsDebounced() {
+    _settingsTimer?.cancel();
+    _settingsTimer = Timer(const Duration(milliseconds: 500), () {
+      _saveSettings();
+    });
   }
 
   Future<void> _loadBookmarks() async {
@@ -112,7 +181,9 @@ class _ReadingPageState extends State<ReadingPage> {
         );
         if (progress != null && mounted) {
           setState(() {
-            _savedPage = progress.chapitreCourant;
+            _savedPage = progress.lastPage > 0
+                ? progress.lastPage
+                : progress.chapitreCourant;
           });
           // Si le document est déjà chargé, on saute maintenant
           if (_isDocumentLoaded &&
@@ -144,6 +215,16 @@ class _ReadingPageState extends State<ReadingPage> {
     }
   }
 
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      final bookId = widget.book['id'] ?? widget.book['ID'];
+      if (bookId != null) {
+        _statsService.recordReadingTime(bookId.toString());
+      }
+    });
+  }
+
   void _onPageChanged(int page) {
     setState(() {
       _currentPage = page;
@@ -163,7 +244,7 @@ class _ReadingPageState extends State<ReadingPage> {
           livreId: bookId,
           page: _currentPage,
           chapitre: 1, // Par défaut chapitre 1 pour l'instant
-          note: "Marque-page à la page $_currentPage",
+          label: "Marque-page à la page $_currentPage",
           authToken: token,
         );
         if (mounted) {
@@ -184,6 +265,8 @@ class _ReadingPageState extends State<ReadingPage> {
   @override
   void dispose() {
     _saveTimer?.cancel();
+    _heartbeatTimer?.cancel();
+    _settingsTimer?.cancel();
     _pdfViewerController.dispose();
     super.dispose();
   }
@@ -219,37 +302,55 @@ class _ReadingPageState extends State<ReadingPage> {
         format == 'pdf' ||
         (pdfUrl != null && pdfUrl.toLowerCase().endsWith('.pdf'));
 
+    if (_isPdf != isPdf) {
+      Future.microtask(() => setState(() => _isPdf = isPdf));
+    }
+
     return Scaffold(
       backgroundColor: _backgroundColor,
-      body: Opacity(
-        opacity: 0.5 + (_brightness * 0.5), // Simulate brightness
-        child: Stack(
-          children: [
-            // Content Layer
-            GestureDetector(
+      drawer: _buildDrawer(),
+      body: Stack(
+        children: [
+          // Content Layer (Dimmed)
+          Opacity(
+            opacity: 0.5 + (_brightness * 0.5), // Simulate brightness
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
               onTap: () => setState(() => _showControls = !_showControls),
               child: _buildBody(pdfUrl, imageUrl, isPdf),
             ),
+          ),
 
-            // Header Layer
-            if (!_showCover && _showControls) _buildHeader(),
+          // Header Layer (Solid)
+          if (!_showCover && _showControls) _buildHeader(),
 
-            // Footer Layer
-            if (!_showCover && _showControls && _isDocumentLoaded)
-              _buildBottomControls(),
+          if (_isSearching) _buildSearchBar(),
 
-            // Close button if no cover
-            if (_showCover)
-              Positioned(
-                top: 50,
-                left: 20,
-                child: _buildCircularButton(
-                  icon: Icons.close,
+          // Footer Layer (Solid)
+          if (!_showCover && _showControls && _isDocumentLoaded)
+            _buildBottomControls(),
+
+          // Close button if no cover
+          if (_showCover)
+            Positioned(
+              top: 50,
+              left: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    color: Color(0xFF4A3728),
+                    size: 20,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -269,7 +370,9 @@ class _ReadingPageState extends State<ReadingPage> {
       key: _pdfViewerKey,
       controller: _pdfViewerController,
       pageLayoutMode: PdfPageLayoutMode.single,
-      scrollDirection: PdfScrollDirection.horizontal,
+      scrollDirection: _isHorizontal
+          ? PdfScrollDirection.vertical
+          : PdfScrollDirection.horizontal,
       enableDoubleTapZooming: true,
       onDocumentLoaded: (PdfDocumentLoadedDetails details) {
         if (mounted) {
@@ -315,60 +418,61 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Widget _buildHeader() {
+    final bool isDark = _backgroundColor.computeLuminance() < 0.5;
+    final Color textColor = isDark ? Colors.white : const Color(0xFF4A3728);
+
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
       child: Container(
         padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 10,
-          left: 20,
-          right: 20,
-          bottom: 20,
+          top: MediaQuery.of(context).padding.top,
+          left: 10,
+          right: 10,
+          bottom: 10,
         ),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFFFDF7E2).withOpacity(0.9),
-              const Color(0xFFFDF7E2).withOpacity(0.0),
-            ],
-          ),
-        ),
+        decoration: BoxDecoration(color: _backgroundColor),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildCircularButton(
-              icon: Icons.arrow_back_ios_new,
+            IconButton(
+              icon: Icon(Icons.arrow_back_ios_new, color: textColor, size: 20),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'CHAPITRE',
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFF4A3728).withOpacity(0.6),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                Text(
-                  _currentChapterTitle,
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFF4A3728),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+            Builder(
+              builder: (context) => IconButton(
+                icon: Icon(Icons.menu, color: textColor),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
             ),
-            _buildCircularButton(
-              icon: Icons.text_fields,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    _currentChapterTitle.toUpperCase(),
+                    style: GoogleFonts.lora(
+                      color: textColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(
+                _backgroundColor.computeLuminance() < 0.5
+                    ? Icons.wb_sunny_outlined
+                    : Icons.nightlight_round_outlined,
+                color: textColor.withOpacity(0.7),
+              ),
               onPressed: _showSettingsModal,
             ),
           ],
@@ -377,220 +481,118 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
-  Widget _buildCircularButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.05),
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: const Color(0xFF4A3728), size: 20),
-        onPressed: onPressed,
-      ),
-    );
-  }
-
   Widget _buildBottomControls() {
-    double percentRead = _totalPages > 0
-        ? (_currentPage / _totalPages) * 100
-        : 0;
+    final bool isDark = _backgroundColor.computeLuminance() < 0.5;
+    final Color textColor = isDark ? Colors.white : const Color(0xFF4A3728);
 
     return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [
-              const Color(0xFFFDF7E2).withOpacity(0.95),
-              const Color(0xFFFDF7E2).withOpacity(0.0),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'PAGE $_currentPage SUR $_totalPages',
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF4A3728).withOpacity(0.5),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      '${percentRead.toInt()}% LU',
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF4A3728).withOpacity(0.5),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+      bottom: 24,
+      left: 24,
+      right: 24,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Page Indicator (Centered, floating above the bar)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: _backgroundColor.withOpacity(0.95),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
+              ],
+            ),
+            child: Text(
+              "PAGE $_currentPage SUR $_totalPages",
+              style: GoogleFonts.poppins(
+                color: textColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                letterSpacing: 0.5,
               ),
-              const SizedBox(height: 12),
-              SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: const Color(0xFF22D3EE),
-                  inactiveTrackColor: const Color(0xFF4A3728).withOpacity(0.1),
-                  thumbColor: Colors.white,
-                  overlayColor: const Color(0xFF22D3EE).withOpacity(0.2),
-                  trackHeight: 3,
-                  thumbShape: const RoundSliderThumbShape(
-                    enabledThumbRadius: 6,
-                  ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Clean Floating Bar (Sainte Bible Style)
+          Container(
+            height: 56,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B), // Premium dark theme
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
-                child: Slider(
-                  value: _currentPage.toDouble(),
-                  min: 1,
-                  max: _totalPages.toDouble() > 0 ? _totalPages.toDouble() : 1,
-                  onChanged: (val) {
-                    _pdfViewerController.jumpToPage(val.toInt());
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildFloatingBarIcon(
+                  icon: Icons.list,
+                  onTap: () => _showTableOfContentsModal(initialTab: 0),
+                ),
+                _buildFloatingBarIcon(
+                  icon: _bookmarks.any((b) => b.pageNumber == _currentPage)
+                      ? Icons.bookmark
+                      : Icons.bookmark_border,
+                  onTap: _toggleBookmark,
+                ),
+                _buildFloatingBarIcon(
+                  icon: Icons.search,
+                  onTap: () {
+                    setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) {
+                        _searchResult?.clear();
+                        _searchController.clear();
+                      }
+                    });
                   },
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.menu_book,
-                      color: const Color(0xFF4A3728).withOpacity(0.7),
-                      size: 28,
-                    ),
-                    onPressed: _showTableOfContentsModal,
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      _bookmarks.any((b) => b.page == _currentPage)
-                          ? Icons.bookmark
-                          : Icons.bookmark_border,
-                      color: const Color(0xFF4A3728).withOpacity(0.7),
-                      size: 28,
-                    ),
-                    onPressed: _toggleBookmark,
-                  ),
-                  _buildNavIcon(Icons.search),
-                  IconButton(
-                    icon: Icon(
-                      Icons.share_outlined,
-                      color: const Color(0xFF4A3728).withOpacity(0.7),
-                      size: 28,
-                    ),
-                    onPressed: () async {
-                      try {
-                        final bookId = widget.book['id'] ?? widget.book['ID'];
-                        final url = ApiRoutes.shareBook.replaceFirst(
-                          ':id',
-                          bookId.toString(),
+                _buildFloatingBarIcon(
+                  icon: Icons.share_outlined,
+                  onTap: () async {
+                    try {
+                      final bookId = widget.book['id'] ?? widget.book['ID'];
+                      final url = ApiRoutes.shareBook.replaceFirst(
+                        ':id',
+                        bookId.toString(),
+                      );
+                      final response = await http.get(Uri.parse(url));
+                      if (response.statusCode == 200) {
+                        final data = json.decode(response.body)['data'];
+                        Share.share(
+                          data['share_text'] ??
+                              "Découvrez ce livre sur SpaceLearn !",
+                          subject:
+                              data['title'] ??
+                              widget.book['titre'] ??
+                              "SpaceLearn",
                         );
-
-                        final response = await http.get(Uri.parse(url));
-                        if (response.statusCode == 200) {
-                          final data = json.decode(response.body)['data'];
-                          Share.share(
-                            data['share_text'] ??
-                                "Découvrez ce livre sur SpaceLearn !",
-                            subject:
-                                data['title'] ??
-                                widget.book['titre'] ??
-                                "SpaceLearn",
-                          );
-                        } else {
-                          final title =
-                              widget.book['titre'] ?? 'SpaceLearn Book';
-                          Share.share(
-                            "Je lis '$title' sur SpaceLearn ! Rejoins-moi !",
-                          );
-                        }
-                      } catch (e) {
-                        debugPrint("Error sharing: $e");
+                      } else {
                         final title = widget.book['titre'] ?? 'SpaceLearn Book';
                         Share.share(
                           "Je lis '$title' sur SpaceLearn ! Rejoins-moi !",
                         );
                       }
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavIcon(IconData icon) {
-    return Icon(
-      icon,
-      color: const Color(0xFF4A3728).withOpacity(0.7),
-      size: 28,
-    );
-  }
-
-  Widget _buildMockEbookContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(30, 140, 30, 200),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'II. Les lueurs de l\'aube',
-            style:
-                (_fontFamily == 'Lora'
-                        ? GoogleFonts.lora()
-                        : GoogleFonts.poppins())
-                    .copyWith(
-                      fontSize: _fontSize + 14,
-                      fontWeight: FontWeight.w800,
-                      color: _backgroundColor.computeLuminance() > 0.5
-                          ? const Color(0xFF4A3728)
-                          : Colors.white,
-                    ),
-          ),
-          const SizedBox(height: 40),
-          RichText(
-            text: TextSpan(
-              style:
-                  (_fontFamily == 'Lora'
-                          ? GoogleFonts.lora()
-                          : GoogleFonts.poppins())
-                      .copyWith(
-                        fontSize: _fontSize,
-                        color: _backgroundColor.computeLuminance() > 0.5
-                            ? const Color(0xFF4A3728)
-                            : Colors.white.withOpacity(0.9),
-                        height: 1.7,
-                      ),
-              children: [
-                TextSpan(
-                  text: 'L',
-                  style: GoogleFonts.lora(
-                    fontSize: 60,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF22D3EE),
-                  ),
+                    } catch (e) {
+                      final title = widget.book['titre'] ?? 'SpaceLearn Book';
+                      Share.share(
+                        "Je lis '$title' sur SpaceLearn ! Rejoins-moi !",
+                      );
+                    }
+                  },
                 ),
-                const TextSpan(
-                  text:
-                      ' e soleil commençait à peine à poindre derrière les collines arides qui entouraient la petite ville. L\'air était encore frais, chargé de l\'humidité nocturne et de l\'odeur terreuse des jardins environnants. Dans le silence de la chambre, le craquement régulier du plancher annonçait les premiers pas de la journée.\n\nJe restais immobile, les yeux fixés sur le plafond où dansaient des ombres incertaines. Chaque minute qui passait semblait étirer le temps, le rendant presque tangible. C\'était cette sensation particulière, ce moment suspendu entre le rêve et la réalité, où tout semble possible mais où rien n\'a encore commencé.',
+                _buildFloatingBarIcon(
+                  icon: Icons.close,
+                  onTap: () => setState(() => _showControls = false),
                 ),
               ],
             ),
@@ -600,114 +602,167 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
+  Widget _buildFloatingBarIcon({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(28),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Icon(icon, color: Colors.white.withOpacity(0.8), size: 24),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMockEbookContent() {
+    return Container(
+      color: _backgroundColor,
+      child: const Center(child: Text("Mode PDF activé")),
+    );
+  }
+
   void _showSettingsModal() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            color: Color(0xFFF2F2F7), // Light background like iOS
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Paramètres de lecture",
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Font size
-              Row(
-                children: [
-                  const Icon(Icons.text_fields, size: 16),
-                  Expanded(
-                    child: Slider(
-                      value: _fontSize,
-                      min: 12,
-                      max: 30,
-                      activeColor: const Color(0xFF22D3EE),
-                      onChanged: (val) {
-                        setState(() => _fontSize = val);
-                        setModalState(() {});
-                        _saveSettings();
-                      },
-                    ),
-                  ),
-                  const Icon(Icons.text_fields, size: 24),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Brightness
-              Row(
-                children: [
-                  const Icon(Icons.light_mode, size: 16),
-                  Expanded(
-                    child: Slider(
-                      value: _brightness,
-                      min: 0.2,
-                      max: 1.0,
-                      activeColor: const Color(0xFF22D3EE),
-                      onChanged: (val) {
-                        setState(() => _brightness = val);
-                        setModalState(() {});
-                        _saveSettings();
-                      },
-                    ),
-                  ),
-                  const Icon(Icons.light_mode, size: 24),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Font family & Background
+              // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ToggleButtons(
-                    borderRadius: BorderRadius.circular(8),
-                    isSelected: [
-                      _fontFamily == 'Lora',
-                      _fontFamily == 'Poppins',
-                    ],
-                    color: Colors.grey,
-                    selectedColor: Colors.white,
-                    fillColor: const Color(0xFF22D3EE),
-                    onPressed: (index) {
-                      setState(() {
-                        _fontFamily = index == 0 ? 'Lora' : 'Poppins';
-                      });
-                      setModalState(() {});
-                      _saveSettings();
-                    },
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text("Serif", style: GoogleFonts.lora()),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text("Sans", style: GoogleFonts.poppins()),
-                      ),
-                    ],
+                  Text(
+                    "Thèmes et réglages",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      color: Colors.black87,
+                    ),
                   ),
-                  Row(
-                    children: [
-                      _buildColorOption(const Color(0xFFFDF7E2), setModalState),
-                      const SizedBox(width: 8),
-                      _buildColorOption(Colors.white, setModalState),
-                      const SizedBox(width: 8),
-                      _buildColorOption(
-                        const Color(0xFF1E293B),
-                        setModalState,
-                        isDark: true,
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.05),
+                        shape: BoxShape.circle,
                       ),
-                    ],
+                      child: const Icon(
+                        Icons.close,
+                        size: 20,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Zoom Slider
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.zoom_out, size: 16, color: Colors.black45),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 4,
+                        activeTrackColor: Colors.black,
+                        inactiveTrackColor: Colors.black.withOpacity(0.1),
+                        thumbColor: Colors.white,
+                        overlayColor: Colors.transparent,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 10,
+                          elevation: 2,
+                        ),
+                      ),
+                      child: Slider(
+                        value: _zoomLevel,
+                        min: 0.5,
+                        max: 3.0,
+                        onChanged: (val) {
+                          setState(() {
+                            _zoomLevel = val;
+                            _pdfViewerController.zoomLevel = val;
+                          });
+                          setModalState(() {});
+                          _saveSettingsDebounced();
+                        },
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.zoom_in, size: 18, color: Colors.black45),
+                ],
+              ),
+              const Divider(height: 30),
+
+              // Orientation Toggle
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  _isHorizontal ? Icons.swap_vert : Icons.swap_horiz,
+                  color: Colors.black87,
+                ),
+                title: Text(
+                  "Défilement vertical",
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: Switch(
+                  value: _isHorizontal,
+                  onChanged: (val) {
+                    setState(() => _isHorizontal = val);
+                    setModalState(() {});
+                    _saveSettings();
+                  },
+                  activeColor: Colors.black,
+                ),
+              ),
+
+              const Divider(height: 30),
+
+              // Themes Grid
+              GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: 3,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.2,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildThemeOption(
+                    "Original",
+                    Colors.white,
+                    Colors.black,
+                    setModalState,
+                  ),
+                  _buildThemeOption(
+                    "Nuit",
+                    const Color(0xFF121212),
+                    Colors.white,
+                    setModalState,
+                  ),
+                  _buildThemeOption(
+                    "Sépia",
+                    const Color(0xFFF4ECD8),
+                    const Color(0xFF5B4636),
+                    setModalState,
                   ),
                 ],
               ),
@@ -719,42 +774,80 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
-  Widget _buildColorOption(
-    Color color,
+  Widget _buildThemeOption(
+    String name,
+    Color bg,
+    Color text,
     StateSetter setModalState, {
-    bool isDark = false,
+    bool applyBold = false,
   }) {
-    bool isSelected = _backgroundColor.value == color.value;
+    bool isSelected = _backgroundColor.value == bg.value;
+
     return GestureDetector(
       onTap: () {
-        setState(() => _backgroundColor = color);
+        setState(() {
+          _backgroundColor = bg;
+        });
         setModalState(() {});
         _saveSettings();
       },
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected ? const Color(0xFF22D3EE) : Colors.grey[300]!,
-            width: 2,
+      child: Column(
+        children: [
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected ? Colors.black : Colors.transparent,
+                  width: 2,
+                ),
+                boxShadow: [
+                  if (!isSelected)
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  "Aa",
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 24,
+                    fontWeight: applyBold ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(
+            name,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.black54,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  void _showTableOfContentsModal() {
+  void _showTableOfContentsModal({int initialTab = 0}) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => DefaultTabController(
-        length: 2,
+        length: 3,
+        initialIndex: initialTab,
         child: Container(
-          height: MediaQuery.of(context).size.height * 0.6,
+          height: MediaQuery.of(context).size.height * 0.7,
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -774,10 +867,14 @@ class _ReadingPageState extends State<ReadingPage> {
                 indicatorColor: const Color(0xFF22D3EE),
                 labelColor: const Color(0xFF22D3EE),
                 unselectedLabelColor: Colors.grey,
-                labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                labelStyle: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
                 tabs: const [
                   Tab(text: "Chapitres"),
-                  Tab(text: "Mes Marque-pages"),
+                  Tab(text: "Signets"),
+                  Tab(text: "Notes"),
                 ],
               ),
               Expanded(
@@ -786,7 +883,9 @@ class _ReadingPageState extends State<ReadingPage> {
                     // Tab 1: PDF Chapters
                     _buildChaptersList(),
                     // Tab 2: User Bookmarks
-                    _buildUserBookmarksList(),
+                    _buildUserBookmarksList(onlyWithNotes: false),
+                    // Tab 3: User Notes
+                    _buildUserBookmarksList(onlyWithNotes: true),
                   ],
                 ),
               ),
@@ -798,7 +897,8 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Widget _buildChaptersList() {
-    if (_pdfBookmarks.isEmpty) {
+    final chapters = List.from(_pdfBookmarks);
+    if (chapters.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -815,9 +915,10 @@ class _ReadingPageState extends State<ReadingPage> {
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      itemCount: _pdfBookmarks.length,
+      itemCount: chapters.length,
       itemBuilder: (context, index) {
-        final bookmark = _pdfBookmarks[index];
+        if (index >= chapters.length) return const SizedBox.shrink();
+        final bookmark = chapters[index];
         final bool isCurrent = _currentChapterTitle == bookmark.title;
         final int? page = _bookmarkPageMap[bookmark.title];
 
@@ -847,23 +948,31 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
-  Widget _buildUserBookmarksList() {
-    if (_bookmarks.isEmpty) {
+  Widget _buildUserBookmarksList({bool onlyWithNotes = false}) {
+    List<BookmarkModel> bookmarks = List.from(_bookmarks);
+
+    if (onlyWithNotes) {
+      bookmarks = bookmarks
+          .where((bk) => bk.label != null && bk.label!.isNotEmpty)
+          .toList();
+    }
+
+    if (bookmarks.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.bookmark_border, color: Colors.grey, size: 48),
+            Icon(
+              onlyWithNotes ? Icons.edit_note : Icons.bookmark_border,
+              color: Colors.grey,
+              size: 48,
+            ),
             const SizedBox(height: 16),
             Text(
-              "Vous n'avez pas encore de marque-page.",
+              onlyWithNotes
+                  ? "Aucune note trouvée."
+                  : "Vous n'avez pas encore de marque-page.",
               style: GoogleFonts.poppins(color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Cliquez sur l'icône marque-page pendant la lecture.",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12),
             ),
           ],
         ),
@@ -871,17 +980,18 @@ class _ReadingPageState extends State<ReadingPage> {
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      itemCount: _bookmarks.length,
+      itemCount: bookmarks.length,
       itemBuilder: (context, index) {
-        final bk = _bookmarks[index];
+        if (index >= bookmarks.length) return const SizedBox.shrink();
+        final bk = bookmarks[index];
         return ListTile(
           leading: const Icon(Icons.bookmark, color: Color(0xFF22D3EE)),
           title: Text(
-            "Page ${bk.page}",
+            "Page ${bk.pageNumber}",
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
           ),
           subtitle: Text(
-            bk.note ?? "Repère de lecture",
+            bk.label ?? "Repère de lecture",
             style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
           ),
           trailing: IconButton(
@@ -907,12 +1017,146 @@ class _ReadingPageState extends State<ReadingPage> {
             },
           ),
           onTap: () {
-            final page = bk.page;
+            final page = bk.pageNumber;
             _pdfViewerController.jumpToPage(page);
             Navigator.pop(context);
           },
         );
       },
+    );
+  }
+
+  Widget _buildDrawer() {
+    final bookTitle = widget.book['titre'] ?? 'Livre SpaceLearn';
+    final imageUrl =
+        widget.book['image_couverture'] ?? widget.book['imageCouverture'];
+
+    return Drawer(
+      backgroundColor: const Color(0xFF1E293B), // Dark theme as in Bible app
+      child: Column(
+        children: [
+          DrawerHeader(
+            padding: EdgeInsets.zero,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              image: (imageUrl != null && imageUrl.isNotEmpty)
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                      colorFilter: ColorFilter.mode(
+                        Colors.black.withOpacity(0.6),
+                        BlendMode.darken,
+                      ),
+                    )
+                  : null,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              alignment: Alignment.bottomLeft,
+              child: Text(
+                bookTitle,
+                style: GoogleFonts.lora(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDrawerItem(
+                  icon: Icons.menu_book,
+                  title: "Le Livre",
+                  onTap: () => Navigator.pop(context),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.format_list_bulleted,
+                  title: "Table des matières",
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showTableOfContentsModal(initialTab: 0);
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.bookmark_border,
+                  title: "Mes Signets",
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showTableOfContentsModal(initialTab: 1);
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.edit_note_outlined,
+                  title: "Mes Remarques",
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showTableOfContentsModal(initialTab: 2);
+                  },
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Divider(color: Colors.white10),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.settings_outlined,
+                  title: "Paramètres de lecture",
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showSettingsModal();
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.exit_to_app,
+                  title: "Quitter le lecteur",
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Image.asset(
+              'assets/images/logo.png', // Fallback if exists
+              height: 30,
+              errorBuilder: (context, error, stackTrace) => Text(
+                "SPACE LEARN",
+                style: GoogleFonts.poppins(
+                  color: Colors.white24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.blueGrey[200], size: 22),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          color: Colors.white.withOpacity(0.9),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
     );
   }
 
@@ -923,12 +1167,138 @@ class _ReadingPageState extends State<ReadingPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.info_outline, size: 60, color: Colors.grey),
-            const SizedBox(height: 20),
+            const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
+            const SizedBox(height: 24),
+            Text(
+              "Oups !",
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF4A3728),
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(color: Colors.grey, fontSize: 16),
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: const Color(0xFF4A3728).withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A3728),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text("Retour"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 70,
+      left: 20,
+      right: 20,
+      child: Container(
+        height: 50,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.search, color: Colors.blueAccent, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.black87, fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Rechercher dans le texte...',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) {
+                  if (value.isEmpty) {
+                    setState(() {
+                      _searchResult?.clear();
+                    });
+                  }
+                },
+                onSubmitted: (value) async {
+                  if (value.isNotEmpty) {
+                    _searchResult = _pdfViewerController.searchText(value);
+                    setState(() {});
+                  }
+                },
+              ),
+            ),
+            if (_searchResult != null &&
+                _searchResult!.totalInstanceCount > 0) ...[
+              Text(
+                '${_searchResult!.currentInstanceIndex} / ${_searchResult!.totalInstanceCount}',
+                style: GoogleFonts.poppins(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(
+                  Icons.keyboard_arrow_up,
+                  color: Colors.blueAccent,
+                ),
+                onPressed: () {
+                  _searchResult!.previousInstance();
+                  setState(() {});
+                },
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Colors.blueAccent,
+                ),
+                onPressed: () {
+                  _searchResult!.nextInstance();
+                  setState(() {});
+                },
+              ),
+            ],
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.close, color: Colors.grey),
+              onPressed: () {
+                setState(() {
+                  _isSearching = false;
+                  _searchResult?.clear();
+                  _searchController.clear();
+                });
+              },
             ),
           ],
         ),

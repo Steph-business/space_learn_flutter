@@ -14,6 +14,8 @@ class Discussion {
   final BookModel? livre;
   final List<Message> messages;
   final int? messagesCount;
+  final int? likesCount;
+  final DateTime? dernierMessageLe;
 
   Discussion({
     required this.id,
@@ -28,6 +30,8 @@ class Discussion {
     this.livre,
     this.messages = const [],
     this.messagesCount,
+    this.likesCount,
+    this.dernierMessageLe,
   });
 
   factory Discussion.fromJson(Map<String, dynamic> json) {
@@ -48,6 +52,10 @@ class Discussion {
         'messagesCount',
         'nbr_messages',
         'nb_messages',
+        'nbrMessages',
+        'nbMessages',
+        'total_messages',
+        'totalMessages',
         'count',
       ];
       for (final key in possibleKeys) {
@@ -62,11 +70,19 @@ class Discussion {
       return parseCount(json['messages']);
     })();
 
-    if (json['titre'] != null && json['titre'].toString().contains('Crea')) {
-      print(
-        '💬 DEBUG (Crea): keys=${json.keys.toList()}, count field=${json['nombre_messages']}, calculated=$calculatedCount',
-      );
-    }
+    final int calculatedLikes = (() {
+      final possibleKeys = [
+        'likes_count',
+        'likesCount',
+        'nb_likes',
+        'nbr_likes',
+      ];
+      for (final key in possibleKeys) {
+        final val = parseCount(json[key]);
+        if (val > 0) return val;
+      }
+      return 0;
+    })();
 
     final d = Discussion(
       id: json['id'] ?? '',
@@ -89,10 +105,15 @@ class Discussion {
             )
           : [],
       messagesCount: calculatedCount,
+      likesCount: calculatedLikes,
+      dernierMessageLe: json['dernier_message_le'] != null
+          ? DateTime.tryParse(json['dernier_message_le'])
+          : null,
     );
 
-    // If explicit counts are 0, but we have messages loaded, trust the messages list
-    if (d.messagesCount == 0 && d.messages.isNotEmpty) {
+    // Ensure messagesCount is at least messages.length
+    if ((d.messagesCount == null || d.messagesCount == 0) &&
+        d.messages.isNotEmpty) {
       return Discussion(
         id: d.id,
         creePar: d.creePar,
@@ -106,8 +127,11 @@ class Discussion {
         livre: d.livre,
         messages: d.messages,
         messagesCount: d.messages.length,
+        likesCount: d.likesCount,
+        dernierMessageLe: d.dernierMessageLe,
       );
     }
+
     return d;
   }
 
@@ -126,6 +150,8 @@ class Discussion {
       'Messages': messages.isNotEmpty
           ? messages.map((e) => e.toJson()).toList()
           : [],
+      'messages_count': messagesCount,
+      'likes_count': likesCount,
     };
   }
 }

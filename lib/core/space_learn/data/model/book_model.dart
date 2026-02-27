@@ -148,8 +148,12 @@ class BookModel {
       ),
       fichierUrl: _sanitizeImageUrl(json['fichier_url'], useGin: true),
       format: json['format'] ?? '',
-      prix: (json['prix'] ?? json['price'] ?? 0).toInt(),
-      stock: (json['stock'] ?? 0).toInt(),
+      prix: (json['prix'] ?? json['price'] ?? 0) is num
+          ? (json['prix'] ?? json['price'] ?? 0).toInt()
+          : int.tryParse((json['prix'] ?? json['price'] ?? 0).toString()) ?? 0,
+      stock: (json['stock'] ?? 0) is num
+          ? (json['stock'] ?? 0).toInt()
+          : int.tryParse((json['stock'] ?? 0).toString()) ?? 0,
       categorieId: json['categorie_id'],
       statut: json['statut'] ?? '',
       adresseContratNft: json['adresse_contrat_nft'],
@@ -163,7 +167,8 @@ class BookModel {
             json['average_rating'] ??
             json['rating'];
         if (val == null) return 0.0;
-        return (val as num).toDouble();
+        if (val is num) return val.toDouble();
+        return double.tryParse(val.toString()) ?? 0.0;
       })(),
       telechargements: (() {
         final val =
@@ -175,18 +180,27 @@ class BookModel {
             json['telechargements'] ??
             json['downloads'] ??
             0;
-        int count = (val as num).toInt();
+        int count = 0;
+        if (val is num) {
+          count = val.toInt();
+        } else {
+          count = int.tryParse(val.toString()) ?? 0;
+        }
+
         if (count == 0 && json['Activites'] is List) {
           return (json['Activites'] as List).length;
         }
         return count;
       })(),
-      nombreMessages:
-          (json['nombre_messages'] ??
-                  json['NombreMessages'] ??
-                  json['messages_count'] ??
-                  0)
-              .toInt(),
+      nombreMessages: (() {
+        final val =
+            json['nombre_messages'] ??
+            json['NombreMessages'] ??
+            json['messages_count'] ??
+            0;
+        if (val is num) return val.toInt();
+        return int.tryParse(val.toString()) ?? 0;
+      })(),
       categorie: json['Categorie'] != null
           ? Categorie.fromJson(json['Categorie'])
           : null,
