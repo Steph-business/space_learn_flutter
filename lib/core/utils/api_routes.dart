@@ -1,13 +1,15 @@
 /// api_routes.dart
 class ApiRoutes {
   // Change following IP to your machine's current IP
-  static const String host = "192.168.252.224";
-  static const String hosts = "192.168.252.193";
+  static const String host = "192.168.252.33";
+  static const String hosts = "192.168.252.33";
 
-  // Base URL (Spring Boot server on 8083)
-  static const String baseUrl = "http://$hosts:8083";
+  // Backends fusionnés : l'authentification et les livres sont désormais servis
+  // par le MÊME serveur Go (port 8082). Les chemins /auth/* et /utilisateurs/*
+  // restent identiques, seule l'adresse de base change.
+  static const String baseUrl = "http://$host:8082";
 
-  // New base URL for Gin server on port 8082
+  // Base URL for the combined Go server on port 8082
   static const String baseUrlsGin = "http://$host:8082";
 
   // Auth routes
