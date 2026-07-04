@@ -787,17 +787,21 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
                                           const Icon(
                                             Icons.shopping_bag,
                                             size: 18,
                                           ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Acheter',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              'Acheter',
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
                                         ],

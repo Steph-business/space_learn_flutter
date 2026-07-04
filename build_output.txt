@@ -1,0 +1,41 @@
+﻿Running Gradle task 'assembleRelease'...                        
+flutter : lib/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart:587:13: Error: No named parameter 
+with the name 'initialValue'.
+Au caractère Ligne:1 : 1
++ flutter build apk 2>&1 | Out-File -FilePath "e:\space_learn_flutter\b ...
++ ~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (lib/core/space_...'initialValue'.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+            initialValue: _selectedCategorieId,
+            ^^^^^^^^^^^^
+/C:/Program%20Files/flutter/packages/flutter/lib/src/material/dropdown.dart:1708:3: Context: Found this candidate, but 
+the arguments don't match.
+  DropdownButtonFormField({
+  ^^^^^^^^^^^^^^^^^^^^^^^
+lib/core/space_learn/pages/principales/readingPreferencesPage.dart:301:9: Error: No named parameter with the name 
+'activeThumbColor'.
+        activeThumbColor: AppColors.primary,
+        ^^^^^^^^^^^^^^^^
+/C:/Program%20Files/flutter/packages/flutter/lib/src/material/switch_list_tile.dart:174:9: Context: Found this 
+candidate, but the arguments don't match.
+  const SwitchListTile({
+        ^^^^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command 'C:\Program Files\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 24s
+Running Gradle task 'assembleRelease'...                           84,6s
+Gradle task assembleRelease failed with exit code 1

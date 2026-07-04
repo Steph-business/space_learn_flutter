@@ -584,7 +584,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
             dropdownColor: AppColors.cardBackground,
             iconEnabledColor: AppColors.secondaryVariant,
             style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
-            initialValue: _selectedCategorieId,
+            value: _selectedCategorieId,
             decoration: InputDecoration(
               labelText: "Catégorie",
               labelStyle: GoogleFonts.poppins(color: Colors.white54),
