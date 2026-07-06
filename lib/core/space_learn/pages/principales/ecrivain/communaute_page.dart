@@ -71,7 +71,6 @@ class _TeamsPageState extends State<TeamsPage> {
       try {
         evts = await _evenementService.getEvenementsByAuthor(user.id, token);
       } catch (e) {
-        debugPrint("Erreur evenements: $e");
       }
 
       if (mounted) {

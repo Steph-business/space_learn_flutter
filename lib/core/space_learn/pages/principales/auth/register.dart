@@ -1,5 +1,6 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/otp.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -18,6 +20,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _pseudoController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
@@ -32,6 +35,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _pseudoController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -52,22 +56,25 @@ class _RegisterPageState extends State<RegisterPage> {
     developer.log('Début de _handleRegister', name: 'RegisterPage');
 
     final name = _nameController.text.trim();
+    final pseudo = _pseudoController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez remplir tous les champs.')),
+    if (name.isEmpty || pseudo.isEmpty || email.isEmpty || password.isEmpty) {
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Veuillez remplir tous les champs.',
+        isError: true,
       );
       return;
     }
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Les mots de passe ne correspondent pas.'),
-        ),
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Les mots de passe ne correspondent pas.',
+        isError: true,
       );
       return;
     }
@@ -76,10 +83,10 @@ class _RegisterPageState extends State<RegisterPage> {
     final selectedProfile = await profileService.getSelectedProfile();
 
     if (selectedProfile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Veuillez d'abord sélectionner un profil."),
-        ),
+      AppNotifications.showSnackBar(
+        context,
+        message: "Veuillez d'abord sélectionner un profil.",
+        isError: true,
       );
       Navigator.of(
         context,
@@ -90,8 +97,9 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      final tokenUser = await _authService.register(
+      final success = await _authService.register(
         nomComplet: name,
+        pseudo: pseudo,
         email: email,
         password: password,
         profilId: selectedProfile,
@@ -99,20 +107,25 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Inscription réussie ! Veuillez vous connecter.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) =>
-              LoginPage(initialEmail: email, initialPassword: password),
-        ),
-        (route) => false,
-      );
+      if (success) {
+        AppNotifications.showPremiumDialog(
+          context,
+          title: "Inscription réussie !",
+          message: "Votre compte a été créé avec succès. Un code OTP a été envoyé à l'adresse $email pour valider votre compte.",
+          confirmText: "Saisir le code",
+          isSuccess: true,
+          onConfirm: () {
+            if (mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (_) => OtpPage(email: email, isFromRegistration: true),
+                ),
+                (route) => false,
+              );
+            }
+          },
+        );
+      }
     } catch (e) {
       developer.log(
         "Erreur lors de l'inscription: $e",
@@ -123,8 +136,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur d'inscription: ${e.toString()}")),
+      AppNotifications.showSnackBar(
+        context,
+        message: "Erreur d'inscription: ${e.toString().replaceAll("Exception: ", "")}",
+        isError: true,
       );
     } finally {
       if (mounted) {
@@ -252,6 +267,14 @@ class _RegisterPageState extends State<RegisterPage> {
                         label: 'Nom complet',
                         controller: _nameController,
                         hintText: 'entrez votre nom...',
+                      ),
+                      _buildDivider(),
+
+                      // Pseudo field
+                      _buildFormField(
+                        label: 'Pseudo',
+                        controller: _pseudoController,
+                        hintText: 'choisissez un pseudo...',
                       ),
                       _buildDivider(),
 

@@ -23,7 +23,6 @@ class NotificationService {
   NotificationService({http.Client? client}) : client = client ?? http.Client();
 
   static void initializeLocalNotifications() {
-    debugPrint("🔔 Initializing Local Notifications...");
     const initializationSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(),
@@ -32,14 +31,12 @@ class NotificationService {
     _localNotifications.initialize(
       settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        debugPrint("🔔 System Notification clicked: ${response.payload}");
         if (response.payload != null) {
           try {
             final Map<String, dynamic> data = jsonDecode(response.payload!);
             final notif = NotificationModel.fromJson(data);
             handleNotificationTap(notif);
           } catch (e) {
-            debugPrint("❌ Error parsing notification payload: $e");
           }
         }
       },
@@ -48,11 +45,8 @@ class NotificationService {
 
   /// Centralized logic to handle notification redirection
   static void handleNotificationTap(NotificationModel notif) {
-    debugPrint("🔔 Handling Notification: ${notif.type} (role: ${notif.role})");
-
     final context = navigatorKey.currentContext;
     if (context == null) {
-      debugPrint("❌ No context available for navigation");
       return;
     }
 
@@ -304,8 +298,9 @@ class NotificationService {
                       } else if (d is String) {
                         try {
                           final inner = jsonDecode(d);
-                          if (inner is Map)
+                          if (inner is Map) {
                             payload = Map<String, dynamic>.from(inner);
+                          }
                         } catch (_) {}
                       }
                     } else {
@@ -318,7 +313,6 @@ class NotificationService {
                     if (!controller.isClosed) controller.add(model);
                   }
                 } catch (e) {
-                  debugPrint("📡 SSE Parsing Error: $e");
                 }
                 buffer.clear();
               }
@@ -330,7 +324,6 @@ class NotificationService {
           }
         } catch (e) {
           if (e is! SocketException && e is! HttpException) {
-            debugPrint("📡 SSE Stream Connection Error: $e");
           }
         } finally {
           try {

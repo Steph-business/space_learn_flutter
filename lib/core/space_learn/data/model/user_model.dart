@@ -4,6 +4,7 @@ class UserModel {
   final String id;
   final String profilId;
   final String nomComplet;
+  final String pseudo;
   final String email;
   final String? biography;
   final String? profilePhoto;
@@ -16,8 +17,9 @@ class UserModel {
   UserModel({
     required this.id,
     required this.profilId,
-    required this.email,
     required this.nomComplet,
+    this.pseudo = '',
+    required this.email,
     this.biography,
     this.profilePhoto,
     this.socialLinks,
@@ -29,11 +31,13 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     String name = json['nom_complet'] ?? json['NomComplet'] ?? '';
+    String pseudoName = json['pseudo'] ?? json['Pseudo'] ?? '';
 
     return UserModel(
       id: json['id'] ?? json['ID'] ?? '',
       profilId: json['profil_id'] ?? json['ProfilID'] ?? '',
       nomComplet: name,
+      pseudo: pseudoName,
       email: json['email'] ?? json['Email'] ?? '',
       biography: json['biography'] ?? json['Biography'],
       profilePhoto: ApiRoutes.sanitizeImageUrl(
@@ -61,6 +65,7 @@ class UserModel {
       'ID': id,
       'ProfilID': profilId,
       'NomComplet': nomComplet,
+      'Pseudo': pseudo,
       'email': email,
       'Biography': biography,
       'ProfilePhoto': profilePhoto,

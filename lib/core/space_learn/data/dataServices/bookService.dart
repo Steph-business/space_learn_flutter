@@ -30,9 +30,6 @@ class BookService {
       // Send empty string or null for categorie_id if not provided
       createData['categorie_id'] = '';
     }
-
-    print('📤 BookService.createBook - Sending data: $createData');
-
     final response = await client.post(
       Uri.parse(ApiRoutes.books),
       headers: {
@@ -42,10 +39,6 @@ class BookService {
       body: jsonEncode(createData),
     );
 
-    print(
-      '📥 BookService.createBook - Response status: ${response.statusCode}',
-    );
-    print('📥 BookService.createBook - Response body: ${response.body}');
 
     if (response.statusCode == 201 || response.statusCode == 200) {
       final Map<String, dynamic> data = jsonDecode(response.body);
@@ -85,17 +78,11 @@ class BookService {
         return data.map((json) => BookModel.fromJson(json)).toList();
       } else if (response.statusCode == 404 && queryParameters.isNotEmpty) {
         // Fallback: if filtered query fails with 404, try getting all books
-        print(
-          '⚠️ BookService.getAllBooks - 404 with filters, trying without filters',
-        );
+
         return getAllBooks(authToken: authToken);
       } else {
-        print(
-          '⚠️ BookService.getAllBooks - server error: ${response.statusCode}, attempting fallback host',
-        );
       }
     } catch (e) {
-      print('❌ Error loading books: $e - attempting fallback host');
     }
 
     // Fallback: try the main baseUrl host
@@ -129,7 +116,6 @@ class BookService {
         }
       }
     } catch (e) {
-      print('❌ Fallback error loading books: $e');
     }
 
     return [];
@@ -205,12 +191,8 @@ class BookService {
         final List<dynamic> data = responseData['data'] ?? [];
         return data.map((json) => BookModel.fromJson(json)).toList();
       } else {
-        print(
-          '⚠️ BookService.getBooksByAuthorId - server error: ${response.statusCode}, attempting fallback host',
-        );
       }
     } catch (e) {
-      print('❌ Error loading books by author: $e - attempting fallback host');
     }
 
     // Fallback attempt: try the same path using the main baseUrl instead of baseUrlsGin
@@ -224,10 +206,8 @@ class BookService {
         final List<dynamic> data = responseData['data'] ?? [];
         return data.map((json) => BookModel.fromJson(json)).toList();
       } else {
-        print('⚠️ Fallback getBooksByAuthorId failed: ${resp2.statusCode}');
       }
     } catch (e) {
-      print('❌ Fallback error loading books by author: $e');
     }
 
     return [];

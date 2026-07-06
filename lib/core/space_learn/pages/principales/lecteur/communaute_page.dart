@@ -60,7 +60,6 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
       try {
         evts = await _evenementService.getGlobalEvenements(token);
       } catch (e) {
-        debugPrint("Erreur evenements: $e");
       }
 
       int totalCafeMsgs = 0;
@@ -74,7 +73,6 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
           totalCafeMsgs += count;
         }
       } catch (e) {
-        debugPrint("Erreur global discussions: $e");
       }
 
       // Filtrer les entrées sans livre valide

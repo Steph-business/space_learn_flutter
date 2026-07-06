@@ -168,7 +168,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
       final results = await Future.wait([
         _statsService.getReaderStats(widget.profileId).catchError((e) {
-          debugPrint('⚠️ Error loading stats: $e');
           return ReaderStatsModel(
             booksRead: 0,
             totalTime: '0h',
@@ -176,37 +175,29 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           );
         }),
         _bookService.getAllBooks(authToken: token).catchError((e) {
-          debugPrint('⚠️ Error loading books: $e');
           return <BookModel>[];
         }),
         _lectureService.getAllReviews(token).catchError((e) {
-          debugPrint('⚠️ Error loading all reviews: $e');
           return <ReviewModel>[];
         }),
         _categorieService.getCategories().catchError((e) {
-          debugPrint('⚠️ Error loading categories: $e');
           return <Categorie>[];
         }),
         _discussionService.getGlobalDiscussions().catchError((e) {
-          debugPrint('⚠️ Error loading global discussions: $e');
           return <Discussion>[];
         }),
         _recommendationService.getRecommendations(token).catchError((e) {
-          debugPrint('⚠️ Error loading recommendations: $e');
           return <RecommendationModel>[];
         }),
         _libraryService.getUserLibrary(token).catchError((e) {
-          debugPrint('⚠️ Error loading library: $e');
           return <LibraryModel>[];
         }),
         (user != null)
             ? _relationService.getFollowing(user.id).catchError((e) {
-                debugPrint('⚠️ Error loading following: $e');
                 return <RelationModel>[];
               })
             : Future.value(<RelationModel>[]),
         _badgeService.getGoals().catchError((e) {
-          debugPrint('⚠️ Error loading goals: $e');
           return <GoalModel>[];
         }),
       ]);
@@ -216,7 +207,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             .read<NotificationProvider>()
             .loadNotifications(token)
             .catchError((e) {
-              debugPrint('⚠️ Error loading notifications: $e');
             });
         setState(() {
           // 1. Get stats from API
@@ -241,16 +231,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           if (results.length > 4 && results[4] is List) {
             _discussions = (results[4] as List).cast<Discussion>();
             if (_discussions.isNotEmpty) {
-              print(
-                '💬 HOME DISCUSSIONS LOADED: ${_discussions.length} items. First item title: ${_discussions.first.titre}, count: ${_discussions.first.messagesCount}',
-              );
+              _discussions.sort((a, b) {
+                if (a.creeLe != null && b.creeLe != null) {
+                  return b.creeLe!.compareTo(a.creeLe!);
+                }
+                return b.id.compareTo(a.id);
+              });
             }
-            _discussions.sort((a, b) {
-              if (a.creeLe != null && b.creeLe != null) {
-                return b.creeLe!.compareTo(a.creeLe!);
-              }
-              return b.id.compareTo(a.id);
-            });
           }
 
           // Data sources for enrichment
@@ -1310,7 +1297,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         ).showSnackBar(SnackBar(content: Text('$authorName suivi !')));
       }
     } catch (e) {
-      debugPrint("Error following author: $e");
       final errorStr = e.toString();
       if (errorStr.contains("409") || errorStr.contains("déjà existante")) {
         // If it's a conflict (already following), update local state and show dialog

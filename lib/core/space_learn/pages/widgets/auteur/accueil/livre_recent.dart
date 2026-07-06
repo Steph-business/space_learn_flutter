@@ -48,7 +48,6 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
         }
       }
     } catch (e) {
-      debugPrint("Error loading recent books: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -95,7 +94,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
           ],
         ),
         const SizedBox(height: 10),
-        ..._books.map((book) => _buildBookCard(book)).toList(),
+        ..._books.map((book) => _buildBookCard(book)),
       ],
     );
   }

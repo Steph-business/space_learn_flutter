@@ -73,7 +73,6 @@ class _LivresPageState extends State<LivresPage> {
         });
       }
     } catch (e) {
-      print('❌ Error loading books: $e');
       if (mounted) {
         setState(() {
           _error = "Erreur lors du chargement des livres.";

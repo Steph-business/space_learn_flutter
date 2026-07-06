@@ -17,8 +17,6 @@ class BadgeService {
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
       final uri = Uri.parse(ApiRoutes.gamificationBadges);
-      print("▶️ GET BADGES: $uri");
-
       final response = await client.get(uri, headers: headers);
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -27,7 +25,6 @@ class BadgeService {
       }
       return _getMockBadges();
     } catch (e) {
-      print("❌ Error fetching badges: $e");
       return _getMockBadges();
     }
   }
@@ -39,8 +36,6 @@ class BadgeService {
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
       final uri = Uri.parse(ApiRoutes.gamificationGoals);
-      print("▶️ GET GOALS: $uri");
-
       final response = await client.get(uri, headers: headers);
       if (response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
@@ -51,7 +46,6 @@ class BadgeService {
       }
       return [];
     } catch (e) {
-      print("❌ Error fetching goals: $e");
       return [];
     }
   }

@@ -126,7 +126,6 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
           }
         }
       } catch (e) {
-        debugPrint("Error refreshing event: $e");
       }
     }
   }

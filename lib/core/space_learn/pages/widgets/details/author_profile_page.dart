@@ -55,7 +55,6 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading author data: $e');
       if (mounted) {
         setState(() => _isLoadingBooks = false);
       }

@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/otp.dart';
@@ -29,8 +30,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     if (_isLoading) return;
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez entrer votre email.')),
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Veuillez entrer votre email.',
+        isError: true,
       );
       return;
     }
@@ -42,19 +45,34 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     try {
       final success = await _authService.forgotPassword(email);
       if (success && mounted) {
-        Navigator.of(
+        AppNotifications.showPremiumDialog(
           context,
-        ).push(MaterialPageRoute(builder: (context) => OtpPage(email: email)));
+          title: "Code de récupération envoyé",
+          message: "Un code de validation OTP à 6 chiffres a été envoyé à l'adresse $email.",
+          confirmText: "Entrer le code",
+          isSuccess: true,
+          onConfirm: () {
+            if (mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => OtpPage(email: email)),
+              );
+            }
+          },
+        );
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Impossible d'envoyer le code.")),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Impossible d'envoyer le code.",
+          isError: true,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        AppNotifications.showSnackBar(
           context,
-        ).showSnackBar(SnackBar(content: Text("Erreur: ${e.toString()}")));
+          message: "Erreur: ${e.toString().replaceAll("Exception: ", "")}",
+          isError: true,
+        );
       }
     } finally {
       setState(() {

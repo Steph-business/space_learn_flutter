@@ -8,7 +8,7 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 
 class FavoritesPage extends StatefulWidget {
-  const FavoritesPage({Key? key}) : super(key: key);
+  const FavoritesPage({super.key});
 
   @override
   State<FavoritesPage> createState() => _FavoritesPageState();
@@ -40,7 +40,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
         if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
-      print("Erreur loading favorie : $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -60,7 +59,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
         }
       }
     } catch (e) {
-      print("Erreur remove favorie : $e");
     }
   }
 

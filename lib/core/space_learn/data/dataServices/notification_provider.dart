@@ -53,9 +53,6 @@ class NotificationProvider extends ChangeNotifier {
       } else {
         // Si on ne connaît pas l'utilisateur, on ne montre rien par sécurité
         _notifications = [];
-        debugPrint(
-          "⚠️ NotificationProvider: userId est null ou vide, liste vidée.",
-        );
       }
 
       _isLoading = false;
@@ -169,7 +166,6 @@ class NotificationProvider extends ChangeNotifier {
               return;
             }
             if (errorStr != _lastStreamError?.toString()) {
-              debugPrint("Notification Stream Error: $error");
               _lastStreamError = error;
             }
           },
@@ -196,7 +192,6 @@ class NotificationProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint("Error marking notification as read: $e");
     }
   }
 
@@ -220,7 +215,6 @@ class NotificationProvider extends ChangeNotifier {
           .toList();
       notifyListeners();
     } catch (e) {
-      debugPrint("Error marking all notifications as read: $e");
     }
   }
 
