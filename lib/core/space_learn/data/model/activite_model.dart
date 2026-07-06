@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'book_model.dart';
 import 'profilModel.dart';
 
@@ -39,7 +38,6 @@ class ReviewModel {
       try {
         creeLe = DateTime.parse(dateStr.toString());
       } catch (e) {
-        debugPrint('Error parsing date in ReviewModel: $e');
       }
     }
 

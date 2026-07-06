@@ -14,12 +14,8 @@ class LibraryService {
     String acquisVia,
     String authToken,
   ) async {
-    print(
-      "📚 [LibraryService] Adding book to library: $livreId, User: $utilisateurId, Method: $acquisVia",
-    );
-    final uri = Uri.parse(ApiRoutes.library);
-    print("📡 [LibraryService] POST URL: $uri");
 
+    final uri = Uri.parse(ApiRoutes.library);
     try {
       final response = await client
           .post(
@@ -35,21 +31,14 @@ class LibraryService {
             }),
           )
           .timeout(const Duration(seconds: 15)); // Add timeout
-
-      print("📥 [LibraryService] Response Status: ${response.statusCode}");
-      print("📥 [LibraryService] Response Body: ${response.body}");
-
       if (response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return LibraryModel.fromJson(responseData['data'] ?? responseData);
       } else {
-        print(
-          "❌ [LibraryService] Failed to add: ${response.statusCode} - ${response.body}",
-        );
+
         throw Exception('Failed to add to library: ${response.statusCode}');
       }
     } catch (e) {
-      print("❌ [LibraryService] Exception adding to library: $e");
       rethrow;
     }
   }
@@ -61,7 +50,6 @@ class LibraryService {
     );
 
     if (response.statusCode == 200) {
-      print("📥 RAW LIBRARY RESPONSE: ${response.body}");
       final dynamic decoded = jsonDecode(response.body);
 
       // Defensive parsing: some backends may return { data: null } when the

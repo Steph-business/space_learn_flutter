@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'book_model.dart';
 
 class ReadingActivityModel {
@@ -80,7 +79,6 @@ class ReadingActivityModel {
             : null,
       );
     } catch (e) {
-      debugPrint("Error parsing ReadingActivityModel: $e");
       return ReadingActivityModel(
         id: (json['id'] ?? '').toString(),
         utilisateurId: (json['utilisateur_id'] ?? '').toString(),

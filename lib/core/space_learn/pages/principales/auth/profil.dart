@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import '../../../data/dataServices/authServices.dart';
@@ -30,12 +31,9 @@ class _ProfilPageState extends State<ProfilPage> {
   }
 
   Future<void> _loadProfiles() async {
-    debugPrint('--- PROFILPAGE LOADING PROFILES ---');
     try {
       final profiles = await _profileService.getProfils();
-      debugPrint(
-        '--- PROFILPAGE PROFILES LOADED: ${profiles.length} items ---',
-      );
+
       if (mounted) {
         setState(() {
           _profiles = profiles;
@@ -43,7 +41,6 @@ class _ProfilPageState extends State<ProfilPage> {
         });
       }
     } catch (e) {
-      debugPrint('--- PROFILPAGE LOAD ERROR: $e ---');
       if (mounted) {
         setState(() {
           error = e.toString();
@@ -63,26 +60,22 @@ class _ProfilPageState extends State<ProfilPage> {
     await _profileService.saveSelectedProfile(profileId);
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Profil "$profileName" sélectionné. Veuillez maintenant vous inscrire.',
-        ),
-      ),
+    AppNotifications.showSnackBar(
+      context,
+      message: 'Profil "$profileName" sélectionné. Complétez votre inscription.',
+      isSuccess: true,
     );
 
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const RegisterPage()));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const RegisterPage()),
+    );
 
     setState(() => isUpdating = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-      '--- PROFILPAGE BUILD CALLED: isLoading=$isLoading, error=$error, profiles=${_profiles.length} ---',
-    );
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: Container(

@@ -22,8 +22,9 @@ class EvenementService {
       'contenu': contenu,
     };
     if (imageUrl != null) body['image_url'] = imageUrl;
-    if (dateEvenement != null)
+    if (dateEvenement != null) {
       body['date_evenement'] = dateEvenement.toIso8601String();
+    }
 
     final response = await client.post(
       Uri.parse(ApiRoutes.evenements),
@@ -95,8 +96,9 @@ class EvenementService {
       'contenu': contenu,
     };
     if (imageUrl != null) body['image_url'] = imageUrl;
-    if (dateEvenement != null)
+    if (dateEvenement != null) {
       body['date_evenement'] = dateEvenement.toIso8601String();
+    }
 
     final response = await client.put(
       Uri.parse(url),

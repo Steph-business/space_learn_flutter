@@ -15,23 +15,17 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/a
     as lecteurHome;
 
 Future<void> main() async {
-  debugPrint('--- APP STARTING ---');
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('--- BINDING INITIALIZED ---');
-
   // Initialize Local Notifications
   NotificationService.initializeLocalNotifications();
 
   try {
-    debugPrint('--- INITIALIZING SUPABASE ---');
     await Supabase.initialize(
       url: 'https://uqmydsydlkwxcfcdtsbu.supabase.co',
       anonKey:
           '***CLE_SUPABASE_RETIREE***',
     );
-    debugPrint('--- SUPABASE INITIALIZED ---');
   } catch (e) {
-    debugPrint('--- SUPABASE ERROR: $e ---');
   }
 
   runApp(const MyApp());

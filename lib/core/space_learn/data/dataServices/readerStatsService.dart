@@ -18,8 +18,6 @@ class ReaderStatsService {
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
       final uri = Uri.parse('${ApiRoutes.analytics}/reader/$userId');
-      print("▶️ GET GLOBAL STATS: $uri");
-
       final response = await client.get(uri, headers: headers);
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -39,8 +37,6 @@ class ReaderStatsService {
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
       final uri = Uri.parse('${ApiRoutes.analytics}/reader/$livreId');
-      print("▶️ GET BOOK STATS: $uri");
-
       final response = await client.get(uri, headers: headers);
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -49,7 +45,6 @@ class ReaderStatsService {
       }
       return null;
     } catch (e) {
-      print("❌ Error fetching book stats: $e");
       return null;
     }
   }
@@ -76,7 +71,6 @@ class ReaderStatsService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print("❌ Error recording reading time: $e");
       return false;
     }
   }

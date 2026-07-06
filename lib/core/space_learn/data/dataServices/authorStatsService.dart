@@ -22,12 +22,8 @@ class AuthorStatsService {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return responseData['data'] ?? {};
       } else {
-        print(
-          "⚠️ Author stats API error: ${response.statusCode}, attempting fallback host",
-        );
       }
     } catch (e) {
-      print("❌ Error fetching author stats: $e - trying fallback host");
     }
 
     // Fallback: try same path but with the main `baseUrl` instead of `baseUrlsGin`.
@@ -43,10 +39,8 @@ class AuthorStatsService {
         final Map<String, dynamic> responseData = jsonDecode(resp2.body);
         return responseData['data'] ?? {};
       } else {
-        print('⚠️ Fallback author stats failed: ${resp2.statusCode}');
       }
     } catch (e) {
-      print('❌ Fallback error fetching author stats: $e');
     }
 
     return {};
@@ -67,7 +61,6 @@ class AuthorStatsService {
         return responseData['data'] ?? {};
       }
     } catch (e) {
-      print("❌ Error fetching author revenue: $e");
     }
     return {};
   }

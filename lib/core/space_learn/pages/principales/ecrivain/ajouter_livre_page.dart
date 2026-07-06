@@ -65,12 +65,8 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       _descriptionController.text = widget.book!.description;
       _prixController.text = widget.book!.prix.toString();
       _selectedCategorieId = widget.book!.categorieId;
-      _selectedFileName = widget.book!.fichierUrl != null
-          ? widget.book!.fichierUrl!.split('/').last
-          : null;
-      _selectedCoverName = widget.book!.imageCouverture != null
-          ? widget.book!.imageCouverture!.split('/').last
-          : null;
+      _selectedFileName = widget.book!.fichierUrl?.split('/').last;
+      _selectedCoverName = widget.book!.imageCouverture?.split('/').last;
     }
     _loadCategories();
     _loadCurrentUser();
@@ -88,7 +84,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         }
       }
     } catch (e) {
-      print('❌ Error loading current user: $e');
     }
   }
 
@@ -108,7 +103,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         });
       }
     } catch (e) {
-      print('❌ Error loading categories: $e');
       if (mounted) {
         setState(() {
           _categoriesError = 'Erreur lors du chargement des catégories';
@@ -235,7 +229,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
 
       // 1. Upload Cover
       if (_selectedCoverPath != null) {
-        print('📤 Starting cover upload...');
         final coverExt = p.extension(_selectedCoverPath!);
         final coverPath = '${DateTime.now().millisecondsSinceEpoch}$coverExt';
 
@@ -252,7 +245,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
 
       // 2. Upload Book
       if (_selectedFilePath != null) {
-        print('📤 Starting book upload...');
         final bookExt = p.extension(_selectedFilePath!);
         final bookPath = '${DateTime.now().millisecondsSinceEpoch}$bookExt';
 
@@ -364,7 +356,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         }
       }
     } catch (e) {
-      print('❌ Upload error: $e');
       if (mounted) {
         String errorMessage = "Échec de l'opération : $e";
         ScaffoldMessenger.of(context).showSnackBar(

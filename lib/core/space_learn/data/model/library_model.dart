@@ -20,8 +20,6 @@ class LibraryModel {
   });
 
   factory LibraryModel.fromJson(Map<String, dynamic> json) {
-    print("🔍 LibraryModel.fromJson keys: ${json.keys.toList()}");
-
     // Extraction du livre
     Map<String, dynamic>? bookJson =
         json['Livre'] ?? json['livre'] ?? json['Book'] ?? json['book'];

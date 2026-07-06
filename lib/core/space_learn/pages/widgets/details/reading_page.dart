@@ -36,7 +36,7 @@ class _ReadingPageState extends State<ReadingPage> {
   final ReadingSettingsService _settingsService = ReadingSettingsService();
   final ReaderStatsService _statsService = ReaderStatsService();
 
-  bool _showCover = false;
+  final bool _showCover = false;
   int _currentPage = 1;
   int _totalPages = 0;
   bool _isDocumentLoaded = false;
@@ -98,7 +98,6 @@ class _ReadingPageState extends State<ReadingPage> {
         }
       }
     } catch (e) {
-      debugPrint("Error syncing settings: $e");
     }
   }
 
@@ -140,7 +139,6 @@ class _ReadingPageState extends State<ReadingPage> {
         );
       }
     } catch (e) {
-      debugPrint("Error saving settings to backend: $e");
     }
   }
 
@@ -164,7 +162,6 @@ class _ReadingPageState extends State<ReadingPage> {
         }
       }
     } catch (e) {
-      debugPrint("Error loading bookmarks: $e");
     }
   }
 
@@ -196,7 +193,6 @@ class _ReadingPageState extends State<ReadingPage> {
         }
       }
     } catch (e) {
-      debugPrint("Error loading progress: $e");
     }
   }
 
@@ -213,7 +209,6 @@ class _ReadingPageState extends State<ReadingPage> {
         );
       }
     } catch (e) {
-      debugPrint("Error saving progress: $e");
     }
   }
 
@@ -260,7 +255,6 @@ class _ReadingPageState extends State<ReadingPage> {
         }
       }
     } catch (e) {
-      debugPrint("Error creating bookmark: $e");
     }
   }
 
@@ -1014,7 +1008,6 @@ class _ReadingPageState extends State<ReadingPage> {
                   }
                 }
               } catch (e) {
-                debugPrint("Error deleting bookmark: $e");
               }
             },
           ),

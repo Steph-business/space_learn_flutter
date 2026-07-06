@@ -1,5 +1,6 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
@@ -10,8 +11,10 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServi
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/forgot_password.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/otp.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/register.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
     as lecteurHome;
@@ -52,8 +55,10 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez remplir tous les champs.")),
+      AppNotifications.showSnackBar(
+        context,
+        message: "Veuillez remplir tous les champs.",
+        isError: true,
       );
       return;
     }
@@ -82,12 +87,10 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (userProfile.id.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Aucun profil correspondant trouvé pour l'ID : $profilId",
-            ),
-          ),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Aucun profil correspondant trouvé pour l'ID : $profilId",
+          isError: true,
         );
         setState(() => _isLoading = false);
         return;
@@ -96,34 +99,72 @@ class _LoginPageState extends State<LoginPage> {
       final role = userProfile.libelle.toLowerCase();
       Widget destination;
 
-      if (role.contains("lecteur")) {
-        destination = lecteurHome.HomePageLecteur(
-          profileId: profilId,
-          userName: tokenUser.user.nomComplet,
-        );
-      } else if (role.contains("auteur") ||
-          role.contains("administrateur") ||
-          role.contains("éditeur")) {
-        destination = ecrivainHome.HomePageAuteur(
-          profileId: profilId,
-          userName: tokenUser.user.nomComplet,
-        );
+      if (!tokenUser.user.isProfileComplete) {
+        destination = const ProfilePage(forceComplete: true);
+        if (mounted) {
+          AppNotifications.showSnackBar(
+            context,
+            message: "Bienvenue sur SpaceLearn ! Veuillez compléter votre profil pour accéder à l'application.",
+            isSuccess: true,
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => destination),
+            (route) => false,
+          );
+        }
       } else {
-        destination = const ProfilPage();
-      }
+        if (role.contains("lecteur")) {
+          destination = lecteurHome.HomePageLecteur(
+            profileId: profilId,
+            userName: tokenUser.user.nomComplet,
+          );
+        } else if (role.contains("auteur") ||
+            role.contains("administrateur") ||
+            role.contains("éditeur")) {
+          destination = ecrivainHome.HomePageAuteur(
+            profileId: profilId,
+            userName: tokenUser.user.nomComplet,
+          );
+        } else {
+          destination = const ProfilPage();
+        }
 
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => destination),
-          (route) => false,
-        );
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => destination),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
       developer.log("Erreur lors de la connexion : $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur de connexion : ${e.toString()}")),
-      );
+      final errorStr = e.toString();
+      if (errorStr.contains("n'est pas encore vérifié") || errorStr.contains("403")) {
+        AppNotifications.showPremiumDialog(
+          context,
+          title: "Vérification requise",
+          message: "Votre adresse e-mail n'a pas encore été validée. Un nouveau code OTP de validation vous a été envoyé.",
+          confirmText: "Vérifier maintenant",
+          isSuccess: false,
+          onConfirm: () {
+            if (mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => OtpPage(email: email, isFromRegistration: true),
+                ),
+              );
+            }
+          },
+        );
+      } else {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur de connexion : ${e.toString().replaceAll("Exception: ", "")}",
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

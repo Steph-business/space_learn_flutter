@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
@@ -51,17 +52,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     final confirmPassword = _confirmPasswordController.text.trim();
 
     if (password.isEmpty || confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez remplir tous les champs.')),
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Veuillez remplir tous les champs.',
+        isError: true,
       );
       return;
     }
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Les mots de passe ne correspondent pas.'),
-        ),
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Les mots de passe ne correspondent pas.',
+        isError: true,
       );
       return;
     }
@@ -78,29 +81,37 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       );
 
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mot de passe réinitialisé avec succès !'),
-          ),
-        );
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => LoginPage(initialEmail: widget.email),
-          ),
-          (route) => false,
+        AppNotifications.showPremiumDialog(
+          context,
+          title: "Mot de passe réinitialisé",
+          message: "Votre mot de passe a été modifié avec succès ! Vous pouvez maintenant vous connecter.",
+          confirmText: "Se connecter",
+          isSuccess: true,
+          onConfirm: () {
+            if (mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => LoginPage(initialEmail: widget.email),
+                ),
+                (route) => false,
+              );
+            }
+          },
         );
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Impossible de réinitialiser le mot de passe."),
-          ),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Impossible de réinitialiser le mot de passe.",
+          isError: true,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        AppNotifications.showSnackBar(
           context,
-        ).showSnackBar(SnackBar(content: Text("Erreur : ${e.toString()}")));
+          message: "Erreur : ${e.toString().replaceAll("Exception: ", "")}",
+          isError: true,
+        );
       }
     } finally {
       if (mounted) {

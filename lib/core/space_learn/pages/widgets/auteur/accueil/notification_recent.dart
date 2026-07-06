@@ -91,8 +91,6 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
     BuildContext context,
     NotificationModel notif,
   ) async {
-    debugPrint("🔔 Notification Tap Detected: ${notif.type}");
-
     final token = await TokenStorage.getToken();
     if (token != null && !notif.lu) {
       context.read<NotificationProvider>().markAsRead(notif.id, token);

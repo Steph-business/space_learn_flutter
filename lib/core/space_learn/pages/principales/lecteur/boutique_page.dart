@@ -122,7 +122,6 @@ class _MarketplacePageState extends State<MarketplacePage> {
         });
       }
     } catch (e) {
-      print('❌ Error loading marketplace books: $e');
       if (mounted) {
         setState(() {
           _error = "Erreur lors du chargement des livres.";

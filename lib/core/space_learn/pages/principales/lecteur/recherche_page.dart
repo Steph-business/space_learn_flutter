@@ -101,8 +101,6 @@ class _RecherchePageState extends State<RecherchePage> {
       setState(() {
         _searchResults = filtered;
       });
-    } catch (e) {
-      debugPrint("Error searching books: $e");
     } finally {
       setState(() => _isLoading = false);
     }

@@ -10,6 +10,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookServi
 import 'package:space_learn_flutter/core/space_learn/data/model/paymentModel.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
 
 class PaymentPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -21,7 +22,7 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-  String _selectedMethod = 'Carte Visa';
+  String _selectedMethod = 'CinetPay';
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -281,9 +282,9 @@ class _PaymentPageState extends State<PaymentPage> {
       ),
       child: Row(
         children: [
+          _buildMethodButton('CinetPay'),
           _buildMethodButton('Carte Visa'),
           _buildMethodButton('Orange Money'),
-          _buildMethodButton('Wave'),
         ],
       ),
     );
@@ -376,7 +377,8 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   void _processPayment() async {
-    if (!_formKey.currentState!.validate()) {
+    // Pas besoin de valider le formulaire pour CinetPay (pas de saisie locale)
+    if (_selectedMethod != 'CinetPay' && !_formKey.currentState!.validate()) {
       return;
     }
 
@@ -396,10 +398,9 @@ class _PaymentPageState extends State<PaymentPage> {
       final user = await authService.getUser(token);
       if (user == null) throw Exception("Impossible de récupérer les infos");
 
-      final paymentService = PaymentService();
       final libraryService = LibraryService();
 
-      // Check ownership
+      // Vérifier si le livre est déjà possédé
       final userLibrary = await libraryService.getUserLibrary(token);
       final bool isAlreadyOwned = userLibrary.any(
         (item) =>
@@ -417,6 +418,35 @@ class _PaymentPageState extends State<PaymentPage> {
       final double amount =
           double.tryParse(widget.book['prix']?.toString() ?? '0') ?? 0.0;
 
+      // ── CinetPay : rediriger vers la WebView de paiement ──
+      if (_selectedMethod == 'CinetPay') {
+        final paymentService = PaymentService();
+        final result = await paymentService.initiateCinetpayPayment(
+          livreId: widget.book['id']?.toString() ?? '',
+          montant: amount,
+          authToken: token,
+          customerName: user.nomComplet,
+          customerEmail: user.email,
+        );
+
+        Navigator.of(context).pop();
+
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CinetpayWebViewPage(
+              paymentUrl: result.paymentUrl,
+              transactionId: result.paiement.transactionId,
+              livreTitle: widget.book['titre']?.toString() ?? '',
+              montant: amount,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // ── Autres méthodes (Carte Visa, Orange Money…) : traitement local ──
+      final paymentService = PaymentService();
       if (amount > 0) {
         final payment = PaymentModel(
           id: "",
@@ -438,7 +468,7 @@ class _PaymentPageState extends State<PaymentPage> {
         token,
       );
 
-      // Increment downloads
+      // Incrémenter les téléchargements
       try {
         final bookService = BookService();
         final currentDownloads = widget.book['telechargements'] ?? 0;

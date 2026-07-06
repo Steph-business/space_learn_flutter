@@ -19,6 +19,7 @@ class ApiRoutes {
   static const String logout = "$baseUrl/auth/logout";
   static const String sendOtp = "$baseUrl/auth/send-otp";
   static const String verifyOtp = "$baseUrl/auth/verify-otp";
+  static const String verifyRegistration = "$baseUrl/auth/verification";
   static const String forgotPassword = "$baseUrl/auth/forgot-password";
   static const String resetPassword = "$baseUrl/auth/reset-password";
 
@@ -39,6 +40,10 @@ class ApiRoutes {
   static const String paymentById = "$baseUrlsGin/api/payments/:id";
   static const String momoStatus =
       "$baseUrlsGin/api/payments/momo/status/:referenceId";
+  static const String cinetpayStatus =
+      "$baseUrlsGin/api/payments/cinetpay/status/:transactionId";
+  static const String cinetpayWebhook =
+      "$baseUrlsGin/api/payments/cinetpay/webhook";
 
   // Library routes
   static const String library = "$baseUrlsGin/api/library";

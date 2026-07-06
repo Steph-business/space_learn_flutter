@@ -11,7 +11,6 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookServi
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
-import 'package:space_learn_flutter/core/utils/api_routes.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/readingProgressService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/readingActivityModel.dart';
@@ -65,13 +64,11 @@ class _BibliothequePageState extends State<BibliothequePage> {
         }
       }
     } catch (e) {
-      print("Error loading user info: $e");
     }
   }
 
   Future<void> _loadLibrary() async {
     try {
-      print("🔄 Chargement de la bibliothèque...");
       if (mounted) {
         setState(() {
           _isLoading = true;
@@ -81,18 +78,13 @@ class _BibliothequePageState extends State<BibliothequePage> {
 
       final token = await TokenStorage.getToken();
       if (token == null) throw Exception("Non connecté");
-
-      print("📡 Appel API: ${ApiRoutes.library}");
       final items = await _libraryService.getUserLibrary(token);
-      print("📚 Bibliothèque chargée : ${items.length} livres trouvés");
-
       // If the library items don't include the full `livre` object (backend may
       // return only `livre_id`), fetch missing book details so we can display
       // author names and other metadata.
       final List<LibraryModel> enriched = [];
       for (var i = 0; i < items.length; i++) {
         final item = items[i];
-        print("📖 Item $i: ID=${item.id}, LivreID=${item.livreId}");
         // If the backend returned no nested book, or returned a placeholder
         // empty book (some backends return zero-uuid placeholders), try to
         // fetch the real book details by id so we can show the author name.
@@ -110,7 +102,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
               item.livreId,
               authToken: token,
             );
-            print("✅ Fetched book for livreId=${item.livreId}: ${book.titre}");
             enriched.add(
               LibraryModel(
                 id: item.id,
@@ -123,7 +114,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
             );
             continue;
           } catch (e) {
-            print('⚠️ Failed to fetch book for ${item.livreId}: $e');
             // fall through and add original item (without livre)
           }
         }
@@ -135,7 +125,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
       try {
         allProgress = await _progressService.getAllProgressions(token);
       } catch (e) {
-        print("⚠️ Could not fetch all progressions: $e");
       }
 
       final Map<String, ReadingActivityModel> progressMap = {
@@ -179,7 +168,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
         });
       }
     } catch (e) {
-      print("❌ Erreur chargement bibliothèque : $e");
       if (mounted) {
         setState(() {
           _error = "Erreur lors du chargement de la bibliothèque";

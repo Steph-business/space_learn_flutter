@@ -9,14 +9,10 @@ class SupabaseService {
   static Future<bool> testConnectivity() async {
     try {
       // Test 1: Basic internet connectivity
-      print('🌐 Testing basic internet...');
       final googleResponse = await http
           .get(Uri.parse('https://httpbin.org/get'))
           .timeout(const Duration(seconds: 5));
-      print('🌐 Basic internet test: ${googleResponse.statusCode}');
-
       // Test 2: Supabase connectivity
-      print('🌐 Testing Supabase...');
       final response = await http
           .get(
             Uri.parse('https://uqmydsydlkwxcfcdtsbu.supabase.co/rest/v1/'),
@@ -26,11 +22,8 @@ class SupabaseService {
             },
           )
           .timeout(const Duration(seconds: 10));
-
-      print('🌐 Supabase connectivity test: ${response.statusCode}');
       return response.statusCode == 200;
     } catch (e) {
-      print('❌ Supabase connectivity test failed: $e');
       return false;
     }
   }
@@ -44,16 +37,12 @@ class SupabaseService {
         bucket,
         const BucketOptions(public: true),
       );
-      print('Bucket "$bucket" created successfully.');
       return true;
     } catch (e) {
       if (e.toString().contains('Failed host lookup') ||
           e.toString().contains('No address associated with hostname')) {
-        print(
-          'Error creating bucket "$bucket": Supabase project may be paused or deleted. Please check your Supabase dashboard and ensure the project is active.',
-        );
+
       } else {
-        print('Error creating bucket "$bucket": $e');
       }
       return false;
     }
@@ -71,15 +60,10 @@ class SupabaseService {
   }) async {
     try {
       // Test connectivity first
-      print('🔍 Testing Supabase connectivity...');
       final isConnected = await testConnectivity();
       if (!isConnected) {
-        print('❌ Cannot connect to Supabase');
         return null;
       }
-
-      print('📤 Uploading to bucket: $bucket');
-
       // Force update bucket to public just in case it was created as private
       try {
         await client.storage.updateBucket(
@@ -89,10 +73,6 @@ class SupabaseService {
       } catch (_) {
         // Ignore errors if bucket already public or update not allowed
       }
-
-      print('📁 File path: $path');
-      print('📄 Local file: ${file.path}');
-
       // Upload directly without trying to create the bucket (since it already exists)
       await client.storage
           .from(bucket)
@@ -100,32 +80,22 @@ class SupabaseService {
 
       // Generate public URL
       final publicUrl = getPublicUrl(bucket, path);
-      print('🔗 Generated URL: $publicUrl');
-
       return publicUrl;
     } catch (e) {
       final errorStr = e.toString();
-      print('❌ Error uploading to Supabase: $errorStr');
-
       // Better detection for missing bucket
       if (errorStr.contains('Bucket not found') || errorStr.contains('404')) {
-        print(
-          '🔧 Bucket "$bucket" might be missing, attempting to ensure it exists...',
-        );
+
         try {
           // Attempt to create it (will fail if exists, which is caught)
           await createBucket(bucket);
-          print('✅ Bucket created or confirmed, retrying upload once...');
-
           await client.storage
               .from(bucket)
               .upload(path, file, fileOptions: const FileOptions(upsert: true));
 
           final publicUrl = getPublicUrl(bucket, path);
-          print('🔗 Success after retry: $publicUrl');
           return publicUrl;
         } catch (retryError) {
-          print('❌ Retry failed: $retryError');
         }
       }
 

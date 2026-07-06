@@ -1,326 +1,187 @@
-import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
-
-import '../../../data/dataServices/authServices.dart';
-import '../../../../utils/profile_storage.dart';
-import '../profilePage.dart';
-import '../auth/login.dart';
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/base_settings_layout.dart';
 
 class SettingsPageAuteur extends StatelessWidget {
   const SettingsPageAuteur({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return BaseSettingsLayout(
+      title: "Paramètres Auteur",
+      primaryAccentColor: AppColors.secondaryVariant,
       children: [
-        Container(color: AppColors.scaffoldBackground),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: MediaQuery.of(context).size.height * 0.45,
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.slate, // Lighter slate gray
-                  AppColors.scaffoldBackground, // Dark background matching Scaffold
-                ],
+        // Section Profil
+        const SettingSectionHeader(title: "Profil", accentColor: AppColors.secondaryVariant),
+        SettingItemTile(
+          icon: Icons.person_outline_rounded,
+          title: "Informations personnelles",
+          subtitle: "Modifier vos informations d'auteur",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProfilePage(),
               ),
-            ),
-          ),
+            );
+          },
         ),
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            title: const Text(
-              "Paramètres Auteur",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            centerTitle: true,
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Titre principal
-                const Text(
-                  "Paramètres Auteur",
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 20),
+        SettingItemTile(
+          icon: Icons.photo_camera_outlined,
+          title: "Photo de profil",
+          subtitle: "Changer votre photo d'auteur",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Fonctionnalité de mise à jour de photo de profil d'auteur en cours d'intégration.",
+            );
+          },
+        ),
 
-                // Section Profil
-                _buildSectionTitle("Profil"),
-                _buildSettingItem(
-                  icon: Icons.person_outline,
-                  title: "Informations personnelles",
-                  subtitle: "Modifier vos informations d'auteur",
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ProfilePage(),
-                      ),
-                    );
-                  },
-                ),
-                _buildSettingItem(
-                  icon: Icons.photo_camera_outlined,
-                  title: "Photo de profil",
-                  subtitle: "Changer votre photo d'auteur",
-                  onTap: () {
-                    // Navigation vers la page de changement de photo
-                  },
-                ),
+        // Section Écriture
+        const SettingSectionHeader(title: "Écriture", accentColor: AppColors.secondaryVariant),
+        SettingItemTile(
+          icon: Icons.edit_outlined,
+          title: "Préférences d'écriture",
+          subtitle: "Police, taille du texte, thème",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Préférences d'écriture bientôt disponibles.",
+            );
+          },
+        ),
+        SettingItemTile(
+          icon: Icons.notifications_outlined,
+          title: "Notifications de ventes",
+          subtitle: "Rappels de ventes, nouveaux commentaires",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Paramètres de notification de ventes bientôt disponibles.",
+            );
+          },
+        ),
 
-                const SizedBox(height: 20),
+        // Section Publication
+        const SettingSectionHeader(title: "Publication", accentColor: AppColors.secondaryVariant),
+        SettingItemTile(
+          icon: Icons.publish_outlined,
+          title: "Paramètres de publication",
+          subtitle: "Visibilité, prix, droits d'auteur",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Paramètres de publication bientôt disponibles.",
+            );
+          },
+        ),
+        SettingItemTile(
+          icon: Icons.analytics_outlined,
+          title: "Rapports de ventes",
+          subtitle: "Statistiques détaillées",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Accès aux rapports de ventes en cours de préparation.",
+            );
+          },
+        ),
 
-                // Section Écriture
-                _buildSectionTitle("Écriture"),
-                _buildSettingItem(
-                  icon: Icons.edit_outlined,
-                  title: "Préférences d'écriture",
-                  subtitle: "Police, taille du texte, thème",
-                  onTap: () {
-                    // Navigation vers les préférences d'écriture
-                  },
-                ),
-                _buildSettingItem(
-                  icon: Icons.notifications_outlined,
-                  title: "Notifications de ventes",
-                  subtitle: "Rappels de ventes, nouveaux commentaires",
-                  onTap: () {
-                    // Navigation vers les notifications de ventes
-                  },
-                ),
+        // Section Application
+        const SettingSectionHeader(title: "Application", accentColor: AppColors.secondaryVariant),
+        SettingItemTile(
+          icon: Icons.language_outlined,
+          title: "Langue",
+          subtitle: "Français",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Sélection de la langue bientôt disponible.",
+            );
+          },
+        ),
+        SettingItemTile(
+          icon: Icons.dark_mode_outlined,
+          title: "Thème",
+          subtitle: "Mode automatique",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Changement de thème bientôt disponible.",
+            );
+          },
+        ),
 
-                const SizedBox(height: 20),
+        // Section Sécurité
+        const SettingSectionHeader(title: "Sécurité", accentColor: AppColors.secondaryVariant),
+        SettingItemTile(
+          icon: Icons.lock_outline,
+          title: "Mot de passe",
+          subtitle: "Changer votre mot de passe",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Changement de mot de passe disponible prochainement.",
+            );
+          },
+        ),
+        SettingItemTile(
+          icon: Icons.security_outlined,
+          title: "Confidentialité",
+          subtitle: "Gérer vos données personnelles d'auteur",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Paramètres de confidentialité d'auteur en cours d'intégration.",
+            );
+          },
+        ),
 
-                // Section Publication
-                _buildSectionTitle("Publication"),
-                _buildSettingItem(
-                  icon: Icons.publish_outlined,
-                  title: "Paramètres de publication",
-                  subtitle: "Visibilité, prix, droits d'auteur",
-                  onTap: () {
-                    // Navigation vers les paramètres de publication
-                  },
-                ),
-                _buildSettingItem(
-                  icon: Icons.analytics_outlined,
-                  title: "Rapports de ventes",
-                  subtitle: "Statistiques détaillées",
-                  onTap: () {
-                    // Navigation vers les rapports
-                  },
-                ),
+        // Section Support
+        const SettingSectionHeader(title: "Support", accentColor: AppColors.secondaryVariant),
+        SettingItemTile(
+          icon: Icons.help_outline,
+          title: "Aide & FAQ",
+          subtitle: "Trouver des réponses",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "FAQ d'auteur bientôt disponible.",
+            );
+          },
+        ),
+        SettingItemTile(
+          icon: Icons.contact_support_outlined,
+          title: "Contacter le support",
+          subtitle: "Nous contacter",
+          onTap: () {
+            AppNotifications.showSnackBar(
+              context,
+              message: "Formulaire de contact avec le support en développement.",
+            );
+          },
+        ),
 
-                const SizedBox(height: 20),
-
-                // Section Application
-                _buildSectionTitle("Application"),
-                _buildSettingItem(
-                  icon: Icons.language_outlined,
-                  title: "Langue",
-                  subtitle: "Français",
-                  onTap: () {
-                    // Navigation vers la sélection de langue
-                  },
-                ),
-                _buildSettingItem(
-                  icon: Icons.dark_mode_outlined,
-                  title: "Thème",
-                  subtitle: "Mode automatique",
-                  onTap: () {
-                    // Navigation vers la sélection de thème
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // Section Sécurité
-                _buildSectionTitle("Sécurité"),
-                _buildSettingItem(
-                  icon: Icons.lock_outline,
-                  title: "Mot de passe",
-                  subtitle: "Changer votre mot de passe",
-                  onTap: () {
-                    // Navigation vers le changement de mot de passe
-                  },
-                ),
-                _buildSettingItem(
-                  icon: Icons.security_outlined,
-                  title: "Confidentialité",
-                  subtitle: "Gérer vos données personnelles",
-                  onTap: () {
-                    // Navigation vers les paramètres de confidentialité
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // Section Support
-                _buildSectionTitle("Support"),
-                _buildSettingItem(
-                  icon: Icons.help_outline,
-                  title: "Aide & FAQ",
-                  subtitle: "Trouver des réponses",
-                  onTap: () {
-                    // Navigation vers l'aide
-                  },
-                ),
-                _buildSettingItem(
-                  icon: Icons.contact_support_outlined,
-                  title: "Contacter le support",
-                  subtitle: "Nous contacter",
-                  onTap: () {
-                    // Navigation vers le contact support
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // Section À propos
-                _buildSectionTitle("À propos"),
-                _buildSettingItem(
-                  icon: Icons.info_outline,
-                  title: "Version de l'application",
-                  subtitle: "1.0.0",
-                  onTap: () {
-                    // Afficher les informations de version
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // Bouton de déconnexion
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(vertical: 20),
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Logique de déconnexion
-                      _showLogoutDialog(context);
-                    },
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    label: const Text(
-                      "Se déconnecter",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // Section À propos
+        const SettingSectionHeader(title: "À propos", accentColor: AppColors.secondaryVariant),
+        SettingItemTile(
+          icon: Icons.info_outline,
+          title: "Version de l'application",
+          subtitle: "1.0.0",
+          onTap: () {
+            AppNotifications.showPremiumDialog(
+              context,
+              title: "Version de l'application",
+              message: "SpaceLearn Mobile (Auteur)\nVersion: 1.0.0\nConstruit avec amour par Steph-business.",
+              confirmText: "Fermer",
+              isSuccess: true,
+            );
+          },
         ),
       ],
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: AppColors.secondaryVariant, // Cyan
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      color: AppColors.cardBackground,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.white),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-            color: Colors.white,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(color: Colors.grey[400], fontSize: 14),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: Colors.grey,
-        ),
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Déconnexion"),
-          content: const Text("Êtes-vous sûr de vouloir vous déconnecter ?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Annuler"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                // Logique de déconnexion
-                final authService = AuthService();
-                await authService.logout();
-                await ProfileStorage.clearSelectedProfile();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginPage()),
-                    (route) => false,
-                  );
-                }
-              },
-              child: const Text(
-                "Se déconnecter",
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }

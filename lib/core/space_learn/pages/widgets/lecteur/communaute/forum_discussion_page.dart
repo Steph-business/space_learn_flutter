@@ -129,7 +129,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
   }
 
   void _showNewDiscussionDialog() {
-    final TextEditingController _titleController = TextEditingController();
+    final TextEditingController titleController = TextEditingController();
 
     showDialog(
       context: context,
@@ -141,7 +141,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             style: GoogleFonts.poppins(color: Colors.white),
           ),
           content: TextField(
-            controller: _titleController,
+            controller: titleController,
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
               hintText: "Titre de la discussion",
@@ -158,8 +158,8 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (_titleController.text.isNotEmpty) {
-                  _createNewDiscussion(_titleController.text);
+                if (titleController.text.isNotEmpty) {
+                  _createNewDiscussion(titleController.text);
                 }
               },
               style: ElevatedButton.styleFrom(

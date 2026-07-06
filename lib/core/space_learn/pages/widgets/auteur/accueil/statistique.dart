@@ -43,7 +43,6 @@ class _StatistiqueState extends State<Statistique> {
         }
       }
     } catch (e) {
-      debugPrint("Error loading user info: $e");
     }
   }
 
@@ -54,7 +53,6 @@ class _StatistiqueState extends State<Statistique> {
         setState(() => _followersCount = followers.length);
       }
     } catch (e) {
-      debugPrint("Error loading followers: $e");
     }
   }
 

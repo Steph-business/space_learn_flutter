@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 class ReadingPreferencesPage extends StatefulWidget {
   const ReadingPreferencesPage({super.key});
@@ -316,11 +317,10 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
 
   void _savePreferences() {
     // Logique de sauvegarde des préférences
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Préférences de lecture sauvegardées !'),
-        backgroundColor: Colors.green,
-      ),
+    AppNotifications.showSnackBar(
+      context,
+      message: 'Préférences de lecture sauvegardées !',
+      isSuccess: true,
     );
   }
 

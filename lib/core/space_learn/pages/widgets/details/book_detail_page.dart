@@ -81,7 +81,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
         });
       }
     } catch (e) {
-      print("Erreur chargement détails complets : $e");
     }
   }
 
@@ -111,7 +110,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
         if (mounted) setState(() => _isLoadingOwnership = false);
       }
     } catch (e) {
-      print("Erreur check ownership : $e");
       if (mounted) setState(() => _isLoadingOwnership = false);
     }
   }
@@ -131,7 +129,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
         }
       }
     } catch (e) {
-      print("Erreur chargement progression : $e");
     }
   }
 
@@ -150,7 +147,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
         if (mounted) setState(() => _isLoadingFavorite = false);
       }
     } catch (e) {
-      print("Erreur check favorie : $e");
       if (mounted) setState(() => _isLoadingFavorite = false);
     }
   }
@@ -186,7 +182,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
         });
       }
     } catch (e) {
-      print("Erreur toggle favorie : $e");
       if (mounted) setState(() => _isLoadingFavorite = false);
     }
   }
@@ -201,7 +196,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
         });
       }
     } catch (e) {
-      print("Erreur appel avis : $e");
       if (mounted) setState(() => _isLoadingReviews = false);
     }
   }
@@ -233,7 +227,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
         });
       }
     } catch (e) {
-      print("Error loading related books: $e");
       if (mounted) {
         setState(() => _isLoadingRelated = false);
       }
@@ -1307,7 +1300,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         );
                       }
                     } catch (e) {
-                      print("Error adding review: $e");
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(

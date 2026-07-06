@@ -3,14 +3,22 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/reset_password.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
+
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart' as lecteurHome;
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart' as ecrivainHome;
 
 class OtpPage extends StatefulWidget {
   final String email;
-  const OtpPage({super.key, required this.email});
+  final bool isFromRegistration;
+  const OtpPage({super.key, required this.email, this.isFromRegistration = false});
 
   @override
   State<OtpPage> createState() => _OtpPageState();
@@ -20,6 +28,7 @@ class _OtpPageState extends State<OtpPage> {
   final TextEditingController _pinController = TextEditingController();
   bool _isLoading = false;
   final _authService = AuthService();
+  final _profileService = ProfileService();
 
   void _handleVerifyCode() async {
     if (_isLoading) return;
@@ -31,25 +40,84 @@ class _OtpPageState extends State<OtpPage> {
     });
 
     try {
-      final success = await _authService.verifyOtp(widget.email, otp);
+      if (widget.isFromRegistration) {
+        final tokenUser = await _authService.verifyRegistration(widget.email, otp);
+        if (tokenUser != null && mounted) {
+          AppNotifications.showSnackBar(
+            context,
+            message: "Inscription validée avec succès !",
+            isSuccess: true,
+          );
 
-      if (success && mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) =>
-                ResetPasswordPage(email: widget.email, otp: otp),
-          ),
-        );
-      } else if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Code OTP invalide.")));
+          final profilId = tokenUser.user.profilId;
+          final allProfiles = await _profileService.getProfils();
+          final userProfile = allProfiles.firstWhere(
+            (p) => p.id.trim().toLowerCase() == profilId.trim().toLowerCase(),
+            orElse: () => ProfilModel(id: '', libelle: ''),
+          );
+
+          Widget destination;
+          final role = userProfile.libelle.toLowerCase();
+
+          if (!tokenUser.user.isProfileComplete) {
+            destination = const ProfilePage(forceComplete: true);
+            AppNotifications.showSnackBar(
+              context,
+              message: "Votre compte a été vérifié avec succès ! Veuillez compléter votre profil pour finaliser votre accès.",
+              isSuccess: true,
+            );
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => destination),
+              (route) => false,
+            );
+          } else {
+            if (role.contains("lecteur")) {
+              destination = lecteurHome.HomePageLecteur(
+                profileId: profilId,
+                userName: tokenUser.user.nomComplet,
+              );
+            } else if (role.contains("auteur") ||
+                role.contains("administrateur") ||
+                role.contains("éditeur")) {
+              destination = ecrivainHome.HomePageAuteur(
+                profileId: profilId,
+                userName: tokenUser.user.nomComplet,
+              );
+            } else {
+              destination = const ProfilePage();
+            }
+
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => destination),
+              (route) => false,
+            );
+          }
+        }
+      } else {
+        final success = await _authService.verifyOtp(widget.email, otp);
+
+        if (success && mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) =>
+                  ResetPasswordPage(email: widget.email, otp: otp),
+            ),
+          );
+        } else if (mounted) {
+          AppNotifications.showSnackBar(
+            context,
+            message: "Code OTP invalide.",
+            isError: true,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        AppNotifications.showSnackBar(
           context,
-        ).showSnackBar(SnackBar(content: Text("Erreur: ${e.toString()}")));
+          message: "Erreur: ${e.toString().replaceAll("Exception: ", "")}",
+          isError: true,
+        );
       }
     } finally {
       setState(() {
@@ -65,16 +133,26 @@ class _OtpPageState extends State<OtpPage> {
     try {
       final success = await _authService.forgotPassword(widget.email);
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Un nouveau code a été envoyé.')),
+        AppNotifications.showSnackBar(
+          context,
+          message: 'Un nouveau code de validation a été envoyé.',
+          isSuccess: true,
         );
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Impossible de renvoyer le code.")),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Impossible de renvoyer le code.",
+          isError: true,
         );
       }
     } catch (e) {
-      // Handle error
+      if (mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur: ${e.toString().replaceAll("Exception: ", "")}",
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
