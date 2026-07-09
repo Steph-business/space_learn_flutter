@@ -82,6 +82,8 @@ class _RegisterPageState extends State<RegisterPage> {
     final profileService = ProfileService();
     final selectedProfile = await profileService.getSelectedProfile();
 
+    if (!mounted) return;
+
     if (selectedProfile == null) {
       AppNotifications.showSnackBar(
         context,

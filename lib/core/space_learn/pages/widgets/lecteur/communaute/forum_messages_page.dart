@@ -119,6 +119,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
         _loadMessages();
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Erreur lors de l'envoi : $e")));

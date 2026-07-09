@@ -122,6 +122,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
         Navigator.pop(context); // close dialog
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erreur : $e')));

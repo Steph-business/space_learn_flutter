@@ -11,6 +11,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/paymentModel.dar
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_result_page.dart';
 
 class PaymentPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -22,7 +23,7 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-  String _selectedMethod = 'CinetPay';
+  String _selectedMethod = 'MTN MoMo';
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -192,7 +193,11 @@ class _PaymentPageState extends State<PaymentPage> {
             const SizedBox(height: 16),
             Center(
               child: Text(
-                'Paiement sécurisé par Stripe',
+                _selectedMethod == 'MTN MoMo'
+                    ? 'Paiement sécurisé par MTN MoMo'
+                    : _selectedMethod == 'Orange Money'
+                        ? 'Paiement sécurisé par Orange Money'
+                        : 'Paiement sécurisé par Stripe',
                 style: AppTextStyles.greyMedium12,
               ),
             ),
@@ -282,7 +287,7 @@ class _PaymentPageState extends State<PaymentPage> {
       ),
       child: Row(
         children: [
-          _buildMethodButton('CinetPay'),
+          _buildMethodButton('MTN MoMo'),
           _buildMethodButton('Carte Visa'),
           _buildMethodButton('Orange Money'),
         ],
@@ -377,8 +382,7 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   void _processPayment() async {
-    // Pas besoin de valider le formulaire pour CinetPay (pas de saisie locale)
-    if (_selectedMethod != 'CinetPay' && !_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
@@ -409,6 +413,8 @@ class _PaymentPageState extends State<PaymentPage> {
                 item.livre!.id == (widget.book['id']?.toString() ?? "")),
       );
 
+      if (!mounted) return;
+
       if (isAlreadyOwned) {
         Navigator.of(context).pop();
         _showOwnedDialog();
@@ -418,26 +424,134 @@ class _PaymentPageState extends State<PaymentPage> {
       final double amount =
           double.tryParse(widget.book['prix']?.toString() ?? '0') ?? 0.0;
 
-      // ── CinetPay : rediriger vers la WebView de paiement ──
-      if (_selectedMethod == 'CinetPay') {
+      // ── MTN MoMo : processus asynchrone avec validation USSD ──
+      if (_selectedMethod == 'MTN MoMo') {
         final paymentService = PaymentService();
-        final result = await paymentService.initiateCinetpayPayment(
-          livreId: widget.book['id']?.toString() ?? '',
+        final phone = _cardNumberController.text.trim();
+        final fullPhone = phone.startsWith('+') ? phone : '+225$phone';
+
+        final payment = PaymentModel(
+          id: "",
+          utilisateurId: user.id,
+          livreId: widget.book['id']?.toString() ?? "",
+          methodePaiement: "mtn_money",
+          transactionId: fullPhone,
+          phoneNumber: fullPhone,
+          referenceId: "",
           montant: amount,
-          authToken: token,
-          customerName: user.nomComplet,
-          customerEmail: user.email,
+          creeLe: DateTime.now(),
         );
 
-        Navigator.of(context).pop();
+        final createdPayment = await paymentService.createPayment(payment, token);
+        final refId = createdPayment.referenceId;
 
         if (!mounted) return;
-        Navigator.of(context).push(
+        Navigator.of(context).pop(); // Fermer le chargement initial
+
+        bool paymentSuccessful = false;
+        bool isPolling = true;
+
+        // Afficher l'alerte d'attente de validation USSD
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogCtx) => WillPopScope(
+            onWillPop: () async => false,
+            child: AlertDialog(
+              backgroundColor: AppColors.surfaceVariant,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: AppColors.primaryLight),
+                  const SizedBox(height: 24),
+                  Text(
+                    "Attente de validation...",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Veuillez valider la transaction de ${amount.toStringAsFixed(0)} FCFA sur votre téléphone ($fullPhone).",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // Boucle de polling du statut MoMo
+        int attempts = 0;
+        const maxAttempts = 20; // 60 secondes max (20 * 3s)
+        while (isPolling && attempts < maxAttempts && !paymentSuccessful) {
+          await Future.delayed(const Duration(seconds: 3));
+          attempts++;
+          try {
+            final statusMap = await paymentService.getMomoStatus(refId, token);
+            final status = statusMap['status']?.toString().toUpperCase() ?? '';
+            if (status == 'SUCCESSFUL') {
+              paymentSuccessful = true;
+              isPolling = false;
+            } else if (status == 'FAILED' || status == 'REJECTED') {
+              isPolling = false;
+            }
+          } catch (e) {
+            debugPrint("Erreur lors de la vérification du statut MoMo: $e");
+          }
+        }
+
+        // Fermer la boîte de dialogue d'attente
+        if (!mounted) return;
+        Navigator.of(context).pop();
+
+        // Naviguer vers la page de résultat de paiement
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
           MaterialPageRoute(
-            builder: (_) => CinetpayWebViewPage(
+            builder: (_) => CinetpayResultPage(
+              status: paymentSuccessful ? 'ACCEPTED' : 'REFUSED',
+              book: widget.book,
+              montant: amount,
+              paymentMethod: 'MTN MoMo',
+              transactionId: refId,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // ── Autres méthodes (Carte Visa, Orange Money…) : traitement via CinetPay ──
+      final paymentService = PaymentService();
+      if (amount > 0) {
+        final methode = _selectedMethod == 'Orange Money' ? 'orange_money' : 'carte_visa';
+        // On initie le paiement CinetPay
+        final result = await paymentService.initiateCinetpayPayment(
+          livreId: widget.book['id']?.toString() ?? "",
+          montant: amount,
+          authToken: token,
+          customerName: _nameController.text.trim(),
+        );
+
+        if (!mounted) return;
+        Navigator.of(context).pop(); // Fermer le dialog de chargement
+
+        // Lancer la WebView CinetPay
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CinetpayWebViewPage(
               paymentUrl: result.paymentUrl,
               transactionId: result.paiement.transactionId,
-              livreTitle: widget.book['titre']?.toString() ?? '',
+              book: widget.book,
               montant: amount,
             ),
           ),
@@ -445,26 +559,11 @@ class _PaymentPageState extends State<PaymentPage> {
         return;
       }
 
-      // ── Autres méthodes (Carte Visa, Orange Money…) : traitement local ──
-      final paymentService = PaymentService();
-      if (amount > 0) {
-        final payment = PaymentModel(
-          id: "",
-          utilisateurId: user.id,
-          livreId: widget.book['id']?.toString() ?? "",
-          methodePaiement: _selectedMethod.toLowerCase().replaceAll(' ', '_'),
-          transactionId: "TRX-${DateTime.now().millisecondsSinceEpoch}",
-          referenceId: "REF-${DateTime.now().millisecondsSinceEpoch}",
-          montant: amount,
-          creeLe: DateTime.now(),
-        );
-        await paymentService.createPayment(payment, token);
-      }
-
+      // Si gratuit
       await libraryService.addToLibrary(
         widget.book['id']?.toString() ?? "",
         user.id,
-        amount > 0 ? "achat" : "gratuit",
+        "gratuit",
         token,
       );
 
@@ -477,6 +576,7 @@ class _PaymentPageState extends State<PaymentPage> {
         }, token);
       } catch (_) {}
 
+      if (!mounted) return;
       Navigator.of(context).pop();
       Navigator.pushReplacement(
         context,
@@ -485,6 +585,7 @@ class _PaymentPageState extends State<PaymentPage> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Erreur : $e"), backgroundColor: Colors.red),

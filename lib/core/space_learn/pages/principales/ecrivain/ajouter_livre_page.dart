@@ -211,6 +211,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     }
 
     final token = await TokenStorage.getToken();
+    if (!mounted) return;
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

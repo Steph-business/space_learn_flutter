@@ -51,6 +51,7 @@ class _OtpPageState extends State<OtpPage> {
 
           final profilId = tokenUser.user.profilId;
           final allProfiles = await _profileService.getProfils();
+          if (!mounted) return;
           final userProfile = allProfiles.firstWhere(
             (p) => p.id.trim().toLowerCase() == profilId.trim().toLowerCase(),
             orElse: () => ProfilModel(id: '', libelle: ''),

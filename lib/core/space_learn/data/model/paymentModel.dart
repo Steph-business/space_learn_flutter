@@ -8,6 +8,7 @@ class PaymentModel {
   final String transactionId;
   final String referenceId; // reference_id
   final double montant;
+  final String? phoneNumber;
   final DateTime? creeLe;
   final BookModel? livre;
 
@@ -19,6 +20,7 @@ class PaymentModel {
     required this.transactionId,
     required this.referenceId,
     required this.montant,
+    this.phoneNumber,
     this.creeLe,
     this.livre,
   });
@@ -31,6 +33,7 @@ class PaymentModel {
       methodePaiement: json['methode_paiement'] ?? '',
       transactionId: json['transaction_id'] ?? '',
       referenceId: json['reference_id'] ?? '',
+      phoneNumber: json['phone_number'],
       montant: (json['montant'] ?? 0.0).toDouble(),
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
       livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
@@ -45,6 +48,7 @@ class PaymentModel {
       'methode_paiement': methodePaiement,
       'transaction_id': transactionId,
       'reference_id': referenceId,
+      if (phoneNumber != null) 'phone_number': phoneNumber,
       'montant': montant,
       'cree_le': creeLe?.toIso8601String(),
       'Livre': livre?.toJson(),

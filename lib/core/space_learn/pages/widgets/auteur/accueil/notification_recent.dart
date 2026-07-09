@@ -91,9 +91,10 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
     BuildContext context,
     NotificationModel notif,
   ) async {
+    final notifProvider = context.read<NotificationProvider>();
     final token = await TokenStorage.getToken();
     if (token != null && !notif.lu) {
-      context.read<NotificationProvider>().markAsRead(notif.id, token);
+      notifProvider.markAsRead(notif.id, token);
     }
 
     // Use centralized logic from NotificationService

@@ -1268,18 +1268,17 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     ),
                   ),
                   onPressed: () async {
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
                     Navigator.pop(context);
                     final token = await TokenStorage.getToken();
                     if (token == null) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Veuillez vous connecter pour laisser un avis.",
-                            ),
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Veuillez vous connecter pour laisser un avis.",
                           ),
-                        );
-                      }
+                        ),
+                      );
                       return;
                     }
 
@@ -1291,23 +1290,19 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         authToken: token,
                       );
                       _loadReviews(); // Reload the reviews
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Avis ajouté avec succès !"),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text("Avis ajouté avec succès !"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
                     } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Erreur lors de l'ajout de l'avis."),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text("Erreur lors de l'ajout de l'avis."),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                     }
                   },
                   child: Text(
