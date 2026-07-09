@@ -822,10 +822,12 @@ class _ProfilePageState extends State<ProfilePage> {
           destination = const ProfilPage();
         }
 
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => destination),
-          (route) => false,
-        );
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => destination),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

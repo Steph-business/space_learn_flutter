@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
-import '../../../data/dataServices/authServices.dart';
 import '../../../data/dataServices/profileService.dart';
 import 'register.dart';
 
@@ -13,7 +12,7 @@ class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
 
   @override
-  _ProfilPageState createState() => _ProfilPageState();
+  State<ProfilPage> createState() => _ProfilPageState();
 }
 
 class _ProfilPageState extends State<ProfilPage> {
@@ -22,7 +21,6 @@ class _ProfilPageState extends State<ProfilPage> {
   String? error;
   List<ProfilModel> _profiles = [];
   final _profileService = ProfileService();
-  final _authService = AuthService();
 
   @override
   void initState() {

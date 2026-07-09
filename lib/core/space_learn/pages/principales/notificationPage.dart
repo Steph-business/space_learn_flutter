@@ -82,11 +82,10 @@ class _NotificationPageState extends State<NotificationPage> {
                   ),
                   onSelected: (value) async {
                     if (value == 'mark_all') {
+                      final notifProvider = context.read<NotificationProvider>();
                       final token = await TokenStorage.getToken();
                       if (token != null) {
-                        context.read<NotificationProvider>().markAllAsRead(
-                          token,
-                        );
+                        notifProvider.markAllAsRead(token);
                       }
                     } else {
                       setState(() {

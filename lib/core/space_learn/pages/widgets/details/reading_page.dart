@@ -5,8 +5,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart' hide Image;
+import 'package:space_learn_flutter/core/services/tts_service.dart';
+import 'package:space_learn_flutter/core/services/book_cache_service.dart';
+import 'dart:typed_data';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:epub_view/epub_view.dart' hide Image;
 import 'package:http/http.dart' as http;
 import '../../../../utils/api_routes.dart';
 import '../../../../utils/token_storage.dart';
@@ -64,15 +68,106 @@ class _ReadingPageState extends State<ReadingPage> {
   PdfTextSearchResult? _searchResult;
   final TextEditingController _searchController = TextEditingController();
 
+  // TTS (Synthèse vocale)
+  final TtsService _ttsService = TtsService();
+  PdfDocument? _pdfDocument;
+  bool _showTtsPanel = false;
+  bool _isExtractingText = false;
+  bool _autoplayNextPage = true;
+
+  // Cache & Mode Hors-ligne
+  final BookCacheService _bookCacheService = BookCacheService();
+  Uint8List? _cachedBookBytes;
+  bool _isDownloading = false;
+  double _downloadProgress = 0.0;
+  EpubController? _epubController;
+
   @override
   void initState() {
     super.initState();
     _pdfViewerController = PdfViewerController();
     _savedPage = widget.initialPage;
+    _loadBookFile();
     _loadProgress();
     _loadSettings();
     _loadBookmarks();
     _startHeartbeat();
+    
+    // Initialisation TTS
+    _ttsService.onCompletion = _onTtsCompletion;
+    _ttsService.addListener(_onTtsStateChanged);
+  }
+
+  Future<void> _loadBookFile() async {
+    final String? pdfUrl = widget.book['fichier_url'] ?? widget.book['fichierUrl'];
+    final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
+
+    if (pdfUrl == null || pdfUrl.isEmpty || bookId.isEmpty) {
+      setState(() {
+        _loadError = "Aucun fichier disponible pour ce livre.";
+      });
+      return;
+    }
+
+    final String format = (widget.book['format'] ?? '').toString().toLowerCase();
+    final bool isEpub = format == 'epub' || pdfUrl.toLowerCase().endsWith('.epub');
+
+    try {
+      final isCached = await _bookCacheService.isBookCached(bookId, pdfUrl);
+      if (isCached) {
+        final bytes = await _bookCacheService.getCachedBookBytes(bookId, pdfUrl);
+        if (bytes != null) {
+          setState(() {
+            _cachedBookBytes = bytes;
+            _isDownloading = false;
+          });
+          if (isEpub) {
+            _epubController = EpubController(
+              document: EpubDocument.openData(bytes),
+            );
+          }
+          return;
+        }
+      }
+
+      // Not cached, download it
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress = 0.0;
+      });
+
+      final bytes = await _bookCacheService.downloadAndCache(
+        bookId,
+        pdfUrl,
+        onProgress: (progress) {
+          setState(() {
+            _downloadProgress = progress;
+          });
+        },
+      );
+
+      if (bytes != null) {
+        setState(() {
+          _cachedBookBytes = bytes;
+          _isDownloading = false;
+        });
+        if (isEpub) {
+          _epubController = EpubController(
+            document: EpubDocument.openData(bytes),
+          );
+        }
+      } else {
+        setState(() {
+          _loadError = "Erreur lors du téléchargement du livre.";
+          _isDownloading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _loadError = "Erreur lors de la préparation du fichier : $e";
+        _isDownloading = false;
+      });
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -90,7 +185,10 @@ class _ReadingPageState extends State<ReadingPage> {
           setState(() {
             _backgroundColor = Color(backendSettings.readingBgColor);
             _brightness = backendSettings.brightness;
-            _zoomLevel = backendSettings.zoomLevel;
+            // Sécurité : ne jamais avoir un zoom de 0 ou négatif
+            _zoomLevel = backendSettings.zoomLevel > 0 
+                ? backendSettings.zoomLevel 
+                : 1.0;
             _isHorizontal = backendSettings.isHorizontal;
           });
           // Update local with backend data
@@ -109,6 +207,7 @@ class _ReadingPageState extends State<ReadingPage> {
         _backgroundColor = Color(bgColorHex);
       }
       _zoomLevel = prefs.getDouble('reading_zoom_level') ?? 1.0;
+      if (_zoomLevel <= 0) _zoomLevel = 1.0; // Sécurité
       _isHorizontal = prefs.getBool('reading_is_horizontal') ?? false;
     });
   }
@@ -230,6 +329,10 @@ class _ReadingPageState extends State<ReadingPage> {
     _saveTimer = Timer(const Duration(seconds: 2), () {
       _saveProgress(page);
     });
+
+    if (_ttsService.isPlaying) {
+      _speakCurrentPage();
+    }
   }
 
   Future<void> _toggleBookmark() async {
@@ -264,6 +367,9 @@ class _ReadingPageState extends State<ReadingPage> {
     _heartbeatTimer?.cancel();
     _settingsTimer?.cancel();
     _pdfViewerController.dispose();
+    _epubController?.dispose();
+    _ttsService.removeListener(_onTtsStateChanged);
+    _ttsService.stop();
     super.dispose();
   }
 
@@ -282,6 +388,309 @@ class _ReadingPageState extends State<ReadingPage> {
         _currentChapterTitle = foundTitle;
       });
     }
+  }
+
+  void _onTtsCompletion() {
+    if (_autoplayNextPage && _currentPage < _totalPages) {
+      _pdfViewerController.nextPage();
+    } else {
+      _ttsService.stop();
+    }
+  }
+
+  void _onTtsStateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _speakCurrentPage() async {
+    if (!_isDocumentLoaded) return;
+
+    String textToRead = "";
+
+    if (_isPdf && _pdfDocument != null) {
+      setState(() {
+        _isExtractingText = true;
+      });
+      try {
+        final text = PdfTextExtractor(_pdfDocument!).extractText(
+          startPageIndex: _currentPage - 1,
+          endPageIndex: _currentPage - 1,
+        );
+        textToRead = text;
+      } catch (e) {
+        debugPrint("Erreur lors de l'extraction de texte PDF: $e");
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isExtractingText = false;
+          });
+        }
+      }
+    } else if (!_isPdf && _epubController != null) {
+      setState(() {
+        _isExtractingText = true;
+      });
+      try {
+        final value = _epubController!.currentValue;
+        if (value != null && value.chapter != null) {
+          final htmlContent = value.chapter!.HtmlContent ?? '';
+          final regExp = RegExp(r'<[^>]*>', multiLine: true, caseSensitive: true);
+          textToRead = htmlContent.replaceAll(regExp, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+        }
+      } catch (e) {
+        debugPrint("Erreur lors de l'extraction de texte EPUB: $e");
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isExtractingText = false;
+          });
+        }
+      }
+    }
+
+    if (textToRead.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Aucun texte lisible trouvé sur cette page."),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    await _ttsService.speak(textToRead);
+  }
+
+  Widget _buildTtsPlayerPanel() {
+    final bool isDark = _backgroundColor.computeLuminance() < 0.5;
+    final Color panelBg = isDark ? AppColors.cardBackground : Colors.white.withOpacity(0.95);
+    final Color itemColor = isDark ? Colors.white : AppColors.readingBrown;
+
+    return Positioned(
+      bottom: 24,
+      left: 24,
+      right: 24,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: panelBg,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _ttsService.isPlaying
+                            ? (_isPdf 
+                                ? "Lecture en cours - Page $_currentPage" 
+                                : "Lecture en cours - $_currentChapterTitle")
+                            : _ttsService.isPaused
+                                ? "Lecture en pause"
+                                : "Synthèse vocale prête",
+                        style: GoogleFonts.poppins(
+                          color: _ttsService.isPlaying ? AppColors.primary : itemColor.withOpacity(0.7),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _isExtractingText 
+                            ? "Extraction du texte..." 
+                            : widget.book['titre'] ?? "Livre",
+                        style: GoogleFonts.lora(
+                          color: itemColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        _autoplayNextPage ? Icons.autorenew : Icons.play_disabled,
+                        color: _autoplayNextPage ? AppColors.primary : itemColor.withOpacity(0.4),
+                        size: 20,
+                      ),
+                      tooltip: "Lecture automatique",
+                      onPressed: () {
+                        setState(() {
+                          _autoplayNextPage = !_autoplayNextPage;
+                        });
+                      },
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        double nextRate = 0.5;
+                        if (_ttsService.speechRate == 0.5) {
+                          nextRate = 0.6;
+                        } else if (_ttsService.speechRate == 0.6) {
+                          nextRate = 0.75;
+                        } else if (_ttsService.speechRate == 0.75) {
+                          nextRate = 1.0;
+                        } else if (_ttsService.speechRate == 1.0) {
+                          nextRate = 0.4;
+                        } else {
+                          nextRate = 0.5;
+                        }
+                        _ttsService.setRate(nextRate);
+                      },
+                      child: Text(
+                        _getSpeedLabel(_ttsService.speechRate),
+                        style: GoogleFonts.poppins(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_ttsService.isPlaying)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _TtsAudioWaveform(color: AppColors.primary),
+              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.skip_previous, color: itemColor, size: 28),
+                  onPressed: () {
+                    if (_isPdf) {
+                      if (_currentPage > 1) {
+                        _pdfViewerController.previousPage();
+                      }
+                    } else if (_epubController != null) {
+                      final toc = _epubController!.tableOfContents();
+                      final currentChapterIdx = (_epubController!.currentValue?.chapterNumber ?? 1) - 1;
+                      if (currentChapterIdx - 1 >= 0 && currentChapterIdx - 1 < toc.length) {
+                        final prevChapter = toc[currentChapterIdx - 1];
+                        _epubController!.jumpTo(index: prevChapter.startIndex);
+                      }
+                    }
+                  },
+                ),
+                GestureDetector(
+                  onTap: () {
+                    if (_ttsService.isPlaying) {
+                      _ttsService.pause();
+                    } else if (_ttsService.isPaused) {
+                      _speakCurrentPage();
+                    } else {
+                      _speakCurrentPage();
+                    }
+                  },
+                  child: Container(
+                    height: 56,
+                    width: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: _isExtractingText 
+                        ? const Center(
+                            child: SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            ),
+                          )
+                        : Icon(
+                            _ttsService.isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.stop, 
+                    color: _ttsService.isStopped ? itemColor.withOpacity(0.4) : itemColor, 
+                    size: 28
+                  ),
+                  onPressed: _ttsService.isStopped 
+                      ? null 
+                      : () {
+                          _ttsService.stop();
+                        },
+                ),
+                IconButton(
+                  icon: Icon(Icons.skip_next, color: itemColor, size: 28),
+                  onPressed: () {
+                    if (_isPdf) {
+                      if (_currentPage < _totalPages) {
+                        _pdfViewerController.nextPage();
+                      }
+                    } else if (_epubController != null) {
+                      final toc = _epubController!.tableOfContents();
+                      final currentChapterIdx = (_epubController!.currentValue?.chapterNumber ?? 1) - 1;
+                      if (currentChapterIdx + 1 < toc.length) {
+                        final nextChapter = toc[currentChapterIdx + 1];
+                        _epubController!.jumpTo(index: nextChapter.startIndex);
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getSpeedLabel(double rate) {
+    if (rate == 0.5) return "1.0x";
+    if (rate == 0.6) return "1.2x";
+    if (rate == 0.75) return "1.5x";
+    if (rate == 1.0) return "2.0x";
+    if (rate == 0.4) return "0.8x";
+    return "${(rate / 0.5).toStringAsFixed(1)}x";
   }
 
   @override
@@ -323,8 +732,12 @@ class _ReadingPageState extends State<ReadingPage> {
           if (_isSearching) _buildSearchBar(),
 
           // Footer Layer (Solid)
-          if (!_showCover && _showControls && _isDocumentLoaded)
+          if (!_showCover && _showControls && _isDocumentLoaded && !_showTtsPanel)
             _buildBottomControls(),
+
+          // Panneau de contrôle Audio (TTS)
+          if (!_showCover && _showControls && _isDocumentLoaded && _showTtsPanel)
+            _buildTtsPlayerPanel(),
 
           // Close button if no cover
           if (_showCover)
@@ -352,17 +765,143 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Widget _buildBody(String? pdfUrl, String? imageUrl, bool isPdf) {
+    if (_loadError != null) {
+      return _buildErrorView(_loadError!);
+    }
+
     if (pdfUrl == null || pdfUrl.isEmpty) {
       return _buildErrorView("Aucun fichier disponible pour ce livre.");
     }
 
-    if (!isPdf) {
+    if (_isDownloading) {
+      final isDark = _backgroundColor.computeLuminance() < 0.5;
+      final Color textColor = isDark ? Colors.white : AppColors.readingBrown;
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.cloud_download_outlined,
+                size: 64,
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                "Téléchargement du livre...",
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Votre livre sera disponible hors-ligne après cette étape.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: textColor.withOpacity(0.6),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: _downloadProgress > 0 ? _downloadProgress : null,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  minHeight: 8,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _downloadProgress > 0
+                    ? "${(_downloadProgress * 100).toStringAsFixed(0)} %"
+                    : "Connexion en cours...",
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final String format = (widget.book['format'] ?? '').toString().toLowerCase();
+    final bool isEpub = format == 'epub' || (pdfUrl != null && pdfUrl.toLowerCase().endsWith('.epub'));
+
+    if (!isPdf && !isEpub) {
       // For demonstration of the UI if not a PDF, we show dummy text that looks like the mockup
       return _buildMockEbookContent();
     }
 
-    return SfPdfViewer.network(
-      pdfUrl,
+    if (_cachedBookBytes == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (isEpub) {
+      if (_epubController == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final isDark = _backgroundColor.computeLuminance() < 0.5;
+      final Color textColor = isDark ? Colors.white : AppColors.readingBrown;
+
+      return Container(
+        color: _backgroundColor,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            textTheme: TextTheme(
+              bodyMedium: GoogleFonts.lora(
+                fontSize: 16.0 * _zoomLevel,
+                color: textColor,
+                height: 1.5,
+              ),
+              bodyLarge: GoogleFonts.lora(
+                fontSize: 18.0 * _zoomLevel,
+                color: textColor,
+                height: 1.5,
+              ),
+              bodySmall: GoogleFonts.lora(
+                fontSize: 14.0 * _zoomLevel,
+                color: textColor,
+                height: 1.5,
+              ),
+            ),
+          ),
+          child: EpubView(
+            controller: _epubController!,
+            onDocumentLoaded: (document) {
+              if (mounted) {
+                setState(() {
+                  _isDocumentLoaded = true;
+                  _totalPages = document.Chapters?.length ?? 0;
+                });
+              }
+            },
+            onChapterChanged: (value) {
+              if (mounted && value != null && value.chapter != null) {
+                setState(() {
+                  _currentChapterTitle = value.chapter!.Title ?? '';
+                });
+
+                if (_ttsService.isPlaying) {
+                  _speakCurrentPage();
+                }
+              }
+            },
+          ),
+        ),
+      );
+    }
+
+    return SfPdfViewer.memory(
+      _cachedBookBytes!,
       key: _pdfViewerKey,
       controller: _pdfViewerController,
       pageLayoutMode: PdfPageLayoutMode.single,
@@ -386,6 +925,7 @@ class _ReadingPageState extends State<ReadingPage> {
           }
 
           setState(() {
+            _pdfDocument = details.document;
             _pdfBookmarks = bks;
             _bookmarkPageMap = pageMap;
             _totalPages = details.document.pages.count;
@@ -460,6 +1000,20 @@ class _ReadingPageState extends State<ReadingPage> {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(
+                _showTtsPanel ? Icons.headphones : Icons.headphones_outlined,
+                color: _showTtsPanel
+                    ? AppColors.primary
+                    : textColor.withOpacity(0.7),
+              ),
+              onPressed: () {
+                setState(() {
+                  _showTtsPanel = !_showTtsPanel;
+                });
+              },
             ),
             const SizedBox(width: 8),
             IconButton(
@@ -993,19 +1547,18 @@ class _ReadingPageState extends State<ReadingPage> {
           trailing: IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
             onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               try {
                 final token = await TokenStorage.getToken();
                 if (token != null) {
                   await _bookmarkService.deleteBookmark(bk.id, token);
                   await _loadBookmarks();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Marque-page supprimé'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  }
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Marque-page supprimé'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
                 }
               } catch (e) {
               }
@@ -1298,6 +1851,62 @@ class _ReadingPageState extends State<ReadingPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TtsAudioWaveform extends StatefulWidget {
+  final Color color;
+  const _TtsAudioWaveform({required this.color});
+
+  @override
+  State<_TtsAudioWaveform> createState() => _TtsAudioWaveformState();
+}
+
+class _TtsAudioWaveformState extends State<_TtsAudioWaveform> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<double> _baseHeights = [0.2, 0.5, 0.8, 0.4, 0.7, 0.3, 0.6];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(_baseHeights.length, (index) {
+            final double value = (index * 0.15 + _controller.value) % 1.0;
+            final double scale = 0.3 + 0.7 * (0.5 - (0.5 - value).abs()) * 2;
+            final double height = 18.0 * _baseHeights[index] * scale;
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2.5),
+              width: 3.5,
+              height: height.clamp(4.0, 24.0),
+              decoration: BoxDecoration(
+                color: widget.color,
+                borderRadius: BorderRadius.circular(2.0),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

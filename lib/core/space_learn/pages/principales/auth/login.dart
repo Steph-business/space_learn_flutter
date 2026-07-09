@@ -86,6 +86,8 @@ class _LoginPageState extends State<LoginPage> {
         orElse: () => ProfilModel(id: '', libelle: ''),
       );
 
+      if (!mounted) return;
+
       if (userProfile.id.isEmpty) {
         AppNotifications.showSnackBar(
           context,
@@ -140,6 +142,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       developer.log("Erreur lors de la connexion : $e");
+      if (!mounted) return;
       final errorStr = e.toString();
       if (errorStr.contains("n'est pas encore vérifié") || errorStr.contains("403")) {
         AppNotifications.showPremiumDialog(

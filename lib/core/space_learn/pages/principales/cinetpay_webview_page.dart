@@ -12,14 +12,14 @@ import 'cinetpay_result_page.dart';
 class CinetpayWebViewPage extends StatefulWidget {
   final String paymentUrl;
   final String transactionId;
-  final String livreTitle;
+  final Map<String, dynamic> book;
   final double montant;
 
   const CinetpayWebViewPage({
     super.key,
     required this.paymentUrl,
     required this.transactionId,
-    required this.livreTitle,
+    required this.book,
     required this.montant,
   });
 
@@ -103,7 +103,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
         MaterialPageRoute(
           builder: (_) => CinetpayResultPage(
             status: result.status,
-            livreTitle: widget.livreTitle,
+            book: widget.book,
             montant: widget.montant,
             paymentMethod: result.paymentMethod,
             transactionId: widget.transactionId,
@@ -140,7 +140,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
               ),
             ),
             Text(
-              widget.livreTitle,
+              widget.book['titre']?.toString() ?? 'Livre inconnu',
               style: GoogleFonts.poppins(color: Colors.white54, fontSize: 11),
               overflow: TextOverflow.ellipsis,
             ),

@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import '../principales/lecteur/accueil_lecteur_page.dart';
+import '../widgets/details/reading_page.dart'; // Ajout de l'import
 
 /// Page de résultat après un paiement CinetPay
 class CinetpayResultPage extends StatelessWidget {
   final String status; // "ACCEPTED", "REFUSED", "PENDING"
-  final String livreTitle;
+  final Map<String, dynamic> book; // Ajout du livre complet
   final double montant;
   final String? paymentMethod;
   final String transactionId;
@@ -14,7 +15,7 @@ class CinetpayResultPage extends StatelessWidget {
   const CinetpayResultPage({
     super.key,
     required this.status,
-    required this.livreTitle,
+    required this.book,
     required this.montant,
     this.paymentMethod,
     required this.transactionId,
@@ -92,7 +93,7 @@ class CinetpayResultPage extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 isAccepted
-                    ? 'Votre paiement de ${montant.toStringAsFixed(0)} XOF a été validé.\n"$livreTitle" a été ajouté à votre bibliothèque.'
+                    ? 'Votre paiement de ${montant.toStringAsFixed(0)} XOF a été validé.\n"${book['titre'] ?? 'Livre inconnu'}" a été ajouté à votre bibliothèque.'
                     : isRefused
                     ? 'Votre paiement de ${montant.toStringAsFixed(0)} XOF a été refusé.\nVeuillez réessayer avec un autre moyen de paiement.'
                     : 'Votre paiement de ${montant.toStringAsFixed(0)} XOF est en cours de traitement.\nVous serez notifié dès sa validation.',
@@ -117,7 +118,7 @@ class CinetpayResultPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildDetailRow('Livre', livreTitle),
+                    _buildDetailRow('Livre', book['titre']?.toString() ?? 'Livre inconnu'),
                     const SizedBox(height: 8),
                     _buildDetailRow(
                       'Montant',
@@ -144,13 +145,22 @@ class CinetpayResultPage extends StatelessWidget {
                 height: 54,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Retour à l'accueil lecteur
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (_) => const HomePageLecteur(profileId: ''),
-                      ),
-                      (route) => false,
-                    );
+                    if (isAccepted) {
+                      // Ouvrir directement le livre
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => ReadingPage(book: book),
+                        ),
+                      );
+                    } else {
+                      // Retour à l'accueil lecteur
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const HomePageLecteur(profileId: ''),
+                        ),
+                        (route) => false,
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isAccepted
