@@ -3,14 +3,16 @@ import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
+import 'package:space_learn_flutter/core/themes/theme_provider.dart';
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;
@@ -47,6 +49,7 @@ class _MyAppState extends State<MyApp> {
   String? _selectedProfile;
   String? _selectedProfileRole;
   UserModel? _user;
+  bool _isRegistered = false;
   bool _isLoading = true;
 
   @override
@@ -58,6 +61,8 @@ class _MyAppState extends State<MyApp> {
   Future<void> _loadInitialData() async {
     try {
       final token = await TokenStorage.getToken();
+      final isRegistered = await ProfileStorage.getIsRegisteredUser();
+      
       if (token != null && token.isNotEmpty) {
         final authService = AuthService();
         final user = await authService.getUser(token);
@@ -69,6 +74,7 @@ class _MyAppState extends State<MyApp> {
               _user = user;
               _selectedProfile = profile;
               _selectedProfileRole = role;
+              _isRegistered = isRegistered;
               _isLoading = false;
             });
           }
@@ -80,6 +86,7 @@ class _MyAppState extends State<MyApp> {
           _selectedProfile = null;
           _selectedProfileRole = null;
           _user = null;
+          _isRegistered = isRegistered;
           _isLoading = false;
         });
       }
@@ -101,24 +108,41 @@ class _MyAppState extends State<MyApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        navigatorKey: navigatorKey,
-        title: 'Space Learn',
-        theme: ThemeData(primarySwatch: Colors.orange),
-        debugShowCheckedModeBanner: false,
-        home: _isLoading
-            ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-            : _getHomeWidget(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            navigatorKey: navigatorKey,
+            title: 'Space Learn',
+            themeMode: themeProvider.themeMode,
+            theme: ThemeData(
+              brightness: Brightness.light,
+              primarySwatch: Colors.orange,
+              scaffoldBackgroundColor: const Color.fromARGB(255, 250, 249, 246),
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              primarySwatch: Colors.orange,
+              scaffoldBackgroundColor: AppColors.scaffoldBackground,
+            ),
+            debugShowCheckedModeBanner: false,
+            home: _isLoading
+                ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+                : _getHomeWidget(),
+          );
+        },
       ),
     );
   }
 
   Widget _getHomeWidget() {
-    if (_user == null || _selectedProfile == null) return const ProfilPage();
+    if (_user == null) {
+      return _isRegistered ? const LoginPage() : const ProfilPage();
+    }
 
-    if (!_user!.isProfileComplete) {
-      return const ProfilePage(forceComplete: true);
+    if (_selectedProfile == null) {
+      return const ProfilPage();
     }
 
     final role = _selectedProfileRole?.toLowerCase() ?? '';

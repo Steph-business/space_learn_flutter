@@ -120,7 +120,7 @@ class _RegisterPageState extends State<RegisterPage> {
             if (mounted) {
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
-                  builder: (_) => OtpPage(email: email, isFromRegistration: true),
+                  builder: (_) => OtpPage(email: email, password: password, isFromRegistration: true),
                 ),
                 (route) => false,
               );

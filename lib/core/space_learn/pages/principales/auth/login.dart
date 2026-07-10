@@ -25,7 +25,13 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
 class LoginPage extends StatefulWidget {
   final String? initialEmail;
   final String? initialPassword;
-  const LoginPage({super.key, this.initialEmail, this.initialPassword});
+  final bool isFirstTimeRegistration;
+  const LoginPage({
+    super.key,
+    this.initialEmail,
+    this.initialPassword,
+    this.isFirstTimeRegistration = false,
+  });
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -43,8 +49,19 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+    _loadSavedEmail();
+  }
+
+  Future<void> _loadSavedEmail() async {
     if (widget.initialEmail != null) {
       _emailController.text = widget.initialEmail!;
+    } else {
+      final savedEmail = await ProfileStorage.getSavedEmail();
+      if (savedEmail != null && mounted) {
+        setState(() {
+          _emailController.text = savedEmail;
+        });
+      }
     }
     if (widget.initialPassword != null) {
       _passwordController.text = widget.initialPassword!;
@@ -103,9 +120,11 @@ class _LoginPageState extends State<LoginPage> {
 
       final role = userProfile.libelle.toLowerCase();
       await ProfileStorage.saveSelectedProfileRole(role);
+      await ProfileStorage.saveIsRegisteredUser(true);
+      await ProfileStorage.saveSavedEmail(email);
       Widget destination;
 
-      if (!tokenUser.user.isProfileComplete) {
+      if (widget.isFirstTimeRegistration && !tokenUser.user.isProfileComplete) {
         destination = const ProfilePage(forceComplete: true);
         if (mounted) {
           AppNotifications.showSnackBar(

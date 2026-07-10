@@ -8,6 +8,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart'
 import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
+import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 
 class AuthorProfilePage extends StatefulWidget {
   final UserModel author;
@@ -142,9 +143,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                   CircleAvatar(
                     radius: 45,
                     backgroundColor: Colors.white,
-                    backgroundImage: widget.author.profilePhoto != null
-                        ? NetworkImage(widget.author.profilePhoto!)
-                        : null,
+                    backgroundImage: ProfileImageHelper.getProfileImageProvider(widget.author.profilePhoto),
                     child: widget.author.profilePhoto == null
                         ? Text(
                             widget.author.nomComplet

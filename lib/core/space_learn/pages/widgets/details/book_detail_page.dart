@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:provider/provider.dart';
@@ -475,11 +476,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   backgroundColor: const Color(
                                     0xFF22D3EE,
                                   ).withOpacity(0.1),
-                                  backgroundImage:
-                                      (book.auteur?.profilePhoto != null &&
-                                          book.auteur!.profilePhoto!.isNotEmpty)
-                                      ? NetworkImage(book.auteur!.profilePhoto!)
-                                      : null,
+                                  backgroundImage: ProfileImageHelper.getProfileImageProvider(book.auteur?.profilePhoto),
                                   child:
                                       (book.auteur?.profilePhoto == null ||
                                           book.auteur!.profilePhoto!.isEmpty)

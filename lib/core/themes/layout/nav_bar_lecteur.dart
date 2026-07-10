@@ -31,7 +31,7 @@ class MainNavBarState extends State<MainNavBar> {
     "Boutique",
     "Bibliothèque",
     "Teams",
-    "Profil",
+    "Paramètres",
   ];
 
   final List<IconData> _icons = [
