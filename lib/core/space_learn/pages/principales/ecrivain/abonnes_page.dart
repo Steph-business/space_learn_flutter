@@ -138,11 +138,20 @@ class _AbonnesPageState extends State<AbonnesPage> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: AppColors.secondaryVariant.withOpacity(0.2),
-            backgroundImage: photo != null ? NetworkImage(photo) : null,
-            child: photo == null
-                ? const Icon(Icons.person, color: AppColors.secondaryVariant)
-                : null,
+            backgroundColor: AppColors.secondaryVariant.withOpacity(0.1),
+            child: photo != null
+                ? ClipOval(
+                    child: Image.network(
+                      photo,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.person, color: AppColors.secondaryVariant);
+                      },
+                    ),
+                  )
+                : const Icon(Icons.person, color: AppColors.secondaryVariant),
           ),
           const SizedBox(width: 16),
           Expanded(

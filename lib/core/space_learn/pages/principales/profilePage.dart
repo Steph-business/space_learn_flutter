@@ -13,6 +13,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart' as lecteurHome;
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart' as ecrivainHome;
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
+import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 
 class ProfilePage extends StatefulWidget {
   final bool forceComplete;
@@ -35,6 +36,13 @@ class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController _socialLinksController = TextEditingController();
   final TextEditingController _walletAddressController =
       TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  
+  String? _selectedGender;
+  String? _selectedAgeRange;
+
+  final List<String> _genders = ["Homme", "Femme", "Autre", "Ne pas spécifier"];
+  final List<String> _ageRanges = ["Moins de 18 ans", "18 à 25 ans", "26 à 35 ans", "36 à 50 ans", "Plus de 50 ans"];
 
   @override
   void initState() {
@@ -49,6 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _bioController.dispose();
     _socialLinksController.dispose();
     _walletAddressController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -187,6 +196,66 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 20),
 
+            _buildTextField(
+              controller: _phoneController,
+              label: "Numéro de téléphone",
+              icon: Icons.phone_android_outlined,
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 20),
+
+            DropdownButtonFormField<String>(
+              value: _selectedGender,
+              decoration: InputDecoration(
+                labelText: "Genre",
+                prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              items: _genders.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedGender = newValue;
+                });
+              },
+            ),
+            const SizedBox(height: 20),
+
+            DropdownButtonFormField<String>(
+              value: _selectedAgeRange,
+              decoration: InputDecoration(
+                labelText: "Tranche d'âge",
+                prefixIcon: const Icon(Icons.cake_outlined, color: AppColors.primary),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              items: _ageRanges.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedAgeRange = newValue;
+                });
+              },
+            ),
+            const SizedBox(height: 20),
+
             // Statistiques
             _buildStatsSection(),
             const SizedBox(height: 30),
@@ -248,7 +317,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildOnboardingWizard() {
-    final stepsCount = 3;
+    final stepsCount = 4;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: Stack(
@@ -460,6 +529,122 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
+              "Quelques informations sur vous",
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Ces informations nous aident à mieux vous connaître et à personnaliser vos recommandations.",
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 36),
+            
+            _buildOnboardingTextField(
+              controller: _phoneController,
+              label: "Numéro de téléphone",
+              icon: Icons.phone_rounded,
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 24),
+            
+            Text(
+              "Genre",
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedGender,
+                  hint: Text(
+                    "Sélectionnez votre genre",
+                    style: GoogleFonts.poppins(color: Colors.white38, fontSize: 14),
+                  ),
+                  dropdownColor: AppColors.scaffoldBackground,
+                  icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                  isExpanded: true,
+                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 16),
+                  items: _genders.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedGender = newValue;
+                    });
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            Text(
+              "Tranche d'âge",
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedAgeRange,
+                  hint: Text(
+                    "Sélectionnez votre tranche d'âge",
+                    style: GoogleFonts.poppins(color: Colors.white38, fontSize: 14),
+                  ),
+                  dropdownColor: AppColors.scaffoldBackground,
+                  icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                  isExpanded: true,
+                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 16),
+                  items: _ageRanges.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedAgeRange = newValue;
+                    });
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      case 2:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
               isLecteur ? "Racontez-nous votre histoire (Optionnel)" : "Racontez-nous votre histoire",
               style: GoogleFonts.poppins(
                 color: Colors.white,
@@ -486,7 +671,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ],
         );
-      case 2:
+      case 3:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -574,6 +759,15 @@ class _ProfilePageState extends State<ProfilePage> {
         return;
       }
     } else if (_currentStep == 1) {
+      if (_phoneController.text.trim().isEmpty || _selectedGender == null || _selectedAgeRange == null) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Veuillez renseigner toutes vos informations personnelles (Téléphone, Genre, Tranche d'âge).",
+          isError: true,
+        );
+        return;
+      }
+    } else if (_currentStep == 2) {
       // Pour les lecteurs, la biographie est facultative
       if (!isLecteur && _bioController.text.trim().isEmpty) {
         AppNotifications.showSnackBar(
@@ -583,7 +777,7 @@ class _ProfilePageState extends State<ProfilePage> {
         );
         return;
       }
-    } else if (_currentStep == 2) {
+    } else if (_currentStep == 3) {
       // Pour les lecteurs, le lien social est facultatif
       if (!isLecteur && _socialLinksController.text.trim().isEmpty) {
         AppNotifications.showSnackBar(
@@ -737,11 +931,23 @@ class _ProfilePageState extends State<ProfilePage> {
     final bio = _bioController.text.trim();
     final social = _socialLinksController.text.trim();
     final wallet = _walletAddressController.text.trim();
+    final phone = _phoneController.text.trim();
+    final gender = _selectedGender;
+    final ageRange = _selectedAgeRange;
 
     if (name.isEmpty) {
       AppNotifications.showSnackBar(
         context,
         message: "Le nom complet est obligatoire.",
+        isError: true,
+      );
+      return;
+    }
+
+    if (phone.isEmpty || gender == null || ageRange == null) {
+      AppNotifications.showSnackBar(
+        context,
+        message: "Veuillez renseigner toutes vos informations personnelles (Téléphone, Genre, Tranche d'âge).",
         isError: true,
       );
       return;
@@ -770,6 +976,24 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
 
+    String? dobString;
+    if (ageRange != null) {
+      int age = 20;
+      if (ageRange == "Moins de 18 ans") {
+        age = 15;
+      } else if (ageRange == "18 à 25 ans") {
+        age = 21;
+      } else if (ageRange == "26 à 35 ans") {
+        age = 30;
+      } else if (ageRange == "36 à 50 ans") {
+        age = 43;
+      } else if (ageRange == "Plus de 50 ans") {
+        age = 60;
+      }
+      final dob = DateTime(DateTime.now().year - age, 1, 1);
+      dobString = dob.toUtc().toIso8601String();
+    }
+
     if (_user == null) return;
     setState(() => _isLoading = true);
 
@@ -781,6 +1005,9 @@ class _ProfilePageState extends State<ProfilePage> {
         biography: bio,
         socialLinks: social,
         walletAddress: wallet,
+        telephone: phone,
+        sexe: gender,
+        dateNaissance: dobString,
       );
 
       if (!mounted) return;
@@ -806,6 +1033,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
         Widget destination;
         final role = userProfile.libelle.toLowerCase();
+        await ProfileStorage.saveSelectedProfileRole(role);
         if (role.contains("lecteur")) {
           destination = lecteurHome.HomePageLecteur(
             profileId: profilId,
@@ -864,6 +1092,26 @@ class _ProfilePageState extends State<ProfilePage> {
             _bioController.text = user.biography ?? '';
             _socialLinksController.text = user.socialLinks ?? '';
             _walletAddressController.text = user.walletAddress ?? '';
+            _phoneController.text = user.telephone ?? '';
+            _selectedGender = user.sexe;
+            
+            if (user.dateNaissance != null) {
+              final age = DateTime.now().year - user.dateNaissance!.year;
+              if (age < 18) {
+                _selectedAgeRange = "Moins de 18 ans";
+              } else if (age >= 18 && age <= 25) {
+                _selectedAgeRange = "18 à 25 ans";
+              } else if (age >= 26 && age <= 35) {
+                _selectedAgeRange = "26 à 35 ans";
+              } else if (age >= 36 && age <= 50) {
+                _selectedAgeRange = "36 à 50 ans";
+              } else {
+                _selectedAgeRange = "Plus de 50 ans";
+              }
+            } else {
+              _selectedAgeRange = null;
+            }
+            
             _favoritesCount = favs.length;
             _isLoading = false;
           });
@@ -883,6 +1131,25 @@ class _ProfilePageState extends State<ProfilePage> {
       _bioController.text = _user!.biography ?? '';
       _socialLinksController.text = _user!.socialLinks ?? '';
       _walletAddressController.text = _user!.walletAddress ?? '';
+      _phoneController.text = _user!.telephone ?? '';
+      _selectedGender = _user!.sexe;
+      
+      if (_user!.dateNaissance != null) {
+        final age = DateTime.now().year - _user!.dateNaissance!.year;
+        if (age < 18) {
+          _selectedAgeRange = "Moins de 18 ans";
+        } else if (age >= 18 && age <= 25) {
+          _selectedAgeRange = "18 à 25 ans";
+        } else if (age >= 26 && age <= 35) {
+          _selectedAgeRange = "26 à 35 ans";
+        } else if (age >= 36 && age <= 50) {
+          _selectedAgeRange = "36 à 50 ans";
+        } else {
+          _selectedAgeRange = "Plus de 50 ans";
+        }
+      } else {
+        _selectedAgeRange = null;
+      }
     }
   }
 }

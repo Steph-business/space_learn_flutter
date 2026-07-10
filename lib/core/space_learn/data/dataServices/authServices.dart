@@ -227,7 +227,7 @@ class AuthService {
     }
   }
 
-  /// ✅ Met à jour les détails additionnels (nom_complet, biographie, liens, wallet)
+  /// ✅ Met à jour les détails additionnels (nom_complet, biographie, liens, wallet, telephone, sexe, date_naissance)
   Future<UserModel> updateProfileDetails({
     required String userId,
     String? nomComplet,
@@ -235,6 +235,9 @@ class AuthService {
     String? profilePhoto,
     String? socialLinks,
     String? walletAddress,
+    String? telephone,
+    String? sexe,
+    String? dateNaissance,
   }) async {
     final currentToken = await TokenStorage.getToken();
     if (currentToken == null) {
@@ -249,6 +252,9 @@ class AuthService {
       if (profilePhoto != null) "profile_photo": profilePhoto,
       if (socialLinks != null) "social_links": socialLinks,
       if (walletAddress != null) "wallet_address": walletAddress,
+      if (telephone != null) "telephone": telephone,
+      if (sexe != null) "sexe": sexe,
+      if (dateNaissance != null) "date_naissance": dateNaissance,
     });
 
     final response = await http.put(

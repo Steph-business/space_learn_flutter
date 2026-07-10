@@ -50,6 +50,7 @@ class _OtpPageState extends State<OtpPage> {
           );
 
           final profilId = tokenUser.user.profilId;
+          await _profileService.saveSelectedProfile(profilId);
           final allProfiles = await _profileService.getProfils();
           if (!mounted) return;
           final userProfile = allProfiles.firstWhere(

@@ -8,6 +8,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;
@@ -42,6 +45,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String? _selectedProfile;
+  String? _selectedProfileRole;
+  UserModel? _user;
   bool _isLoading = true;
 
   @override
@@ -53,19 +58,40 @@ class _MyAppState extends State<MyApp> {
   Future<void> _loadInitialData() async {
     try {
       final token = await TokenStorage.getToken();
-      final profile = await ProfileStorage.getSelectedProfile();
-
+      if (token != null && token.isNotEmpty) {
+        final authService = AuthService();
+        final user = await authService.getUser(token);
+        if (user != null) {
+          final profile = await ProfileStorage.getSelectedProfile();
+          final role = await ProfileStorage.getSelectedProfileRole();
+          if (mounted) {
+            setState(() {
+              _user = user;
+              _selectedProfile = profile;
+              _selectedProfileRole = role;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
       if (mounted) {
         setState(() {
-          // On ne garde le profil que si on a un token valide
-          _selectedProfile = (token != null && token.isNotEmpty)
-              ? profile
-              : null;
+          _selectedProfile = null;
+          _selectedProfileRole = null;
+          _user = null;
           _isLoading = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _selectedProfile = null;
+          _selectedProfileRole = null;
+          _user = null;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -89,20 +115,25 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _getHomeWidget() {
-    if (_selectedProfile == null) return const ProfilPage();
+    if (_user == null || _selectedProfile == null) return const ProfilPage();
 
-    final profileName = _selectedProfile!.toLowerCase();
-    if (profileName.contains('lecteur')) {
+    if (!_user!.isProfileComplete) {
+      return const ProfilePage(forceComplete: true);
+    }
+
+    final role = _selectedProfileRole?.toLowerCase() ?? '';
+    if (role.contains('lecteur')) {
       return lecteurHome.HomePageLecteur(
         profileId: _selectedProfile!,
-        userName: 'Lecteur',
+        userName: _user!.nomComplet,
       );
-    } else if (profileName.contains('auteur') ||
-        profileName.contains('ecrivain') ||
-        profileName.contains('éditeur')) {
+    } else if (role.contains('auteur') ||
+        role.contains('ecrivain') ||
+        role.contains('administrateur') ||
+        role.contains('éditeur')) {
       return ecrivainHome.HomePageAuteur(
         profileId: _selectedProfile!,
-        userName: 'Auteur',
+        userName: _user!.nomComplet,
       );
     }
 

@@ -47,5 +47,6 @@ class ProfileService {
   /// Effacer le profil sélectionné localement
   Future<void> clearSelectedProfile() async {
     await ProfileStorage.clearSelectedProfile();
+    await ProfileStorage.clearSelectedProfileRole();
   }
 }

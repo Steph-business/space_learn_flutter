@@ -109,9 +109,9 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
               child: TopLivresSection(books: _books, isLoading: _isLoading),
             ),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: CommentairesRecentsSection(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: CommentairesRecentsSection(books: _books),
             ),
 
             const Padding(
