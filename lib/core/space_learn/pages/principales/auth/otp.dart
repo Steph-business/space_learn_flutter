@@ -8,7 +8,9 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/reset_password.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
+import 'package:space_learn_flutter/core/utils/profile_storage.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
@@ -17,8 +19,14 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
 
 class OtpPage extends StatefulWidget {
   final String email;
+  final String? password;
   final bool isFromRegistration;
-  const OtpPage({super.key, required this.email, this.isFromRegistration = false});
+  const OtpPage({
+    super.key,
+    required this.email,
+    this.password,
+    this.isFromRegistration = false,
+  });
 
   @override
   State<OtpPage> createState() => _OtpPageState();
@@ -45,7 +53,7 @@ class _OtpPageState extends State<OtpPage> {
         if (tokenUser != null && mounted) {
           AppNotifications.showSnackBar(
             context,
-            message: "Inscription validée avec succès !",
+            message: "Inscription validée avec succès ! Connectez-vous pour compléter votre profil.",
             isSuccess: true,
           );
 
@@ -58,39 +66,22 @@ class _OtpPageState extends State<OtpPage> {
             orElse: () => ProfilModel(id: '', libelle: ''),
           );
 
-          Widget destination;
           final role = userProfile.libelle.toLowerCase();
+          await ProfileStorage.saveSelectedProfileRole(role);
+          await ProfileStorage.saveIsRegisteredUser(true);
 
-          if (!tokenUser.user.isProfileComplete) {
-            destination = const ProfilePage(forceComplete: true);
-            AppNotifications.showSnackBar(
-              context,
-              message: "Votre compte a été vérifié avec succès ! Veuillez compléter votre profil pour finaliser votre accès.",
-              isSuccess: true,
-            );
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => destination),
-              (route) => false,
-            );
-          } else {
-            if (role.contains("lecteur")) {
-              destination = lecteurHome.HomePageLecteur(
-                profileId: profilId,
-                userName: tokenUser.user.nomComplet,
-              );
-            } else if (role.contains("auteur") ||
-                role.contains("administrateur") ||
-                role.contains("éditeur")) {
-              destination = ecrivainHome.HomePageAuteur(
-                profileId: profilId,
-                userName: tokenUser.user.nomComplet,
-              );
-            } else {
-              destination = const ProfilePage();
-            }
+          // Clear token to force manual login
+          await TokenStorage.clearToken();
 
+          if (mounted) {
             Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => destination),
+              MaterialPageRoute(
+                builder: (_) => LoginPage(
+                  initialEmail: widget.email,
+                  initialPassword: widget.password,
+                  isFirstTimeRegistration: true,
+                ),
+              ),
               (route) => false,
             );
           }

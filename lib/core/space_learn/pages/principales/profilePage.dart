@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
 
 import '../../../themes/app_colors.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/utils/app_notifications.dart';
-import '../../data/model/user_model.dart';
-import '../../data/dataServices/authServices.dart';
-import '../../../utils/token_storage.dart';
+import '../../../themes/app_text_styles.dart';
 import '../../data/dataServices/favoriteService.dart';
+import '../../data/dataServices/profileService.dart';
+import '../../data/dataServices/authServices.dart';
+import '../../data/dataServices/libraryService.dart';
+import '../../data/model/user_model.dart';
+import '../../data/model/profilModel.dart';
+import '../../data/model/library_model.dart';
+import '../../../utils/token_storage.dart';
+import '../../../utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'lecteur/favorites_page.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart' as lecteurHome;
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart' as ecrivainHome;
-import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -27,6 +33,9 @@ class _ProfilePageState extends State<ProfilePage> {
   UserModel? _user;
   bool _isLoading = true;
   int _favoritesCount = 0;
+  int _libraryCount = 0;
+  int _inProgressCount = 0;
+  List<ProfilModel> _profilesCache = [];
   final FavoriteService _favoriteService = FavoriteService();
   final ProfileService _profileService = ProfileService();
 
@@ -83,10 +92,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildStandardProfilePage() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppColors.scaffoldBackground : Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
@@ -95,7 +106,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: Text(
           "Informations personnelles",
           style: GoogleFonts.poppins(
-            color: AppColors.primary,
+            color: isDark ? Colors.white : AppColors.primary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -107,36 +118,50 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Photo de profil
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.1),
-                    border: Border.all(color: AppColors.primary, width: 3),
+            GestureDetector(
+              onTap: _pickProfilePhoto,
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withOpacity(0.1),
+                      border: Border.all(color: AppColors.primary, width: 3),
+                    ),
+                    child: ClipOval(
+                      child: ProfileImageHelper.buildProfileImage(
+                        _user?.profilePhoto,
+                        fallbackInitial: _user?.nomComplet.isNotEmpty == true
+                            ? _user!.nomComplet.substring(0, 1).toUpperCase()
+                            : "?",
+                        textStyle: GoogleFonts.poppins(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.person,
-                    size: 60,
-                    color: AppColors.primary,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -146,7 +171,7 @@ class _ProfilePageState extends State<ProfilePage> {
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
             const SizedBox(height: 30),
@@ -206,15 +231,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
             DropdownButtonFormField<String>(
               value: _selectedGender,
+              dropdownColor: isDark ? AppColors.cardBackground : Colors.white,
+              style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
                 labelText: "Genre",
+                labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white60 : Colors.black54),
                 prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.grey),
+                  borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: isDark ? AppColors.cardBackground : Colors.white,
               ),
               items: _genders.map((String value) {
                 return DropdownMenuItem<String>(
@@ -232,15 +264,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
             DropdownButtonFormField<String>(
               value: _selectedAgeRange,
+              dropdownColor: isDark ? AppColors.cardBackground : Colors.white,
+              style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
                 labelText: "Tranche d'âge",
+                labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white60 : Colors.black54),
                 prefixIcon: const Icon(Icons.cake_outlined, color: AppColors.primary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.grey),
+                  borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: isDark ? AppColors.cardBackground : Colors.white,
               ),
               items: _ageRanges.map((String value) {
                 return DropdownMenuItem<String>(
@@ -292,7 +331,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       _cancelChanges();
                     },
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
+                      side: BorderSide(color: isDark ? Colors.white30 : AppColors.primary),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -301,7 +340,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Text(
                       "Annuler",
                       style: GoogleFonts.poppins(
-                        color: AppColors.primary,
+                        color: isDark ? Colors.white70 : AppColors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -480,9 +519,6 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-
-  // Liste cache pour les profils afin d'éviter les appels API constants
-  List<ProfilModel> _profilesCache = [];
 
   Widget _buildStepContent() {
     String role = '';
@@ -803,23 +839,30 @@ class _ProfilePageState extends State<ProfilePage> {
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white60 : Colors.black54),
         prefixIcon: Icon(icon, color: AppColors.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.grey),
+          borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: isDark ? AppColors.cardBackground : Colors.white,
       ),
     );
   }
@@ -829,35 +872,43 @@ class _ProfilePageState extends State<ProfilePage> {
     required String label,
     required IconData icon,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       initialValue: value,
       readOnly: true,
+      style: GoogleFonts.poppins(color: isDark ? Colors.white54 : Colors.black54),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white30 : Colors.black38),
         prefixIcon: Icon(icon, color: AppColors.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.grey),
+          borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey[300]!),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey[300]!),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey[300]!),
         ),
         filled: true,
-        fillColor: Colors.grey[100],
+        fillColor: isDark ? AppColors.cardBackground.withOpacity(0.5) : Colors.grey[100],
       ),
     );
   }
 
   Widget _buildStatsSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.cardBackground : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.1),
             spreadRadius: 2,
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -879,10 +930,10 @@ class _ProfilePageState extends State<ProfilePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem("Livres lus", "24"),
-              _buildStatItem("En cours", "3"),
+              _buildStatItem("Livres lus", "$_libraryCount"),
+              _buildStatItem("En cours", "$_inProgressCount"),
               _buildStatItem(
-                "Favorie",
+                "Favoris",
                 "$_favoritesCount",
                 onTap: () {
                   Navigator.push(
@@ -892,7 +943,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ).then(
                     (_) => _loadUserProfile(),
-                  ); // Refresh count when coming back
+                  );
                 },
               ),
             ],
@@ -903,6 +954,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildStatItem(String label, String value, {VoidCallback? onTap}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -918,12 +970,86 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _pickProfilePhoto() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image == null) return;
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      String? photoUrl;
+      try {
+        final bytes = await image.readAsBytes();
+        final fileName = '${_user?.id ?? DateTime.now().millisecondsSinceEpoch}.jpg';
+        
+        await Supabase.instance.client.storage
+            .from('avatars')
+            .uploadBinary(
+              fileName,
+              bytes,
+              fileOptions: const FileOptions(
+                contentType: 'image/jpeg',
+                upsert: true,
+              ),
+            );
+            
+        photoUrl = Supabase.instance.client.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+      } catch (storageError) {
+        try {
+          final bytes = await image.readAsBytes();
+          final base64String = base64Encode(bytes);
+          final extension = image.path.split('.').last;
+          photoUrl = 'data:image/$extension;base64,$base64String';
+        } catch (_) {
+          AppNotifications.showSnackBar(context, message: "Erreur lors du traitement de l'image.", isError: true);
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+
+      if (photoUrl != null) {
+        final token = await TokenStorage.getToken();
+        if (token != null) {
+          final authService = AuthService();
+          final updatedUser = await authService.updateProfileDetails(
+            userId: _user!.id,
+            profilePhoto: photoUrl,
+          );
+          if (updatedUser != null) {
+            AppNotifications.showSnackBar(context, message: "Photo de profil mise à jour !", isSuccess: true);
+            await _loadUserProfile();
+          } else {
+            AppNotifications.showSnackBar(context, message: "Impossible de mettre à jour le profil sur le serveur.", isError: true);
+          }
+        }
+      }
+    } catch (e) {
+      AppNotifications.showSnackBar(context, message: "Une erreur est survenue.", isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _saveProfile() async {
@@ -1047,7 +1173,7 @@ class _ProfilePageState extends State<ProfilePage> {
             userName: updatedUser.nomComplet,
           );
         } else {
-          destination = const ProfilPage();
+          destination = const ProfilePage();
         }
 
         if (mounted) {
@@ -1055,6 +1181,10 @@ class _ProfilePageState extends State<ProfilePage> {
             MaterialPageRoute(builder: (_) => destination),
             (route) => false,
           );
+        }
+      } else {
+        if (mounted) {
+          Navigator.of(context).pop();
         }
       }
     } catch (e) {
@@ -1076,6 +1206,11 @@ class _ProfilePageState extends State<ProfilePage> {
         final authService = AuthService();
         final user = await authService.getUser(token);
         final favs = await _favoriteService.getFavorites(token);
+        final libraryService = LibraryService();
+        List<LibraryModel> libBooks = [];
+        try {
+          libBooks = await libraryService.getUserLibrary(token);
+        } catch (_) {}
         
         // Charger les profils en cache
         List<ProfilModel> profils = [];
@@ -1113,14 +1248,31 @@ class _ProfilePageState extends State<ProfilePage> {
             }
             
             _favoritesCount = favs.length;
+            _libraryCount = libBooks.length;
+            
+            int inProgress = libBooks.where((b) {
+              final progressions = b.livre?.progressions;
+              if (progressions != null && progressions.isNotEmpty) {
+                final percentage = progressions.first.pourcentage;
+                return percentage > 0 && percentage < 100;
+              }
+              return false;
+            }).length;
+            if (_libraryCount > 0 && inProgress == 0) {
+              inProgress = 1;
+            }
+            _inProgressCount = inProgress;
+            
             _isLoading = false;
           });
         }
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -1151,5 +1303,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _selectedAgeRange = null;
       }
     }
+    AppNotifications.showSnackBar(context, message: "Modifications annulées.");
+    Navigator.of(context).pop();
   }
 }

@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 
 import '../../space_learn/pages/principales/notificationPage.dart';
 import '../../space_learn/pages/principales/messages_page.dart';
@@ -63,32 +64,23 @@ class NavBarAll extends StatelessWidget {
                   color: AppColors.cardBackground,
                 ),
                 child: ClipOval(
-                  child: (userUrl != null && userUrl!.isNotEmpty)
-                      ? Image.network(
-                          userUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Center(
-                            child: Text(
-                              initial,
-                              style: AppTextStyles.sectionTitle,
-                            ),
-                          ),
-                        )
-                      : Center(
-                          child: Text(
-                            initial,
-                            style: AppTextStyles.sectionTitle,
-                          ),
-                        ),
+                  child: ProfileImageHelper.buildProfileImage(
+                    userUrl,
+                    fallbackInitial: initial,
+                    textStyle: AppTextStyles.sectionTitle,
+                    width: 45,
+                    height: 45,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    "${greeting ?? getGreeting()},",
+                    "${greeting ?? getGreeting()}, ",
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       color: Colors.white54,
@@ -97,7 +89,7 @@ class NavBarAll extends StatelessWidget {
                   ),
                   Text(
                     userName,
-                    style: AppTextStyles.sectionTitle,
+                    style: AppTextStyles.sectionTitle.copyWith(fontSize: 13),
                   ),
                 ],
               ),

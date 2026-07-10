@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
@@ -27,32 +28,38 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppColors.scaffoldBackground : Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           "Préférences de lecture",
-          style: TextStyle(
-            color: AppColors.primary,
+          style: GoogleFonts.poppins(
+            color: isDark ? Colors.white : AppColors.primary,
             fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Titre principal
-            const Text(
+            Text(
               "Préférences de lecture",
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -71,7 +78,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
             const SizedBox(height: 20),
 
             // Section Thème
-            _buildSectionTitle("Thème"),
+            _buildSectionTitle("Thème de lecture"),
             _buildThemeSelector(),
             const SizedBox(height: 20),
 
@@ -85,10 +92,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Sauvegarder les préférences
-                      _savePreferences();
-                    },
+                    onPressed: _savePreferences,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -96,9 +100,9 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       "Sauvegarder",
-                      style: TextStyle(
+                      style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -109,21 +113,18 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {
-                      // Restaurer les valeurs par défaut
-                      _resetToDefaults();
-                    },
+                    onPressed: _resetToDefaults,
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
+                      side: BorderSide(color: isDark ? Colors.white30 : AppColors.primary),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       "Par défaut",
-                      style: TextStyle(
-                        color: AppColors.primary,
+                      style: GoogleFonts.poppins(
+                        color: isDark ? Colors.white70 : AppColors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -139,14 +140,17 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
   }
 
   Widget _buildTextPreview() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isPreviewDark = _nightMode || (isDark && _theme == 'Automatique') || _theme == 'Sombre';
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _nightMode ? Colors.grey[900] : Colors.white,
+        color: isPreviewDark ? AppColors.cardBackground : Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isPreviewDark ? Colors.white10 : Colors.black12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: isPreviewDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.1),
             spreadRadius: 2,
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -158,10 +162,10 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
         children: [
           Text(
             "Aperçu du texte",
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: _nightMode ? Colors.white : AppColors.primary,
+              color: isPreviewDark ? Colors.white : AppColors.primary,
             ),
           ),
           const SizedBox(height: 16),
@@ -170,7 +174,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
             style: TextStyle(
               fontFamily: _selectedFont,
               fontSize: _fontSize,
-              color: _nightMode ? Colors.white70 : Colors.black87,
+              color: isPreviewDark ? Colors.white70 : Colors.black87,
               height: 1.6,
             ),
           ),
@@ -184,7 +188,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(
+        style: GoogleFonts.poppins(
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: AppColors.primary,
@@ -194,33 +198,39 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
   }
 
   Widget _buildFontSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.cardBackground : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: isDark ? Colors.white24 : Colors.grey[300]!),
       ),
-      child: DropdownButton<String>(
-        value: _selectedFont,
-        isExpanded: true,
-        underline: const SizedBox(),
-        items: _fonts.map((font) {
-          return DropdownMenuItem(
-            value: font,
-            child: Text(font, style: TextStyle(fontFamily: font)),
-          );
-        }).toList(),
-        onChanged: (value) {
-          setState(() {
-            _selectedFont = value!;
-          });
-        },
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedFont,
+          isExpanded: true,
+          dropdownColor: isDark ? AppColors.cardBackground : Colors.white,
+          style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87, fontSize: 16),
+          icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+          items: _fonts.map((font) {
+            return DropdownMenuItem(
+              value: font,
+              child: Text(font, style: TextStyle(fontFamily: font)),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedFont = value!;
+            });
+          },
+        ),
       ),
     );
   }
 
   Widget _buildFontSizeSlider() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         Row(
@@ -228,7 +238,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
           children: [
             Text(
               "Taille: ${_fontSize.toInt()}",
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87),
             ),
             Row(
               children: [
@@ -260,6 +270,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
           max: 24,
           divisions: 6,
           activeColor: AppColors.primary,
+          inactiveColor: isDark ? Colors.white24 : Colors.grey[300],
           onChanged: (value) {
             setState(() {
               _fontSize = value;
@@ -271,14 +282,23 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
   }
 
   Widget _buildThemeSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Wrap(
       spacing: 8,
       children: _themes.map((theme) {
+        final isSelected = _theme == theme;
         return ChoiceChip(
           label: Text(theme),
-          selected: _theme == theme,
+          selected: isSelected,
           selectedColor: AppColors.primary.withOpacity(0.2),
           checkmarkColor: AppColors.primary,
+          backgroundColor: isDark ? AppColors.cardBackground : Colors.grey[200],
+          labelStyle: GoogleFonts.poppins(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? Colors.white70 : Colors.black87),
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
           onSelected: (selected) {
             if (selected) {
               setState(() {
@@ -293,18 +313,21 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
   }
 
   Widget _buildNightModeToggle() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
+      color: isDark ? AppColors.cardBackground : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: SwitchListTile(
-        title: const Text("Activer le mode nuit"),
-        subtitle: const Text("Texte blanc sur fond sombre"),
+        title: Text(
+          "Activer le mode nuit",
+          style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          "Texte blanc sur fond sombre",
+          style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.grey[600]),
+        ),
         value: _nightMode,
-        thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return AppColors.primary;
-          }
-          return null;
-        }),
+        activeColor: AppColors.primary,
         onChanged: (value) {
           setState(() {
             _nightMode = value;
@@ -316,7 +339,6 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
   }
 
   void _savePreferences() {
-    // Logique de sauvegarde des préférences
     AppNotifications.showSnackBar(
       context,
       message: 'Préférences de lecture sauvegardées !',

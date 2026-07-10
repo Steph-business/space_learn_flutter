@@ -165,8 +165,8 @@ class ApiRoutes {
   static String? sanitizeImageUrl(String? url, {bool useGin = false}) {
     if (url == null || url.isEmpty) return null;
 
-    // If it's a Supabase URL, keep it as is
-    if (url.contains('supabase.co')) return url;
+    // If it's a Supabase URL or Base64 data, keep it as is
+    if (url.contains('supabase.co') || url.startsWith('data:image')) return url;
 
     final targetBaseUrl = useGin ? baseUrlsGin : baseUrl;
 

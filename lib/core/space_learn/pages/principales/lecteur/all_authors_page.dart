@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
@@ -287,37 +288,20 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                         child: CircleAvatar(
                           radius: 30,
                           backgroundColor: Colors.white10,
-                          child: author.profilePhoto != null
-                              ? ClipOval(
-                                  child: Image.network(
-                                    author.profilePhoto!,
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Text(
-                                        author.nomComplet
-                                            .substring(0, 1)
-                                            .toUpperCase(),
-                                        style: const TextStyle(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 20,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                )
-                              : Text(
-                                  author.nomComplet
-                                      .substring(0, 1)
-                                      .toUpperCase(),
-                                  style: const TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                  ),
-                                ),
+                          child: ClipOval(
+                            child: ProfileImageHelper.buildProfileImage(
+                              author.profilePhoto,
+                              fallbackInitial: author.nomComplet.substring(0, 1).toUpperCase(),
+                              textStyle: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),

@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/readingPreferencesPage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/base_settings_layout.dart';
+
+// Nouvelles pages de paramètres
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/password_change_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/help_faq_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/privacy_policy_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/language_selection_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/notification_settings_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/publication_settings_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/sales_report_page.dart';
 
 class SettingsPageAuteur extends StatelessWidget {
   const SettingsPageAuteur({super.key});
@@ -33,37 +51,11 @@ class SettingsPageAuteur extends StatelessWidget {
           title: "Photo de profil",
           subtitle: "Changer votre photo d'auteur",
           onTap: () {
-            AppNotifications.showSnackBar(
-              context,
-              message: "Fonctionnalité de mise à jour de photo de profil d'auteur en cours d'intégration.",
-            );
+            _pickProfilePhoto(context);
           },
         ),
 
-        // Section Écriture
-        const SettingSectionHeader(title: "Écriture", accentColor: AppColors.secondaryVariant),
-        SettingItemTile(
-          icon: Icons.edit_outlined,
-          title: "Préférences d'écriture",
-          subtitle: "Police, taille du texte, thème",
-          onTap: () {
-            AppNotifications.showSnackBar(
-              context,
-              message: "Préférences d'écriture bientôt disponibles.",
-            );
-          },
-        ),
-        SettingItemTile(
-          icon: Icons.notifications_outlined,
-          title: "Notifications de ventes",
-          subtitle: "Rappels de ventes, nouveaux commentaires",
-          onTap: () {
-            AppNotifications.showSnackBar(
-              context,
-              message: "Paramètres de notification de ventes bientôt disponibles.",
-            );
-          },
-        ),
+
 
         // Section Publication
         const SettingSectionHeader(title: "Publication", accentColor: AppColors.secondaryVariant),
@@ -72,9 +64,11 @@ class SettingsPageAuteur extends StatelessWidget {
           title: "Paramètres de publication",
           subtitle: "Visibilité, prix, droits d'auteur",
           onTap: () {
-            AppNotifications.showSnackBar(
+            Navigator.push(
               context,
-              message: "Paramètres de publication bientôt disponibles.",
+              MaterialPageRoute(
+                builder: (context) => const PublicationSettingsPage(),
+              ),
             );
           },
         ),
@@ -83,9 +77,11 @@ class SettingsPageAuteur extends StatelessWidget {
           title: "Rapports de ventes",
           subtitle: "Statistiques détaillées",
           onTap: () {
-            AppNotifications.showSnackBar(
+            Navigator.push(
               context,
-              message: "Accès aux rapports de ventes en cours de préparation.",
+              MaterialPageRoute(
+                builder: (context) => const SalesReportPage(),
+              ),
             );
           },
         ),
@@ -97,21 +93,20 @@ class SettingsPageAuteur extends StatelessWidget {
           title: "Langue",
           subtitle: "Français",
           onTap: () {
-            AppNotifications.showSnackBar(
+            Navigator.push(
               context,
-              message: "Sélection de la langue bientôt disponible.",
+              MaterialPageRoute(
+                builder: (context) => const LanguageSelectionPage(),
+              ),
             );
           },
         ),
         SettingItemTile(
           icon: Icons.dark_mode_outlined,
           title: "Thème",
-          subtitle: "Mode automatique",
+          subtitle: "Changer le thème de l'application",
           onTap: () {
-            AppNotifications.showSnackBar(
-              context,
-              message: "Changement de thème bientôt disponible.",
-            );
+            _showThemeSelectorDialog(context);
           },
         ),
 
@@ -122,9 +117,11 @@ class SettingsPageAuteur extends StatelessWidget {
           title: "Mot de passe",
           subtitle: "Changer votre mot de passe",
           onTap: () {
-            AppNotifications.showSnackBar(
+            Navigator.push(
               context,
-              message: "Changement de mot de passe disponible prochainement.",
+              MaterialPageRoute(
+                builder: (context) => const PasswordChangePage(),
+              ),
             );
           },
         ),
@@ -133,9 +130,11 @@ class SettingsPageAuteur extends StatelessWidget {
           title: "Confidentialité",
           subtitle: "Gérer vos données personnelles d'auteur",
           onTap: () {
-            AppNotifications.showSnackBar(
+            Navigator.push(
               context,
-              message: "Paramètres de confidentialité d'auteur en cours d'intégration.",
+              MaterialPageRoute(
+                builder: (context) => const PrivacyPolicyPage(),
+              ),
             );
           },
         ),
@@ -147,9 +146,11 @@ class SettingsPageAuteur extends StatelessWidget {
           title: "Aide & FAQ",
           subtitle: "Trouver des réponses",
           onTap: () {
-            AppNotifications.showSnackBar(
+            Navigator.push(
               context,
-              message: "FAQ d'auteur bientôt disponible.",
+              MaterialPageRoute(
+                builder: (context) => const HelpFaqPage(),
+              ),
             );
           },
         ),
@@ -158,9 +159,11 @@ class SettingsPageAuteur extends StatelessWidget {
           title: "Contacter le support",
           subtitle: "Nous contacter",
           onTap: () {
-            AppNotifications.showSnackBar(
+            Navigator.push(
               context,
-              message: "Formulaire de contact avec le support en développement.",
+              MaterialPageRoute(
+                builder: (context) => const HelpFaqPage(),
+              ),
             );
           },
         ),
@@ -182,6 +185,143 @@ class SettingsPageAuteur extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+
+  Future<void> _pickProfilePhoto(BuildContext context) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image == null) return;
+
+      AppNotifications.showSnackBar(context, message: "Téléversement de l'image en cours...");
+
+      String? photoUrl;
+      try {
+        final bytes = await image.readAsBytes();
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+        
+        await Supabase.instance.client.storage
+            .from('avatars')
+            .uploadBinary(
+              fileName,
+              bytes,
+              fileOptions: const FileOptions(
+                contentType: 'image/jpeg',
+                upsert: true,
+              ),
+            );
+            
+        photoUrl = Supabase.instance.client.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+      } catch (_) {
+        try {
+          final bytes = await image.readAsBytes();
+          final base64String = base64Encode(bytes);
+          final extension = image.path.split('.').last;
+          photoUrl = 'data:image/$extension;base64,$base64String';
+        } catch (_) {
+          AppNotifications.showSnackBar(context, message: "Erreur lors du traitement de l'image.", isError: true);
+          return;
+        }
+      }
+
+      if (photoUrl != null) {
+        final token = await TokenStorage.getToken();
+        if (token != null) {
+          final authService = AuthService();
+          final user = await authService.getUser(token);
+          if (user != null) {
+            final updatedUser = await authService.updateProfileDetails(
+              userId: user.id,
+              profilePhoto: photoUrl,
+            );
+            if (updatedUser != null) {
+              AppNotifications.showSnackBar(context, message: "Photo de profil mise à jour !", isSuccess: true);
+            } else {
+              AppNotifications.showSnackBar(context, message: "Erreur lors de la mise à jour.", isError: true);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      AppNotifications.showSnackBar(context, message: "Erreur lors du choix de l'image.", isError: true);
+    }
+  }
+
+  void _showThemeSelectorDialog(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.cardBackground : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Sélectionner le thème",
+                  style: GoogleFonts.poppins(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildThemeOption(context, "Thème Clair", ThemeMode.light, Icons.light_mode_outlined, themeProvider),
+                _buildThemeOption(context, "Thème Sombre", ThemeMode.dark, Icons.dark_mode_outlined, themeProvider),
+                _buildThemeOption(context, "Thème Système", ThemeMode.system, Icons.phone_android_outlined, themeProvider),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeOption(
+    BuildContext context,
+    String title,
+    ThemeMode mode,
+    IconData icon,
+    ThemeProvider themeProvider,
+  ) {
+    final isSelected = themeProvider.themeMode == mode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? AppColors.primary : (isDark ? Colors.white70 : Colors.black54)),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          color: isSelected ? AppColors.primary : (isDark ? Colors.white : Colors.black87),
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+      onTap: () {
+        themeProvider.setThemeMode(mode);
+        Navigator.of(context).pop();
+      },
     );
   }
 }

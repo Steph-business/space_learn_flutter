@@ -39,4 +39,28 @@ class ProfileStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_selectedProfileRoleKey);
   }
+
+  static const String _isRegisteredUserKey = "is_registered_user";
+
+  static Future<void> saveIsRegisteredUser(bool val) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_isRegisteredUserKey, val);
+  }
+
+  static Future<bool> getIsRegisteredUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_isRegisteredUserKey) ?? false;
+  }
+
+  static const String _savedEmailKey = "saved_email_key";
+
+  static Future<void> saveSavedEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_savedEmailKey, email);
+  }
+
+  static Future<String?> getSavedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_savedEmailKey);
+  }
 }
