@@ -199,6 +199,7 @@ class BaseSettingsLayout extends StatelessWidget {
                             final authService = AuthService();
                             await authService.logout();
                             await ProfileStorage.clearSelectedProfile();
+                            await ProfileStorage.clearSelectedProfileRole();
                             if (context.mounted) {
                               Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(builder: (_) => const LoginPage()),

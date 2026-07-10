@@ -287,11 +287,28 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                         child: CircleAvatar(
                           radius: 30,
                           backgroundColor: Colors.white10,
-                          backgroundImage: author.profilePhoto != null
-                              ? NetworkImage(author.profilePhoto!)
-                              : null,
-                          child: author.profilePhoto == null
-                              ? Text(
+                          child: author.profilePhoto != null
+                              ? ClipOval(
+                                  child: Image.network(
+                                    author.profilePhoto!,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Text(
+                                        author.nomComplet
+                                            .substring(0, 1)
+                                            .toUpperCase(),
+                                        style: const TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Text(
                                   author.nomComplet
                                       .substring(0, 1)
                                       .toUpperCase(),
@@ -300,8 +317,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                                     fontWeight: FontWeight.bold,
                                     fontSize: 20,
                                   ),
-                                )
-                              : null,
+                                ),
                         ),
                       ),
                       const SizedBox(width: 16),

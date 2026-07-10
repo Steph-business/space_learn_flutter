@@ -13,6 +13,9 @@ class UserModel {
   final bool isProfileComplete;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? telephone;
+  final String? sexe;
+  final DateTime? dateNaissance;
 
   UserModel({
     required this.id,
@@ -27,6 +30,9 @@ class UserModel {
     required this.isProfileComplete,
     this.createdAt,
     this.updatedAt,
+    this.telephone,
+    this.sexe,
+    this.dateNaissance,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -57,6 +63,13 @@ class UserModel {
           : json['UpdatedAt'] != null
           ? DateTime.parse(json['UpdatedAt'])
           : null,
+      telephone: json['telephone'] ?? json['Telephone'],
+      sexe: json['sexe'] ?? json['Sexe'],
+      dateNaissance: json['date_naissance'] != null
+          ? DateTime.parse(json['date_naissance'])
+          : json['DateNaissance'] != null
+          ? DateTime.parse(json['DateNaissance'])
+          : null,
     );
   }
 
@@ -72,6 +85,9 @@ class UserModel {
       'SocialLinks': socialLinks,
       'WalletAddress': walletAddress,
       'IsProfileComplete': isProfileComplete,
+      'Telephone': telephone,
+      'Sexe': sexe,
+      if (dateNaissance != null) 'DateNaissance': dateNaissance!.toIso8601String(),
       if (createdAt != null) 'CreatedAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'UpdatedAt': updatedAt!.toIso8601String(),
     };

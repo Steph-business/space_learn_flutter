@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
+import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import '../../../data/dataServices/profileService.dart';
 import 'register.dart';
 
@@ -56,6 +57,7 @@ class _ProfilPageState extends State<ProfilPage> {
     });
 
     await _profileService.saveSelectedProfile(profileId);
+    await ProfileStorage.saveSelectedProfileRole(profileName);
 
     if (!mounted) return;
     AppNotifications.showSnackBar(

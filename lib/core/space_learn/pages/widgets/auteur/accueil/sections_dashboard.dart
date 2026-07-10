@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
 
 class TopLivresSection extends StatelessWidget {
   final List<BookModel> books;
@@ -177,8 +179,72 @@ class TopLivresSection extends StatelessWidget {
   }
 }
 
-class CommentairesRecentsSection extends StatelessWidget {
-  const CommentairesRecentsSection({super.key});
+class CommentairesRecentsSection extends StatefulWidget {
+  final List<BookModel> books;
+  const CommentairesRecentsSection({super.key, required this.books});
+
+  @override
+  State<CommentairesRecentsSection> createState() => _CommentairesRecentsSectionState();
+}
+
+class _CommentairesRecentsSectionState extends State<CommentairesRecentsSection> {
+  final ReviewService _reviewService = ReviewService();
+  List<ReviewModel> _comments = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  @override
+  void didUpdateWidget(CommentairesRecentsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.books.length != oldWidget.books.length) {
+      _loadComments();
+    }
+  }
+
+  Future<void> _loadComments() async {
+    if (widget.books.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _comments = [];
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final List<ReviewModel> allReviews = [];
+      final futures = widget.books.map((book) => _reviewService.getBookReviews(book.id));
+      final results = await Future.wait(futures);
+      
+      for (final list in results) {
+        allReviews.addAll(list);
+      }
+
+      allReviews.sort((a, b) {
+        if (a.creeLe == null && b.creeLe == null) return 0;
+        if (a.creeLe == null) return 1;
+        if (b.creeLe == null) return -1;
+        return b.creeLe!.compareTo(a.creeLe!);
+      });
+
+      if (mounted) {
+        setState(() {
+          _comments = allReviews;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -193,26 +259,75 @@ class CommentairesRecentsSection extends StatelessWidget {
         children: [
           Text("Commentaires Récents", style: AppTextStyles.subtitle),
           const SizedBox(height: 16),
-          _buildComment(
-            "Sophie L.",
-            "J'ai adoré l'intrigue !",
-            "https://i.pravatar.cc/150?u=sophie",
-          ),
-          const Divider(color: Colors.white10, height: 24),
-          _buildComment(
-            "Marc D.",
-            "Un peu lent au début...",
-            "https://i.pravatar.cc/150?u=marc",
-          ),
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondaryVariant),
+                ),
+              ),
+            )
+          else if (_comments.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  "Aucun commentaire récent",
+                  style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ...List.generate(
+              _comments.length > 5 ? 5 : _comments.length,
+              (index) {
+                final comment = _comments[index];
+                final book = widget.books.firstWhere(
+                  (b) => b.id == comment.livreId,
+                  orElse: () => BookModel(id: '', auteurId: '', titre: '', description: '', format: '', prix: 0, stock: 0, statut: ''),
+                );
+                return Column(
+                  children: [
+                    _buildComment(comment, book.titre),
+                    if (index < (_comments.length > 5 ? 5 : _comments.length) - 1)
+                      const Divider(color: Colors.white10, height: 24),
+                  ],
+                );
+              },
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildComment(String author, String text, String avatarUrl) {
+  Widget _buildComment(ReviewModel comment, String bookTitle) {
+    final author = comment.nomUtilisateur != null && comment.nomUtilisateur!.isNotEmpty
+        ? comment.nomUtilisateur!
+        : "Lecteur";
+    final text = comment.commentaire ?? "";
+    final photo = comment.photoProfil;
+
     return Row(
       children: [
-        CircleAvatar(radius: 20, backgroundImage: NetworkImage(avatarUrl)),
+        CircleAvatar(
+          radius: 20,
+          backgroundColor: Colors.white10,
+          child: photo != null && photo.isNotEmpty
+              ? ClipOval(
+                  child: Image.network(
+                    photo,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.person, color: Colors.white24);
+                    },
+                  ),
+                )
+              : const Icon(Icons.person, color: Colors.white24),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -226,9 +341,21 @@ class CommentairesRecentsSection extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              Text(
-                author,
-                style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12),
+              const SizedBox(height: 2),
+              RichText(
+                text: TextSpan(
+                  style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12),
+                  children: [
+                    TextSpan(text: author),
+                    if (bookTitle.isNotEmpty) ...[
+                      const TextSpan(text: " sur "),
+                      TextSpan(
+                        text: '"$bookTitle"',
+                        style: const TextStyle(fontStyle: FontStyle.italic),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
           ),

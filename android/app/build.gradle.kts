@@ -42,7 +42,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.space_learn_flutter"
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = 36
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName

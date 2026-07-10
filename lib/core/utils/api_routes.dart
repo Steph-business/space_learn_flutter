@@ -1,8 +1,8 @@
 /// api_routes.dart
 class ApiRoutes {
   // Change following IP to your machine's current IP
-  static const String host = "144.91.101.16";
-  static const String hosts = "144.91.101.16";
+  static const String host = "192.168.1.21";
+  static const String hosts = "192.168.1.21";
 
   // Backends fusionnés : l'authentification et les livres sont désormais servis
   // par le MÊME serveur Go (port 8082). Les chemins /auth/* et /utilisateurs/*

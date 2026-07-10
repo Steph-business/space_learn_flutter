@@ -14,6 +14,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/forg
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/otp.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/register.dart';
+import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
@@ -74,6 +75,8 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception("Profil ID non reçu du backend.");
       }
 
+      await _profileService.saveSelectedProfile(profilId);
+
       final allProfiles = await _profileService.getProfils();
 
       developer.log("Profil ID reçu : $profilId");
@@ -99,6 +102,7 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       final role = userProfile.libelle.toLowerCase();
+      await ProfileStorage.saveSelectedProfileRole(role);
       Widget destination;
 
       if (!tokenUser.user.isProfileComplete) {
