@@ -70,19 +70,19 @@ class _FavoritesPageState extends State<FavoritesPage> {
         title: Text(
           "Ma Favorie",
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
         backgroundColor: AppColors.surfaceVariant,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
       body: _isLoading
           ? Center(
               child: Text(
                 "Chargement...",
-                style: GoogleFonts.poppins(color: Colors.white70),
+                style: GoogleFonts.poppins(color: AppColors.textSecondary),
               ),
             )
           : _favorites.isEmpty
@@ -90,16 +90,16 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.favorite_border,
                     size: 80,
                     color: Colors.grey,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     "Aucune favorie pour le moment.",
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 16,
                     ),
                   ),
@@ -149,7 +149,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                   )
                                 : _fallbackImage(),
                           ),
-                          const SizedBox(width: 16),
+                          SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,12 +158,12 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                   book.titre,
                                   style: AppTextStyles.subtitle,
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   book.authorName,
                                   style: AppTextStyles.grey13,
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
                                 Text(
                                   "${book.prix} FCFA",
                                   style: GoogleFonts.poppins(
@@ -175,7 +175,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.favorite, color: Colors.red),
+                            icon: Icon(Icons.favorite, color: Colors.red),
                             onPressed: () => _removeFavorite(fav.livreId),
                           ),
                         ],
@@ -193,7 +193,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       width: 70,
       height: 100,
       color: Colors.grey[800],
-      child: const Icon(Icons.book, color: Colors.grey),
+      child: Icon(Icons.book, color: Colors.grey),
     );
   }
 }

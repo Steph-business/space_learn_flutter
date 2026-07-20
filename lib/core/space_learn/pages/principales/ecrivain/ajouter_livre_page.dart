@@ -12,8 +12,11 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/categorie
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/categorie.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 class AjouterLivrePage extends StatefulWidget {
@@ -33,8 +36,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
 
   String? _selectedFileName;
   String? _selectedFilePath;
+  Uint8List? _selectedFileBytes;
   String? _selectedCoverName;
   String? _selectedCoverPath;
+  Uint8List? _selectedCoverBytes;
   bool _isUploading = false;
 
   // Services
@@ -126,12 +131,16 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'epub'],
+        withData: kIsWeb,
       );
 
       if (result != null && mounted) {
         setState(() {
           _selectedFileName = result.files.single.name;
           _selectedFilePath = result.files.single.path;
+          if (kIsWeb) {
+            _selectedFileBytes = result.files.single.bytes;
+          }
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -156,9 +165,13 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
       if (image != null && mounted) {
+        final bytes = kIsWeb ? await image.readAsBytes() : null;
         setState(() {
           _selectedCoverName = image.name;
           _selectedCoverPath = image.path;
+          if (kIsWeb) {
+            _selectedCoverBytes = bytes;
+          }
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -229,15 +242,23 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       String? bookUrl = widget.book?.fichierUrl;
 
       // 1. Upload Cover
-      if (_selectedCoverPath != null) {
-        final coverExt = p.extension(_selectedCoverPath!);
+      if (_selectedCoverPath != null || _selectedCoverBytes != null) {
+        final coverExt = _selectedCoverPath != null ? p.extension(_selectedCoverPath!) : '.jpg';
         final coverPath = '${DateTime.now().millisecondsSinceEpoch}$coverExt';
 
-        coverUrl = await SupabaseService.uploadFile(
-          bucket: 'book_covers',
-          path: coverPath,
-          file: File(_selectedCoverPath!),
-        );
+        if (kIsWeb && _selectedCoverBytes != null) {
+          coverUrl = await SupabaseService.uploadBytes(
+            bucket: 'book_covers',
+            path: coverPath,
+            bytes: _selectedCoverBytes!,
+          );
+        } else if (_selectedCoverPath != null) {
+          coverUrl = await SupabaseService.uploadFile(
+            bucket: 'book_covers',
+            path: coverPath,
+            file: File(_selectedCoverPath!),
+          );
+        }
 
         if (coverUrl == null) {
           throw Exception("Erreur lors de l'upload de la couverture");
@@ -245,15 +266,23 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       }
 
       // 2. Upload Book
-      if (_selectedFilePath != null) {
-        final bookExt = p.extension(_selectedFilePath!);
+      if (_selectedFilePath != null || _selectedFileBytes != null) {
+        final bookExt = _selectedFilePath != null ? p.extension(_selectedFilePath!) : '.pdf';
         final bookPath = '${DateTime.now().millisecondsSinceEpoch}$bookExt';
 
-        bookUrl = await SupabaseService.uploadFile(
-          bucket: 'books',
-          path: bookPath,
-          file: File(_selectedFilePath!),
-        );
+        if (kIsWeb && _selectedFileBytes != null) {
+          bookUrl = await SupabaseService.uploadBytes(
+            bucket: 'books',
+            path: bookPath,
+            bytes: _selectedFileBytes!,
+          );
+        } else if (_selectedFilePath != null) {
+          bookUrl = await SupabaseService.uploadFile(
+            bucket: 'books',
+            path: bookPath,
+            file: File(_selectedFilePath!),
+          );
+        }
 
         if (bookUrl == null) {
           throw Exception("Erreur lors de l'upload du livre");
@@ -319,13 +348,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         await _bookService.updateBook(widget.book!.id, updates, token);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Livre modifié avec succès !"),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pop(context, true);
+          _showSuccessDialog(isModification: true);
         }
       } else {
         // Mode création
@@ -347,13 +370,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         await _bookService.createBook(bookToCreate, token);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Livre publié avec succès !"),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pop(context, true);
+          _showSuccessDialog(isModification: false);
         }
       }
     } catch (e) {
@@ -370,6 +387,88 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     }
   }
 
+  void _showSuccessDialog({required bool isModification}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                  size: 64,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                "Félicitations !",
+                style: GoogleFonts.outfit(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                isModification
+                    ? "Votre œuvre a été modifiée avec succès."
+                    : "Votre œuvre a été publiée avec succès. Elle est maintenant disponible pour vos lecteurs.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Fermer le dialog
+                    Navigator.pop(context, true); // Fermer la page d'ajout
+                    // Rediriger vers l'onglet "Mes livres" et forcer le rechargement
+                    HomePageAuteur.navKey.currentState?.refreshPages();
+                    HomePageAuteur.navKey.currentState?.setIndex(1);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondaryVariant,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    "Continuer",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -379,7 +478,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           widget.book != null ? "Modifier une œuvre" : "Publier une œuvre",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppColors.textPrimary,
           ),
         ),
         backgroundColor: Colors.transparent,
@@ -387,7 +486,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         centerTitle: true,
         systemOverlayStyle: SystemUiOverlayStyle.light,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -404,14 +503,14 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   label: "Titre du livre",
                   icon: Icons.book,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildTextField(
                   controller: _descriptionController,
                   label: "Description/Synopsis",
                   icon: Icons.description,
                   maxLines: 4,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 _buildTextField(
                   controller: _prixController,
@@ -419,22 +518,22 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   icon: Icons.money,
                   keyboardType: TextInputType.number,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // Champ de catégorie avec dropdown
                 _buildCategorieField(),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 // File Upload Area
                 Text(
                   "Fichier (PDF/EPUB)",
                   style: GoogleFonts.poppins(
-                    color: Colors.white70,
+                    color: AppColors.textSecondary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _buildUploadCard(
                   title: "Fichier (PDF/EPUB)",
                   subtitle: _selectedFileName ?? "Sélectionner un fichier",
@@ -446,18 +545,18 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                       : null,
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // Cover Upload Area
                 Text(
                   "Image de couverture",
                   style: GoogleFonts.poppins(
-                    color: Colors.white70,
+                    color: AppColors.textSecondary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _buildUploadCard(
                   title: "Image de couverture",
                   subtitle: _selectedCoverName ?? "Sélectionner une image",
@@ -471,7 +570,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   isImage: true,
                 ),
 
-                const SizedBox(height: 40),
+                SizedBox(height: 40),
 
                 ElevatedButton(
                   onPressed: _isUploading ? null : _publishBook,
@@ -487,11 +586,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                     ),
                   ),
                   child: _isUploading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             strokeWidth: 2,
                           ),
                         )
@@ -502,7 +601,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                           style: AppTextStyles.sectionTitle,
                         ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
               ],
             ),
           ),
@@ -514,21 +613,21 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   Widget _buildCategorieField() {
     if (_isLoadingCategories) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
-            const Icon(Icons.category, color: AppColors.secondaryVariant),
-            const SizedBox(width: 16),
+            Icon(Icons.category, color: AppColors.secondaryVariant),
+            SizedBox(width: 16),
             Text(
               "Chargement des catégories...",
-              style: GoogleFonts.poppins(color: Colors.white54),
+              style: GoogleFonts.poppins(color: AppColors.textHint),
             ),
             const Spacer(),
-            const SizedBox(
+            SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
@@ -548,8 +647,8 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.red),
-            const SizedBox(width: 16),
+            Icon(Icons.error_outline, color: Colors.red),
+            SizedBox(width: 16),
             Expanded(
               child: Text(
                 _categoriesError!,
@@ -557,7 +656,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.red),
+              icon: Icon(Icons.refresh, color: Colors.red),
               onPressed: _loadCategories,
             ),
           ],
@@ -575,12 +674,12 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           child: DropdownButtonFormField<String>(
             dropdownColor: AppColors.cardBackground,
             iconEnabledColor: AppColors.secondaryVariant,
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+            style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 14),
             value: _selectedCategorieId,
             decoration: InputDecoration(
               labelText: "Catégorie",
-              labelStyle: GoogleFonts.poppins(color: Colors.white54),
-              prefixIcon: const Icon(
+              labelStyle: GoogleFonts.poppins(color: AppColors.textHint),
+              prefixIcon: Icon(
                 Icons.category,
                 color: AppColors.secondaryVariant,
               ),
@@ -596,7 +695,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: AppColors.secondaryVariant),
+                borderSide: BorderSide(color: AppColors.secondaryVariant),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 20,
@@ -610,7 +709,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   value: categorie.id,
                   child: Text(
                     categorie.nom,
-                    style: GoogleFonts.poppins(color: Colors.white),
+                    style: GoogleFonts.poppins(color: AppColors.textPrimary),
                   ),
                 );
               }),
@@ -620,7 +719,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 child: Text(
                   'Autre (personnalisée)',
                   style: GoogleFonts.poppins(
-                    color: Colors.white70,
+                    color: AppColors.textSecondary,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -644,7 +743,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           ),
         ),
         if (_showCustomCategorie) ...[
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _buildTextField(
             controller: _categorieController,
             label: "Saisir une catégorie personnalisée",
@@ -666,10 +765,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: Colors.white),
+      style: GoogleFonts.poppins(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: Colors.white54),
+        labelStyle: GoogleFonts.poppins(color: AppColors.textHint),
         prefixIcon: Icon(icon, color: AppColors.secondaryVariant),
         filled: true,
         fillColor: AppColors.cardBackground,
@@ -683,7 +782,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.secondaryVariant),
+          borderSide: BorderSide(color: AppColors.secondaryVariant),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
@@ -712,7 +811,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.secondaryVariant.withValues(alpha: 0.1)
@@ -735,25 +834,27 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   width: 44,
                   height: 60,
                   child: localPath != null
-                      ? Image.file(File(localPath), fit: BoxFit.cover)
+                      ? (kIsWeb
+                          ? Image.network(localPath, fit: BoxFit.cover)
+                          : Image.file(File(localPath), fit: BoxFit.cover))
                       : Image.network(
                           currentUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (ctx, error, stack) => Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.error_outline,
                                 color: Colors.orangeAccent,
                                 size: 20,
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 "Erreur 400\n(Vérifier bucket)",
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.poppins(
                                   fontSize: 8,
-                                  color: Colors.white38,
+                                  color: AppColors.textHint,
                                 ),
                               ),
                             ],
@@ -763,20 +864,20 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               )
             else
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppColors.secondaryVariant
-                      : Colors.white10,
+                      : AppColors.textHint,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   isSelected ? Icons.check : icon,
-                  color: isSelected ? Colors.white : Colors.white54,
+                  color: isSelected ? Colors.white : AppColors.textPrimary,
                   size: 20,
                 ),
               ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -784,7 +885,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   Text(
                     subtitle,
                     style: GoogleFonts.poppins(
-                      color: isSelected ? Colors.white : Colors.white70,
+                      color: isSelected ? Colors.white : AppColors.textPrimary,
                       fontSize: 14,
                       fontWeight: isSelected
                           ? FontWeight.w600
@@ -805,7 +906,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 ],
               ),
             ),
-            const Icon(Icons.edit_rounded, color: Colors.white24, size: 16),
+            Icon(Icons.edit_rounded, color: AppColors.textHint, size: 16),
           ],
         ),
       ),

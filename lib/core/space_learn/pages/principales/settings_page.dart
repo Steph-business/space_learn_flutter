@@ -23,6 +23,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/language_selection_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/download_manager_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/notification_settings_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/terms_of_use_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -94,12 +95,12 @@ class _SettingsPageState extends State<SettingsPage> {
       primaryAccentColor: AppColors.primary,
       children: [
         // Section Statistiques de lecture (Demandée par l'utilisateur)
-        const SettingSectionHeader(title: "Vos Statistiques", accentColor: AppColors.primary),
+        SettingSectionHeader(title: "Vos Statistiques", accentColor: AppColors.primary),
         _buildStatsCard(isDark),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
 
         // Section Profil
-        const SettingSectionHeader(title: "Profil", accentColor: AppColors.primary),
+        SettingSectionHeader(title: "Profil", accentColor: AppColors.primary),
         SettingItemTile(
           icon: Icons.person_outline_rounded,
           title: "Informations personnelles",
@@ -123,7 +124,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
 
         // Section Lecture
-        const SettingSectionHeader(title: "Lecture", accentColor: AppColors.primary),
+        SettingSectionHeader(title: "Lecture", accentColor: AppColors.primary),
         SettingItemTile(
           icon: Icons.book_outlined,
           title: "Préférences de lecture",
@@ -152,7 +153,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
 
         // Section Application
-        const SettingSectionHeader(title: "Application", accentColor: AppColors.primary),
+        SettingSectionHeader(title: "Application", accentColor: AppColors.primary),
         SettingItemTile(
           icon: Icons.language_outlined,
           title: "Langue",
@@ -189,7 +190,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
 
         // Section Sécurité
-        const SettingSectionHeader(title: "Sécurité", accentColor: AppColors.primary),
+        SettingSectionHeader(title: "Sécurité", accentColor: AppColors.primary),
         SettingItemTile(
           icon: Icons.lock_outline,
           title: "Mot de passe",
@@ -218,7 +219,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
 
         // Section Support
-        const SettingSectionHeader(title: "Support", accentColor: AppColors.primary),
+        SettingSectionHeader(title: "Support", accentColor: AppColors.primary),
         SettingItemTile(
           icon: Icons.help_outline,
           title: "Aide & FAQ",
@@ -247,7 +248,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
 
         // Section À propos
-        const SettingSectionHeader(title: "À propos", accentColor: AppColors.primary),
+        SettingSectionHeader(title: "À propos", accentColor: AppColors.primary),
         SettingItemTile(
           icon: Icons.info_outline,
           title: "Version de l'application",
@@ -267,9 +268,11 @@ class _SettingsPageState extends State<SettingsPage> {
           title: "Conditions d'utilisation",
           subtitle: "Lire les conditions",
           onTap: () {
-            AppNotifications.showSnackBar(
+            Navigator.push(
               context,
-              message: "Chargement des CGU...",
+              MaterialPageRoute(
+                builder: (context) => const TermsOfUsePage(),
+              ),
             );
           },
         ),
@@ -280,14 +283,14 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildStatsCard(bool isDark) {
     if (_isLoadingStats) {
       return Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.all(20),
+        margin: EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.cardBackground : Colors.white,
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+          border: Border.all(color: isDark ? AppColors.textHint : Colors.black12),
         ),
-        child: const Center(
+        child: Center(
           child: SizedBox(
             width: 24,
             height: 24,
@@ -298,19 +301,13 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.cardBackground : Colors.white,
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            spreadRadius: 2,
-            blurRadius: 8,
-          ),
-        ],
+        border: Border.all(color: isDark ? AppColors.textHint : Colors.black12),
+        
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -335,12 +332,12 @@ class _SettingsPageState extends State<SettingsPage> {
             color: AppColors.primary,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           label,
           style: GoogleFonts.poppins(
             fontSize: 12,
-            color: isDark ? Colors.white70 : Colors.black54,
+            color: AppColors.textSecondary,
           ),
         ),
       ],
@@ -421,18 +418,12 @@ class _SettingsPageState extends State<SettingsPage> {
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.cardBackground : Colors.white,
+              color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              border: Border.all(color: isDark ? AppColors.textHint : Colors.black.withOpacity(0.05)),
+              
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -441,12 +432,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 Text(
                   "Sélectionner le thème",
                   style: GoogleFonts.poppins(
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: AppColors.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildThemeOption(context, "Thème Clair", ThemeMode.light, Icons.light_mode_outlined, themeProvider),
                 _buildThemeOption(context, "Thème Sombre", ThemeMode.dark, Icons.dark_mode_outlined, themeProvider),
                 _buildThemeOption(context, "Thème Système", ThemeMode.system, Icons.phone_android_outlined, themeProvider),
@@ -468,15 +459,15 @@ class _SettingsPageState extends State<SettingsPage> {
     final isSelected = themeProvider.themeMode == mode;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
-      leading: Icon(icon, color: isSelected ? AppColors.primary : (isDark ? Colors.white70 : Colors.black54)),
+      leading: Icon(icon, color: isSelected ? AppColors.primary : (AppColors.textSecondary)),
       title: Text(
         title,
         style: GoogleFonts.poppins(
-          color: isSelected ? AppColors.primary : (isDark ? Colors.white : Colors.black87),
+          color: isSelected ? AppColors.primary : (AppColors.textPrimary),
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      trailing: isSelected ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.primary) : null,
       onTap: () {
         themeProvider.setThemeMode(mode);
         Navigator.of(context).pop();

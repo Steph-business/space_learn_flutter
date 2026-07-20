@@ -37,6 +37,8 @@ import '../../../data/model/recommendationModel.dart';
 import '../../../data/dataServices/relationService.dart';
 import '../../../data/dataServices/authServices.dart';
 import '../../../data/model/relationModel.dart';
+import '../../../data/dataServices/citation_service.dart';
+import '../../../data/model/citation_model.dart';
 
 class HomePageLecteur extends StatefulWidget {
   final String profileId;
@@ -63,8 +65,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   final LibraryService _libraryService = LibraryService();
   final AuthService _authService = AuthService();
   final BadgeService _badgeService = BadgeService();
+  final CitationService _citationService = CitationService();
 
   GoalModel? _dailyGoal;
+  CitationModel? _dailyCitation;
 
   bool _isLoading = true;
   String? _error;
@@ -200,6 +204,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         _badgeService.getGoals().catchError((e) {
           return <GoalModel>[];
         }),
+        _citationService.getDailyCitation(token).catchError((e) {
+          return null;
+        }),
       ]);
 
       if (mounted) {
@@ -222,6 +229,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             if (goals.isNotEmpty) {
               _dailyGoal = goals.first;
             }
+          }
+
+          if (results.length > 9 && results[9] != null) {
+            _dailyCitation = results[9] as CitationModel;
           }
 
           if (results.length > 3 && results[3] is List) {
@@ -437,7 +448,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     return MainNavBar(
       key: MainNavBar.mainNavBarKey,
       child: Scaffold(
-        key: const PageStorageKey('homePageLecteur'),
+        key: PageStorageKey('homePageLecteur'),
         backgroundColor: AppColors.scaffoldBackground,
         body: Column(
           children: [
@@ -451,7 +462,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   ? Center(
                       child: Text(
                         "Chargement...",
-                        style: GoogleFonts.poppins(color: Colors.white70),
+                        style: GoogleFonts.poppins(color: AppColors.textSecondary),
                       ),
                     )
                   : RefreshIndicator(
@@ -481,13 +492,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  const Icon(Icons.search, color: Colors.grey, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(Icons.search, color: Colors.grey, size: 20),
+                  SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
@@ -507,7 +518,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   if (_searchQuery.isNotEmpty)
                     GestureDetector(
                       onTap: _clearSearch,
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
                         color: Colors.grey,
                         size: 18,
@@ -517,7 +528,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           PopupMenuButton<String>(
             icon: Container(
               height: 48,
@@ -528,18 +539,18 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 border: Border.all(
                   color: _selectedSection != "Tout"
                       ? AppColors.secondary
-                      : Colors.white.withOpacity(0.05),
+                      : AppColors.textHint,
                 ),
               ),
               child: Icon(
                 Icons.tune,
                 color: _selectedSection != "Tout"
                     ? AppColors.secondary
-                    : Colors.white70,
+                    : AppColors.textSecondary,
                 size: 20,
               ),
             ),
-            offset: const Offset(0, 52),
+            offset: Offset(0, 52),
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -569,13 +580,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         size: 16,
                         color: isSelected
                             ? AppColors.secondary
-                            : Colors.white38,
+                            : AppColors.textHint,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Text(
                         item['label'],
                         style: GoogleFonts.poppins(
-                          color: isSelected ? Colors.white : Colors.white70,
+                          color: isSelected ? Colors.white : AppColors.textPrimary,
                           fontSize: 13,
                           fontWeight: isSelected
                               ? FontWeight.w600
@@ -609,10 +620,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_selectedSection == "Tout") ...[
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   if (_stats != null) _buildQuickStats(),
                   if (_dailyGoal != null) ...[
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -626,7 +637,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       child: DailyGoalSection(goal: _dailyGoal),
                     ),
                   ],
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                 ],
 
                 // À la une
@@ -648,9 +659,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _buildFeaturedHorizontalList(),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                 ],
 
                 // Catégories (Persistent or only in section?)
@@ -659,7 +670,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     _selectedSection == "À la une" ||
                     _selectedSection == "Recommandations") ...[
                   _buildCategoryPills(),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                 ],
 
                 // Recommandations pour vous
@@ -687,9 +698,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _buildRecommendationsGrid(),
-                  if (_selectedSection == "Tout") const SizedBox(height: 20),
+                  if (_selectedSection == "Tout") SizedBox(height: 20),
                 ],
               ],
             ),
@@ -732,9 +743,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     _buildAuthorsList(),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                   ],
 
                   // Clubs / Forum
@@ -764,9 +775,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     _buildClubsList(),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                   ],
 
                   // Citations (toujours à la fin si mode Tout)
@@ -778,9 +789,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         style: AppTextStyles.sectionTitle,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     _buildQuotesList(),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                   ],
                 ],
               ),
@@ -792,6 +803,23 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
   // Helpers UI du nouveau design
 
+  Future<void> _ignoreRecommendation(BookModel book) async {
+    // Optimistic UI update
+    setState(() {
+      _featuredBooks.removeWhere((b) => b.id == book.id);
+      _allBooks.removeWhere((b) => b.id == book.id);
+    });
+    
+    try {
+      final token = await TokenStorage.getToken();
+      if (token != null) {
+        await _recommendationService.sendFeedback(book.id, "ignored", token);
+      }
+    } catch (e) {
+      // Revert if failed (optional, but good practice)
+    }
+  }
+
   Widget _buildFeaturedHorizontalList() {
     List<BookModel> displayBooks = [];
     if (_featuredBooks.isNotEmpty) {
@@ -800,34 +828,63 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       displayBooks = _allBooks;
     }
 
+    if (displayBooks.isEmpty) {
+      return SizedBox(height: 320);
+    }
+
     return SizedBox(
       height: 320,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: displayBooks.isNotEmpty ? displayBooks.length : 0,
+        itemCount: displayBooks.length,
         itemBuilder: (context, index) {
           final book = displayBooks[index];
           return Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BookDetailPage(
-                      book: book,
-                      isOwned: _ownedBookIds.contains(book.id),
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BookDetailPage(
+                          book: book,
+                          isOwned: _ownedBookIds.contains(book.id),
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: _buildSingleFeaturedCard(
+                        title: book.titre,
+                        author: "Par ${book.authorName}",
+                        imageUrl: book.imageCouverture,
+                        messagesCount: book.nombreMessages,
+                      ),
                     ),
                   ),
-                );
-              },
-              child: _buildSingleFeaturedCard(
-                title: book.titre,
-                author: "Par ${book.authorName}",
-                imageUrl: book.imageCouverture,
-                messagesCount: book.nombreMessages,
-              ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: Icon(Icons.close, color: AppColors.textPrimary, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black45,
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(28, 28),
+                    ),
+                    onPressed: () => _ignoreRecommendation(book),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -882,7 +939,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               author,
               style: AppTextStyles.bodySecondary,
@@ -890,11 +947,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               overflow: TextOverflow.ellipsis,
             ),
             if (messagesCount > 0) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Iconsax.message, color: Colors.white70, size: 11),
-                  const SizedBox(width: 4),
+                  Icon(Iconsax.message, color: AppColors.textSecondary, size: 11),
+                  SizedBox(width: 4),
                   Text(
                     "$messagesCount message${messagesCount > 1 ? 's' : ''}",
                     style: AppTextStyles.bodySmall11,
@@ -951,7 +1008,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             },
             child: Container(
               margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
+              padding: EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.secondary
@@ -960,14 +1017,14 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 border: Border.all(
                   color: isSelected
                       ? AppColors.secondary
-                      : Colors.white.withOpacity(0.05),
+                      : AppColors.textHint,
                 ),
               ),
               alignment: Alignment.center,
               child: Text(
                 catName,
                 style: GoogleFonts.poppins(
-                  color: isSelected ? Colors.white : Colors.grey[300],
+                  color: isSelected ? Colors.white : AppColors.textPrimary,
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
@@ -1002,41 +1059,40 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: GridView.builder(
-        padding: const EdgeInsets.only(top: 4),
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.58,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 24,
-        ),
-        itemCount: displayBooks.length > 4 ? 4 : displayBooks.length,
+    return SizedBox(
+      height: 320,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: displayBooks.length,
         itemBuilder: (context, index) {
           final book = displayBooks[index];
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BookDetailPage(
-                    book: book,
-                    isOwned: _ownedBookIds.contains(book.id),
-                  ),
+          return Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: SizedBox(
+              width: 160,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BookDetailPage(
+                        book: book,
+                        isOwned: _ownedBookIds.contains(book.id),
+                      ),
+                    ),
+                  );
+                },
+                child: _buildRecommendationCard(
+                  title: book.titre,
+                  author: book.authorName,
+                  price: book.prix > 0 ? "${book.prix}  FCFA" : "Gratuit",
+                  rating: (book.noteMoyenne).toStringAsFixed(1),
+                  reviewsCount: book.telechargements,
+                  imageUrl: book.imageCouverture,
+                  messagesCount: book.nombreMessages,
                 ),
-              );
-            },
-            child: _buildRecommendationCard(
-              title: book.titre,
-              author: book.authorName,
-              price: book.prix > 0 ? "${book.prix}  FCFA" : "Gratuit",
-              rating: (book.noteMoyenne).toStringAsFixed(1),
-              reviewsCount: book.telechargements,
-              imageUrl: book.imageCouverture,
-              messagesCount: book.nombreMessages,
+              ),
             ),
           );
         },
@@ -1058,6 +1114,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       children: [
         Expanded(
           child: Container(
+            width: double.infinity,
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(12),
@@ -1070,21 +1127,21 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Text(
           title,
           style: AppTextStyles.cardTitleSmall,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: 2),
         Text(
           author,
           style: AppTextStyles.bodySmall,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1092,18 +1149,18 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             Row(
               children: [
                 if (reviewsCount > 0) ...[
-                  const Icon(Icons.star, color: Colors.amber, size: 12),
-                  const SizedBox(width: 4),
+                  Icon(Icons.star, color: Colors.amber, size: 12),
+                  SizedBox(width: 4),
                   Text(rating, style: AppTextStyles.ratingAmber),
                 ],
                 if (messagesCount > 0) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Iconsax.message, color: Colors.white70, size: 10),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 8),
+                  Icon(Iconsax.message, color: AppColors.textSecondary, size: 10),
+                  SizedBox(width: 4),
                   Text(
                     "$messagesCount",
                     style: GoogleFonts.poppins(
-                      color: Colors.white70,
+                      color: AppColors.textSecondary,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1181,18 +1238,18 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     authorName,
                     style: GoogleFonts.poppins(
-                      color: Colors.white, // Changé de black87
+                      color: AppColors.textPrimary, // Changé de black87
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   GestureDetector(
                     onTap: () {
                       if (_featuredAuthors.isNotEmpty) {
@@ -1224,7 +1281,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                                   ? _featuredAuthors[index].id
                                   : "",
                             )
-                            ? Colors.white.withOpacity(0.1)
+                            ? AppColors.textHint
                             : AppColors.secondary, // Blue pill
                         borderRadius: BorderRadius.circular(16),
                         border:
@@ -1233,7 +1290,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                                   ? _featuredAuthors[index].id
                                   : "",
                             )
-                            ? Border.all(color: Colors.white24)
+                            ? Border.all(color: AppColors.textHint)
                             : null,
                       ),
                       child: Text(
@@ -1251,7 +1308,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                                     ? _featuredAuthors[index].id
                                     : "",
                               )
-                              ? Colors.white70
+                              ? AppColors.textSecondary
                               : Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
@@ -1324,15 +1381,15 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
-        title: const Text("Déjà suivi", style: TextStyle(color: Colors.white)),
+        title: Text("Déjà suivi", style: TextStyle(color: AppColors.textPrimary)),
         content: Text(
           "Vous suivez déjà $authorName. Vous recevrez des notifications pour ses prochaines publications.",
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               "OK",
               style: TextStyle(color: AppColors.secondary),
             ),
@@ -1408,18 +1465,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         }
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          
         ),
         child: Row(
           children: [
@@ -1432,17 +1483,17 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               ),
               child: Icon(
                 club["icon"] as IconData,
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 size: 24,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(club["title"] as String, style: AppTextStyles.cardTitle),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(
@@ -1451,10 +1502,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                             )
                             ? Iconsax.message
                             : Icons.person_outline,
-                        color: Colors.grey[400],
+                        color: AppColors.textSecondary,
                         size: 11,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
                         club["members"] as String,
                         style: AppTextStyles.grey12,
@@ -1492,6 +1543,18 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   Widget _buildQuotesList() {
     List<Map<String, dynamic>> quotes = [];
 
+    // Ajouter la citation API dynamique s'il y en a une
+    if (_dailyCitation != null && _dailyCitation!.texte.isNotEmpty) {
+      quotes.add({
+        "quote": _dailyCitation!.texte,
+        "author": _dailyCitation!.auteur,
+        "bookTitle": _dailyCitation!.livreTitre ?? "",
+        "gradient": [AppColors.primary, AppColors.primaryDark],
+        "book": null,
+        "note": 5,
+      });
+    }
+
     if (_recentActivities.isNotEmpty &&
         _recentActivities.any((r) => r.commentaire.isNotEmpty)) {
       final validReviews = _recentActivities
@@ -1503,7 +1566,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         [AppColors.primary, AppColors.primaryDark],
       ];
 
-      quotes = validReviews.map((r) {
+      final reviewQuotes = validReviews.map((r) {
         final idx = validReviews.indexOf(r) % colors.length;
         String author = "Membre SpaceLearn";
 
@@ -1524,7 +1587,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           "note": r.note,
         };
       }).toList();
-    } else {
+      
+      quotes.addAll(reviewQuotes);
+    } 
+    
+    if (quotes.isEmpty) {
       quotes = [
         {
           "quote":
@@ -1595,26 +1662,26 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                             starIndex < (q["note"] as int? ?? 0)
                                 ? Icons.star
                                 : Icons.star_border,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             size: 14,
                           );
                         }),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.format_quote,
-                        color: Colors.white24,
+                        color: AppColors.textHint,
                         size: 24,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Expanded(
                     child: Center(
                       child: Text(
                         q["quote"] as String,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.lora(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           fontSize: 14,
                           fontStyle: FontStyle.italic,
                           fontWeight: FontWeight.w500,
@@ -1625,19 +1692,19 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 12,
-                        backgroundColor: Colors.white24,
+                        backgroundColor: AppColors.textHint,
                         child: Icon(
                           Icons.person,
                           size: 14,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1645,7 +1712,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                             Text(
                               q["author"] as String,
                               style: GoogleFonts.poppins(
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1655,7 +1722,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                               Text(
                                 "Livre: ${(q["book"] as BookModel).titre}",
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white70,
+                                  color: AppColors.textSecondary,
                                   fontSize: 9,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1680,11 +1747,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1743,7 +1810,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       child: Column(
         children: [
           Icon(icon, color: AppColors.secondary, size: 20),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(value, style: AppTextStyles.subtitle),
           Text(label, style: AppTextStyles.grey11),
         ],
@@ -1755,7 +1822,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     return Container(
       height: 40,
       width: 1,
-      color: Colors.white.withOpacity(0.1),
+      color: AppColors.textPrimary.withOpacity(0.1),
     );
   }
 
@@ -1766,21 +1833,21 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
               size: 48,
               color: Colors.redAccent,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: GoogleFonts.poppins(color: AppColors.textPrimary),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loadData,
-              child: const Text("Réessayer"),
+              child: Text("Réessayer"),
             ),
           ],
         ),
@@ -1797,9 +1864,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             Icon(
               Iconsax.search_status,
               size: 64,
-              color: Colors.white.withOpacity(0.1),
+              color: AppColors.textPrimary.withOpacity(0.1),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               "Aucun résultat trouvé pour \"$_searchQuery\"",
               style: AppTextStyles.greyMedium14,
@@ -1833,12 +1900,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
         ),
         child: Row(
           children: [
@@ -1847,7 +1914,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               height: 70,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: Colors.white10,
+                color: AppColors.textHint,
               ),
               child:
                   book.imageCouverture != null &&
@@ -1859,9 +1926,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         fit: BoxFit.cover,
                       ),
                     )
-                  : const Icon(Icons.book, color: Colors.white24, size: 20),
+                  : Icon(Icons.book, color: AppColors.textHint, size: 20),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1876,7 +1943,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white24),
+            Icon(Icons.chevron_right, color: AppColors.textHint),
           ],
         ),
       ),

@@ -55,14 +55,14 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
 
     if (_books.isEmpty) {
       return Center(
         child: Text(
           "Aucun livre publié récemment.",
-          style: GoogleFonts.poppins(color: Colors.white54),
+          style: GoogleFonts.poppins(color: AppColors.textHint),
         ),
       );
     }
@@ -93,7 +93,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         ..._books.map((book) => _buildBookCard(book)),
       ],
     );
@@ -101,8 +101,8 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
 
   Widget _buildBookCard(BookModel book) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
@@ -130,10 +130,10 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
                 child:
                     (book.imageCouverture == null ||
                         book.imageCouverture!.isEmpty)
-                    ? const Icon(Icons.book, color: Colors.white24, size: 30)
+                    ? Icon(Icons.book, color: AppColors.textHint, size: 30)
                     : null,
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,7 +144,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       "${book.categorieId ?? 'Fiction'} • ${book.telechargements} lectures",
                       style: AppTextStyles.bodyFaded12,
@@ -154,7 +154,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -163,7 +163,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
                   AppColors.border.withOpacity(0.5),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: _buildButton(
                   "STATS",

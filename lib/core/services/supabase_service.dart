@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -7,6 +9,7 @@ class SupabaseService {
 
   /// Test connectivity to Supabase
   static Future<bool> testConnectivity() async {
+    if (kIsWeb) return true;
     try {
       // Test 1: Basic internet connectivity
       final googleResponse = await http
@@ -96,10 +99,48 @@ class SupabaseService {
           final publicUrl = getPublicUrl(bucket, path);
           return publicUrl;
         } catch (retryError) {
+          throw Exception('Failed to create bucket and upload: $retryError');
         }
       }
 
-      return null;
+      throw Exception('Supabase uploadFile error: $e');
+    }
+  }
+
+  /// Uploads raw bytes to a specific bucket in Supabase Storage.
+  /// This is especially useful for Flutter Web where dart:io File is not supported.
+  static Future<String?> uploadBytes({
+    required String bucket,
+    required String path,
+    required Uint8List bytes,
+  }) async {
+    try {
+      final isConnected = await testConnectivity();
+      if (!isConnected) return null;
+
+      try {
+        await client.storage.updateBucket(bucket, const BucketOptions(public: true));
+      } catch (_) {}
+
+      await client.storage
+          .from(bucket)
+          .uploadBinary(path, bytes, fileOptions: const FileOptions(upsert: true));
+
+      return getPublicUrl(bucket, path);
+    } catch (e) {
+      final errorStr = e.toString();
+      if (errorStr.contains('Bucket not found') || errorStr.contains('404')) {
+        try {
+          await createBucket(bucket);
+          await client.storage
+              .from(bucket)
+              .uploadBinary(path, bytes, fileOptions: const FileOptions(upsert: true));
+          return getPublicUrl(bucket, path);
+        } catch (retryError) {
+          throw Exception('Failed to create bucket and upload: $retryError');
+        }
+      }
+      throw Exception('Supabase uploadBytes error: $e');
     }
   }
 

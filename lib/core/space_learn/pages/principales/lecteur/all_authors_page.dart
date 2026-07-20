@@ -222,7 +222,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
+          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -232,7 +232,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
         centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             )
           : _error != null
@@ -240,20 +240,20 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(_error!, style: const TextStyle(color: Colors.white70)),
-                  const SizedBox(height: 16),
+                  Text(_error!, style: TextStyle(color: AppColors.textSecondary)),
+                  SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _loadData,
-                    child: const Text("Réessayer"),
+                    child: Text("Réessayer"),
                   ),
                 ],
               ),
             )
           : _authors.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 "Aucun auteur trouvé",
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
             )
           : ListView.builder(
@@ -264,12 +264,12 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                 final isFollowing = _followingIds.contains(author.id);
 
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(12),
+                  margin: EdgeInsets.only(bottom: 16),
+                  padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
                   ),
                   child: Row(
                     children: [
@@ -287,12 +287,12 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                         },
                         child: CircleAvatar(
                           radius: 30,
-                          backgroundColor: Colors.white10,
+                          backgroundColor: AppColors.textHint,
                           child: ClipOval(
                             child: ProfileImageHelper.buildProfileImage(
                               author.profilePhoto,
                               fallbackInitial: author.nomComplet.substring(0, 1).toUpperCase(),
-                              textStyle: const TextStyle(
+                              textStyle: TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
@@ -304,7 +304,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: 16),
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
@@ -335,21 +335,21 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: () => _toggleFollow(author),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isFollowing
-                              ? Colors.white.withOpacity(0.1)
+                              ? AppColors.textHint
                               : AppColors.primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.textPrimary,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: isFollowing
                                 ? BorderSide(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: AppColors.textPrimary.withOpacity(0.1),
                                   )
                                 : BorderSide.none,
                           ),

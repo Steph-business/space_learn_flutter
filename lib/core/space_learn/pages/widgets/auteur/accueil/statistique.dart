@@ -11,8 +11,8 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationS
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart';
 
 class Statistique extends StatefulWidget {
-  final List<BookModel> books;
-  const Statistique({super.key, required this.books});
+  final Map<String, dynamic> stats;
+  const Statistique({super.key, required this.stats});
 
   @override
   State<Statistique> createState() => _StatistiqueState();
@@ -58,11 +58,12 @@ class _StatistiqueState extends State<Statistique> {
 
   @override
   Widget build(BuildContext context) {
-    // Calcul dynamic
-    final double totalRevenue = widget.books.fold(
-      0,
-      (sum, b) => sum + (b.prix * b.telechargements),
-    );
+    // Extract values from stats map
+    final double totalRevenue =
+        (widget.stats['total_revenue'] ?? 0).toDouble();
+    
+    final int readersCount =
+        widget.stats['total_followers'] ?? _followersCount;
 
     return Column(
       children: [
@@ -72,12 +73,12 @@ class _StatistiqueState extends State<Statistique> {
               child: _buildStatCard(
                 "VENTES",
                 "${totalRevenue.toStringAsFixed(0)} FCFA",
-                "+12%",
+                "", // Removed fake growth
                 Icons.account_balance_wallet_rounded,
                 AppColors.cardBackground,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: GestureDetector(
                 onTap: () {
@@ -92,8 +93,8 @@ class _StatistiqueState extends State<Statistique> {
                 },
                 child: _buildStatCard(
                   "LECTEURS",
-                  "$_followersCount",
-                  "+5%",
+                  "$readersCount",
+                  "", // Removed fake growth
                   Icons.people_alt_rounded,
                   AppColors.cardBackground,
                 ),
@@ -101,14 +102,14 @@ class _StatistiqueState extends State<Statistique> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         GestureDetector(
           onTap: () {
             HomePageAuteur.navKey.currentState?.setIndex(3);
           },
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(20),
@@ -116,25 +117,25 @@ class _StatistiqueState extends State<Statistique> {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.secondaryVariant.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.campaign_rounded,
                     color: AppColors.secondaryVariant,
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 15),
+                SizedBox(width: 15),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       "COMMUNAUTÉ",
                       style: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.5),
+                        color: AppColors.textPrimary.withOpacity(0.5),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1.1,
@@ -143,17 +144,17 @@ class _StatistiqueState extends State<Statistique> {
                     Text(
                       "Gérer mes annonces & évènements",
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-                const Spacer(),
-                const Icon(
+                Spacer(),
+                Icon(
                   Icons.arrow_forward_ios_rounded,
-                  color: Colors.white24,
+                  color: AppColors.textHint,
                   size: 14,
                 ),
               ],
@@ -186,32 +187,34 @@ class _StatistiqueState extends State<Statistique> {
               Text(
                 title,
                 style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.5),
+                  color: AppColors.textPrimary.withOpacity(0.5),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.1,
                 ),
               ),
-              Icon(icon, color: Colors.blueAccent, size: 18),
+              Icon(icon, color: AppColors.primary, size: 18),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(value, style: AppTextStyles.pageTitle),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(Icons.show_chart, color: Colors.greenAccent, size: 14),
-              const SizedBox(width: 4),
-              Text(
-                growth,
-                style: GoogleFonts.poppins(
-                  color: Colors.greenAccent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+          if (growth.isNotEmpty) ...[
+            SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.show_chart, color: Colors.greenAccent, size: 14),
+                SizedBox(width: 4),
+                Text(
+                  growth,
+                  style: GoogleFonts.poppins(
+                    color: Colors.greenAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ] else SizedBox(height: 18),
         ],
       ),
     );

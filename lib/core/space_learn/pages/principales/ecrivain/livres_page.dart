@@ -119,7 +119,7 @@ class _LivresPageState extends State<LivresPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
+          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
           onPressed: () {
             if (widget.onBackPressed != null) {
               widget.onBackPressed!();
@@ -131,7 +131,7 @@ class _LivresPageState extends State<LivresPage> {
         title: Text(
           "MES LIVRES",
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: AppColors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.2,
@@ -166,12 +166,12 @@ class _LivresPageState extends State<LivresPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Iconsax.add,
                       size: 16,
                       color: AppColors.secondaryVariant,
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Text(
                       "Publier",
                       style: GoogleFonts.poppins(
@@ -201,14 +201,14 @@ class _LivresPageState extends State<LivresPage> {
                     Iconsax.book_1,
                     AppColors.secondaryVariant,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   _buildStatSession(
                     "${_books.where((b) => b.statut.toLowerCase() == 'publie').length}",
                     "Publiés",
                     Iconsax.verify,
                     AppColors.success,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   _buildStatSession(
                     "${_books.fold<int>(0, (sum, b) => sum + b.telechargements)}",
                     "Lectures",
@@ -228,13 +228,13 @@ class _LivresPageState extends State<LivresPage> {
                   Container(
                     height: 52,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
+                      color: AppColors.textPrimary.withOpacity(0.03),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                      border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
                     ),
                     child: TextField(
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -246,12 +246,12 @@ class _LivresPageState extends State<LivresPage> {
                       decoration: InputDecoration(
                         hintText: "Rechercher par titre...",
                         hintStyle: GoogleFonts.poppins(
-                          color: Colors.white.withOpacity(0.2),
+                          color: AppColors.textPrimary.withOpacity(0.2),
                           fontSize: 14,
                         ),
                         prefixIcon: Icon(
                           Iconsax.search_status,
-                          color: Colors.white.withOpacity(0.3),
+                          color: AppColors.textPrimary.withOpacity(0.3),
                           size: 20,
                         ),
                         border: InputBorder.none,
@@ -261,7 +261,7 @@ class _LivresPageState extends State<LivresPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
 
                   // Filter chips
                   SizedBox(
@@ -269,7 +269,7 @@ class _LivresPageState extends State<LivresPage> {
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: _filters.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      separatorBuilder: (_, __) => SizedBox(width: 8),
                       itemBuilder: (context, index) {
                         final filter = _filters[index];
                         final isSelected = _selectedFilter == filter;
@@ -286,7 +286,7 @@ class _LivresPageState extends State<LivresPage> {
                                 style: GoogleFonts.poppins(
                                   color: isSelected
                                       ? AppColors.secondaryVariant
-                                      : Colors.white.withOpacity(0.4),
+                                      : AppColors.textHint,
                                   fontSize: 12,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
@@ -303,7 +303,7 @@ class _LivresPageState extends State<LivresPage> {
               ),
             ),
 
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             // ── Books List ──
             Expanded(
@@ -312,16 +312,16 @@ class _LivresPageState extends State<LivresPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const CircularProgressIndicator(
+                          CircularProgressIndicator(
                             valueColor: AlwaysStoppedAnimation<Color>(
                               AppColors.secondaryVariant,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             "Chargement de vos livres...",
                             style: GoogleFonts.poppins(
-                              color: Colors.white.withOpacity(0.4),
+                              color: AppColors.textPrimary.withOpacity(0.4),
                               fontSize: 13,
                             ),
                           ),
@@ -338,7 +338,7 @@ class _LivresPageState extends State<LivresPage> {
                             size: 48,
                             color: AppColors.error.withOpacity(0.6),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             _error!,
                             style: GoogleFonts.poppins(
@@ -346,7 +346,7 @@ class _LivresPageState extends State<LivresPage> {
                               fontSize: 14,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           GestureDetector(
                             onTap: _loadBooks,
                             child: Container(
@@ -380,9 +380,9 @@ class _LivresPageState extends State<LivresPage> {
                           Icon(
                             Iconsax.book,
                             size: 64,
-                            color: Colors.white.withOpacity(0.1),
+                            color: AppColors.textPrimary.withOpacity(0.1),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             _searchQuery.isNotEmpty
                                 ? "Aucun résultat trouvé"
@@ -390,11 +390,11 @@ class _LivresPageState extends State<LivresPage> {
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
                               fontSize: 15,
-                              color: Colors.white.withOpacity(0.4),
+                              color: AppColors.textPrimary.withOpacity(0.4),
                             ),
                           ),
                           if (_searchQuery.isEmpty) ...[
-                            const SizedBox(height: 20),
+                            SizedBox(height: 20),
                             GestureDetector(
                               onTap: () {
                                 Navigator.push(
@@ -423,12 +423,12 @@ class _LivresPageState extends State<LivresPage> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Iconsax.add_circle,
                                       color: AppColors.secondaryVariant,
                                       size: 18,
                                     ),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8),
                                     Text(
                                       "Publier mon premier livre",
                                       style: GoogleFonts.poppins(
@@ -454,7 +454,7 @@ class _LivresPageState extends State<LivresPage> {
                             authorName: _authorName,
                             onBookUpdated: _loadBooks,
                           ),
-                          const SizedBox(height: 100),
+                          SizedBox(height: 100),
                         ],
                       ),
                     ),
@@ -473,27 +473,21 @@ class _LivresPageState extends State<LivresPage> {
   ) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.03),
+          color: AppColors.textPrimary.withOpacity(0.03),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
+          
         ),
         child: Column(
           children: [
             Icon(icon, size: 14, color: color),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               value,
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 height: 1.1,
@@ -502,7 +496,7 @@ class _LivresPageState extends State<LivresPage> {
             Text(
               label,
               style: GoogleFonts.poppins(
-                color: Colors.white.withOpacity(0.3),
+                color: AppColors.textPrimary.withOpacity(0.3),
                 fontSize: 9,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,

@@ -48,7 +48,7 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
+          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -58,7 +58,7 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: AppColors.textPrimary,
             letterSpacing: 1.2,
           ),
         ),
@@ -73,33 +73,33 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
               "Publiez une annonce pour informer votre communauté des nouveautés, promotions, ou de l'avancement de vos projets.",
               style: AppTextStyles.grey14,
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             _buildLabel("Titre de l'annonce"),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             _buildTextField(
               controller: _titleController,
               hint: "Ex: Sortie du Tome 3 prévue pour la fin d'année !",
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildLabel("Audience"),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: AppColors.textPrimary.withOpacity(0.1)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedScope,
                   isExpanded: true,
                   dropdownColor: AppColors.cardBackground,
-                  icon: const Icon(
+                  icon: Icon(
                     Iconsax.arrow_down_1,
-                    color: Colors.white54,
+                    color: AppColors.textHint,
                     size: 18,
                   ),
                   style: AppTextStyles.body,
@@ -122,16 +122,16 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildLabel("Contenu"),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             _buildTextField(
               controller: _contentController,
               hint: "Rédigez votre annonce ici...",
               maxLines: 8,
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
 
             SizedBox(
               width: double.infinity,
@@ -145,11 +145,11 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
                   ),
                 ),
                 child: _isPublishing
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           strokeWidth: 2,
                         ),
                       )
@@ -239,20 +239,20 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
       style: AppTextStyles.body,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.poppins(color: Colors.white30, fontSize: 14),
+        hintStyle: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
         filled: true,
         fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.1)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.secondaryVariant),
+          borderSide: BorderSide(color: AppColors.secondaryVariant),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

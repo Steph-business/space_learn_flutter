@@ -134,7 +134,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
+          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
           onPressed: () {
             MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
             Navigator.of(context).pop();
@@ -151,13 +151,13 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
         children: [
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator())
                 : _messages.isEmpty
                 ? Center(
                     child: Text(
                       "Aucun message pour le moment.\nSoyez le premier !",
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(color: Colors.white54),
+                      style: GoogleFonts.poppins(color: AppColors.textHint),
                     ),
                   )
                 : ListView.builder(
@@ -170,18 +170,18 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                   ),
           ),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             color: AppColors.cardBackground,
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _msgController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppColors.textPrimary),
                     decoration: InputDecoration(
                       hintText: "Écrire un message...",
                       hintStyle: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: AppColors.textPrimary.withValues(alpha: 0.4),
                       ),
                       filled: true,
                       fillColor: AppColors.scaffoldBackground,
@@ -196,18 +196,18 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 GestureDetector(
                   onTap: _sendMessage,
                   child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
                       color: AppColors.secondaryVariant,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Iconsax.send_1,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       size: 20,
                     ),
                   ),
@@ -242,7 +242,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
           color = Colors.grey;
           break;
         default:
-          color = Colors.cyan;
+          color = AppColors.primary;
       }
     } else {
       // Simulation fallback
@@ -284,8 +284,8 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
     final String username = msg.nomUtilisateur ?? 'Utilisateur';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
@@ -303,10 +303,10 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                     ? NetworkImage(msg.photoProfil!)
                     : null,
                 child: (msg.photoProfil == null || msg.photoProfil!.isEmpty)
-                    ? const Icon(Icons.person, color: Colors.white54, size: 16)
+                    ? Icon(Icons.person, color: AppColors.textHint, size: 16)
                     : null,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 username,
                 style: GoogleFonts.poppins(
@@ -315,16 +315,16 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               _getUserRankBadge(username, rank: msg.rangUtilisateur),
-              const Spacer(),
+              Spacer(),
               Text(
                 _timeAgo(msg.creeLe),
-                style: GoogleFonts.poppins(color: Colors.white30, fontSize: 10),
+                style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 10),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             msg.contenu,
             style: AppTextStyles.body,

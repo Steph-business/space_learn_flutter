@@ -5,13 +5,16 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServi
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart';
+
 /// Un composant UI réutilisable pour structurer les pages de paramètres (Lecteur et Auteur).
 class BaseSettingsLayout extends StatelessWidget {
   final String title;
   final List<Widget> children;
   final Color primaryAccentColor;
 
-  const BaseSettingsLayout({
+  BaseSettingsLayout({
     super.key,
     required this.title,
     required this.children,
@@ -23,34 +26,31 @@ class BaseSettingsLayout extends StatelessWidget {
     return Stack(
       children: [
         Container(color: AppColors.scaffoldBackground),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: MediaQuery.of(context).size.height * 0.45,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  primaryAccentColor.withOpacity(0.15),
-                  AppColors.scaffoldBackground,
-                ],
-              ),
-            ),
-          ),
-        ),
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
             automaticallyImplyLeading: false,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  // Fallback for when it's the root of a bottom nav bar
+                  if (MainNavBar.mainNavBarKey.currentState != null) {
+                    MainNavBar.mainNavBarKey.currentState!.goHome();
+                  } else if (HomePageAuteur.navKey.currentState != null) {
+                    HomePageAuteur.navKey.currentState!.goHome();
+                  }
+                }
+              },
+            ),
             title: Text(
               title,
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
@@ -64,10 +64,10 @@ class BaseSettingsLayout extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ...children,
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   // Bouton de déconnexion premium réutilisable
                   _buildLogoutButton(context),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                 ],
               ),
             ),
@@ -84,11 +84,11 @@ class BaseSettingsLayout extends StatelessWidget {
       height: 52,
       child: ElevatedButton.icon(
         onPressed: () => showLogoutDialog(context),
-        icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
+        icon: Icon(Icons.logout_rounded, color: AppColors.textPrimary, size: 20),
         label: Text(
           "Se déconnecter",
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: AppColors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -112,18 +112,12 @@ class BaseSettingsLayout extends StatelessWidget {
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              border: Border.all(color: AppColors.textPrimary.withOpacity(0.08)),
+              
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -139,33 +133,33 @@ class BaseSettingsLayout extends StatelessWidget {
                       width: 1.5,
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.logout_rounded,
                     size: 28,
                     color: AppColors.error,
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 Text(
                   "Déconnexion",
                   style: GoogleFonts.poppins(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   "Êtes-vous sûr de vouloir vous déconnecter de votre compte ?",
                   style: GoogleFonts.poppins(
-                    color: Colors.white.withOpacity(0.7),
+                    color: AppColors.textPrimary.withOpacity(0.7),
                     fontSize: 14,
                     height: 1.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 Row(
                   children: [
                     Expanded(
@@ -174,7 +168,7 @@ class BaseSettingsLayout extends StatelessWidget {
                         child: TextButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: TextButton.styleFrom(
-                            foregroundColor: Colors.white.withOpacity(0.6),
+                            foregroundColor: AppColors.textHint,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -189,7 +183,7 @@ class BaseSettingsLayout extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: SizedBox(
                         height: 48,
@@ -209,7 +203,7 @@ class BaseSettingsLayout extends StatelessWidget {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.error,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.textPrimary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -261,32 +255,32 @@ class SettingItemTile extends StatelessWidget {
       elevation: 0,
       child: ListTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: AppColors.textPrimary.withOpacity(0.04),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: Colors.white.withOpacity(0.9), size: 22),
+          child: Icon(icon, color: AppColors.textPrimary.withOpacity(0.9), size: 22),
         ),
         title: Text(
           title,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             fontSize: 15,
-            color: Colors.white,
+            color: AppColors.textPrimary,
           ),
         ),
         subtitle: Text(
           subtitle,
           style: GoogleFonts.poppins(
-            color: Colors.white.withOpacity(0.5),
+            color: AppColors.textPrimary.withOpacity(0.5),
             fontSize: 12.5,
           ),
         ),
         trailing: Icon(
           Icons.arrow_forward_ios_rounded,
           size: 14,
-          color: Colors.white.withOpacity(0.3),
+          color: AppColors.textPrimary.withOpacity(0.3),
         ),
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -300,7 +294,7 @@ class SettingSectionHeader extends StatelessWidget {
   final String title;
   final Color accentColor;
 
-  const SettingSectionHeader({
+  SettingSectionHeader({
     super.key,
     required this.title,
     this.accentColor = AppColors.primary,

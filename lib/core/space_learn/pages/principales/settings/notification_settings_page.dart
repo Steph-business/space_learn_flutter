@@ -22,12 +22,12 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.scaffoldBackground : Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -47,29 +47,29 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             "Choisissez les notifications que vous souhaitez recevoir sur votre appareil.",
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: isDark ? Colors.white70 : Colors.black54,
+              color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: 28),
           
           if (!widget.isAuthorMode) ...[
             _buildSectionHeader("Lecture"),
             Card(
-              color: isDark ? AppColors.cardBackground : Colors.white,
+              color: AppColors.cardBackground,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: Text("Rappels de lecture", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
-                    subtitle: Text("Notifications quotidiennes pour maintenir vos habitudes.", style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+                    title: Text("Rappels de lecture", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
+                    subtitle: Text("Notifications quotidiennes pour maintenir vos habitudes.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
                     value: _readingReminders,
                     activeColor: AppColors.primary,
                     onChanged: (val) {
@@ -77,10 +77,10 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                       AppNotifications.showSnackBar(context, message: "Préférences de rappels mises à jour.", isSuccess: true);
                     },
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Divider(height: 1, indent: 16, endIndent: 16),
                   SwitchListTile(
-                    title: Text("Nouveaux chapitres", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
-                    subtitle: Text("Être alerté dès qu'un auteur publie une suite.", style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+                    title: Text("Nouveaux chapitres", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
+                    subtitle: Text("Être alerté dès qu'un auteur publie une suite.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
                     value: _newChapters,
                     activeColor: AppColors.primary,
                     onChanged: (val) {
@@ -91,19 +91,19 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
           ],
 
           if (widget.isAuthorMode) ...[
             _buildSectionHeader("Ventes & Écriture"),
             Card(
-              color: isDark ? AppColors.cardBackground : Colors.white,
+              color: AppColors.cardBackground,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: Text("Notifications de ventes", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
-                    subtitle: Text("Recevoir une alerte lors de l'achat d'un de vos livres.", style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+                    title: Text("Notifications de ventes", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
+                    subtitle: Text("Recevoir une alerte lors de l'achat d'un de vos livres.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
                     value: _salesReminders,
                     activeColor: AppColors.primary,
                     onChanged: (val) {
@@ -111,10 +111,10 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                       AppNotifications.showSnackBar(context, message: "Préférences de notifications de ventes mises à jour.", isSuccess: true);
                     },
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Divider(height: 1, indent: 16, endIndent: 16),
                   SwitchListTile(
-                    title: Text("Nouveaux commentaires", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
-                    subtitle: Text("Être notifié quand un lecteur laisse son avis.", style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+                    title: Text("Nouveaux commentaires", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
+                    subtitle: Text("Être notifié quand un lecteur laisse son avis.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
                     value: _newComments,
                     activeColor: AppColors.primary,
                     onChanged: (val) {
@@ -125,16 +125,16 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
           ],
 
           _buildSectionHeader("Général"),
           Card(
-            color: isDark ? AppColors.cardBackground : Colors.white,
+            color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: SwitchListTile(
-              title: Text("Offres & Nouveautés", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
-              subtitle: Text("Alertes sur les promotions, événements et actus de la plateforme.", style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+              title: Text("Offres & Nouveautés", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
+              subtitle: Text("Alertes sur les promotions, événements et actus de la plateforme.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
               value: _marketingPush,
               activeColor: AppColors.primary,
               onChanged: (val) {

@@ -468,7 +468,7 @@ class _ReadingPageState extends State<ReadingPage> {
 
   Widget _buildTtsPlayerPanel() {
     final bool isDark = _backgroundColor.computeLuminance() < 0.5;
-    final Color panelBg = isDark ? AppColors.cardBackground : Colors.white.withOpacity(0.95);
+    final Color panelBg = AppColors.cardBackground.withOpacity(0.95);
     final Color itemColor = isDark ? Colors.white : AppColors.readingBrown;
 
     return Positioned(
@@ -480,13 +480,7 @@ class _ReadingPageState extends State<ReadingPage> {
         decoration: BoxDecoration(
           color: panelBg,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
+          
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -513,7 +507,7 @@ class _ReadingPageState extends State<ReadingPage> {
                           fontSize: 12,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         _isExtractingText 
                             ? "Extraction du texte..." 
@@ -579,10 +573,10 @@ class _ReadingPageState extends State<ReadingPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             if (_ttsService.isPlaying)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.only(bottom: 12),
                 child: _TtsAudioWaveform(color: AppColors.primary),
               ),
             Row(
@@ -621,28 +615,22 @@ class _ReadingPageState extends State<ReadingPage> {
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      
                     ),
                     child: _isExtractingText 
-                        ? const Center(
+                        ? Center(
                             child: SizedBox(
                               height: 24,
                               width: 24,
                               child: CircularProgressIndicator(
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 strokeWidth: 2.5,
                               ),
                             ),
                           )
                         : Icon(
                             _ttsService.isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             size: 32,
                           ),
                   ),
@@ -750,7 +738,7 @@ class _ReadingPageState extends State<ReadingPage> {
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close,
                     color: AppColors.readingBrown,
                     size: 20,
@@ -787,7 +775,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 size: 64,
                 color: AppColors.primary,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Text(
                 "Téléchargement du livre...",
                 style: GoogleFonts.poppins(
@@ -796,7 +784,7 @@ class _ReadingPageState extends State<ReadingPage> {
                   color: textColor,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 "Votre livre sera disponible hors-ligne après cette étape.",
                 textAlign: TextAlign.center,
@@ -805,7 +793,7 @@ class _ReadingPageState extends State<ReadingPage> {
                   color: textColor.withOpacity(0.6),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
@@ -815,7 +803,7 @@ class _ReadingPageState extends State<ReadingPage> {
                   minHeight: 8,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 _downloadProgress > 0
                     ? "${(_downloadProgress * 100).toStringAsFixed(0)} %"
@@ -841,12 +829,12 @@ class _ReadingPageState extends State<ReadingPage> {
     }
 
     if (_cachedBookBytes == null) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
 
     if (isEpub) {
       if (_epubController == null) {
-        return const Center(child: CircularProgressIndicator());
+        return Center(child: CircularProgressIndicator());
       }
 
       final isDark = _backgroundColor.computeLuminance() < 0.5;
@@ -981,7 +969,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1001,7 +989,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             IconButton(
               icon: Icon(
                 _showTtsPanel ? Icons.headphones : Icons.headphones_outlined,
@@ -1015,7 +1003,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 });
               },
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             IconButton(
               icon: Icon(
                 _backgroundColor.computeLuminance() < 0.5
@@ -1048,13 +1036,7 @@ class _ReadingPageState extends State<ReadingPage> {
             decoration: BoxDecoration(
               color: _backgroundColor.withOpacity(0.95),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              
             ),
             child: Text(
               "PAGE $_currentPage SUR $_totalPages",
@@ -1066,20 +1048,14 @@ class _ReadingPageState extends State<ReadingPage> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           // Clean Floating Bar (Sainte Bible Style)
           Container(
             height: 56,
             decoration: BoxDecoration(
               color: AppColors.cardBackground, // Premium dark theme
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1162,8 +1138,8 @@ class _ReadingPageState extends State<ReadingPage> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(28),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Icon(icon, color: Colors.white.withOpacity(0.8), size: 24),
+          padding: EdgeInsets.all(12.0),
+          child: Icon(icon, color: AppColors.textPrimary.withOpacity(0.8), size: 24),
         ),
       ),
     );
@@ -1172,7 +1148,7 @@ class _ReadingPageState extends State<ReadingPage> {
   Widget _buildMockEbookContent() {
     return Container(
       color: _backgroundColor,
-      child: const Center(child: Text("Mode PDF activé")),
+      child: Center(child: Text("Mode PDF activé")),
     );
   }
 
@@ -1183,8 +1159,8 @@ class _ReadingPageState extends State<ReadingPage> {
       isScrollControlled: true,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: const BoxDecoration(
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
             color: AppColors.iosSurface, // Light background like iOS
             borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
@@ -1211,7 +1187,7 @@ class _ReadingPageState extends State<ReadingPage> {
                         color: Colors.black.withOpacity(0.05),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
                         size: 20,
                         color: Colors.black54,
@@ -1220,13 +1196,13 @@ class _ReadingPageState extends State<ReadingPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Zoom Slider
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Row(
                 children: [
-                  const Icon(Icons.zoom_out, size: 16, color: Colors.black45),
+                  Icon(Icons.zoom_out, size: 16, color: Colors.black45),
                   Expanded(
                     child: SliderTheme(
                       data: SliderTheme.of(context).copyWith(
@@ -1255,10 +1231,10 @@ class _ReadingPageState extends State<ReadingPage> {
                       ),
                     ),
                   ),
-                  const Icon(Icons.zoom_in, size: 18, color: Colors.black45),
+                  Icon(Icons.zoom_in, size: 18, color: Colors.black45),
                 ],
               ),
-              const Divider(height: 30),
+              Divider(height: 30),
 
               // Orientation Toggle
               ListTile(
@@ -1285,7 +1261,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 ),
               ),
 
-              const Divider(height: 30),
+              Divider(height: 30),
 
               // Themes Grid
               GridView.count(
@@ -1316,7 +1292,7 @@ class _ReadingPageState extends State<ReadingPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
             ],
           ),
         ),
@@ -1353,14 +1329,7 @@ class _ReadingPageState extends State<ReadingPage> {
                   color: isSelected ? Colors.black : Colors.transparent,
                   width: 2,
                 ),
-                boxShadow: [
-                  if (!isSelected)
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                ],
+                
               ),
               child: Center(
                 child: Text(
@@ -1374,7 +1343,7 @@ class _ReadingPageState extends State<ReadingPage> {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             name,
             style: GoogleFonts.poppins(
@@ -1398,18 +1367,18 @@ class _ReadingPageState extends State<ReadingPage> {
         initialIndex: initialTab,
         child: Container(
           height: MediaQuery.of(context).size.height * 0.7,
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppColors.textPrimary,
             borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
           ),
           child: Column(
             children: [
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Container(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: AppColors.textSecondary,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1453,8 +1422,8 @@ class _ReadingPageState extends State<ReadingPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.menu_book, color: Colors.grey, size: 48),
-            const SizedBox(height: 16),
+            Icon(Icons.menu_book, color: Colors.grey, size: 48),
+            SizedBox(height: 16),
             Text(
               "Aucun chapitre trouvé.",
               style: GoogleFonts.poppins(color: Colors.grey),
@@ -1475,7 +1444,7 @@ class _ReadingPageState extends State<ReadingPage> {
         return ListTile(
           leading: Icon(
             Icons.segment,
-            color: isCurrent ? AppColors.primaryLight : Colors.grey[400],
+            color: isCurrent ? AppColors.primaryLight : AppColors.textSecondary,
           ),
           title: Text(
             bookmark.title,
@@ -1517,7 +1486,7 @@ class _ReadingPageState extends State<ReadingPage> {
               color: Colors.grey,
               size: 48,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               onlyWithNotes
                   ? "Aucune note trouvée."
@@ -1535,7 +1504,7 @@ class _ReadingPageState extends State<ReadingPage> {
         if (index >= bookmarks.length) return const SizedBox.shrink();
         final bk = bookmarks[index];
         return ListTile(
-          leading: const Icon(Icons.bookmark, color: AppColors.primaryLight),
+          leading: Icon(Icons.bookmark, color: AppColors.primaryLight),
           title: Text(
             "Page ${bk.pageNumber}",
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
@@ -1545,7 +1514,7 @@ class _ReadingPageState extends State<ReadingPage> {
             style: AppTextStyles.greyBody12,
           ),
           trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+            icon: Icon(Icons.delete_outline, color: Colors.red, size: 20),
             onPressed: () async {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
               try {
@@ -1604,7 +1573,7 @@ class _ReadingPageState extends State<ReadingPage> {
               child: Text(
                 bookTitle,
                 style: GoogleFonts.lora(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                 ),
@@ -1646,9 +1615,9 @@ class _ReadingPageState extends State<ReadingPage> {
                     _showTableOfContentsModal(initialTab: 2);
                   },
                 ),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Divider(color: Colors.white10),
+                  child: Divider(color: AppColors.textHint),
                 ),
                 _buildDrawerItem(
                   icon: Icons.settings_outlined,
@@ -1674,7 +1643,7 @@ class _ReadingPageState extends State<ReadingPage> {
               errorBuilder: (context, error, stackTrace) => Text(
                 "SPACE LEARN",
                 style: GoogleFonts.poppins(
-                  color: Colors.white24,
+                  color: AppColors.textHint,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,
                 ),
@@ -1696,7 +1665,7 @@ class _ReadingPageState extends State<ReadingPage> {
       title: Text(
         title,
         style: GoogleFonts.poppins(
-          color: Colors.white.withOpacity(0.9),
+          color: AppColors.textPrimary.withOpacity(0.9),
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
@@ -1715,8 +1684,8 @@ class _ReadingPageState extends State<ReadingPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
-            const SizedBox(height: 24),
+            Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
+            SizedBox(height: 24),
             Text(
               "Oups !",
               style: GoogleFonts.poppins(
@@ -1725,7 +1694,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 color: AppColors.readingBrown,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
@@ -1734,12 +1703,12 @@ class _ReadingPageState extends State<ReadingPage> {
                 color: AppColors.readingBrown.withOpacity(0.7),
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.readingBrown,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.textPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
                   vertical: 16,
@@ -1748,7 +1717,7 @@ class _ReadingPageState extends State<ReadingPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text("Retour"),
+              child: Text("Retour"),
             ),
           ],
         ),
@@ -1763,28 +1732,22 @@ class _ReadingPageState extends State<ReadingPage> {
       right: 20,
       child: Container(
         height: 50,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textPrimary,
           borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          
         ),
         child: Row(
           children: [
-            const Icon(Icons.search, color: Colors.blueAccent, size: 22),
-            const SizedBox(width: 12),
+            Icon(Icons.search, color: AppColors.primary, size: 22),
+            SizedBox(width: 12),
             Expanded(
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: const TextStyle(color: Colors.black87, fontSize: 14),
-                decoration: const InputDecoration(
+                style: TextStyle(color: Colors.black87, fontSize: 14),
+                decoration: InputDecoration(
                   hintText: 'Rechercher dans le texte...',
                   hintStyle: TextStyle(color: Colors.grey),
                   border: InputBorder.none,
@@ -1816,9 +1779,9 @@ class _ReadingPageState extends State<ReadingPage> {
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: const Icon(
+                icon: Icon(
                   Icons.keyboard_arrow_up,
-                  color: Colors.blueAccent,
+                  color: AppColors.primary,
                 ),
                 onPressed: () {
                   _searchResult!.previousInstance();
@@ -1827,9 +1790,9 @@ class _ReadingPageState extends State<ReadingPage> {
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: const Icon(
+                icon: Icon(
                   Icons.keyboard_arrow_down,
-                  color: Colors.blueAccent,
+                  color: AppColors.primary,
                 ),
                 onPressed: () {
                   _searchResult!.nextInstance();
@@ -1839,7 +1802,7 @@ class _ReadingPageState extends State<ReadingPage> {
             ],
             IconButton(
               visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.close, color: Colors.grey),
+              icon: Icon(Icons.close, color: Colors.grey),
               onPressed: () {
                 setState(() {
                   _isSearching = false;

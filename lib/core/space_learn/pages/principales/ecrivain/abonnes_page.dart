@@ -62,23 +62,23 @@ class _AbonnesPageState extends State<AbonnesPage> {
           style: AppTextStyles.subtitle,
         ),
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.white,
+            color: AppColors.textPrimary,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(color: AppColors.secondaryVariant),
             )
           : _error != null
           ? Center(
               child: Text(
                 _error!,
-                style: const TextStyle(color: Colors.white70),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
             )
           : _followers.isEmpty
@@ -104,14 +104,14 @@ class _AbonnesPageState extends State<AbonnesPage> {
           Icon(
             Icons.people_outline,
             size: 80,
-            color: Colors.white.withOpacity(0.1),
+            color: AppColors.textPrimary.withOpacity(0.1),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             "Vous n'avez pas encore d'abonnés.",
-            style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 16),
+            style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 16),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             "Publiez plus de contenu pour attirer des lecteurs !",
             style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14),
@@ -129,8 +129,8 @@ class _AbonnesPageState extends State<AbonnesPage> {
     final photo = follower.profilePhoto;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
@@ -147,13 +147,13 @@ class _AbonnesPageState extends State<AbonnesPage> {
                       height: 40,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.person, color: AppColors.secondaryVariant);
+                        return Icon(Icons.person, color: AppColors.secondaryVariant);
                       },
                     ),
                   )
-                : const Icon(Icons.person, color: AppColors.secondaryVariant),
+                : Icon(Icons.person, color: AppColors.secondaryVariant),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,7 +161,7 @@ class _AbonnesPageState extends State<AbonnesPage> {
                 Text(
                   name,
                   style: GoogleFonts.poppins(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -170,7 +170,7 @@ class _AbonnesPageState extends State<AbonnesPage> {
                       ? "Abonné depuis le ${follower.creeLe!.day}/${follower.creeLe!.month}/${follower.creeLe!.year}"
                       : "Abonné récemment",
                   style: GoogleFonts.poppins(
-                    color: Colors.grey[400],
+                    color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
                 ),
@@ -179,7 +179,7 @@ class _AbonnesPageState extends State<AbonnesPage> {
           ),
           TextButton(
             onPressed: () {},
-            child: const Text(
+            child: Text(
               "Profil",
               style: TextStyle(color: AppColors.secondaryVariant),
             ),

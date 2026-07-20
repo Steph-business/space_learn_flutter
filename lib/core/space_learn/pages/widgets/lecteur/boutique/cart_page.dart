@@ -22,13 +22,13 @@ class CartPage extends StatelessWidget {
           "Mon Panier",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppColors.textPrimary,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.white,
+            color: AppColors.textPrimary,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
@@ -48,8 +48,8 @@ class CartPage extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final book = cart.items[index];
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(12),
+                        margin: EdgeInsets.only(bottom: 16),
+                        padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
@@ -69,13 +69,13 @@ class CartPage extends StatelessWidget {
                                         book.imageCouverture!,
                                         fit: BoxFit.cover,
                                       )
-                                    : const Icon(
+                                    : Icon(
                                         Icons.book,
-                                        color: Colors.white24,
+                                        color: AppColors.textHint,
                                       ),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            SizedBox(width: 16),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +83,7 @@ class CartPage extends StatelessWidget {
                                   Text(
                                     book.titre,
                                     style: GoogleFonts.poppins(
-                                      color: Colors.white,
+                                      color: AppColors.textPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                     ),
@@ -94,7 +94,7 @@ class CartPage extends StatelessWidget {
                                     book.authorName,
                                     style: AppTextStyles.withColor(AppTextStyles.body12, AppColors.slateLight),
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: 8),
                                   Text(
                                     "${book.prix} FCFA",
                                     style: GoogleFonts.poppins(
@@ -108,7 +108,7 @@ class CartPage extends StatelessWidget {
                             ),
                             IconButton(
                               onPressed: () => cart.removeItem(book.id),
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.delete_outline,
                                 color: Colors.redAccent,
                               ),
@@ -131,43 +131,43 @@ class CartPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.all(32),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.shopping_cart_outlined,
               size: 64,
               color: AppColors.slateLight,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Text(
             "Votre panier est vide",
             style: GoogleFonts.poppins(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             "Explorez la boutique pour y ajouter des livres",
             style: AppTextStyles.withColor(AppTextStyles.body, AppColors.slateLight),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.textPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text("Aller à la boutique"),
+            child: Text("Aller à la boutique"),
           ),
         ],
       ),
@@ -176,17 +176,11 @@ class CartPage extends StatelessWidget {
 
   Widget _buildSummary(BuildContext context, CartProvider cart) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, -10),
-          ),
-        ],
+        
       ),
       child: SafeArea(
         child: Column(
@@ -208,7 +202,7 @@ class CartPage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -228,7 +222,7 @@ class CartPage extends StatelessWidget {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.textPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

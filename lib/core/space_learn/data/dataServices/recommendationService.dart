@@ -57,4 +57,20 @@ class RecommendationService {
       throw Exception('Failed to delete recommendation');
     }
   }
+
+  Future<void> sendFeedback(String recommendationId, String action, String authToken) async {
+    final url = ApiRoutes.recommendationFeedback.replaceFirst(':id', recommendationId);
+    final response = await client.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: jsonEncode({'action': action}),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to send recommendation feedback');
+    }
+  }
 }

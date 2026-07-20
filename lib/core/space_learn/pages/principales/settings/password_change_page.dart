@@ -22,12 +22,12 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.scaffoldBackground : Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -49,39 +49,39 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               "Votre nouveau mot de passe doit comporter au moins 6 caractères.",
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: isDark ? Colors.white70 : Colors.black54,
+                color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 36),
+            SizedBox(height: 36),
             _buildPasswordField(
               controller: _currentController,
               label: "Mot de passe actuel",
               obscureText: _obscureCurrent,
               onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             _buildPasswordField(
               controller: _newController,
               label: "Nouveau mot de passe",
               obscureText: _obscureNew,
               onToggle: () => setState(() => _obscureNew = !_obscureNew),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             _buildPasswordField(
               controller: _confirmController,
               label: "Confirmer le nouveau mot de passe",
               obscureText: _obscureConfirm,
               onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -93,7 +93,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
                 ),
                 child: Text(
                   "Mettre à jour le mot de passe",
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -113,24 +113,24 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
-      style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87),
+      style: GoogleFonts.poppins(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white60 : Colors.black54),
-        prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
+        labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
+        prefixIcon: Icon(Icons.lock_outline, color: AppColors.primary),
         suffixIcon: IconButton(
           icon: Icon(obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppColors.primary),
           onPressed: onToggle,
         ),
         filled: true,
-        fillColor: isDark ? AppColors.cardBackground : Colors.white,
+        fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+          borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+          borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
         ),
       ),
     );

@@ -125,7 +125,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: Icon(Icons.close, color: AppColors.textPrimary),
           onPressed: () => _showCancelDialog(),
         ),
         title: Column(
@@ -134,14 +134,14 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
             Text(
               'Paiement CinetPay',
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               widget.book['titre']?.toString() ?? 'Livre inconnu',
-              style: GoogleFonts.poppins(color: Colors.white54, fontSize: 11),
+              style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 11),
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -151,7 +151,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
           TextButton.icon(
             onPressed: _isCheckingStatus ? null : _verifyPaymentStatus,
             icon: _isCheckingStatus
-                ? const SizedBox(
+                ? SizedBox(
                     width: 14,
                     height: 14,
                     child: CircularProgressIndicator(
@@ -159,7 +159,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
                       color: AppColors.primary,
                     ),
                   )
-                : const Icon(
+                : Icon(
                     Icons.check_circle_outline,
                     size: 16,
                     color: AppColors.primary,
@@ -185,12 +185,12 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(color: AppColors.primary),
-                    const SizedBox(height: 16),
+                    CircularProgressIndicator(color: AppColors.primary),
+                    SizedBox(height: 16),
                     Text(
                       'Chargement du paiement...',
                       style: GoogleFonts.poppins(
-                        color: Colors.white70,
+                        color: AppColors.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -204,21 +204,21 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
             left: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.scaffoldBackground.withValues(alpha: 0.95),
                 border: Border(
-                  top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                  top: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.08)),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.lock_outline, size: 14, color: Colors.green),
-                  const SizedBox(width: 6),
+                  Icon(Icons.lock_outline, size: 14, color: Colors.green),
+                  SizedBox(width: 6),
                   Text(
                     'Paiement sécurisé par CinetPay',
                     style: GoogleFonts.poppins(
-                      color: Colors.white38,
+                      color: AppColors.textHint,
                       fontSize: 11,
                     ),
                   ),
@@ -249,13 +249,13 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
         title: Text(
           'Annuler le paiement ?',
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           'Êtes-vous sûr de vouloir annuler ce paiement ? Votre progression de paiement sera perdue.',
-          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
+          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
         ),
         actions: [
           TextButton(

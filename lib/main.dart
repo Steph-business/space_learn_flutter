@@ -119,12 +119,26 @@ class _MyAppState extends State<MyApp> {
             theme: ThemeData(
               brightness: Brightness.light,
               primarySwatch: Colors.orange,
-              scaffoldBackgroundColor: const Color.fromARGB(255, 250, 249, 246),
+              primaryColor: AppColors.primary,
+              scaffoldBackgroundColor: AppColors.scaffoldBackground,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: AppColors.primary,
+                brightness: Brightness.light,
+                primary: AppColors.primary,
+                secondary: AppColors.secondary,
+              ),
             ),
             darkTheme: ThemeData(
               brightness: Brightness.dark,
               primarySwatch: Colors.orange,
+              primaryColor: AppColors.primary,
               scaffoldBackgroundColor: AppColors.scaffoldBackground,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: AppColors.primary,
+                brightness: Brightness.dark,
+                primary: AppColors.primary,
+                secondary: AppColors.secondary,
+              ),
             ),
             debugShowCheckedModeBanner: false,
             home: _isLoading
@@ -156,6 +170,7 @@ class _MyAppState extends State<MyApp> {
         role.contains('administrateur') ||
         role.contains('éditeur')) {
       return ecrivainHome.HomePageAuteur(
+        key: ecrivainHome.HomePageAuteur.navKey,
         profileId: _selectedProfile!,
         userName: _user!.nomComplet,
       );

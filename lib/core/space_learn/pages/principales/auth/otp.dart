@@ -158,12 +158,12 @@ class _OtpPageState extends State<OtpPage> {
       height: 52,
       textStyle: GoogleFonts.poppins(
         fontSize: 20,
-        color: Colors.white,
+        color: AppColors.textPrimary,
         fontWeight: FontWeight.w600,
       ),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: AppColors.textPrimary.withOpacity(0.1)),
         borderRadius: BorderRadius.circular(12),
       ),
     );
@@ -189,7 +189,7 @@ class _OtpPageState extends State<OtpPage> {
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Column(
               children: [
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
 
                 // Close button
                 Align(
@@ -209,22 +209,22 @@ class _OtpPageState extends State<OtpPage> {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.15),
+                        color: AppColors.textPrimary.withOpacity(0.15),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
+                          color: AppColors.textPrimary.withOpacity(0.3),
                           width: 1.5,
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         size: 20,
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
 
                 // Icon
                 Container(
@@ -238,33 +238,33 @@ class _OtpPageState extends State<OtpPage> {
                       width: 1.5,
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.pin_outlined,
                     size: 30,
                     color: AppColors.primary,
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 // Title
                 Text(
                   'Vérification',
                   style: AppTextStyles.pageTitle,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
 
                 Text(
                   'Entrez le code envoyé à\n${widget.email}',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.65),
+                    color: AppColors.textPrimary.withOpacity(0.65),
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
                 ),
 
-                const SizedBox(height: 40),
+                SizedBox(height: 40),
 
                 // Pinput (OTP field)
                 Pinput(
@@ -283,7 +283,7 @@ class _OtpPageState extends State<OtpPage> {
                   onCompleted: (pin) => _handleVerifyCode(),
                 ),
 
-                const SizedBox(height: 36),
+                SizedBox(height: 36),
 
                 // Verify Button
                 SizedBox(
@@ -293,7 +293,7 @@ class _OtpPageState extends State<OtpPage> {
                     onPressed: _isLoading ? null : _handleVerifyCode,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.textPrimary,
                       elevation: 4,
                       shadowColor: AppColors.primary.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
@@ -301,11 +301,11 @@ class _OtpPageState extends State<OtpPage> {
                       ),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               strokeWidth: 2.5,
                             ),
                           )
@@ -319,7 +319,7 @@ class _OtpPageState extends State<OtpPage> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 TextButton(
                   onPressed: _isLoading ? null : _handleResendCode,
@@ -329,7 +329,7 @@ class _OtpPageState extends State<OtpPage> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
               ],
             ),
           ),

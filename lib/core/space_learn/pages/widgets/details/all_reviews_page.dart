@@ -24,9 +24,9 @@ class AllReviewsPage extends StatelessWidget {
           style: AppTextStyles.cardTitle,
         ),
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.white,
+            color: AppColors.textPrimary,
             size: 18,
           ),
           onPressed: () => Navigator.pop(context),
@@ -69,11 +69,11 @@ class AllReviewsPage extends StatelessWidget {
     String? photoUrl,
   ]) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,14 +93,14 @@ class AllReviewsPage extends StatelessWidget {
                     (photoUrl == null ||
                         photoUrl.isEmpty ||
                         photoUrl.contains('example.com'))
-                    ? const Icon(
+                    ? Icon(
                         Icons.person,
                         color: AppColors.primary,
                         size: 18,
                       )
                     : null,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +112,7 @@ class AllReviewsPage extends StatelessWidget {
                     Text(
                       time,
                       style: GoogleFonts.poppins(
-                        color: Colors.grey[500],
+                        color: AppColors.textSecondary,
                         fontSize: 10,
                       ),
                     ),
@@ -132,11 +132,11 @@ class AllReviewsPage extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             comment,
             style: GoogleFonts.poppins(
-              color: Colors.grey[300],
+              color: AppColors.textSecondary,
               fontStyle: FontStyle.italic,
               fontSize: 12,
               height: 1.5,

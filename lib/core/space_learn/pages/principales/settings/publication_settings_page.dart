@@ -29,12 +29,12 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.scaffoldBackground : Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -54,27 +54,27 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             "Configurez vos préférences par défaut pour vos futures œuvres.",
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: isDark ? Colors.white70 : Colors.black54,
+              color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: 28),
           
           Card(
-            color: isDark ? AppColors.cardBackground : Colors.white,
+            color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Column(
               children: [
                 SwitchListTile(
-                  title: Text("Visibilité publique par défaut", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
-                  subtitle: Text("Les livres créés sont directement visibles en boutique.", style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+                  title: Text("Visibilité publique par défaut", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
+                  subtitle: Text("Les livres créés sont directement visibles en boutique.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
                   value: _defaultPublic,
                   activeColor: AppColors.primary,
                   onChanged: (val) {
@@ -82,28 +82,28 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
                     AppNotifications.showSnackBar(context, message: "Visibilité par défaut mise à jour.", isSuccess: true);
                   },
                 ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
+                Divider(height: 1, indent: 16, endIndent: 16),
                 
                 // Licence
                 ListTile(
-                  title: Text("Licence par défaut", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
-                  subtitle: Text(_defaultLicense, style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                  title: Text("Licence par défaut", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
+                  subtitle: Text(_defaultLicense, style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                  trailing: Icon(Icons.arrow_forward_ios, size: 14),
                   onTap: _showLicenseSelector,
                 ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
+                Divider(height: 1, indent: 16, endIndent: 16),
                 
                 // Devise
                 ListTile(
-                  title: Text("Devise de vente", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
-                  subtitle: Text(_defaultCurrency, style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                  title: Text("Devise de vente", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
+                  subtitle: Text(_defaultCurrency, style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                  trailing: Icon(Icons.arrow_forward_ios, size: 14),
                   onTap: _showCurrencySelector,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           
           // Royalties / Prix
           Text(
@@ -111,23 +111,23 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextFormField(
             controller: _royaltyController,
             keyboardType: TextInputType.number,
-            style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87),
+            style: GoogleFonts.poppins(color: AppColors.textPrimary),
             decoration: InputDecoration(
               labelText: "Part de l'auteur (%)",
-              labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white60 : Colors.black54),
+              labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
               filled: true,
-              fillColor: isDark ? AppColors.cardBackground : Colors.white,
+              fillColor: AppColors.cardBackground,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
           
           SizedBox(
             width: double.infinity,
@@ -143,7 +143,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
               ),
               child: Text(
                 "Enregistrer les préférences",
-                style: GoogleFonts.poppins(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -156,15 +156,15 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? AppColors.cardBackground : Colors.white,
+      backgroundColor: AppColors.cardBackground,
       builder: (context) {
         return ListView(
           shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          padding: EdgeInsets.symmetric(vertical: 20),
           children: _licenses.map((license) {
             return ListTile(
-              title: Text(license, style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87)),
-              trailing: _defaultLicense == license ? const Icon(Icons.check, color: AppColors.primary) : null,
+              title: Text(license, style: GoogleFonts.poppins(color: AppColors.textPrimary)),
+              trailing: _defaultLicense == license ? Icon(Icons.check, color: AppColors.primary) : null,
               onTap: () {
                 setState(() => _defaultLicense = license);
                 Navigator.of(context).pop();
@@ -180,15 +180,15 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? AppColors.cardBackground : Colors.white,
+      backgroundColor: AppColors.cardBackground,
       builder: (context) {
         return ListView(
           shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          padding: EdgeInsets.symmetric(vertical: 20),
           children: _currencies.map((currency) {
             return ListTile(
-              title: Text(currency, style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87)),
-              trailing: _defaultCurrency == currency ? const Icon(Icons.check, color: AppColors.primary) : null,
+              title: Text(currency, style: GoogleFonts.poppins(color: AppColors.textPrimary)),
+              trailing: _defaultCurrency == currency ? Icon(Icons.check, color: AppColors.primary) : null,
               onTap: () {
                 setState(() => _defaultCurrency = currency);
                 Navigator.of(context).pop();

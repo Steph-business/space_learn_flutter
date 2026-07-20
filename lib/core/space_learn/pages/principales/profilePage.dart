@@ -76,7 +76,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppColors.scaffoldBackground,
         body: Center(
           child: CircularProgressIndicator(color: AppColors.primary),
@@ -95,12 +95,12 @@ class _ProfilePageState extends State<ProfilePage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.scaffoldBackground : Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -149,21 +149,21 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.camera_alt,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       size: 20,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Titre
             Text(
@@ -171,10 +171,10 @@ class _ProfilePageState extends State<ProfilePage> {
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             // Formulaire
             _buildReadOnlyField(
@@ -182,14 +182,14 @@ class _ProfilePageState extends State<ProfilePage> {
               label: "ID Profil",
               icon: Icons.perm_identity,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildTextField(
               controller: _nameController,
               label: "Nom complet",
               icon: Icons.person_outline,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildTextField(
               controller: _emailController,
@@ -197,7 +197,7 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildTextField(
               controller: _bioController,
@@ -205,21 +205,21 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.edit_outlined,
               maxLines: 3,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildTextField(
               controller: _socialLinksController,
               label: "Liens sociaux",
               icon: Icons.link,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildTextField(
               controller: _walletAddressController,
               label: "Adresse portefeuille",
               icon: Icons.account_balance_wallet,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildTextField(
               controller: _phoneController,
@@ -227,26 +227,26 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.phone_android_outlined,
               keyboardType: TextInputType.phone,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             DropdownButtonFormField<String>(
               value: _selectedGender,
-              dropdownColor: isDark ? AppColors.cardBackground : Colors.white,
-              style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87),
+              dropdownColor: AppColors.cardBackground,
+              style: GoogleFonts.poppins(color: AppColors.textPrimary),
               decoration: InputDecoration(
                 labelText: "Genre",
-                labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white60 : Colors.black54),
-                prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
+                labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
+                prefixIcon: Icon(Icons.person_outline, color: AppColors.primary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+                  borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+                  borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
                 ),
                 filled: true,
-                fillColor: isDark ? AppColors.cardBackground : Colors.white,
+                fillColor: AppColors.cardBackground,
               ),
               items: _genders.map((String value) {
                 return DropdownMenuItem<String>(
@@ -260,26 +260,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 });
               },
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             DropdownButtonFormField<String>(
               value: _selectedAgeRange,
-              dropdownColor: isDark ? AppColors.cardBackground : Colors.white,
-              style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87),
+              dropdownColor: AppColors.cardBackground,
+              style: GoogleFonts.poppins(color: AppColors.textPrimary),
               decoration: InputDecoration(
                 labelText: "Tranche d'âge",
-                labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white60 : Colors.black54),
-                prefixIcon: const Icon(Icons.cake_outlined, color: AppColors.primary),
+                labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
+                prefixIcon: Icon(Icons.cake_outlined, color: AppColors.primary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+                  borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+                  borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
                 ),
                 filled: true,
-                fillColor: isDark ? AppColors.cardBackground : Colors.white,
+                fillColor: AppColors.cardBackground,
               ),
               items: _ageRanges.map((String value) {
                 return DropdownMenuItem<String>(
@@ -293,11 +293,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 });
               },
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Statistiques
             _buildStatsSection(),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             // Boutons d'action
             Row(
@@ -317,21 +317,21 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Text(
                       "Sauvegarder",
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
                       _cancelChanges();
                     },
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: isDark ? Colors.white30 : AppColors.primary),
+                      side: BorderSide(color: isDark ? AppColors.textHint : AppColors.primary),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -340,7 +340,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Text(
                       "Annuler",
                       style: GoogleFonts.poppins(
-                        color: isDark ? Colors.white70 : AppColors.primary,
+                        color: isDark ? AppColors.textSecondary : AppColors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -361,32 +361,13 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: AppColors.scaffoldBackground,
       body: Stack(
         children: [
-          // Arrière-plan dégradé
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: MediaQuery.of(context).size.height * 0.4,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primary.withOpacity(0.15),
-                    AppColors.scaffoldBackground,
-                  ],
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   // En-tête de l'étape
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -401,7 +382,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   // Barre de progression
                   Stack(
                     children: [
@@ -409,7 +390,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         width: double.infinity,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: Colors.white12,
+                          color: AppColors.textHint,
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
@@ -421,18 +402,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.4),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
+                          
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 36),
+                  SizedBox(height: 36),
 
                   // Contenu dynamique basé sur l'étape courante
                   Expanded(
@@ -464,7 +439,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               },
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(
-                                  color: Colors.white.withOpacity(0.15),
+                                  color: AppColors.textPrimary.withOpacity(0.15),
                                 ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
@@ -473,7 +448,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               child: Text(
                                 "Retour",
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white,
+                                  color: AppColors.textPrimary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -481,7 +456,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         )
                       else
-                        const SizedBox(),
+                        SizedBox(),
                       Expanded(
                         child: SizedBox(
                           height: 52,
@@ -501,7 +476,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ? "Terminer"
                                   : "Suivant",
                               style: GoogleFonts.poppins(
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -510,7 +485,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                 ],
               ),
             ),
@@ -539,20 +514,20 @@ class _ProfilePageState extends State<ProfilePage> {
             Text(
               "Commençons par votre nom",
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               "Veuillez confirmer votre nom complet pour l'affichage de vos contributions.",
               style: GoogleFonts.poppins(
-                color: Colors.white70,
+                color: AppColors.textSecondary,
                 fontSize: 14,
               ),
             ),
-            const SizedBox(height: 36),
+            SizedBox(height: 36),
             _buildOnboardingTextField(
               controller: _nameController,
               label: "Nom complet",
@@ -567,20 +542,20 @@ class _ProfilePageState extends State<ProfilePage> {
             Text(
               "Quelques informations sur vous",
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               "Ces informations nous aident à mieux vous connaître et à personnaliser vos recommandations.",
               style: GoogleFonts.poppins(
-                color: Colors.white70,
+                color: AppColors.textSecondary,
                 fontSize: 14,
               ),
             ),
-            const SizedBox(height: 36),
+            SizedBox(height: 36),
             
             _buildOnboardingTextField(
               controller: _phoneController,
@@ -588,35 +563,35 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.phone_rounded,
               keyboardType: TextInputType.phone,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             
             Text(
               "Genre",
               style: GoogleFonts.poppins(
-                color: Colors.white70,
+                color: AppColors.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: AppColors.textPrimary.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: AppColors.textPrimary.withOpacity(0.1)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedGender,
                   hint: Text(
                     "Sélectionnez votre genre",
-                    style: GoogleFonts.poppins(color: Colors.white38, fontSize: 14),
+                    style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
                   ),
                   dropdownColor: AppColors.scaffoldBackground,
-                  icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                  icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
                   isExpanded: true,
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 16),
+                  style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
                   items: _genders.map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -631,35 +606,35 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             
             Text(
               "Tranche d'âge",
               style: GoogleFonts.poppins(
-                color: Colors.white70,
+                color: AppColors.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: AppColors.textPrimary.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: AppColors.textPrimary.withOpacity(0.1)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedAgeRange,
                   hint: Text(
                     "Sélectionnez votre tranche d'âge",
-                    style: GoogleFonts.poppins(color: Colors.white38, fontSize: 14),
+                    style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
                   ),
                   dropdownColor: AppColors.scaffoldBackground,
-                  icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                  icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
                   isExpanded: true,
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 16),
+                  style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
                   items: _ageRanges.map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -683,22 +658,22 @@ class _ProfilePageState extends State<ProfilePage> {
             Text(
               isLecteur ? "Racontez-nous votre histoire (Optionnel)" : "Racontez-nous votre histoire",
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               isLecteur 
                   ? "Décrivez brièvement qui vous êtes (facultatif pour les lecteurs). Vous pouvez passer à l'étape suivante."
                   : "Décrivez qui vous êtes. Vos lecteurs pourront en apprendre plus sur vous à travers cette biographie d'auteur.",
               style: GoogleFonts.poppins(
-                color: Colors.white70,
+                color: AppColors.textSecondary,
                 fontSize: 14,
               ),
             ),
-            const SizedBox(height: 36),
+            SizedBox(height: 36),
             _buildOnboardingTextField(
               controller: _bioController,
               label: isLecteur ? "Biographie (Optionnel)" : "Biographie",
@@ -714,22 +689,22 @@ class _ProfilePageState extends State<ProfilePage> {
             Text(
               isLecteur ? "Vos réseaux sociaux (Optionnel)" : "Vos réseaux sociaux",
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               isLecteur
                   ? "Renseignez un lien vers vos profils sociaux si vous le souhaitez (LinkedIn, Twitter, Github, etc.)."
                   : "Renseignez votre site web ou lien vers vos profils sociaux pour que vos lecteurs puissent vous suivre.",
               style: GoogleFonts.poppins(
-                color: Colors.white70,
+                color: AppColors.textSecondary,
                 fontSize: 14,
               ),
             ),
-            const SizedBox(height: 36),
+            SizedBox(height: 36),
             _buildOnboardingTextField(
               controller: _socialLinksController,
               label: isLecteur ? "Liens sociaux (Optionnel)" : "Liens sociaux (URL)",
@@ -739,7 +714,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         );
       default:
-        return const SizedBox();
+        return SizedBox();
     }
   }
 
@@ -754,20 +729,20 @@ class _ProfilePageState extends State<ProfilePage> {
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
-      style: GoogleFonts.poppins(color: Colors.white, fontSize: 16),
+      style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: Colors.white60, fontSize: 14),
+        labelStyle: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: AppColors.textHint,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          borderSide: BorderSide(color: AppColors.textPrimary.withOpacity(0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.8),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
@@ -844,25 +819,25 @@ class _ProfilePageState extends State<ProfilePage> {
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
-      style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87),
+      style: GoogleFonts.poppins(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white60 : Colors.black54),
+        labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
         prefixIcon: Icon(icon, color: AppColors.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+          borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey),
+          borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
         ),
         filled: true,
-        fillColor: isDark ? AppColors.cardBackground : Colors.white,
+        fillColor: AppColors.cardBackground,
       ),
     );
   }
@@ -876,22 +851,22 @@ class _ProfilePageState extends State<ProfilePage> {
     return TextFormField(
       initialValue: value,
       readOnly: true,
-      style: GoogleFonts.poppins(color: isDark ? Colors.white54 : Colors.black54),
+      style: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: isDark ? Colors.white30 : Colors.black38),
+        labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black38),
         prefixIcon: Icon(icon, color: AppColors.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey[300]!),
+          borderSide: BorderSide(color: isDark ? AppColors.textHint : AppColors.textSecondary),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey[300]!),
+          borderSide: BorderSide(color: isDark ? AppColors.textHint : AppColors.textSecondary),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey[300]!),
+          borderSide: BorderSide(color: isDark ? AppColors.textHint : AppColors.textSecondary),
         ),
         filled: true,
         fillColor: isDark ? AppColors.cardBackground.withOpacity(0.5) : Colors.grey[100],
@@ -902,23 +877,16 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildStatsSection() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.cardBackground : Colors.white,
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Statistiques de lecture",
             style: TextStyle(
               fontSize: 18,
@@ -926,7 +894,7 @@ class _ProfilePageState extends State<ProfilePage> {
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -961,16 +929,16 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey[600]),
+            style: TextStyle(fontSize: 12, color: isDark ? AppColors.textHint : Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1169,6 +1137,7 @@ class _ProfilePageState extends State<ProfilePage> {
             role.contains("administrateur") ||
             role.contains("éditeur")) {
           destination = ecrivainHome.HomePageAuteur(
+            key: ecrivainHome.HomePageAuteur.navKey,
             profileId: profilId,
             userName: updatedUser.nomComplet,
           );

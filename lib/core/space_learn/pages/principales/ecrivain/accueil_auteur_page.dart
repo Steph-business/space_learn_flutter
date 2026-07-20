@@ -27,10 +27,25 @@ class HomePageAuteur extends StatefulWidget {
 
 class _HomePageAuteurState extends State<HomePageAuteur> {
   int _currentIndex = 0;
+  Key _homeKey = UniqueKey();
+  Key _livresKey = UniqueKey();
 
   void setIndex(int index) {
     if (mounted) {
       setState(() => _currentIndex = index);
+    }
+  }
+
+  void goHome() {
+    setIndex(0);
+  }
+
+  void refreshPages() {
+    if (mounted) {
+      setState(() {
+        _homeKey = UniqueKey();
+        _livresKey = UniqueKey();
+      });
     }
   }
 
@@ -43,11 +58,13 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
     switch (index) {
       case 0:
         return HomeContentAuteur(
+          key: _homeKey,
           profileId: widget.profileId,
           userName: widget.userName,
         );
       case 1:
         return LivresPage(
+          key: _livresKey,
           onBackPressed: () => setState(() => _currentIndex = 0),
         );
       case 2:
@@ -59,7 +76,7 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
       case 4:
         return const SettingsPageAuteur();
       default:
-        return const HomeContentAuteur(profileId: '', userName: 'Auteur');
+        return HomeContentAuteur(key: _homeKey, profileId: '', userName: 'Auteur');
     }
   }
 
@@ -98,13 +115,16 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
       ),
       bottomNavigationBar: NavBarAuteur(
         currentIndex: _currentIndex,
-        onTap: (index) {
+        onTap: (index) async {
           if (index == 2) {
             // "Publier" action: Open AjouterLivrePage directly
-            Navigator.push(
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const AjouterLivrePage()),
             );
+            if (result == true) {
+              refreshPages();
+            }
           } else {
             // Normal navigation
             setState(() {

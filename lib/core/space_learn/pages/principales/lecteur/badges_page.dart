@@ -43,7 +43,7 @@ class _BadgesPageState extends State<BadgesPage> {
         slivers: [
           _buildAppBar(),
           _isLoading
-              ? const SliverFillRemaining(
+              ? SliverFillRemaining(
                   child: Center(
                     child: CircularProgressIndicator(color: AppColors.indigo),
                   ),
@@ -60,15 +60,15 @@ class _BadgesPageState extends State<BadgesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.emoji_events_outlined, size: 80, color: Colors.white10),
-            const SizedBox(height: 16),
+            Icon(Icons.emoji_events_outlined, size: 80, color: AppColors.textHint),
+            SizedBox(height: 16),
             Text(
               "Aucun badge débloqué",
               style: AppTextStyles.bodyFaded16,
             ),
             Text(
               "Continuez à lire pour en obtenir !",
-              style: GoogleFonts.poppins(color: Colors.white24, fontSize: 12),
+              style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 12),
             ),
           ],
         ),
@@ -91,7 +91,7 @@ class _BadgesPageState extends State<BadgesPage> {
           fit: StackFit.expand,
           children: [
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -105,20 +105,20 @@ class _BadgesPageState extends State<BadgesPage> {
               child: Icon(
                 Icons.emoji_events,
                 size: 200,
-                color: Colors.white.withOpacity(0.1),
+                color: AppColors.textPrimary.withOpacity(0.1),
               ),
             ),
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
                   Text(
                     "${_badges.length}",
                     style: GoogleFonts.poppins(
                       fontSize: 48,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   Text(
@@ -162,7 +162,7 @@ class _BadgesPageState extends State<BadgesPage> {
         border: Border.all(
           color: isUnlocked
               ? AppColors.indigo.withOpacity(0.5)
-              : Colors.white.withOpacity(0.05),
+              : AppColors.textHint,
         ),
       ),
       child: Stack(
@@ -173,11 +173,11 @@ class _BadgesPageState extends State<BadgesPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isUnlocked
                         ? AppColors.indigo.withOpacity(0.1)
-                        : Colors.white.withOpacity(0.05),
+                        : AppColors.textHint,
                     shape: BoxShape.circle,
                   ),
                   child: badge.iconUrl.startsWith('http')
@@ -185,13 +185,13 @@ class _BadgesPageState extends State<BadgesPage> {
                           badge.iconUrl,
                           width: 40,
                           height: 40,
-                          color: isUnlocked ? null : Colors.white24,
+                          color: isUnlocked ? null : AppColors.textHint,
                           errorBuilder: (_, __, ___) => Icon(
                             Icons.emoji_events,
                             size: 40,
                             color: isUnlocked
                                 ? AppColors.indigoLight
-                                : Colors.white24,
+                                : AppColors.textHint,
                           ),
                         )
                       : Icon(
@@ -199,20 +199,20 @@ class _BadgesPageState extends State<BadgesPage> {
                           size: 40,
                           color: isUnlocked
                               ? AppColors.indigoLight
-                              : Colors.white24,
+                              : AppColors.textHint,
                         ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   badge.name,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: isUnlocked ? Colors.white : Colors.white24,
+                    color: isUnlocked ? Colors.white : AppColors.textHint,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   badge.description,
                   textAlign: TextAlign.center,
@@ -220,7 +220,7 @@ class _BadgesPageState extends State<BadgesPage> {
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 10,
-                    color: Colors.white54,
+                    color: AppColors.textHint,
                   ),
                 ),
               ],
@@ -231,12 +231,12 @@ class _BadgesPageState extends State<BadgesPage> {
               top: 12,
               right: 12,
               child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
+                padding: EdgeInsets.all(4),
+                decoration: BoxDecoration(
                   color: AppColors.success,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check, size: 10, color: Colors.white),
+                child: Icon(Icons.check, size: 10, color: AppColors.textPrimary),
               ),
             ),
         ],

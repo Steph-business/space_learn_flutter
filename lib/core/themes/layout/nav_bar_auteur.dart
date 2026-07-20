@@ -19,15 +19,9 @@ class NavBarAuteur extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.scaffoldBackground,
         border: Border(
-          top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
+          top: BorderSide(color: AppColors.textPrimary.withOpacity(0.05), width: 1),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        
       ),
       child: SafeArea(
         top: false,
@@ -88,7 +82,7 @@ class NavBarAuteur extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: isActive && !isSpecial
             ? BoxDecoration(
                 color: AppColors.secondaryVariant.withOpacity(0.1),
@@ -100,7 +94,7 @@ class NavBarAuteur extends StatelessWidget {
           children: [
             if (isSpecial)
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [AppColors.secondaryVariant, AppColors.secondary],
@@ -108,18 +102,12 @@ class NavBarAuteur extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.secondaryVariant.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  
                 ),
                 child: Icon(
                   isActive ? activeIcon : icon,
                   size: 20,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                 ),
               )
             else
@@ -128,9 +116,9 @@ class NavBarAuteur extends StatelessWidget {
                 size: 22,
                 color: isActive
                     ? AppColors.secondaryVariant
-                    : Colors.white.withOpacity(0.35),
+                    : AppColors.textHint,
               ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               label,
               style: GoogleFonts.poppins(
@@ -140,7 +128,7 @@ class NavBarAuteur extends StatelessWidget {
                     ? AppColors.secondaryVariant
                     : isActive
                     ? AppColors.secondaryVariant
-                    : Colors.white.withOpacity(0.35),
+                    : AppColors.textHint,
               ),
             ),
           ],

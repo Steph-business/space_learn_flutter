@@ -102,22 +102,22 @@ class _ProfilPageState extends State<ProfilPage> {
                           height: 40,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.15),
+                            color: AppColors.textPrimary.withOpacity(0.15),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
+                              color: AppColors.textPrimary.withOpacity(0.3),
                               width: 1.5,
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_back_ios_new,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             size: 16,
                           ),
                         ),
                       ),
                     ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Rocket Icon
                   Container(
@@ -131,14 +131,14 @@ class _ProfilPageState extends State<ProfilPage> {
                         width: 2,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.rocket_launch,
                       size: 32,
                       color: AppColors.primary,
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Brand
                   RichText(
@@ -149,7 +149,7 @@ class _ProfilPageState extends State<ProfilPage> {
                           style: GoogleFonts.poppins(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             letterSpacing: 1,
                           ),
                         ),
@@ -166,19 +166,19 @@ class _ProfilPageState extends State<ProfilPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
 
                   // Subtitle
                   Text(
                     'Votre bibliothèque numérique intelligente',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.65),
+                      color: AppColors.textPrimary.withOpacity(0.65),
                     ),
                     textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(height: 48),
+                  SizedBox(height: 48),
 
                   // Question
                   Text(
@@ -186,26 +186,26 @@ class _ProfilPageState extends State<ProfilPage> {
                     style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
 
                   Text(
                     'Choisissez votre profil pour une\nexpérience personnalisée',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.6),
+                      color: AppColors.textPrimary.withOpacity(0.6),
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
 
                   if (isLoading || isUpdating)
-                    const CircularProgressIndicator(
+                    CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(
                         AppColors.primary,
                       ),
@@ -303,18 +303,12 @@ class _ProfilPageState extends State<ProfilPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
+          
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -328,18 +322,18 @@ class _ProfilPageState extends State<ProfilPage> {
               ),
               child: Icon(icon, size: 22, color: AppColors.primary),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(
               title,
               style: AppTextStyles.cardTitleW700,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               description.replaceAll('\n', ' '),
               style: GoogleFonts.poppins(
                 fontSize: 11,
-                color: Colors.white.withOpacity(0.5),
+                color: AppColors.textPrimary.withOpacity(0.5),
               ),
               textAlign: TextAlign.center,
             ),

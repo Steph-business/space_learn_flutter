@@ -101,9 +101,9 @@ class _TeamsPageState extends State<TeamsPage> {
         leading:
             (widget.onBackPressed != null || Navigator.of(context).canPop())
             ? IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Iconsax.arrow_left_2,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   size: 20,
                 ),
                 onPressed:
@@ -115,16 +115,16 @@ class _TeamsPageState extends State<TeamsPage> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: AppColors.textPrimary,
             letterSpacing: 1.2,
           ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Iconsax.notification,
-              color: Colors.white,
+              color: AppColors.textPrimary,
               size: 20,
             ),
             onPressed: () {},
@@ -132,17 +132,17 @@ class _TeamsPageState extends State<TeamsPage> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
-                  const SizedBox(height: 10),
+                  Text(_error!, style: TextStyle(color: Colors.red)),
+                  SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: _loadData,
-                    child: const Text("Réessayer"),
+                    child: Text("Réessayer"),
                   ),
                 ],
               ),
@@ -157,7 +157,7 @@ class _TeamsPageState extends State<TeamsPage> {
                     child: Text(
                       "Vos espaces d'échange",
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),
@@ -192,7 +192,7 @@ class _TeamsPageState extends State<TeamsPage> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 15),
+                        SizedBox(width: 15),
                         Expanded(
                           child: _buildQuickAction(
                             Iconsax.calendar,
@@ -224,7 +224,7 @@ class _TeamsPageState extends State<TeamsPage> {
                     child: Text(
                       "Vos publications (${_evenements.length})",
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
@@ -242,22 +242,22 @@ class _TeamsPageState extends State<TeamsPage> {
                           color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.05),
+                            color: AppColors.textPrimary.withOpacity(0.05),
                           ),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Iconsax.notification_status,
-                              color: Colors.white24,
+                              color: AppColors.textHint,
                               size: 32,
                             ),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             Text(
                               "Aucune annonce ou événement pour le moment.",
                               style: GoogleFonts.poppins(
-                                color: Colors.white38,
+                                color: AppColors.textHint,
                                 fontSize: 13,
                               ),
                             ),
@@ -279,15 +279,15 @@ class _TeamsPageState extends State<TeamsPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             "Publiez un livre pour créer un forum qui lui est dédié.",
-                            style: TextStyle(color: Colors.white54),
+                            style: TextStyle(color: AppColors.textHint),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -305,7 +305,7 @@ class _TeamsPageState extends State<TeamsPage> {
                       },
                     ),
 
-                  const SizedBox(height: 100),
+                  SizedBox(height: 100),
                 ],
               ),
             ),
@@ -327,9 +327,9 @@ class _TeamsPageState extends State<TeamsPage> {
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: [AppColors.cardBackground, AppColors.scaffoldBackground],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -339,29 +339,23 @@ class _TeamsPageState extends State<TeamsPage> {
             color: AppColors.secondaryVariant.withOpacity(0.3),
             width: 1.5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.secondaryVariant.withOpacity(0.1),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.secondaryVariant.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Iconsax.messages_2,
                 color: AppColors.secondaryVariant,
                 size: 30,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,23 +363,23 @@ class _TeamsPageState extends State<TeamsPage> {
                   Text(
                     "Votre Salon Officiel",
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     "Avis, FAQ, et annonces globales",
                     style: GoogleFonts.poppins(
-                      color: Colors.grey[400],
+                      color: AppColors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Iconsax.arrow_right_3, color: Colors.white54, size: 20),
+            Icon(Iconsax.arrow_right_3, color: AppColors.textHint, size: 20),
           ],
         ),
       ),
@@ -416,12 +410,12 @@ class _TeamsPageState extends State<TeamsPage> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: 16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
         ),
         child: Row(
           children: [
@@ -432,7 +426,7 @@ class _TeamsPageState extends State<TeamsPage> {
                 height: 70,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: Colors.white.withOpacity(0.05),
+                  color: AppColors.textPrimary.withOpacity(0.05),
                 ),
                 child:
                     book.imageCouverture != null &&
@@ -444,10 +438,10 @@ class _TeamsPageState extends State<TeamsPage> {
                           fit: BoxFit.cover,
                         ),
                       )
-                    : const Icon(Iconsax.book, color: Colors.white24, size: 24),
+                    : Icon(Iconsax.book, color: AppColors.textHint, size: 24),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,22 +449,22 @@ class _TeamsPageState extends State<TeamsPage> {
                   Text(
                     book.titre,
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Iconsax.message, size: 14, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
+                      Icon(Iconsax.message, size: 14, color: AppColors.textSecondary),
+                      SizedBox(width: 4),
                       Text(
                         "$msgCount messages",
                         style: GoogleFonts.poppins(
-                          color: Colors.grey[400],
+                          color: AppColors.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -529,7 +523,7 @@ class _TeamsPageState extends State<TeamsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: 18),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.poppins(
@@ -571,7 +565,7 @@ class _TeamsPageState extends State<TeamsPage> {
             },
             child: Container(
               width: 280,
-              margin: const EdgeInsets.only(right: 16, bottom: 10),
+              margin: EdgeInsets.only(right: 16, bottom: 10),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(16),
@@ -591,7 +585,7 @@ class _TeamsPageState extends State<TeamsPage> {
                         ),
                         child: Icon(iconType, color: colorType, size: 16),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           evt.typePublication.toUpperCase(),
@@ -606,29 +600,29 @@ class _TeamsPageState extends State<TeamsPage> {
                         Text(
                           DateFormat('dd/MM/yyyy').format(evt.dateEvenement!),
                           style: GoogleFonts.poppins(
-                            color: Colors.white54,
+                            color: AppColors.textHint,
                             fontSize: 10,
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     evt.titre,
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Expanded(
                     child: Text(
                       evt.contenu,
                       style: GoogleFonts.poppins(
-                        color: Colors.grey[400],
+                        color: AppColors.textSecondary,
                         fontSize: 12,
                       ),
                       maxLines: 3,

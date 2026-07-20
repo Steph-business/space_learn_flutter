@@ -31,27 +31,21 @@ class SelectCategorie extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary
                     : AppColors.cardBackground.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
+                    ? []
                     : [],
               ),
               child: Center(
                 child: Text(
                   category,
                   style: GoogleFonts.poppins(
-                    color: isSelected ? Colors.white : Colors.white60,
+                    color: isSelected ? Colors.white : AppColors.textPrimary,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 13,
                   ),

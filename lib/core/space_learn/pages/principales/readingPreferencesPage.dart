@@ -30,12 +30,12 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.scaffoldBackground : Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -58,34 +58,34 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
               style: GoogleFonts.poppins(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Aperçu du texte
             _buildTextPreview(),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             // Section Police
             _buildSectionTitle("Police"),
             _buildFontSelector(),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Section Taille du texte
             _buildSectionTitle("Taille du texte"),
             _buildFontSizeSlider(),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Section Thème
             _buildSectionTitle("Thème de lecture"),
             _buildThemeSelector(),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Section Mode nuit
             _buildSectionTitle("Mode nuit"),
             _buildNightModeToggle(),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             // Boutons d'action
             Row(
@@ -103,19 +103,19 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                     child: Text(
                       "Sauvegarder",
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: _resetToDefaults,
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: isDark ? Colors.white30 : AppColors.primary),
+                      side: BorderSide(color: isDark ? AppColors.textHint : AppColors.primary),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -124,7 +124,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                     child: Text(
                       "Par défaut",
                       style: GoogleFonts.poppins(
-                        color: isDark ? Colors.white70 : AppColors.primary,
+                        color: isDark ? AppColors.textSecondary : AppColors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -143,19 +143,12 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPreviewDark = _nightMode || (isDark && _theme == 'Automatique') || _theme == 'Sombre';
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isPreviewDark ? AppColors.cardBackground : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isPreviewDark ? Colors.white10 : Colors.black12),
-        boxShadow: [
-          BoxShadow(
-            color: isPreviewDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: isPreviewDark ? AppColors.textHint : Colors.black12),
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,13 +161,13 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
               color: isPreviewDark ? Colors.white : AppColors.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             "Ceci est un exemple de texte pour prévisualiser vos préférences de lecture. La police, la taille et le thème choisis s'appliqueront à tous vos livres.",
             style: TextStyle(
               fontFamily: _selectedFont,
               fontSize: _fontSize,
-              color: isPreviewDark ? Colors.white70 : Colors.black87,
+              color: isPreviewDark ? AppColors.textSecondary : Colors.black87,
               height: 1.6,
             ),
           ),
@@ -200,19 +193,19 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
   Widget _buildFontSelector() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.cardBackground : Colors.white,
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? Colors.white24 : Colors.grey[300]!),
+        border: Border.all(color: isDark ? AppColors.textHint : AppColors.textSecondary),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedFont,
           isExpanded: true,
-          dropdownColor: isDark ? AppColors.cardBackground : Colors.white,
-          style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87, fontSize: 16),
-          icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+          dropdownColor: AppColors.cardBackground,
+          style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
+          icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
           items: _fonts.map((font) {
             return DropdownMenuItem(
               value: font,
@@ -238,7 +231,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
           children: [
             Text(
               "Taille: ${_fontSize.toInt()}",
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87),
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
             ),
             Row(
               children: [
@@ -248,7 +241,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                       if (_fontSize > 12) _fontSize -= 2;
                     });
                   },
-                  icon: const Icon(Icons.remove),
+                  icon: Icon(Icons.remove),
                   color: AppColors.primary,
                 ),
                 IconButton(
@@ -257,7 +250,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                       if (_fontSize < 24) _fontSize += 2;
                     });
                   },
-                  icon: const Icon(Icons.add),
+                  icon: Icon(Icons.add),
                   color: AppColors.primary,
                 ),
               ],
@@ -270,7 +263,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
           max: 24,
           divisions: 6,
           activeColor: AppColors.primary,
-          inactiveColor: isDark ? Colors.white24 : Colors.grey[300],
+          inactiveColor: isDark ? AppColors.textHint : AppColors.textSecondary,
           onChanged: (value) {
             setState(() {
               _fontSize = value;
@@ -296,7 +289,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
           labelStyle: GoogleFonts.poppins(
             color: isSelected
                 ? AppColors.primary
-                : (isDark ? Colors.white70 : Colors.black87),
+                : (isDark ? AppColors.textSecondary : Colors.black87),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
           onSelected: (selected) {
@@ -315,16 +308,16 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
   Widget _buildNightModeToggle() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
-      color: isDark ? AppColors.cardBackground : Colors.white,
+      color: AppColors.cardBackground,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: SwitchListTile(
         title: Text(
           "Activer le mode nuit",
-          style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w600),
+          style: GoogleFonts.poppins(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           "Texte blanc sur fond sombre",
-          style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.grey[600]),
+          style: GoogleFonts.poppins(color: isDark ? AppColors.textSecondary : Colors.grey[600]),
         ),
         value: _nightMode,
         activeColor: AppColors.primary,

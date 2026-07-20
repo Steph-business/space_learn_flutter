@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 
 class Messages extends StatelessWidget {
   const Messages({super.key});
@@ -25,20 +26,20 @@ class Messages extends StatelessWidget {
                     size: 80,
                     color: Colors.grey[600],
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
+                  SizedBox(height: 24),
+                  Text(
                     "Aucun message",
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     "Vos conversations avec les lecteurs et d'autres auteurs apparaîtront ici.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+                    style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                   ),
                 ],
               ),

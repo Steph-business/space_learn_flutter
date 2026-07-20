@@ -114,7 +114,7 @@ class _RecherchePageState extends State<RecherchePage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
+          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Container(
@@ -126,12 +126,12 @@ class _RecherchePageState extends State<RecherchePage> {
           child: TextField(
             controller: _searchController,
             autofocus: true,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
             onChanged: _onSearch,
             decoration: InputDecoration(
               hintText: "Rechercher...",
               hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Iconsax.search_normal,
                 color: Colors.grey,
                 size: 18,
@@ -146,7 +146,7 @@ class _RecherchePageState extends State<RecherchePage> {
           ? Center(
               child: Text(
                 "Recherche en cours...",
-                style: GoogleFonts.poppins(color: Colors.white70),
+                style: GoogleFonts.poppins(color: AppColors.textSecondary),
               ),
             )
           : _query.isEmpty
@@ -174,9 +174,9 @@ class _RecherchePageState extends State<RecherchePage> {
           Icon(
             Iconsax.search_status,
             size: 64,
-            color: Colors.white.withOpacity(0.1),
+            color: AppColors.textPrimary.withOpacity(0.1),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             message,
             textAlign: TextAlign.center,
@@ -201,12 +201,12 @@ class _RecherchePageState extends State<RecherchePage> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(12),
+        margin: EdgeInsets.only(bottom: 16),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
         ),
         child: Row(
           children: [
@@ -223,15 +223,15 @@ class _RecherchePageState extends State<RecherchePage> {
                         fit: BoxFit.cover,
                       )
                     : null,
-                color: Colors.white10,
+                color: AppColors.textHint,
               ),
               child:
                   (book.imageCouverture == null ||
                       book.imageCouverture!.isEmpty)
-                  ? const Icon(Icons.book, color: Colors.white24)
+                  ? Icon(Icons.book, color: AppColors.textHint)
                   : null,
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +242,7 @@ class _RecherchePageState extends State<RecherchePage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     "Par ${book.authorName}",
                     style: GoogleFonts.poppins(
@@ -251,14 +251,14 @@ class _RecherchePageState extends State<RecherchePage> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     book.description,
                     style: AppTextStyles.grey11,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     "${book.prix} FCFA",
                     style: AppTextStyles.withColor(AppTextStyles.cardTitle, AppColors.primary),
@@ -266,7 +266,7 @@ class _RecherchePageState extends State<RecherchePage> {
                 ],
               ),
             ),
-            const Icon(Iconsax.arrow_right_3, color: Colors.white24, size: 18),
+            Icon(Iconsax.arrow_right_3, color: AppColors.textHint, size: 18),
           ],
         ),
       ),

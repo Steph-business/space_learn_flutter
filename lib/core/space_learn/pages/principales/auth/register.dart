@@ -163,7 +163,7 @@ class _RegisterPageState extends State<RegisterPage> {
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Column(
               children: [
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
 
                 // Close button (X) top-left
                 Align(
@@ -183,22 +183,22 @@ class _RegisterPageState extends State<RegisterPage> {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.15),
+                        color: AppColors.textPrimary.withOpacity(0.15),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
+                          color: AppColors.textPrimary.withOpacity(0.3),
                           width: 1.5,
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         size: 20,
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 // Title
                 Text(
@@ -206,11 +206,11 @@ class _RegisterPageState extends State<RegisterPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white.withOpacity(0.8),
+                    color: AppColors.textPrimary.withOpacity(0.8),
                     letterSpacing: 1,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
 
                 // Brand
                 RichText(
@@ -221,7 +221,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       TextSpan(
@@ -235,32 +235,26 @@ class _RegisterPageState extends State<RegisterPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
 
                 Text(
                   'Créez votre compte pour commencer',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.65),
+                    color: AppColors.textPrimary.withOpacity(0.65),
                   ),
                   textAlign: TextAlign.center,
                 ),
 
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
 
                 // Dark form card
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                    border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
+                    
                   ),
                   child: Column(
                     children: [
@@ -300,7 +294,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             _obscurePassword
                                 ? Icons.visibility_off_outlined
                                 : Icons.visibility_outlined,
-                            color: Colors.white30,
+                            color: AppColors.textHint,
                             size: 18,
                           ),
                           onPressed: _togglePasswordVisibility,
@@ -319,7 +313,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             _obscureConfirmPassword
                                 ? Icons.visibility_off_outlined
                                 : Icons.visibility_outlined,
-                            color: Colors.white30,
+                            color: AppColors.textHint,
                             size: 18,
                           ),
                           onPressed: _toggleConfirmPasswordVisibility,
@@ -329,7 +323,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
 
                 // Register button
                 SizedBox(
@@ -339,7 +333,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     onPressed: _isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.textPrimary,
                       elevation: 4,
                       shadowColor: AppColors.primary.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
@@ -347,11 +341,11 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               strokeWidth: 2.5,
                             ),
                           )
@@ -365,7 +359,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 // Login link
                 GestureDetector(
@@ -383,7 +377,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       text: 'Vous avez déjà un compte ? ',
                       style: GoogleFonts.poppins(
                         fontSize: 13,
-                        color: Colors.white60,
+                        color: AppColors.textHint,
                       ),
                       children: [
                         TextSpan(
@@ -399,7 +393,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
               ],
             ),
           ),
@@ -436,7 +430,7 @@ class _RegisterPageState extends State<RegisterPage> {
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: GoogleFonts.poppins(
-                  color: Colors.white30,
+                  color: AppColors.textHint,
                   fontSize: 13,
                 ),
                 border: InputBorder.none,
@@ -453,7 +447,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildDivider() {
     return Divider(
-      color: Colors.white.withOpacity(0.08),
+      color: AppColors.textPrimary.withOpacity(0.08),
       height: 1,
       indent: 16,
       endIndent: 16,
