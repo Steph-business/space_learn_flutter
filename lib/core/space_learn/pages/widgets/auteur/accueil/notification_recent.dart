@@ -109,7 +109,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
     final loading = notificationProvider.isLoading;
 
     if (loading && notifications.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 40),
         child: Center(
           child: CircularProgressIndicator(
@@ -128,13 +128,13 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
               Icon(
                 Iconsax.notification_bing,
                 size: 64,
-                color: Colors.white.withOpacity(0.2),
+                color: AppColors.textPrimary.withOpacity(0.2),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'Aucune notification.',
                 style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.5),
+                  color: AppColors.textPrimary.withOpacity(0.5),
                   fontSize: 16,
                 ),
               ),
@@ -155,7 +155,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white.withOpacity(0.9),
+                color: AppColors.textPrimary.withOpacity(0.9),
                 letterSpacing: 0.5,
               ),
             ),
@@ -207,14 +207,12 @@ class _NotificationCardFromModel extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Container(
             decoration: BoxDecoration(
-              color: isUnread
-                  ? Colors.white.withOpacity(0.08)
-                  : Colors.white.withOpacity(0.03),
+              color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isUnread
                     ? accentColor.withOpacity(0.3)
-                    : Colors.white.withOpacity(0.05),
+                    : AppColors.border,
                 width: 1,
               ),
             ),
@@ -258,7 +256,7 @@ class _NotificationCardFromModel extends StatelessWidget {
                             ),
                         ],
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,20 +277,20 @@ class _NotificationCardFromModel extends StatelessWidget {
                                   timeAgo,
                                   style: GoogleFonts.poppins(
                                     fontSize: 10,
-                                    color: Colors.white.withOpacity(0.4),
+                                    color: AppColors.textPrimary.withOpacity(0.4),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               model.contenu,
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 height: 1.3,
                                 color: isUnread
-                                    ? Colors.white
-                                    : Colors.white.withOpacity(0.7),
+                                    ? AppColors.textPrimary
+                                    : AppColors.textSecondary,
                                 fontWeight: isUnread
                                     ? FontWeight.w500
                                     : FontWeight.w400,
@@ -301,11 +299,11 @@ class _NotificationCardFromModel extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 12, left: 4),
                         child: Icon(
                           Icons.chevron_right_rounded,
-                          color: Colors.white24,
+                          color: AppColors.textHint,
                           size: 20,
                         ),
                       ),

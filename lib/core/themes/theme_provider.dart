@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'app_colors.dart';
 
 class ThemeProvider extends ChangeNotifier {
   static const String _themeKey = "app_theme_mode";
@@ -29,6 +30,7 @@ class ThemeProvider extends ChangeNotifier {
     } else {
       _themeMode = ThemeMode.system;
     }
+    AppColors.isDark = isDarkMode;
     notifyListeners();
   }
 
@@ -42,6 +44,7 @@ class ThemeProvider extends ChangeNotifier {
       themeStr = "system";
     }
     await prefs.setString(_themeKey, themeStr);
+    AppColors.isDark = isDarkMode;
     notifyListeners();
   }
 }

@@ -271,12 +271,12 @@ class _BibliothequePageState extends State<BibliothequePage> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16),
                         GestureDetector(
                           onTap: () =>
                               setState(() => _isGridView = !_isGridView),
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: AppColors.cardBackground,
                               borderRadius: BorderRadius.circular(12),
@@ -291,26 +291,26 @@ class _BibliothequePageState extends State<BibliothequePage> {
                               _isGridView
                                   ? Icons.list_rounded
                                   : Icons.grid_view_rounded,
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               size: 20,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
 
                     // Status Filter Tabs
                     Row(
                       children: [
                         _buildStatusTab("Tous"),
-                        const SizedBox(width: 32),
+                        SizedBox(width: 32),
                         _buildStatusTab("En cours"),
-                        const SizedBox(width: 32),
+                        SizedBox(width: 32),
                         _buildStatusTab("Terminés"),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // Sort and Genre Chips
                     SingleChildScrollView(
@@ -319,22 +319,22 @@ class _BibliothequePageState extends State<BibliothequePage> {
                       child: Row(
                         children: [
                           _buildSortChip("Dernière lecture", Icons.swap_vert),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           _buildGenreChip(),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           _buildSortChip("A-Z", Icons.sort_by_alpha),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     if (_isLoading)
                       Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(60.0),
+                          padding: EdgeInsets.all(60.0),
                           child: Text(
                             "Chargement...",
-                            style: GoogleFonts.poppins(color: Colors.white70),
+                            style: GoogleFonts.poppins(color: AppColors.textSecondary),
                           ),
                         ),
                       )
@@ -370,7 +370,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                                       book.progressions!.isNotEmpty)
                                   ? book.progressions!.first.pourcentage.toInt()
                                   : 0,
-                              couleurs: const [
+                              couleurs: [
                                 AppColors.purple,
                                 AppColors.indigoLight,
                               ],
@@ -402,7 +402,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                                       book.progressions!.isNotEmpty)
                                   ? book.progressions!.first.pourcentage.toInt()
                                   : 0,
-                              couleurs: const [
+                              couleurs: [
                                 AppColors.purple,
                                 AppColors.indigoLight,
                               ],
@@ -449,7 +449,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppColors.primaryLight : Colors.grey[400],
+                color: isSelected ? AppColors.primaryLight : AppColors.textSecondary,
               ),
             ),
           ),
@@ -463,7 +463,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               ),
             )
           else
-            const SizedBox(height: 3),
+            SizedBox(height: 3),
         ],
       ),
     );
@@ -474,7 +474,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
     return GestureDetector(
       onTap: () => setState(() => _sortOption = label),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isActive ? AppColors.cardBackground : AppColors.cardBackground,
           borderRadius: BorderRadius.circular(12),
@@ -488,14 +488,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
           children: [
             Icon(
               icon,
-              color: isActive ? AppColors.primaryLight : Colors.white,
+              color: isActive ? AppColors.primaryLight : AppColors.textPrimary,
               size: 18,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.poppins(
-                color: isActive ? AppColors.primaryLight : Colors.white,
+                color: isActive ? AppColors.primaryLight : AppColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -511,7 +511,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
     return GestureDetector(
       onTap: _showGenrePicker,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(12),
@@ -525,14 +525,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
           children: [
             Icon(
               Icons.tune_rounded,
-              color: hasActiveGenre ? AppColors.primaryLight : Colors.white,
+              color: hasActiveGenre ? AppColors.primaryLight : AppColors.textPrimary,
               size: 18,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               hasActiveGenre ? "Genre: $filtreActif" : "Genre",
               style: GoogleFonts.poppins(
-                color: hasActiveGenre ? AppColors.primaryLight : Colors.white,
+                color: hasActiveGenre ? AppColors.primaryLight : AppColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -552,8 +552,8 @@ class _BibliothequePageState extends State<BibliothequePage> {
       ),
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          decoration: const BoxDecoration(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
             color: AppColors.cardBackground,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
@@ -565,10 +565,10 @@ class _BibliothequePageState extends State<BibliothequePage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Flexible(
                 child: ListView.builder(
                   shrinkWrap: true,
@@ -589,7 +589,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         ),
                       ),
                       trailing: isSelected
-                          ? const Icon(
+                          ? Icon(
                               Icons.check,
                               color: AppColors.primaryLight,
                             )
@@ -617,7 +617,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 shape: BoxShape.circle,
@@ -628,26 +628,26 @@ class _BibliothequePageState extends State<BibliothequePage> {
                 color: AppColors.slateLight,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               "Votre bibliothèque est vide",
               style: GoogleFonts.poppins(
                 fontSize: 18,
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               "Explorez le marketplace pour ajouter des livres",
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: Colors.grey[400],
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
                 // Naviguer vers le marketplace
@@ -655,7 +655,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.textPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -665,7 +665,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                 ),
                 elevation: 0,
               ),
-              child: const Text("Découvrir des livres"),
+              child: Text("Découvrir des livres"),
             ),
           ],
         ),
@@ -679,18 +679,18 @@ class _BibliothequePageState extends State<BibliothequePage> {
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
               size: 48,
               color: Colors.redAccent,
             ),
-            const SizedBox(height: 16),
-            Text(_error!, style: GoogleFonts.poppins(color: Colors.white)),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
+            Text(_error!, style: GoogleFonts.poppins(color: AppColors.textPrimary)),
+            SizedBox(height: 16),
             TextButton.icon(
               onPressed: _loadLibrary,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text("Réessayer"),
+              icon: Icon(Icons.refresh_rounded),
+              label: Text("Réessayer"),
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
           ],

@@ -1,8 +1,8 @@
 /// api_routes.dart
 class ApiRoutes {
   // Change following IP to your machine's current IP
-  static const String host = "192.168.1.21";
-  static const String hosts = "192.168.1.21";
+  static const String host = "192.168.1.29";
+  static const String hosts = "192.168.1.29";
 
   // Backends fusionnés : l'authentification et les livres sont désormais servis
   // par le MÊME serveur Go (port 8082). Les chemins /auth/* et /utilisateurs/*
@@ -97,6 +97,8 @@ class ApiRoutes {
   static const String recommendations = "$baseUrlsGin/api/recommendations";
   static const String recommendationById =
       "$baseUrlsGin/api/recommendations/:id";
+  static const String recommendationFeedback =
+      "$baseUrlsGin/api/recommendations/:id/feedback";
 
   // Notifications routes
   static const String notifications = "$baseUrlsGin/api/notifications";
@@ -162,6 +164,9 @@ class ApiRoutes {
   static const String categories = "$baseUrlsGin/api/categories";
   static const String categorieById = "$baseUrlsGin/api/categories/:id";
 
+  // Citation routes
+  static const String citationsDaily = "$baseUrlsGin/api/citations/daily";
+
   static String? sanitizeImageUrl(String? url, {bool useGin = false}) {
     if (url == null || url.isEmpty) return null;
 
@@ -190,9 +195,16 @@ class ApiRoutes {
         }
       }
     } else {
-      // Relative path - prepend target base URL
-      final separator = url.startsWith('/') ? '' : '/';
-      sanitized = '$targetBaseUrl$separator$url';
+      // Relative path
+      // Match the Web app behavior for relative paths (books/covers uploaded previously)
+      if (useGin) {
+        final cleanPath = url.startsWith('/') ? url.substring(1) : url;
+        sanitized =
+            'https://uqmydsydlkwxcfcdtsbu.supabase.co/storage/v1/object/public/books/$cleanPath';
+      } else {
+        final separator = url.startsWith('/') ? '' : '/';
+        sanitized = '$targetBaseUrl$separator$url';
+      }
     }
 
     return sanitized;

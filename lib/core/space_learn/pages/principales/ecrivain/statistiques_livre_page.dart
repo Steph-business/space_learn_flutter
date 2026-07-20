@@ -28,7 +28,7 @@ class StatistiquesLivrePage extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -45,13 +45,7 @@ class StatistiquesLivrePage extends StatelessWidget {
                   height: 120,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
+                    
                   ),
                   child:
                       book.imageCouverture != null &&
@@ -66,30 +60,30 @@ class StatistiquesLivrePage extends StatelessWidget {
                         )
                       : Container(
                           decoration: BoxDecoration(
-                            color: Colors.white10,
+                            color: AppColors.textHint,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.book,
-                            color: Colors.white24,
+                            color: AppColors.textHint,
                             size: 40,
                           ),
                         ),
                 ),
-                const SizedBox(width: 20),
+                SizedBox(width: 20),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         book.titre,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -112,12 +106,12 @@ class StatistiquesLivrePage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         "Prix : ${book.prix} FCFA",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white70,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -125,7 +119,7 @@ class StatistiquesLivrePage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             // KPIs
             Row(
@@ -138,7 +132,7 @@ class StatistiquesLivrePage extends StatelessWidget {
                     color: AppColors.secondaryVariant,
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 Expanded(
                   child: _buildKpiCard(
                     title: "Note",
@@ -149,24 +143,24 @@ class StatistiquesLivrePage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _buildKpiCard(
               title: "Revenus (Estimés)",
               value: "$estimatedRevenue FCFA",
               icon: Icons.account_balance_wallet_rounded,
               color: AppColors.success, // Green
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             // Graphique des Ventes (Mocks)
             Text(
               "Évolution (30 derniers jours)",
               style: AppTextStyles.subtitle,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Container(
               height: 250,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(20),
@@ -186,11 +180,11 @@ class StatistiquesLivrePage extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +195,7 @@ class StatistiquesLivrePage extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: AppColors.textPrimary.withOpacity(0.5),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -209,11 +203,11 @@ class StatistiquesLivrePage extends StatelessWidget {
               Icon(icon, color: color, size: 18),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.textPrimary,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -230,7 +224,7 @@ class StatistiquesLivrePage extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (value) {
-            return FlLine(color: Colors.white.withOpacity(0.1), strokeWidth: 1);
+            return FlLine(color: AppColors.textPrimary.withOpacity(0.1), strokeWidth: 1);
           },
         ),
         titlesData: FlTitlesData(
@@ -294,7 +288,7 @@ class StatistiquesLivrePage extends StatelessWidget {
             color: AppColors.secondaryVariant,
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
+            dotData: FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               color: AppColors.secondaryVariant.withOpacity(0.2),

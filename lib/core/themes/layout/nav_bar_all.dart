@@ -60,7 +60,7 @@ class NavBarAll extends StatelessWidget {
                 height: 45,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white24, width: 1),
+                  border: Border.all(color: AppColors.textHint, width: 1),
                   color: AppColors.cardBackground,
                 ),
                 child: ClipOval(
@@ -74,7 +74,7 @@ class NavBarAll extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
@@ -83,7 +83,7 @@ class NavBarAll extends StatelessWidget {
                     "${greeting ?? getGreeting()}, ",
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      color: Colors.white54,
+                      color: AppColors.textHint,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -109,9 +109,9 @@ class NavBarAll extends StatelessWidget {
                       ),
                     );
                   },
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.chat_bubble_outline_rounded,
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     size: 24,
                   ),
                 ),
@@ -127,9 +127,9 @@ class NavBarAll extends StatelessWidget {
                         ),
                       );
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.notifications_outlined,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       size: 24,
                     ),
                   ),
@@ -160,8 +160,8 @@ class NavBarAll extends StatelessWidget {
                           ),
                           child: Text(
                             '$count',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
                               fontSize: 8,
                               fontWeight: FontWeight.bold,
                             ),
@@ -186,9 +186,9 @@ class NavBarAll extends StatelessWidget {
                           ),
                         );
                       },
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.shopping_cart_outlined,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         size: 24,
                       ),
                     ),
@@ -199,7 +199,7 @@ class NavBarAll extends StatelessWidget {
                           right: 8,
                           top: 8,
                           child: Container(
-                            padding: const EdgeInsets.all(2),
+                            padding: EdgeInsets.all(2),
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               shape: BoxShape.circle,
@@ -214,8 +214,8 @@ class NavBarAll extends StatelessWidget {
                             ),
                             child: Text(
                               '${cart.itemCount}',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
                               ),

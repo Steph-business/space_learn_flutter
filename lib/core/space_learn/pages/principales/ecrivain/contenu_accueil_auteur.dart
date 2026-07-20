@@ -8,7 +8,11 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
 
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/sections_dashboard.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 
 class HomeContentAuteur extends StatefulWidget {
   final String profileId;
@@ -26,7 +30,13 @@ class HomeContentAuteur extends StatefulWidget {
 
 class _HomeContentAuteurState extends State<HomeContentAuteur> {
   final BookService _bookService = BookService();
+  final AuthorStatsService _authorStatsService = AuthorStatsService();
+  final AuthService _authService = AuthService();
+  final RelationService _relationService = RelationService();
+  
   List<BookModel> _books = [];
+  List<dynamic> _followers = [];
+  Map<String, dynamic> _stats = {};
   bool _isLoading = true;
 
   @override
@@ -39,10 +49,21 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final books = await _bookService.getBooksByAuthorId(widget.profileId);
+      final token = await TokenStorage.getToken();
+      if (token == null) throw Exception('No token');
+      final user = await _authService.getUser(token);
+      if (user == null) throw Exception('No user');
+
+      final authorId = user.id;
+      final books = await _bookService.getBooksByAuthorId(authorId);
+      final stats = await _authorStatsService.getAuthorStats(authorId, "");
+      final followers = await _relationService.getFollowers(authorId);
+      
       if (mounted) {
         setState(() {
           _books = books;
+          _stats = stats;
+          _followers = followers;
           _isLoading = false;
         });
       }
@@ -61,12 +82,12 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 10),
-            Statistique(books: _books),
+            SizedBox(height: 10),
+            Statistique(stats: _stats),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Revenus(books: _books),
+              child: Revenus(stats: _stats),
             ),
 
             Padding(
@@ -84,9 +105,9 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
                     );
                     if (result == true) _loadData();
                   },
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.add_circle,
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     size: 24,
                   ),
                   label: Text(
@@ -106,7 +127,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: TopLivresSection(books: _books, isLoading: _isLoading),
+              child: TopLivresSection(books: _books, isLoading: _isLoading, onBookUpdated: _loadData),
             ),
 
             Padding(
@@ -114,12 +135,12 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
               child: CommentairesRecentsSection(books: _books),
             ),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: ConseilsPublicationSection(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: DerniersAbonnesSection(followers: _followers),
             ),
 
-            const SizedBox(height: 100),
+            SizedBox(height: 100),
           ],
         ),
       ),

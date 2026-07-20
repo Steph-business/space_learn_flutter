@@ -44,18 +44,18 @@ class _NotificationPageState extends State<NotificationPage> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: AppBar(
-              backgroundColor: Colors.white.withOpacity(0.05),
+              backgroundColor: AppColors.scaffoldBackground,
               elevation: 0,
               centerTitle: true,
               leading: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(8.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: AppColors.textPrimary.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.chevron_left, color: Colors.white),
+                    icon: Icon(Icons.chevron_left, color: AppColors.textPrimary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
@@ -63,7 +63,7 @@ class _NotificationPageState extends State<NotificationPage> {
               title: Text(
                 "Notifications",
                 style: GoogleFonts.outfit(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
                   fontSize: 22,
                   letterSpacing: 0.5,
@@ -71,11 +71,11 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               actions: [
                 PopupMenuButton<String>(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.more_vert,
                     color: AppColors.primaryLight,
                   ),
-                  offset: const Offset(0, 45),
+                  offset: Offset(0, 45),
                   color: AppColors.cardBackground,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -104,9 +104,9 @@ class _NotificationPageState extends State<NotificationPage> {
                             size: 16,
                             color: _filter == 'tous'
                                 ? AppColors.primaryLight
-                                : Colors.white70,
+                                : AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Text("Toutes", style: AppTextStyles.body13),
                         ],
                       ),
@@ -121,9 +121,9 @@ class _NotificationPageState extends State<NotificationPage> {
                             size: 16,
                             color: _filter == 'non_read'
                                 ? AppColors.primaryLight
-                                : Colors.white70,
+                                : AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Text("Non lues", style: AppTextStyles.body13),
                         ],
                       ),
@@ -138,9 +138,9 @@ class _NotificationPageState extends State<NotificationPage> {
                             size: 16,
                             color: _filter == 'archives'
                                 ? AppColors.primaryLight
-                                : Colors.white70,
+                                : AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Text("Archives", style: AppTextStyles.body13),
                         ],
                       ),
@@ -151,12 +151,12 @@ class _NotificationPageState extends State<NotificationPage> {
                       height: 35,
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.checklist,
                             size: 16,
                             color: AppColors.primaryLight,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Text(
                             "Tout lire",
                             style: GoogleFonts.poppins(
@@ -169,7 +169,7 @@ class _NotificationPageState extends State<NotificationPage> {
                     ),
                   ],
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
               ],
             ),
           ),

@@ -139,12 +139,12 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
   Widget _buildBody(BuildContext context) {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: Padding(
           padding: EdgeInsets.all(40.0),
           child: Text(
             "Chargement de la boutique...",
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(color: AppColors.textSecondary),
           ),
         ),
       );
@@ -155,20 +155,20 @@ class _MarketplacePageState extends State<MarketplacePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline_rounded,
                 size: 48,
                 color: Colors.redAccent,
               ),
-              const SizedBox(height: 16),
-              Text(_error!, style: const TextStyle(color: Colors.white)),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
+              Text(_error!, style: TextStyle(color: AppColors.textPrimary)),
+              SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadBooks,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
                 ),
-                child: const Text("Réessayer"),
+                child: Text("Réessayer"),
               ),
             ],
           ),
@@ -178,9 +178,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
       return Container(
         height: 200,
         alignment: Alignment.center,
-        child: const Text(
+        child: Text(
           "Aucun livre disponible.",
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
       );
     } else {
@@ -198,7 +198,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           // Search & Filter Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -213,13 +213,13 @@ class _MarketplacePageState extends State<MarketplacePage> {
                     });
                   },
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 SelectCategorie(
                   categories: ["Tout", ..._categories],
                   selectedCategory: _selectedCategory,
                   onCategorySelected: _onCategorySelected,
                 ),
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -230,13 +230,13 @@ class _MarketplacePageState extends State<MarketplacePage> {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     Text(
                       "${filteredBooks.length} livres",
                       style: GoogleFonts.poppins(
-                        color: Colors.grey[500],
+                        color: AppColors.textSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
@@ -269,7 +269,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
               },
             ),
           ),
-          const SizedBox(height: 100),
+          SizedBox(height: 100),
         ],
       );
     }

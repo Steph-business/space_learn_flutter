@@ -139,20 +139,20 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
           backgroundColor: AppColors.cardBackground,
           title: Text(
             "Nouveau sujet",
-            style: GoogleFonts.poppins(color: Colors.white),
+            style: GoogleFonts.poppins(color: AppColors.textPrimary),
           ),
           content: TextField(
             controller: titleController,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
+            style: TextStyle(color: AppColors.textPrimary),
+            decoration: InputDecoration(
               hintText: "Titre de la discussion",
-              hintStyle: TextStyle(color: Colors.white54),
+              hintStyle: TextStyle(color: AppColors.textHint),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
+              child: Text(
                 "Annuler",
                 style: TextStyle(color: Colors.grey),
               ),
@@ -166,7 +166,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.secondaryVariant,
               ),
-              child: const Text("Créer"),
+              child: Text("Créer"),
             ),
           ],
         );
@@ -177,12 +177,12 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: AppColors.darkSurface,
       appBar: AppBar(
-        backgroundColor: AppColors.scaffoldBackground,
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
+          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
           onPressed: () {
             MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
             Navigator.of(context).pop();
@@ -192,10 +192,10 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: const InputDecoration(
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                decoration: InputDecoration(
                   hintText: "Rechercher...",
-                  hintStyle: TextStyle(color: Colors.white54),
+                  hintStyle: TextStyle(color: AppColors.textHint),
                   border: InputBorder.none,
                 ),
                 onChanged: (value) {
@@ -211,7 +211,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -230,7 +230,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
           IconButton(
             icon: Icon(
               _isSearching ? Icons.close : Iconsax.search_normal_1,
-              color: Colors.white,
+              color: AppColors.textPrimary,
               size: 20,
             ),
             onPressed: () {
@@ -252,11 +252,11 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
                 ),
                 child: Row(
                   children: [
@@ -264,7 +264,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       width: 60,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: AppColors.textPrimary.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child:
@@ -279,15 +279,15 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                                 fit: BoxFit.cover,
                               ),
                             )
-                          : const Center(
+                          : Center(
                               child: Icon(
                                 Iconsax.book,
-                                color: Colors.white24,
+                                color: AppColors.textHint,
                                 size: 30,
                               ),
                             ),
                     ),
-                    const SizedBox(width: 20),
+                    SizedBox(width: 20),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,17 +295,17 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           Text(
                             "Rejoignez la discussion",
                             style: GoogleFonts.poppins(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             "Partagez vos théories avec la communauté.",
                             style: AppTextStyles.grey12,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -356,22 +356,12 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             ? AppColors.secondaryVariant
                             : AppColors.cardBackground,
                         borderRadius: BorderRadius.circular(30),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFF0EA5E9,
-                                  ).withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : null,
+                        
                       ),
                       child: Text(
                         cat,
                         style: GoogleFonts.poppins(
-                          color: isSelected ? Colors.white : Colors.grey[400],
+                          color: isSelected ? Colors.white : AppColors.textPrimary,
                           fontSize: 14,
                           fontWeight: isSelected
                               ? FontWeight.w600
@@ -384,11 +374,11 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
               ),
             ),
 
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             // Posts List
             if (_isLoading)
-              const Center(
+              Center(
                 child: CircularProgressIndicator(color: AppColors.secondaryVariant),
               )
             else if (_discussions.isEmpty)
@@ -400,7 +390,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                 child: Text(
                   "Aucun sujet de discussion. Lancez le premier sujet !",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(color: Colors.grey[400]),
+                  style: GoogleFonts.poppins(color: AppColors.textSecondary),
                 ),
               )
             else
@@ -435,7 +425,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       child: Text(
                         "Aucun sujet ne correspond à cette catégorie.",
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(color: Colors.grey[400]),
+                        style: GoogleFonts.poppins(color: AppColors.textSecondary),
                       ),
                     );
                   }
@@ -482,7 +472,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                 },
               ),
 
-            const SizedBox(height: 100), // Space for FAB
+            SizedBox(height: 100), // Space for FAB
           ],
         ),
       ),
@@ -492,7 +482,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
         backgroundColor: AppColors.secondaryVariant,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Icon(Iconsax.add, color: Colors.white, size: 28),
+        child: Icon(Iconsax.add, color: AppColors.textPrimary, size: 28),
       ),
     );
   }
@@ -560,14 +550,14 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                     height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isAnonymous ? Colors.cyan : Colors.grey[800],
+                      color: isAnonymous ? AppColors.primary : Colors.grey[800],
                     ),
                     child: isAnonymous
-                        ? const Center(
+                        ? Center(
                             child: Text(
                               "A",
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -578,11 +568,11 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                               "https://i.pravatar.cc/150?u=$username",
                               fit: BoxFit.cover,
                               errorBuilder: (c, e, s) =>
-                                  const Icon(Icons.person, color: Colors.white),
+                                  Icon(Icons.person, color: AppColors.textPrimary),
                             ),
                           ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -597,13 +587,13 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8),
                             _getUserRankBadge(username),
                             const Spacer(),
                             Text(
                               time,
                               style: GoogleFonts.poppins(
-                                color: Colors.grey[500],
+                                color: AppColors.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
@@ -612,7 +602,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                         Text(
                           title,
                           style: GoogleFonts.poppins(
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
@@ -635,7 +625,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Row(
                       children: [
                         Icon(
@@ -643,34 +633,34 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           size: 20,
                           color: comments > 0
                               ? AppColors.secondaryVariant
-                              : Colors.grey[500],
+                              : AppColors.textSecondary,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           comments.toString(),
                           style: GoogleFonts.poppins(
                             color: comments > 0
                                 ? Colors.white
-                                : Colors.grey[500],
+                                : AppColors.textSecondary,
                             fontSize: 13,
                             fontWeight: comments > 0
                                 ? FontWeight.w600
                                 : FontWeight.w400,
                           ),
                         ),
-                        const SizedBox(width: 20),
+                        SizedBox(width: 20),
                         Icon(
                           likes > 0 ? Iconsax.heart5 : Iconsax.heart,
                           size: 20,
                           color: likes > 0
                               ? Colors.redAccent
-                              : Colors.grey[500],
+                              : AppColors.textSecondary,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           likes.toString(),
                           style: GoogleFonts.poppins(
-                            color: likes > 0 ? Colors.white : Colors.grey[500],
+                            color: likes > 0 ? Colors.white : AppColors.textSecondary,
                             fontSize: 13,
                           ),
                         ),
@@ -679,8 +669,8 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Divider(color: Colors.white.withOpacity(0.05)),
+              SizedBox(height: 16),
+              Divider(color: AppColors.textPrimary.withOpacity(0.05)),
             ],
           ),
           if (hasNewNotification)
@@ -690,7 +680,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
               child: Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),

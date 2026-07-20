@@ -148,6 +148,7 @@ class _LoginPageState extends State<LoginPage> {
             role.contains("administrateur") ||
             role.contains("éditeur")) {
           destination = ecrivainHome.HomePageAuteur(
+            key: ecrivainHome.HomePageAuteur.navKey,
             profileId: profilId,
             userName: tokenUser.user.nomComplet,
           );
@@ -221,7 +222,7 @@ class _LoginPageState extends State<LoginPage> {
               padding: const EdgeInsets.symmetric(horizontal: 28),
               child: Column(
                 children: [
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
 
                   // Close button (X) top-left
                   Align(
@@ -243,22 +244,22 @@ class _LoginPageState extends State<LoginPage> {
                         height: 40,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.15),
+                          color: AppColors.textPrimary.withOpacity(0.15),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
+                            color: AppColors.textPrimary.withOpacity(0.3),
                             width: 1.5,
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.arrow_back_ios_new,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           size: 20,
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Title
                   Text(
@@ -266,11 +267,11 @@ class _LoginPageState extends State<LoginPage> {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white.withOpacity(0.8),
+                      color: AppColors.textPrimary.withOpacity(0.8),
                       letterSpacing: 1,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
 
                   // Brand
                   RichText(
@@ -281,7 +282,7 @@ class _LoginPageState extends State<LoginPage> {
                           style: GoogleFonts.poppins(
                             fontSize: 36,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         TextSpan(
@@ -295,7 +296,7 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
 
                   // Subtitle
                   Text(
@@ -303,26 +304,20 @@ class _LoginPageState extends State<LoginPage> {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
                       fontSize: 15,
-                      color: Colors.white.withOpacity(0.75),
+                      color: AppColors.textPrimary.withOpacity(0.75),
                       height: 1.4,
                     ),
                   ),
 
-                  const SizedBox(height: 36),
+                  SizedBox(height: 36),
 
                   // Dark form card
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.cardBackground,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                      border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
+                      
                     ),
                     child: Column(
                       children: [
@@ -346,7 +341,7 @@ class _LoginPageState extends State<LoginPage> {
                                   decoration: InputDecoration(
                                     hintText: 'exemple@email.com',
                                     hintStyle: GoogleFonts.poppins(
-                                      color: Colors.white30,
+                                      color: AppColors.textHint,
                                       fontSize: 13,
                                     ),
                                     border: InputBorder.none,
@@ -363,7 +358,7 @@ class _LoginPageState extends State<LoginPage> {
 
                         // Divider
                         Divider(
-                          color: Colors.white.withOpacity(0.08),
+                          color: AppColors.textPrimary.withOpacity(0.08),
                           height: 1,
                           indent: 16,
                           endIndent: 16,
@@ -389,7 +384,7 @@ class _LoginPageState extends State<LoginPage> {
                                   decoration: InputDecoration(
                                     hintText: 'votre mot de passe',
                                     hintStyle: GoogleFonts.poppins(
-                                      color: Colors.white30,
+                                      color: AppColors.textHint,
                                       fontSize: 13,
                                     ),
                                     border: InputBorder.none,
@@ -402,7 +397,7 @@ class _LoginPageState extends State<LoginPage> {
                                         _obscurePassword
                                             ? Icons.visibility_off_outlined
                                             : Icons.visibility_outlined,
-                                        color: Colors.white30,
+                                        color: AppColors.textHint,
                                         size: 18,
                                       ),
                                       onPressed: () => setState(
@@ -420,7 +415,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
 
                   // Subtitle under form
                   Text(
@@ -428,12 +423,12 @@ class _LoginPageState extends State<LoginPage> {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.55),
+                      color: AppColors.textPrimary.withOpacity(0.55),
                       height: 1.5,
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Login button (golden)
                   SizedBox(
@@ -443,7 +438,7 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.textPrimary,
                         elevation: 4,
                         shadowColor: AppColors.primary.withOpacity(0.4),
                         shape: RoundedRectangleBorder(
@@ -451,11 +446,11 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 strokeWidth: 2.5,
                               ),
                             )
@@ -469,18 +464,18 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
 
                   // "ou" separator
                   Text(
                     'ou',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.5),
+                      color: AppColors.textPrimary.withOpacity(0.5),
                     ),
                   ),
 
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
 
                   // Continue with Apple button
                   SizedBox(
@@ -490,7 +485,7 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: () {
                         // Apple sign-in placeholder
                       },
-                      icon: const Icon(Icons.apple, size: 22),
+                      icon: Icon(Icons.apple, size: 22),
                       label: Text(
                         'Continuer avec Apple',
                         style: GoogleFonts.poppins(
@@ -500,7 +495,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.black87,
-                        backgroundColor: Colors.white,
+                        backgroundColor: AppColors.cardBackground,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -510,7 +505,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Forgot password
                   TextButton(
@@ -525,14 +520,14 @@ class _LoginPageState extends State<LoginPage> {
                     child: Text(
                       'Mot de passe oublié ?',
                       style: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.7),
+                        color: AppColors.textPrimary.withOpacity(0.7),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
 
                   // Register link
                   GestureDetector(
@@ -544,7 +539,7 @@ class _LoginPageState extends State<LoginPage> {
                       text: TextSpan(
                         text: "Pas encore de compte ? ",
                         style: GoogleFonts.poppins(
-                          color: Colors.white60,
+                          color: AppColors.textHint,
                           fontSize: 13,
                         ),
                         children: [
@@ -561,7 +556,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
                 ],
               ),
             ),

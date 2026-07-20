@@ -26,17 +26,17 @@ class CustomSearchBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.cardBackground.withOpacity(0.8),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.search_rounded,
                   color: AppColors.primary,
                   size: 20,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: controller,
@@ -56,7 +56,7 @@ class CustomSearchBar extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: "Rechercher des livres...",
                       hintStyle: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.4),
+                        color: AppColors.textPrimary.withOpacity(0.4),
                         fontSize: 14,
                       ),
                       border: InputBorder.none,

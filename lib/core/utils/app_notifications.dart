@@ -14,7 +14,7 @@ class AppNotifications {
     bool isSuccess = false,
   }) {
     Color bg = AppColors.cardBackground;
-    Color borderCol = Colors.white.withOpacity(0.08);
+    Color borderCol = AppColors.textHint;
     IconData icon = Icons.info_outline;
     Color iconColor = AppColors.primary;
 
@@ -41,13 +41,7 @@ class AppNotifications {
           color: bg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: borderCol, width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          
         ),
         child: Row(
           children: [
@@ -59,12 +53,12 @@ class AppNotifications {
               ),
               child: Icon(icon, color: iconColor, size: 20),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
                 style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.9),
+                  color: AppColors.textPrimary.withOpacity(0.9),
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                 ),
@@ -112,18 +106,12 @@ class AppNotifications {
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              border: Border.all(color: AppColors.textPrimary.withOpacity(0.08)),
+              
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -146,30 +134,30 @@ class AppNotifications {
                     color: accentColor,
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 // Title
                 Text(
                   title,
                   style: GoogleFonts.poppins(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 // Message
                 Text(
                   message,
                   style: GoogleFonts.poppins(
-                    color: Colors.white.withOpacity(0.7),
+                    color: AppColors.textPrimary.withOpacity(0.7),
                     fontSize: 14,
                     height: 1.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 // Actions
                 Row(
                   children: [
@@ -183,7 +171,7 @@ class AppNotifications {
                               if (onCancel != null) onCancel();
                             },
                             style: TextButton.styleFrom(
-                              foregroundColor: Colors.white.withOpacity(0.6),
+                              foregroundColor: AppColors.textHint,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -198,7 +186,7 @@ class AppNotifications {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                     ],
                     Expanded(
                       child: SizedBox(
@@ -210,7 +198,7 @@ class AppNotifications {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: accentColor,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.textPrimary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

@@ -11,7 +11,7 @@ class DownloadManagerPage extends StatefulWidget {
 }
 
 class _DownloadManagerPageState extends State<DownloadManagerPage> {
-  final List<Map<String, String>> _downloads = [
+  static final List<Map<String, String>> _downloads = [
     {"title": "L'Énigme du Cosmos", "author": "Marc Laurent", "size": "14.2 Mo"},
     {"title": "Physique Quantique 101", "author": "Sophie Martin", "size": "8.5 Mo"},
     {"title": "Les Fondements de la Relativité", "author": "Albert E.", "size": "21.1 Mo"},
@@ -21,12 +21,12 @@ class _DownloadManagerPageState extends State<DownloadManagerPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.scaffoldBackground : Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -42,7 +42,7 @@ class _DownloadManagerPageState extends State<DownloadManagerPage> {
           ? Center(
               child: Text(
                 "Aucun téléchargement trouvé.",
-                style: GoogleFonts.poppins(color: isDark ? Colors.white60 : Colors.black54),
+                style: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
               ),
             )
           : ListView.builder(
@@ -51,15 +51,15 @@ class _DownloadManagerPageState extends State<DownloadManagerPage> {
               itemBuilder: (context, index) {
                 final item = _downloads[index];
                 return Card(
-                  color: isDark ? AppColors.cardBackground : Colors.white,
-                  margin: const EdgeInsets.only(bottom: 12),
+                  color: AppColors.cardBackground,
+                  margin: EdgeInsets.only(bottom: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: ListTile(
-                    leading: const Icon(Icons.picture_as_pdf, color: AppColors.error, size: 32),
-                    title: Text(item["title"]!, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-                    subtitle: Text("${item["author"]!} • ${item["size"]!}", style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13)),
+                    leading: Icon(Icons.picture_as_pdf, color: AppColors.error, size: 32),
+                    title: Text(item["title"]!, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                    subtitle: Text("${item["author"]!} • ${item["size"]!}", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13)),
                     trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                      icon: Icon(Icons.delete_outline, color: AppColors.error),
                       onPressed: () {
                         setState(() {
                           _downloads.removeAt(index);

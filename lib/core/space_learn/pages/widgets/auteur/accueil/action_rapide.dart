@@ -16,7 +16,7 @@ class AuteurActionsRapide extends StatelessWidget {
         "icon": Icons.library_books,
         "title": "Mes livres",
         "subtitle": "Gérer publications",
-        "color": Colors.blue,
+        "color": AppColors.primary,
         "page": const LivresPage(),
       },
       {
@@ -57,15 +57,9 @@ class AuteurActionsRapide extends StatelessWidget {
             },
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                
               ),
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -78,7 +72,7 @@ class AuteurActionsRapide extends StatelessWidget {
                       color: item["color"] as Color,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   Text(
                     item["title"] as String,
                     style: GoogleFonts.poppins(

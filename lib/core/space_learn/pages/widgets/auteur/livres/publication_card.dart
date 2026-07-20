@@ -59,19 +59,13 @@ class PublicationCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => _navigateToBookDetail(context, book),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: 14),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.04)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          border: Border.all(color: AppColors.textPrimary.withOpacity(0.04)),
+          
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,13 +78,7 @@ class PublicationCard extends StatelessWidget {
                 height: 100,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.secondaryVariant.withOpacity(0.1),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  
                 ),
                 child:
                     book.imageCouverture != null &&
@@ -109,7 +97,7 @@ class PublicationCard extends StatelessWidget {
                     : _buildPlaceholderCover(),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
 
             // Book Info
             Expanded(
@@ -122,29 +110,29 @@ class PublicationCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   // Date + Status
                   Row(
                     children: [
                       Icon(
                         Iconsax.calendar_1,
                         size: 12,
-                        color: Colors.white.withOpacity(0.3),
+                        color: AppColors.textPrimary.withOpacity(0.3),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
                         formattedDate,
                         style: GoogleFonts.poppins(
-                          color: Colors.white.withOpacity(0.4),
+                          color: AppColors.textPrimary.withOpacity(0.4),
                           fontSize: 12,
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -165,7 +153,7 @@ class PublicationCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Row(
                     children: [
                       Container(
@@ -186,28 +174,28 @@ class PublicationCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Icon(
                         Iconsax.eye,
                         size: 14,
-                        color: Colors.white.withOpacity(0.3),
+                        color: AppColors.textPrimary.withOpacity(0.3),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
                         "${book.telechargements} lectures",
                         style: GoogleFonts.poppins(
-                          color: Colors.white.withOpacity(0.4),
+                          color: AppColors.textPrimary.withOpacity(0.4),
                           fontSize: 11,
                         ),
                       ),
                       if (book.noteMoyenne > 0) ...[
-                        const SizedBox(width: 12),
-                        const Icon(
+                        SizedBox(width: 12),
+                        Icon(
                           Icons.star_rounded,
                           size: 14,
                           color: AppColors.warning,
                         ),
-                        const SizedBox(width: 2),
+                        SizedBox(width: 2),
                         Text(
                           "${book.noteMoyenne}",
                           style: GoogleFonts.poppins(
@@ -227,10 +215,10 @@ class PublicationCard extends StatelessWidget {
             PopupMenuButton<String>(
               color: AppColors.cardBackground,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(maxWidth: 140),
+              constraints: BoxConstraints(maxWidth: 140),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.white.withOpacity(0.06)),
+                side: BorderSide(color: AppColors.textPrimary.withOpacity(0.06)),
               ),
               position: PopupMenuPosition.under,
               offset: const Offset(0, 4),
@@ -274,11 +262,11 @@ class PublicationCard extends StatelessWidget {
                         color: AppColors.secondaryVariant,
                         size: 14,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text(
                         "modifier",
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           fontSize: 10,
                         ),
                       ),
@@ -291,11 +279,11 @@ class PublicationCard extends StatelessWidget {
                   child: Row(
                     children: [
                       Icon(Iconsax.chart_1, color: AppColors.success, size: 14),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text(
                         "statistiques",
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           fontSize: 10,
                         ),
                       ),
@@ -310,14 +298,14 @@ class PublicationCard extends StatelessWidget {
                     children: [
                       Icon(
                         Iconsax.archive_2,
-                        color: Colors.white.withOpacity(0.5),
+                        color: AppColors.textPrimary.withOpacity(0.5),
                         size: 14,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text(
                         "archiver",
                         style: GoogleFonts.poppins(
-                          color: Colors.white70,
+                          color: AppColors.textSecondary,
                           fontSize: 10,
                         ),
                       ),
@@ -335,7 +323,7 @@ class PublicationCard extends StatelessWidget {
                         color: AppColors.error.withOpacity(0.7),
                         size: 14,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text(
                         "supprimer",
                         style: GoogleFonts.poppins(
@@ -348,10 +336,10 @@ class PublicationCard extends StatelessWidget {
                 ),
               ],
               child: Padding(
-                padding: const EdgeInsets.all(2),
+                padding: EdgeInsets.all(2),
                 child: Icon(
                   Iconsax.more,
-                  color: Colors.white.withOpacity(0.3),
+                  color: AppColors.textPrimary.withOpacity(0.3),
                   size: 18,
                 ),
               ),
@@ -376,8 +364,8 @@ class PublicationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.secondaryVariant.withOpacity(0.15)),
       ),
-      child: const Center(
-        child: Icon(Iconsax.book_1, color: Colors.white30, size: 28),
+      child: Center(
+        child: Icon(Iconsax.book_1, color: AppColors.textHint, size: 28),
       ),
     );
   }
@@ -408,7 +396,7 @@ class PublicationCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.error.withOpacity(0.1),
                   shape: BoxShape.circle,
@@ -419,41 +407,41 @@ class PublicationCard extends StatelessWidget {
                   size: 32,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Text(
                 "Supprimer l'œuvre",
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 "Êtes-vous sûr de vouloir supprimer \"${book.titre}\" ? Cette action est irréversible.",
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.5),
+                  color: AppColors.textPrimary.withOpacity(0.5),
                   fontSize: 13,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: AppColors.textPrimary.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Center(
                           child: Text(
                             "Annuler",
                             style: GoogleFonts.poppins(
-                              color: Colors.white.withOpacity(0.6),
+                              color: AppColors.textPrimary.withOpacity(0.6),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -461,7 +449,7 @@ class PublicationCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
@@ -508,7 +496,7 @@ class PublicationCard extends StatelessWidget {
                         }
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: AppColors.error.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(14),

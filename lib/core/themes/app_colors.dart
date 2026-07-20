@@ -1,40 +1,43 @@
 import 'package:flutter/material.dart';
 
+
 /// Palette de couleurs centralisée pour SpaceLearn (thème sombre).
 /// Toutes les pages doivent référencer ces constantes au lieu de
 /// définir des couleurs en dur.
 class AppColors {
   AppColors._(); // empêche l'instanciation
 
+  static bool isDark = true;
+
   // ───────────────────────── Backgrounds ─────────────────────────
   /// Fond principal du Scaffold
-  static const Color scaffoldBackground = Color(0xFF111827);
+  static Color get scaffoldBackground => isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
 
   /// Fond des cartes, conteneurs, champs de saisie
-  static const Color cardBackground = Color(0xFF1E293B);
+  static Color get cardBackground => isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
 
   /// Fond alternatif (plus clair que le scaffold)
-  static const Color surfaceVariant = Color(0xFF1F2937);
+  static Color get surfaceVariant => isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF1F3F5);
 
   /// Fond alternatif très sombre
-  static const Color darkSurface = Color(0xFF111827);
+  static Color get darkSurface => isDark ? const Color(0xFF0A0A0A) : const Color(0xFFE9ECEF);
 
   // ───────────────────────── Accents / Primaires ─────────────────
-  /// Couleur primaire d'accent (cyan) — boutons, liens, icônes actives
-  static const Color primary = Color(0xFF06B6D4);
+  /// Couleur primaire d'accent (orange) — boutons, liens, icônes actives
+  static const Color primary = Color(0xFFFFB156);
 
   /// Variante plus claire du primaire — hover, highlights
-  static const Color primaryLight = Color(0xFF22D3EE);
+  static const Color primaryLight = Color(0xFFFFC37D);
 
   /// Variante plus sombre du primaire
-  static const Color primaryDark = Color(0xFF0891B2);
+  static const Color primaryDark = Color(0xFFE09841);
 
   // ───────────────────────── Secondaires ─────────────────────────
-  /// Couleur secondaire (sky blue) — badges, accents secondaires
-  static const Color secondary = Color(0xFF38BDF8);
+  /// Couleur secondaire (orange clair) — badges, accents secondaires
+  static const Color secondary = Color(0xFFFFC37D);
 
-  /// Variante de secondaire (sky / bleu écrivain)
-  static const Color secondaryVariant = Color(0xFF0EA5E9);
+  /// Variante de secondaire (orange écrivain)
+  static const Color secondaryVariant = Color(0xFFE09841);
 
   // ───────────────────────── Sémantiques ─────────────────────────
   /// Succès / validation
@@ -79,24 +82,24 @@ class AppColors {
   static const Color slateLight = Color(0xFF94A3B8);
 
   // ───────────────────────── Textes ──────────────────────────────
-  /// Texte principal (blanc)
-  static const Color textPrimary = Colors.white;
+  /// Texte principal
+  static Color get textPrimary => isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
 
-  /// Texte secondaire (blanc 70%)
-  static const Color textSecondary = Colors.white70;
+  /// Texte secondaire
+  static Color get textSecondary => isDark ? const Color(0xFFAAAAAA) : const Color(0xFF555555);
 
   /// Texte désactivé / placeholder
-  static const Color textHint = Color(0xFF9CA3AF);
+  static Color get textHint => isDark ? const Color(0xFF777777) : const Color(0xFF888888);
 
   /// Texte sur fond sombre - gris clair
-  static const Color textMuted = Color(0xFF6B7280);
+  static Color get textMuted => isDark ? const Color(0xFF909097) : const Color(0xFF94A3B8);
 
   // ───────────────────────── Bordures ────────────────────────────
   /// Bordure subtile
-  static const Color border = Color(0xFF334155);
+  static Color get border => isDark ? const Color(0xFF45464D) : const Color(0xFFE2E8F0);
 
   /// Bordure très subtile (blanc 5%)
-  static const Color borderLight = Color(0x0DFFFFFF);
+  static Color get borderLight => isDark ? const Color(0x0DFFFFFF) : const Color(0x0F000000);
 
   // ───────────────────────── Spécifiques ─────────────────────────
   /// Orange pour badge "Rejoindre" (fond)
@@ -188,33 +191,32 @@ class AppColors {
   /// Teal foncé
   static const Color tealDark = Color(0xFF0F766E);
 
-  // ───────────────────────── Bleus supplémentaires ──────────────
-  /// Bleu royal
-  static const Color blueRoyal = Color(0xFF2563EB);
+  // ───────────────────────── Oranges supplémentaires ──────────────
+  /// Orange royal
+  static const Color blueRoyal = Color(0xFFD97706);
 
-  /// Bleu ciel foncé
-  static const Color blueSkyDark = Color(0xFF0284C7);
+  /// Orange foncé
+  static const Color blueSkyDark = Color(0xFFB45309);
 
   /// Orange ambre foncé
   static const Color amberDark = Color(0xFFB45309);
 
-  // ───────────────────────── Dégradés ────────────────────────────
-  /// Dégradé d'en-tête (haut de page)
-  static const List<Color> headerGradient = [
-    Color(0xFF475569),
-    Color(0xFF1E293B),
-    Color(0xFF0F172A),
+  // ───────────────────────── Dégradés (Dépréciés - Remplacés par unies) ────────────────────────────
+  /// Dégradé d'en-tête (haut de page) - UTILISER scaffoldBackground à la place
+  static List<Color> get headerGradient => [
+    scaffoldBackground,
+    scaffoldBackground,
   ];
 
-  /// Dégradé d'en-tête simplifié (2 couleurs)
-  static const List<Color> headerGradientSimple = [
-    Color(0xFF475569),
-    Color(0xFF0F172A),
+  /// Dégradé d'en-tête simplifié (2 couleurs) - UTILISER scaffoldBackground à la place
+  static List<Color> get headerGradientSimple => [
+    scaffoldBackground,
+    scaffoldBackground,
   ];
 
-  /// Dégradé de card notification
-  static const List<Color> notificationCardGradient = [
-    Color(0xFF1E293B),
-    Color(0xFF0F172A),
+  /// Dégradé de card notification - UTILISER cardBackground à la place
+  static List<Color> get notificationCardGradient => [
+    cardBackground,
+    cardBackground,
   ];
 }

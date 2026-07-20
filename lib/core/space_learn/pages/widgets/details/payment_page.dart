@@ -52,7 +52,7 @@ class _PaymentPageState extends State<PaymentPage> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -68,14 +68,14 @@ class _PaymentPageState extends State<PaymentPage> {
             // Book Summary Card
             _buildBookSummary(price, currency),
 
-            const SizedBox(height: 30),
-            Divider(color: Colors.white.withOpacity(0.05), thickness: 1),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
+            Divider(color: AppColors.textPrimary.withOpacity(0.05), thickness: 1),
+            SizedBox(height: 30),
 
             // Method Selector
             _buildMethodSelector(),
 
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             // Details Section
             if (_selectedMethod == 'Carte Visa') ...[
@@ -84,10 +84,10 @@ class _PaymentPageState extends State<PaymentPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Form(
                 key: _formKey,
                 child: Column(
@@ -97,7 +97,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       hint: 'Jean Dupont',
                       controller: _nameController,
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     _buildInputField(
                       label: 'Numéro de carte',
                       hint: '•••• •••• •••• 4242',
@@ -105,7 +105,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       suffixIcon: Icons.credit_card,
                       keyboardType: TextInputType.number,
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     Row(
                       children: [
                         Expanded(
@@ -115,7 +115,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             controller: _expiryController,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16),
                         Expanded(
                           child: _buildInputField(
                             label: 'CVV',
@@ -138,10 +138,10 @@ class _PaymentPageState extends State<PaymentPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Form(
                 key: _formKey,
                 child: Column(
@@ -154,7 +154,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       suffixIcon: Icons.phone_android,
                       keyboardType: TextInputType.phone,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Text(
                       'Vous recevrez une demande de confirmation sur votre téléphone.',
                       style: AppTextStyles.greyMedium12,
@@ -164,7 +164,7 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
             ],
 
-            const SizedBox(height: 48),
+            SizedBox(height: 48),
 
             // Pay Button
             SizedBox(
@@ -174,7 +174,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 onPressed: _processPayment,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.textPrimary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -190,7 +190,7 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Center(
               child: Text(
                 _selectedMethod == 'MTN MoMo'
@@ -216,13 +216,7 @@ class _PaymentPageState extends State<PaymentPage> {
           height: 80,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
@@ -238,11 +232,11 @@ class _PaymentPageState extends State<PaymentPage> {
                   )
                 : Container(
                     color: AppColors.cardBackground,
-                    child: const Icon(Icons.book, color: Colors.white),
+                    child: Icon(Icons.book, color: AppColors.textPrimary),
                   ),
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16),
         // Info
         Expanded(
           child: Column(
@@ -253,7 +247,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -262,7 +256,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 widget.book['authorName'] ?? 'Claire Dubois',
                 style: AppTextStyles.grey14,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 '$price $currency',
                 style: GoogleFonts.poppins(
@@ -280,7 +274,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
   Widget _buildMethodSelector() {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
@@ -301,7 +295,7 @@ class _PaymentPageState extends State<PaymentPage> {
       child: GestureDetector(
         onTap: () => setState(() => _selectedMethod = method),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primaryLight : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
@@ -312,7 +306,7 @@ class _PaymentPageState extends State<PaymentPage> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.white : Colors.grey[400],
+              color: isSelected ? Colors.white : AppColors.textPrimary,
             ),
           ),
         ),
@@ -336,7 +330,7 @@ class _PaymentPageState extends State<PaymentPage> {
           label,
           style: AppTextStyles.button14,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: obscureText,
@@ -355,15 +349,15 @@ class _PaymentPageState extends State<PaymentPage> {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+              borderSide: BorderSide(color: AppColors.textPrimary.withOpacity(0.05)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+              borderSide: BorderSide(color: AppColors.textPrimary.withOpacity(0.05)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(
+              borderSide: BorderSide(
                 color: AppColors.primaryLight,
                 width: 1.5,
               ),
@@ -389,7 +383,7 @@ class _PaymentPageState extends State<PaymentPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
+      builder: (context) => Center(
         child: CircularProgressIndicator(color: AppColors.primaryLight),
       ),
     );
@@ -463,22 +457,22 @@ class _PaymentPageState extends State<PaymentPage> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const CircularProgressIndicator(color: AppColors.primaryLight),
-                  const SizedBox(height: 24),
+                  CircularProgressIndicator(color: AppColors.primaryLight),
+                  SizedBox(height: 24),
                   Text(
                     "Attente de validation...",
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     "Veuillez valider la transaction de ${amount.toStringAsFixed(0)} FCFA sur votre téléphone ($fullPhone).",
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
-                      color: Colors.white70,
+                      color: AppColors.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -598,13 +592,13 @@ class _PaymentPageState extends State<PaymentPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surfaceVariant,
-        title: const Text(
+        title: Text(
           'Livre déjà possédé',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppColors.textPrimary),
         ),
-        content: const Text(
+        content: Text(
           'Vous possédez déjà ce livre dans votre bibliothèque.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -613,7 +607,7 @@ class _PaymentPageState extends State<PaymentPage> {
               Navigator.of(context).popUntil((route) => route.isFirst);
               MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace();
             },
-            child: const Text('OK', style: TextStyle(color: AppColors.primaryLight)),
+            child: Text('OK', style: TextStyle(color: AppColors.primaryLight)),
           ),
         ],
       ),
@@ -673,34 +667,34 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check_rounded,
                   color: AppColors.primaryLight,
                   size: 64,
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               Text(
                 'Paiement réussi !',
                 style: AppTextStyles.heroTitle,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'Votre achat de "${widget.book['titre']}" a été confirmé.',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
-                  color: Colors.grey[400],
+                  color: AppColors.textSecondary,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Text(
                 'Redirection dans $_secondsRemaining...',
                 style: GoogleFonts.poppins(
@@ -710,7 +704,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 48),
+              SizedBox(height: 48),
               SizedBox(
                 width: double.infinity,
                 height: 60,
@@ -718,7 +712,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                   onPressed: _navigateToLibrary,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryLight,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.textPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

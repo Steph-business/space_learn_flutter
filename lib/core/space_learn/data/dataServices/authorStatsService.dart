@@ -26,23 +26,6 @@ class AuthorStatsService {
     } catch (e) {
     }
 
-    // Fallback: try same path but with the main `baseUrl` instead of `baseUrlsGin`.
-    try {
-      final fallback = ApiRoutes.authorStats
-          .replaceFirst(ApiRoutes.baseUrlsGin, ApiRoutes.baseUrl)
-          .replaceFirst(':authorId', authorId);
-      final fallbackUri = Uri.parse(
-        fallback,
-      ).replace(queryParameters: {'period': period});
-      final resp2 = await client.get(fallbackUri);
-      if (resp2.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(resp2.body);
-        return responseData['data'] ?? {};
-      } else {
-      }
-    } catch (e) {
-    }
-
     return {};
   }
 

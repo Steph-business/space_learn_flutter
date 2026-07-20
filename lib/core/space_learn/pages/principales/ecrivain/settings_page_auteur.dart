@@ -21,6 +21,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/notification_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/publication_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/sales_report_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/terms_of_use_page.dart';
 
 class SettingsPageAuteur extends StatelessWidget {
   const SettingsPageAuteur({super.key});
@@ -32,7 +33,7 @@ class SettingsPageAuteur extends StatelessWidget {
       primaryAccentColor: AppColors.secondaryVariant,
       children: [
         // Section Profil
-        const SettingSectionHeader(title: "Profil", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(title: "Profil", accentColor: AppColors.secondaryVariant),
         SettingItemTile(
           icon: Icons.person_outline_rounded,
           title: "Informations personnelles",
@@ -58,7 +59,7 @@ class SettingsPageAuteur extends StatelessWidget {
 
 
         // Section Publication
-        const SettingSectionHeader(title: "Publication", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(title: "Publication", accentColor: AppColors.secondaryVariant),
         SettingItemTile(
           icon: Icons.publish_outlined,
           title: "Paramètres de publication",
@@ -87,7 +88,7 @@ class SettingsPageAuteur extends StatelessWidget {
         ),
 
         // Section Application
-        const SettingSectionHeader(title: "Application", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(title: "Application", accentColor: AppColors.secondaryVariant),
         SettingItemTile(
           icon: Icons.language_outlined,
           title: "Langue",
@@ -111,7 +112,7 @@ class SettingsPageAuteur extends StatelessWidget {
         ),
 
         // Section Sécurité
-        const SettingSectionHeader(title: "Sécurité", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(title: "Sécurité", accentColor: AppColors.secondaryVariant),
         SettingItemTile(
           icon: Icons.lock_outline,
           title: "Mot de passe",
@@ -140,7 +141,7 @@ class SettingsPageAuteur extends StatelessWidget {
         ),
 
         // Section Support
-        const SettingSectionHeader(title: "Support", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(title: "Support", accentColor: AppColors.secondaryVariant),
         SettingItemTile(
           icon: Icons.help_outline,
           title: "Aide & FAQ",
@@ -169,7 +170,7 @@ class SettingsPageAuteur extends StatelessWidget {
         ),
 
         // Section À propos
-        const SettingSectionHeader(title: "À propos", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(title: "À propos", accentColor: AppColors.secondaryVariant),
         SettingItemTile(
           icon: Icons.info_outline,
           title: "Version de l'application",
@@ -181,6 +182,19 @@ class SettingsPageAuteur extends StatelessWidget {
               message: "SpaceLearn Mobile (Auteur)\nVersion: 1.0.0\nConstruit avec amour par Steph-business.",
               confirmText: "Fermer",
               isSuccess: true,
+            );
+          },
+        ),
+        SettingItemTile(
+          icon: Icons.description_outlined,
+          title: "Conditions d'utilisation",
+          subtitle: "Lire les conditions",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const TermsOfUsePage(),
+              ),
             );
           },
         ),
@@ -262,18 +276,12 @@ class SettingsPageAuteur extends StatelessWidget {
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.cardBackground : Colors.white,
+              color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              border: Border.all(color: isDark ? AppColors.textHint : Colors.black.withOpacity(0.05)),
+              
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -282,12 +290,12 @@ class SettingsPageAuteur extends StatelessWidget {
                 Text(
                   "Sélectionner le thème",
                   style: GoogleFonts.poppins(
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: AppColors.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildThemeOption(context, "Thème Clair", ThemeMode.light, Icons.light_mode_outlined, themeProvider),
                 _buildThemeOption(context, "Thème Sombre", ThemeMode.dark, Icons.dark_mode_outlined, themeProvider),
                 _buildThemeOption(context, "Thème Système", ThemeMode.system, Icons.phone_android_outlined, themeProvider),
@@ -309,15 +317,15 @@ class SettingsPageAuteur extends StatelessWidget {
     final isSelected = themeProvider.themeMode == mode;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
-      leading: Icon(icon, color: isSelected ? AppColors.primary : (isDark ? Colors.white70 : Colors.black54)),
+      leading: Icon(icon, color: isSelected ? AppColors.primary : (AppColors.textSecondary)),
       title: Text(
         title,
         style: GoogleFonts.poppins(
-          color: isSelected ? AppColors.primary : (isDark ? Colors.white : Colors.black87),
+          color: isSelected ? AppColors.primary : (AppColors.textPrimary),
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      trailing: isSelected ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.primary) : null,
       onTap: () {
         themeProvider.setThemeMode(mode);
         Navigator.of(context).pop();

@@ -26,13 +26,7 @@ class LivreCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardBackground, // Dark card background
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,13 +66,13 @@ class LivreCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
-                      color: Colors.white, // White title
+                      color: AppColors.textPrimary, // White title
                       height: 1.1,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     book.authorName,
                     style: GoogleFonts.poppins(
@@ -89,7 +83,7 @@ class LivreCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   // Rating
                   Row(
                     children: [
@@ -108,7 +102,7 @@ class LivreCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         Text(
                           book.noteMoyenne.toStringAsFixed(1),
                           style: GoogleFonts.poppins(
@@ -119,13 +113,13 @@ class LivreCard extends StatelessWidget {
                         ),
                       ],
                       if (book.nombreMessages > 0) ...[
-                        const SizedBox(width: 8),
-                        const Icon(
+                        SizedBox(width: 8),
+                        Icon(
                           Iconsax.message,
                           color: AppColors.slateLight,
                           size: 11,
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         Text(
                           '${book.nombreMessages}',
                           style: GoogleFonts.poppins(
@@ -137,7 +131,7 @@ class LivreCard extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   // Price
                   Text(
                     '${book.prix} FCFA',
@@ -147,7 +141,7 @@ class LivreCard extends StatelessWidget {
                       color: AppColors.primary, // Cyan for price
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   // Button Row
                   // Boutons supprimés à la demande de l'utilisateur
                 ],
@@ -160,7 +154,7 @@ class LivreCard extends StatelessWidget {
   }
 
   Widget _buildPlaceholder() {
-    return const Center(
+    return Center(
       child: Icon(Icons.book_rounded, color: AppColors.border, size: 40),
     );
   }

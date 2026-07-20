@@ -76,7 +76,7 @@ class CinetpayResultPage extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               Text(
                 isAccepted
                     ? 'Paiement réussi !'
@@ -84,13 +84,13 @@ class CinetpayResultPage extends StatelessWidget {
                     ? 'Paiement refusé'
                     : 'Paiement en attente',
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 isAccepted
                     ? 'Votre paiement de ${montant.toStringAsFixed(0)} XOF a été validé.\n"${book['titre'] ?? 'Livre inconnu'}" a été ajouté à votre bibliothèque.'
@@ -98,37 +98,37 @@ class CinetpayResultPage extends StatelessWidget {
                     ? 'Votre paiement de ${montant.toStringAsFixed(0)} XOF a été refusé.\nVeuillez réessayer avec un autre moyen de paiement.'
                     : 'Votre paiement de ${montant.toStringAsFixed(0)} XOF est en cours de traitement.\nVous serez notifié dès sa validation.',
                 style: GoogleFonts.poppins(
-                  color: Colors.white60,
+                  color: AppColors.textHint,
                   fontSize: 14,
                   height: 1.6,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               // Détails de la transaction
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: AppColors.textPrimary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppColors.textPrimary.withValues(alpha: 0.08),
                   ),
                 ),
                 child: Column(
                   children: [
                     _buildDetailRow('Livre', book['titre']?.toString() ?? 'Livre inconnu'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     _buildDetailRow(
                       'Montant',
                       '${montant.toStringAsFixed(0)} XOF',
                     ),
                     if (paymentMethod != null) ...[
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       _buildDetailRow('Méthode', paymentMethod!),
                     ],
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     _buildDetailRow(
                       'Transaction',
                       transactionId.length > 16
@@ -165,7 +165,7 @@ class CinetpayResultPage extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isAccepted
                         ? AppColors.primary
-                        : Colors.white24,
+                        : AppColors.textHint,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -173,14 +173,14 @@ class CinetpayResultPage extends StatelessWidget {
                   child: Text(
                     isAccepted ? 'Lire mon livre' : 'Retour à l\'accueil',
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
             ],
           ),
         ),
@@ -194,12 +194,12 @@ class CinetpayResultPage extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12),
+          style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 12),
         ),
         Text(
           value,
           style: GoogleFonts.poppins(
-            color: Colors.white70,
+            color: AppColors.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),

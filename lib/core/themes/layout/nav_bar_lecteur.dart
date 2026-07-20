@@ -58,10 +58,14 @@ class MainNavBarState extends State<MainNavBar> {
     _onItemTapped(3);
   }
 
+  void goHome() {
+    _onItemTapped(0);
+  }
+
   Widget _getPage(int index) {
     switch (index) {
       case 0:
-        return widget.child ?? const Center(child: Text('Accueil'));
+        return widget.child ?? Center(child: Text('Accueil'));
       case 1:
         return const MarketplacePage();
       case 2:
@@ -73,7 +77,7 @@ class MainNavBarState extends State<MainNavBar> {
       case 4:
         return const SettingsPage();
       default:
-        return widget.child ?? const Center(child: Text('Accueil'));
+        return widget.child ?? Center(child: Text('Accueil'));
     }
   }
 
@@ -90,13 +94,7 @@ class MainNavBarState extends State<MainNavBar> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
+          
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
@@ -105,7 +103,7 @@ class MainNavBarState extends State<MainNavBar> {
           elevation: 0,
           backgroundColor: AppColors.cardBackground,
           selectedItemColor: AppColors.primary, // Cyan
-          unselectedItemColor: Colors.grey[500],
+          unselectedItemColor: AppColors.textSecondary,
           showUnselectedLabels: true,
           selectedLabelStyle: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,

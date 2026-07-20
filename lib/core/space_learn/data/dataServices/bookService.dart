@@ -85,39 +85,6 @@ class BookService {
     } catch (e) {
     }
 
-    // Fallback: try the main baseUrl host
-    try {
-      final fallbackUri = Uri.parse(
-        ApiRoutes.books.replaceFirst(ApiRoutes.baseUrlsGin, ApiRoutes.baseUrl),
-      ).replace(queryParameters: queryParameters);
-
-      final resp2 = await client.get(
-        fallbackUri,
-        headers: headers.isEmpty ? null : headers,
-      );
-      if (resp2.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(resp2.body);
-        final List<dynamic> data = responseData['data'] ?? [];
-        return data.map((json) => BookModel.fromJson(json)).toList();
-      } else if (resp2.statusCode == 404 && queryParameters.isNotEmpty) {
-        final resp3 = await client.get(
-          Uri.parse(
-            ApiRoutes.books.replaceFirst(
-              ApiRoutes.baseUrlsGin,
-              ApiRoutes.baseUrl,
-            ),
-          ),
-          headers: headers.isEmpty ? null : headers,
-        );
-        if (resp3.statusCode == 200) {
-          final Map<String, dynamic> responseData = jsonDecode(resp3.body);
-          final List<dynamic> data = responseData['data'] ?? [];
-          return data.map((json) => BookModel.fromJson(json)).toList();
-        }
-      }
-    } catch (e) {
-    }
-
     return [];
   }
 
@@ -188,21 +155,6 @@ class BookService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data'] ?? [];
-        return data.map((json) => BookModel.fromJson(json)).toList();
-      } else {
-      }
-    } catch (e) {
-    }
-
-    // Fallback attempt: try the same path using the main baseUrl instead of baseUrlsGin
-    try {
-      final fallbackUrl = ApiRoutes.booksByAuthor
-          .replaceFirst(ApiRoutes.baseUrlsGin, ApiRoutes.baseUrl)
-          .replaceFirst(':auteur_id', auteurId);
-      final resp2 = await client.get(Uri.parse(fallbackUrl));
-      if (resp2.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(resp2.body);
         final List<dynamic> data = responseData['data'] ?? [];
         return data.map((json) => BookModel.fromJson(json)).toList();
       } else {

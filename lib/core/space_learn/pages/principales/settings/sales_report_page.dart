@@ -10,12 +10,12 @@ class SalesReportPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.scaffoldBackground : Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -35,26 +35,26 @@ class SalesReportPage extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Total Earnings Card
           _buildEarningsCard(context),
-          const SizedBox(height: 28),
+          SizedBox(height: 28),
 
           Text(
             "Historique des transactions",
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
-          _buildTransactionItem(context, "L'Énigme du Cosmos", "Achat Direct", "+ 3 500 FCFA", "10 Juillet 2026"),
-          _buildTransactionItem(context, "Physique Quantique 101", "Achat Direct", "+ 2 000 FCFA", "08 Juillet 2026"),
+          SizedBox(height: 12),
+          _buildTransactionItem(context, "L'Énigme du Cosmos", "Vente de livre", "+ 3 500 FCFA", "10 Juillet 2026"),
+          _buildTransactionItem(context, "Physique Quantique 101", "Vente de livre", "+ 2 000 FCFA", "08 Juillet 2026"),
           _buildTransactionItem(context, "Retrait d'argent", "Mobile Money", "- 15 000 FCFA", "01 Juillet 2026"),
         ],
       ),
@@ -64,43 +64,37 @@ class SalesReportPage extends StatelessWidget {
   Widget _buildEarningsCard(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [AppColors.primary, Color(0xFF0284C7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "Gains Totaux",
-            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+            style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             "178 500 FCFA",
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 32, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Solde disponible", style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
-                  Text("34 200 FCFA", style: GoogleFonts.poppins(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text("Solde disponible", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                  Text("34 200 FCFA", style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               ElevatedButton(
@@ -108,7 +102,7 @@ class SalesReportPage extends StatelessWidget {
                   AppNotifications.showSnackBar(context, message: "Demande de retrait mobile money envoyée !", isSuccess: true);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: AppColors.cardBackground,
                   foregroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -125,7 +119,7 @@ class SalesReportPage extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPositive = amount.startsWith('+');
     return Card(
-      color: isDark ? AppColors.cardBackground : Colors.white,
+      color: AppColors.cardBackground,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
@@ -141,8 +135,8 @@ class SalesReportPage extends StatelessWidget {
             size: 20,
           ),
         ),
-        title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
-        subtitle: Text("$type • $date", style: GoogleFonts.poppins(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+        title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
+        subtitle: Text("$type • $date", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
         trailing: Text(
           amount,
           style: GoogleFonts.poppins(

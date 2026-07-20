@@ -57,12 +57,12 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
+            colorScheme: ColorScheme.dark(
               primary: AppColors.success,
               onPrimary: Colors.white,
               surface: AppColors.cardBackground,
             ),
-            dialogTheme: const DialogThemeData(
+            dialogTheme: DialogThemeData(
               backgroundColor: AppColors.scaffoldBackground,
             ),
           ),
@@ -82,7 +82,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
-            timePickerTheme: const TimePickerThemeData(
+            timePickerTheme: TimePickerThemeData(
               backgroundColor: AppColors.cardBackground,
               dialHandColor: AppColors.success,
             ),
@@ -104,7 +104,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 20),
+          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -114,7 +114,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: AppColors.textPrimary,
             letterSpacing: 1.2,
           ),
         ),
@@ -129,25 +129,25 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
               "Organisez un événement pour réunir votre communauté (virtuel ou physique).",
               style: AppTextStyles.grey14,
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
 
             _buildLabel("Type d'événement"),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.1)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _eventType,
                   isExpanded: true,
                   dropdownColor: AppColors.cardBackground,
-                  icon: const Icon(
+                  icon: Icon(
                     Iconsax.arrow_down_1,
-                    color: Colors.white54,
+                    color: AppColors.textHint,
                     size: 18,
                   ),
                   style: AppTextStyles.body,
@@ -171,15 +171,15 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildLabel("Titre de l'événement"),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             _buildTextField(
               controller: _titleController,
               hint: "Ex: Soirée questions/réponses sur...",
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             Row(
               children: [
@@ -188,7 +188,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildLabel("Date"),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       GestureDetector(
                         onTap: _pickDate,
                         child: Container(
@@ -200,7 +200,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                             color: AppColors.cardBackground,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.1),
+                              color: AppColors.textPrimary.withValues(alpha: 0.1),
                             ),
                           ),
                           child: Row(
@@ -212,14 +212,14 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                                     : "${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}",
                                 style: GoogleFonts.poppins(
                                   color: _selectedDate == null
-                                      ? Colors.white30
+                                      ? AppColors.textHint
                                       : Colors.white,
                                   fontSize: 14,
                                 ),
                               ),
-                              const Icon(
+                              Icon(
                                 Iconsax.calendar,
-                                color: Colors.white54,
+                                color: AppColors.textHint,
                                 size: 18,
                               ),
                             ],
@@ -229,13 +229,13 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildLabel("Heure"),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       GestureDetector(
                         onTap: _pickTime,
                         child: Container(
@@ -247,7 +247,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                             color: AppColors.cardBackground,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.1),
+                              color: AppColors.textPrimary.withValues(alpha: 0.1),
                             ),
                           ),
                           child: Row(
@@ -259,14 +259,14 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                                     : _selectedTime!.format(context),
                                 style: GoogleFonts.poppins(
                                   color: _selectedTime == null
-                                      ? Colors.white30
+                                      ? AppColors.textHint
                                       : Colors.white,
                                   fontSize: 14,
                                 ),
                               ),
-                              const Icon(
+                              Icon(
                                 Iconsax.clock,
-                                color: Colors.white54,
+                                color: AppColors.textHint,
                                 size: 18,
                               ),
                             ],
@@ -278,16 +278,16 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             _buildLabel("Description"),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             _buildTextField(
               controller: _descController,
               hint: "Détails de l'événement (lien visio, adresse)...",
               maxLines: 5,
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
 
             SizedBox(
               width: double.infinity,
@@ -301,11 +301,11 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                   ),
                 ),
                 child: _isCreating
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           strokeWidth: 2,
                         ),
                       )
@@ -409,20 +409,20 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
       style: AppTextStyles.body,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.poppins(color: Colors.white30, fontSize: 14),
+        hintStyle: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
         filled: true,
         fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.1)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.success),
+          borderSide: BorderSide(color: AppColors.success),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

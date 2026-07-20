@@ -53,22 +53,22 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
-        title: const Text("Supprimer", style: TextStyle(color: Colors.white)),
-        content: const Text(
+        title: Text("Supprimer", style: TextStyle(color: AppColors.textPrimary)),
+        content: Text(
           "Voulez-vous vraiment supprimer cette publication ?",
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text(
+            child: Text(
               "Annuler",
-              style: TextStyle(color: Colors.white24),
+              style: TextStyle(color: AppColors.textHint),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
+            child: Text(
               "Supprimer",
               style: TextStyle(color: Colors.redAccent),
             ),
@@ -144,7 +144,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left_2, color: Colors.white),
+          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -160,11 +160,11 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
         actions: _isAuthor
             ? [
                 IconButton(
-                  icon: const Icon(Iconsax.edit, color: Colors.white, size: 20),
+                  icon: Icon(Iconsax.edit, color: AppColors.textPrimary, size: 20),
                   onPressed: _editEvenement,
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Iconsax.trash,
                     color: Colors.redAccent,
                     size: 20,
@@ -202,7 +202,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                   ),
                   child: Icon(iconType, color: colorType, size: 24),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +212,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                         style: GoogleFonts.poppins(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       if (_evenement.dateEvenement != null)
@@ -232,38 +232,38 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
             Text(
               "CONTENU",
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
-                color: Colors.white.withOpacity(0.4),
+                color: AppColors.textPrimary.withOpacity(0.4),
                 letterSpacing: 1.5,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               _evenement.contenu,
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 height: 1.6,
-                color: Colors.white.withOpacity(0.9),
+                color: AppColors.textPrimary.withOpacity(0.9),
               ),
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
             if (_evenement.creeLe != null)
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
                   "Publié le ${DateFormat('dd/MM/yyyy').format(_evenement.creeLe!)}",
                   style: GoogleFonts.poppins(
-                    color: Colors.white24,
+                    color: AppColors.textHint,
                     fontSize: 12,
                   ),
                 ),
               ),
-            const SizedBox(height: 100),
+            SizedBox(height: 100),
           ],
         ),
       ),

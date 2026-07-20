@@ -27,17 +27,11 @@ class LivreCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        
         border: Border.all(color: Colors.transparent, width: 0),
       ),
       child: ClipRRect(
@@ -54,13 +48,7 @@ class LivreCard extends StatelessWidget {
                   height: 120,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(2),
@@ -77,7 +65,7 @@ class LivreCard extends StatelessWidget {
                         : _buildPlaceholder(),
                   ),
                 ),
-                const SizedBox(width: 20),
+                SizedBox(width: 20),
                 // Content
                 Expanded(
                   child: Column(
@@ -88,17 +76,17 @@ class LivreCard extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           height: 1.2,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         auteur,
                         style: GoogleFonts.poppins(
-                          color: Colors.grey[400],
+                          color: AppColors.textSecondary,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -106,7 +94,7 @@ class LivreCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (categorie != null && categorie!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -121,13 +109,13 @@ class LivreCard extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
-                              color: Colors.grey[300],
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
                       ],
                       if (dateAcquisition != null) ...[
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Row(
                           children: [
                             Icon(
@@ -135,20 +123,20 @@ class LivreCard extends StatelessWidget {
                               size: 10,
                               color: AppColors.primary.withOpacity(0.7),
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               "Ajouté le ${DateFormat('dd MMM yyyy').format(dateAcquisition!)}",
                               style: GoogleFonts.poppins(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w400,
-                                color: Colors.grey[500],
+                                color: AppColors.textSecondary,
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
                           ],
                         ),
                       ],
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       // Progress Section
                       Row(
                         children: [
@@ -165,7 +153,7 @@ class LivreCard extends StatelessWidget {
                                       style: GoogleFonts.poppins(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.grey[400],
+                                        color: AppColors.textSecondary,
                                       ),
                                     ),
                                     Text(
@@ -178,7 +166,7 @@ class LivreCard extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 6),
+                                SizedBox(height: 6),
                                 Stack(
                                   children: [
                                     Container(
@@ -206,15 +194,15 @@ class LivreCard extends StatelessWidget {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           // Action Icon
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.play_arrow_rounded,
                               color: AppColors.primary,
                               size: 20,
@@ -245,8 +233,8 @@ class LivreCard extends StatelessWidget {
       child: Center(
         child: Text(
           titre.isNotEmpty ? titre[0].toUpperCase() : "?",
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 32,
           ),
@@ -278,13 +266,7 @@ class LivreGridCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -312,8 +294,8 @@ class LivreGridCard extends StatelessWidget {
                           child: Center(
                             child: Text(
                               titre.isNotEmpty ? titre[0].toUpperCase() : "?",
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 32,
                               ),
@@ -355,12 +337,12 @@ class LivreGridCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       auteur,
                       style: GoogleFonts.poppins(
                         fontSize: 10,
-                        color: Colors.grey[400],
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,

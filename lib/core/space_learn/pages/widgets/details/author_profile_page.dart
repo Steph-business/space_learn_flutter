@@ -111,7 +111,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
             ),
           ),
           _buildBooksGrid(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
@@ -127,7 +127,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
           fit: StackFit.expand,
           children: [
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -139,10 +139,10 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
                   CircleAvatar(
                     radius: 45,
-                    backgroundColor: Colors.white,
+                    backgroundColor: AppColors.cardBackground,
                     backgroundImage: ProfileImageHelper.getProfileImageProvider(widget.author.profilePhoto),
                     child: widget.author.profilePhoto == null
                         ? Text(
@@ -167,7 +167,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             widget.author.nomComplet,
             style: AppTextStyles.pageTitle,
@@ -177,30 +177,30 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
             textAlign: TextAlign.center,
             style: AppTextStyles.grey14,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildStatWidget(_followerCount.toString(), "Abonnés"),
-              const SizedBox(width: 40),
+              SizedBox(width: 40),
               _buildStatWidget(_authorBooks.length.toString(), "Livres"),
             ],
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: _toggleFollow,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isFollowing
-                    ? Colors.white10
+                    ? AppColors.textHint
                     : AppColors.secondary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.textPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: _isFollowing
-                      ? const BorderSide(color: Colors.white24)
+                      ? BorderSide(color: AppColors.textHint)
                       : BorderSide.none,
                 ),
               ),
@@ -221,7 +221,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
         Text(
           value,
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: AppColors.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -236,11 +236,11 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
 
   Widget _buildBooksGrid() {
     if (_isLoadingBooks) {
-      return const SliverToBoxAdapter(
+      return SliverToBoxAdapter(
         child: Center(
           child: Text(
             "Chargement des livres...",
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(color: AppColors.textSecondary),
           ),
         ),
       );
@@ -253,7 +253,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
             padding: const EdgeInsets.all(40.0),
             child: Text(
               "Aucun livre publié pour le moment.",
-              style: GoogleFonts.poppins(color: Colors.grey[500]),
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
             ),
           ),
         ),
@@ -284,13 +284,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,8 +302,8 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                             )
                           : Container(
                               color: Colors.blueGrey,
-                              child: const Center(
-                                child: Icon(Icons.book, color: Colors.white),
+                              child: Center(
+                                child: Icon(Icons.book, color: AppColors.textPrimary),
                               ),
                             ),
                     ),

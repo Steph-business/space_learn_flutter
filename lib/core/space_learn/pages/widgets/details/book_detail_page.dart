@@ -250,28 +250,28 @@ class _BookDetailPageState extends State<BookDetailPage> {
           style: AppTextStyles.cardTitle12SemiBold,
         ),
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.white,
+            color: AppColors.textPrimary,
             size: 18,
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share, color: Colors.white, size: 20),
+            icon: Icon(Icons.share, color: AppColors.textPrimary, size: 20),
             onPressed: () {},
           ),
           IconButton(
             icon: _isLoadingFavorite
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: Padding(
                       padding: EdgeInsets.all(4),
                       child: Text(
                         "...",
-                        style: TextStyle(color: Colors.white, fontSize: 10),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 10),
                       ),
                     ),
                   )
@@ -294,7 +294,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 // Book Cover Area
                 Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -303,20 +303,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   ),
                   child: Column(
                     children: [
-                      const SizedBox(height: 30),
+                      SizedBox(height: 30),
                       Container(
                         height: 240,
                         width: 168,
                         decoration: BoxDecoration(
                           color: AppColors.lightSurface,
                           borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 40,
-                              offset: const Offset(0, 20),
-                            ),
-                          ],
+                          
                         ),
                         alignment: Alignment.center,
                         child: ClipRRect(
@@ -331,20 +325,20 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   height: 240,
                                   width: 168,
                                   errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(
+                                      Icon(
                                         Icons.book,
                                         size: 60,
                                         color: AppColors.orange,
                                       ),
                                 )
-                              : const Icon(
+                              : Icon(
                                   Icons.book,
                                   size: 60,
                                   color: AppColors.orange,
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Text(
@@ -353,12 +347,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           style: AppTextStyles.pageTitle,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         book.authorName,
                         style: AppTextStyles.withColor(AppTextStyles.subtitle, AppColors.primary),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -376,7 +370,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   }
                                   return _buildStars(avg);
                                 })(),
-                                const SizedBox(width: 8),
+                                SizedBox(width: 8),
                                 Text(
                                   "${(() {
                                     double avg = book.noteMoyenne;
@@ -386,7 +380,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     return avg.toStringAsFixed(1);
                                   })()} (${book.telechargements > 0 ? book.telechargements : _reviews.length} avis)",
                                   style: GoogleFonts.poppins(
-                                    color: Colors.grey[400],
+                                    color: AppColors.textSecondary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -394,17 +388,17 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               ],
                             ),
                           if (book.nombreMessages > 0) ...[
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Icon(
                               Iconsax.message,
-                              color: Colors.grey[400],
+                              color: AppColors.textSecondary,
                               size: 12,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               "${book.nombreMessages} message${book.nombreMessages > 1 ? 's' : ''}",
                               style: GoogleFonts.poppins(
-                                color: Colors.grey[400],
+                                color: AppColors.textSecondary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -412,7 +406,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 30),
+                      SizedBox(height: 30),
                     ],
                   ),
                 ),
@@ -427,20 +421,20 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         'Description',
                         style: AppTextStyles.sectionTitle,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Text(
                         book.description.isEmpty
                             ? "Aucune description disponible pour ce livre."
                             : book.description,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
-                          color: Colors.grey[300],
+                          color: AppColors.textSecondary,
                           height: 1.6,
                         ),
                         maxLines: 4,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         'Lire la suite ⌄',
                         style: GoogleFonts.poppins(
@@ -450,21 +444,21 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // À propos de l'auteur
                       Text(
                         "À propos de ${book.authorName}",
                         style: AppTextStyles.sectionTitle,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppColors.surfaceVariant,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.05),
+                            color: AppColors.textPrimary.withOpacity(0.05),
                           ),
                         ),
                         child: Column(
@@ -474,20 +468,20 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 CircleAvatar(
                                   radius: 30,
                                   backgroundColor: const Color(
-                                    0xFF22D3EE,
+                                    0xFFFFC37D,
                                   ).withOpacity(0.1),
                                   backgroundImage: ProfileImageHelper.getProfileImageProvider(book.auteur?.profilePhoto),
                                   child:
                                       (book.auteur?.profilePhoto == null ||
                                           book.auteur!.profilePhoto!.isEmpty)
-                                      ? const Icon(
+                                      ? Icon(
                                           Icons.person,
                                           color: AppColors.primaryLight,
                                           size: 30,
                                         )
                                       : null,
                                 ),
-                                const SizedBox(width: 16),
+                                SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -509,16 +503,16 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 _buildSocialIcon(Icons.language, "Web"),
-                                const SizedBox(width: 20),
+                                SizedBox(width: 20),
                                 _buildSocialIcon(Icons.facebook, "FB"),
-                                const SizedBox(width: 20),
+                                SizedBox(width: 20),
                                 _buildSocialIcon(Icons.camera_alt, "IG"),
-                                const SizedBox(width: 20),
+                                SizedBox(width: 20),
                                 _buildSocialIcon(
                                   Icons.alternate_email,
                                   "Email",
@@ -529,7 +523,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // Avis de la communauté
                       Row(
@@ -562,13 +556,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       // Review list
                       if (_isLoadingReviews)
-                        const Center(
+                        Center(
                           child: Text(
                             "Chargement des avis...",
-                            style: TextStyle(color: Colors.white70),
+                            style: TextStyle(color: AppColors.textSecondary),
                           ),
                         )
                       else if (_reviews.isEmpty)
@@ -591,7 +585,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             ),
                           ),
                         ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       if (isOwned)
                         Container(
@@ -618,12 +612,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.star_rounded,
                                     color: AppColors.primary,
                                     size: 20,
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   Text(
                                     "Laisser un avis",
                                     style: AppTextStyles.withColor(AppTextStyles.button14, AppColors.primary),
@@ -634,7 +628,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           ),
                         ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // Related Sections (Only shown if not owned)
                       if (!isOwned) ...[
@@ -650,10 +644,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               _categoryBooks,
                             ),
                         ] else ...[
-                          const Center(
+                          Center(
                             child: Text(
                               "Chargement...",
-                              style: TextStyle(color: Colors.white70),
+                              style: TextStyle(color: AppColors.textSecondary),
                             ),
                           ),
                         ],
@@ -661,7 +655,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
               ],
             ),
           ),
@@ -670,12 +664,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 color: AppColors.darkSurface,
                 border: Border(
                   top: BorderSide(
-                    color: Colors.white.withOpacity(0.05),
+                    color: AppColors.textPrimary.withOpacity(0.05),
                     width: 1,
                   ),
                 ),
@@ -683,10 +677,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
               child: SafeArea(
                 top: false,
                 child: _isLoadingOwnership
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           "...",
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: AppColors.textPrimary),
                         ),
                       )
                     : !isOwned
@@ -700,7 +694,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     Text(
                                       "PRIX EBOOK",
                                       style: GoogleFonts.poppins(
-                                        color: Colors.grey[500],
+                                        color: AppColors.textSecondary,
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: 0.5,
@@ -712,7 +706,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(width: 32),
+                                SizedBox(width: 32),
                                 Container(
                                   height: 50,
                                   width: 50,
@@ -720,7 +714,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     color: AppColors.surfaceVariant,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.1),
+                                      color: AppColors.textPrimary.withOpacity(0.1),
                                     ),
                                   ),
                                   child: IconButton(
@@ -736,18 +730,18 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                             "${book.titre} ajouté au panier",
                                           ),
                                           backgroundColor: const Color(
-                                            0xFF06B6D4,
+                                            0xFFFFB156,
                                           ),
                                         ),
                                       );
                                     },
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.shopping_cart_outlined,
-                                      color: Colors.white,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                SizedBox(width: 12),
                                 Expanded(
                                   child: SizedBox(
                                     height: 50,
@@ -763,10 +757,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                         );
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF22D3EE,
+                                        backgroundColor: Color(
+                                          0xFFFFC37D,
                                         ),
-                                        foregroundColor: Colors.white,
+                                        foregroundColor: AppColors.textPrimary,
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -779,11 +773,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                             MainAxisAlignment.center,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(
+                                          Icon(
                                             Icons.shopping_bag,
                                             size: 18,
                                           ),
-                                          const SizedBox(width: 4),
+                                          SizedBox(width: 4),
                                           Flexible(
                                             child: Text(
                                               'Acheter',
@@ -805,7 +799,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               child: Text(
                                 "Consultation Auteur",
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white70,
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                             )
@@ -825,7 +819,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       Text(
                                         "Progression de lecture",
                                         style: GoogleFonts.poppins(
-                                          color: Colors.grey[400],
+                                          color: AppColors.textSecondary,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -840,7 +834,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
+                                  SizedBox(height: 6),
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(4),
                                     child: LinearProgressIndicator(
@@ -850,7 +844,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                         0.05,
                                       ),
                                       valueColor:
-                                          const AlwaysStoppedAnimation<Color>(
+                                          AlwaysStoppedAnimation<Color>(
                                             AppColors.primary,
                                           ),
                                       minHeight: 6,
@@ -878,7 +872,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
+                                foregroundColor: AppColors.textPrimary,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -887,8 +881,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.menu_book, size: 18),
-                                  const SizedBox(width: 8),
+                                  Icon(Icons.menu_book, size: 18),
+                                  SizedBox(width: 8),
                                   Text(
                                     _readingProgress != null &&
                                             _readingProgress!.pourcentage > 0
@@ -917,12 +911,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 32),
+        SizedBox(height: 32),
         Text(
           title,
           style: AppTextStyles.sectionTitle,
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20),
         SizedBox(
           height: 280,
           child: ListView.builder(
@@ -962,15 +956,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
             // Cover Image with Shadow and Rounded Corners
             Container(
               height: 200,
+              width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+                
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
@@ -987,7 +976,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     : _buildPlaceholderCover(),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             // Title
             Text(
               book.titre,
@@ -995,15 +984,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 1),
+            SizedBox(height: 1),
             // Author
             Text(
               book.authorName,
-              style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500]),
+              style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             // Price and Stats Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1019,34 +1008,34 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 Row(
                   children: [
                     if (book.noteMoyenne > 0) ...[
-                      const Icon(
+                      Icon(
                         Icons.star_rounded,
                         color: AppColors.warning,
                         size: 10,
                       ),
-                      const SizedBox(width: 2),
+                      SizedBox(width: 2),
                       Text(
                         book.noteMoyenne.toStringAsFixed(1),
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: Colors.white70,
+                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                     if (book.nombreMessages > 0) ...[
-                      const SizedBox(width: 6),
-                      const Icon(
+                      SizedBox(width: 6),
+                      Icon(
                         Iconsax.message,
-                        color: Colors.white38,
+                        color: AppColors.textHint,
                         size: 10,
                       ),
-                      const SizedBox(width: 2),
+                      SizedBox(width: 2),
                       Text(
                         "${book.nombreMessages}",
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: Colors.white38,
+                          color: AppColors.textHint,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -1064,7 +1053,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
   Widget _buildPlaceholderCover() {
     return Container(
       color: AppColors.surfaceVariant,
-      child: const Center(
+      child: Center(
         child: Icon(Icons.book, color: AppColors.primary, size: 30),
       ),
     );
@@ -1077,15 +1066,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
       mainAxisSize: MainAxisSize.min,
       children: List.generate(5, (index) {
         if (index < fullStars) {
-          return const Icon(Icons.star, color: AppColors.warning, size: 18);
+          return Icon(Icons.star, color: AppColors.warning, size: 18);
         } else if (index == fullStars && hasHalfStar) {
-          return const Icon(
+          return Icon(
             Icons.star_half,
             color: AppColors.warning,
             size: 18,
           );
         } else {
-          return const Icon(
+          return Icon(
             Icons.star_border,
             color: AppColors.warning,
             size: 18,
@@ -1103,18 +1092,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
     String? photoUrl,
   ]) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1134,14 +1117,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     (photoUrl == null ||
                         photoUrl.isEmpty ||
                         photoUrl.contains('example.com'))
-                    ? const Icon(
+                    ? Icon(
                         Icons.person,
                         color: AppColors.primary,
                         size: 18,
                       )
                     : null,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1153,7 +1136,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     Text(
                       time,
                       style: GoogleFonts.poppins(
-                        color: Colors.grey[500],
+                        color: AppColors.textSecondary,
                         fontSize: 10,
                         letterSpacing: 0.5,
                       ),
@@ -1174,11 +1157,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             comment,
             style: GoogleFonts.poppins(
-              color: Colors.grey[300],
+              color: AppColors.textSecondary,
               fontStyle: FontStyle.italic,
               fontSize: 12,
               height: 1.5,
@@ -1229,15 +1212,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       );
                     }),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   TextField(
                     controller: commentController,
                     maxLines: 4,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppColors.textPrimary),
                     decoration: InputDecoration(
                       hintText: "Écrivez votre commentaire ici...",
                       hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: AppColors.textPrimary.withOpacity(0.5),
                       ),
                       filled: true,
                       fillColor: AppColors.surfaceVariant,
@@ -1254,7 +1237,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   onPressed: () => Navigator.pop(context),
                   child: Text(
                     "Annuler",
-                    style: GoogleFonts.poppins(color: Colors.grey[400]),
+                    style: GoogleFonts.poppins(color: AppColors.textSecondary),
                   ),
                 ),
                 ElevatedButton(
@@ -1304,7 +1287,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   },
                   child: Text(
                     "Envoyer",
-                    style: GoogleFonts.poppins(color: Colors.white),
+                    style: GoogleFonts.poppins(color: AppColors.textPrimary),
                   ),
                 ),
               ],
@@ -1319,17 +1302,17 @@ class _BookDetailPageState extends State<BookDetailPage> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.05),
+            color: AppColors.textPrimary.withOpacity(0.05),
           ),
-          child: Icon(icon, color: Colors.white70, size: 20),
+          child: Icon(icon, color: AppColors.textSecondary, size: 20),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 10),
+          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 10),
         ),
       ],
     );
