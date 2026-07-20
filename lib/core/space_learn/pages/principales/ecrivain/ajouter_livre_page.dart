@@ -198,7 +198,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     return 'PDF';
   }
 
-  Future<void> _publishBook() async {
+  Future<void> _publishBook({bool isDraft = false}) async {
     if (!_formKey.currentState!.validate()) return;
 
     if (widget.book == null &&
@@ -342,13 +342,13 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           'fichier_url': bookUrl,
           'image_couverture': coverUrl,
           'format': format,
-          'statut': widget.book!.statut,
+          'statut': isDraft ? 'brouillon' : 'publie',
           'stock': widget.book!.stock,
         };
         await _bookService.updateBook(widget.book!.id, updates, token);
 
         if (mounted) {
-          _showSuccessDialog(isModification: true);
+          _showSuccessDialog(isModification: true, isDraft: isDraft);
         }
       } else {
         // Mode création
@@ -363,14 +363,14 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           prix: prixParsed,
           stock: 999,
           categorieId: categorieId,
-          statut: 'publie',
+          statut: isDraft ? 'brouillon' : 'publie',
           auteur: null,
         );
 
         await _bookService.createBook(bookToCreate, token);
 
         if (mounted) {
-          _showSuccessDialog(isModification: false);
+          _showSuccessDialog(isModification: false, isDraft: isDraft);
         }
       }
     } catch (e) {
@@ -387,7 +387,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     }
   }
 
-  void _showSuccessDialog({required bool isModification}) {
+  void _showSuccessDialog({required bool isModification, required bool isDraft}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -425,8 +425,8 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               const SizedBox(height: 12),
               Text(
                 isModification
-                    ? "Votre œuvre a été modifiée avec succès."
-                    : "Votre œuvre a été publiée avec succès. Elle est maintenant disponible pour vos lecteurs.",
+                    ? (isDraft ? "Brouillon mis à jour avec succès." : "Votre œuvre a été modifiée avec succès.")
+                    : (isDraft ? "L'œuvre a été enregistrée en tant que brouillon." : "Votre œuvre a été publiée avec succès. Elle est maintenant disponible pour vos lecteurs."),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -569,37 +569,68 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   localPath: _selectedCoverPath,
                   isImage: true,
                 ),
-
                 SizedBox(height: 40),
-
-                ElevatedButton(
-                  onPressed: _isUploading ? null : _publishBook,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondaryVariant,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 4,
-                    shadowColor: AppColors.secondaryVariant.withValues(
-                      alpha: 0.4,
-                    ),
-                  ),
-                  child: _isUploading
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: AppColors.textPrimary,
-                            strokeWidth: 2,
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isUploading ? null : () => _publishBook(isDraft: true),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        )
-                      : Text(
-                          widget.book != null
-                              ? 'Modifier'
-                              : 'Publier maintenant',
-                          style: AppTextStyles.sectionTitle,
+                          side: BorderSide(
+                            color: _isUploading ? Colors.grey : AppColors.secondaryVariant,
+                          ),
                         ),
+                        child: Text(
+                          "Brouillon",
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: _isUploading ? Colors.grey : AppColors.secondaryVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isUploading ? null : () => _publishBook(isDraft: false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondaryVariant,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                          shadowColor: AppColors.secondaryVariant.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                        child: _isUploading
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: AppColors.textPrimary,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                widget.book != null
+                                    ? "Modifier"
+                                    : "Publier",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 20),
               ],

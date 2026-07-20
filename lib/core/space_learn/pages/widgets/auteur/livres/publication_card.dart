@@ -243,6 +243,9 @@ class PublicationCard extends StatelessWidget {
                       ),
                     );
                     break;
+                  case 'publish':
+                    _handlePublish(context);
+                    break;
                   case 'archive':
                     _handleArchive(context);
                     break;
@@ -252,6 +255,29 @@ class PublicationCard extends StatelessWidget {
                 }
               },
               itemBuilder: (context) => [
+                if (!isPublished)
+                  PopupMenuItem(
+                    value: 'publish',
+                    height: 32,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.publish,
+                          color: AppColors.success,
+                          size: 14,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "Publier",
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 PopupMenuItem(
                   value: 'edit',
                   height: 32,
@@ -368,6 +394,44 @@ class PublicationCard extends StatelessWidget {
         child: Icon(Iconsax.book_1, color: AppColors.textHint, size: 28),
       ),
     );
+  }
+
+  Future<void> _handlePublish(BuildContext context) async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Session expirée")),
+          );
+        }
+        return;
+      }
+      
+      final BookService bookService = BookService();
+      await bookService.updateBook(book.id, {'statut': 'publie'}, token);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Livre publié avec succès !"),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        if (onBookUpdated != null) {
+          onBookUpdated!();
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Erreur: Impossible de publier le livre"),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _handleArchive(BuildContext context) {
