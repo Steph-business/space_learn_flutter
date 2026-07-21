@@ -14,6 +14,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart'
 import 'package:space_learn_flutter/core/space_learn/data/model/categorie.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
@@ -143,17 +144,19 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           }
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Fichier sélectionné : $_selectedFileName")),
+          AppNotifications.showSnackBar(
+            context,
+            message: "Fichier du livre sélectionné avec succès",
+            isSuccess: true,
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Erreur lors de la sélection du fichier : $e"),
-          ),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur lors de la sélection du fichier : $e",
+          isError: true,
         );
       }
     }
@@ -174,17 +177,19 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           }
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Image sélectionnée : $_selectedCoverName")),
+          AppNotifications.showSnackBar(
+            context,
+            message: "Image de couverture sélectionnée avec succès",
+            isSuccess: true,
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Erreur lors de la sélection de l'image : $e"),
-          ),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur lors de la sélection de l'image : $e",
+          isError: true,
         );
       }
     }
@@ -203,22 +208,19 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
 
     if (widget.book == null &&
         (_selectedFileName == null || _selectedCoverName == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Veuillez sélectionner le fichier et l'image de couverture.",
-          ),
-        ),
+      AppNotifications.showSnackBar(
+        context,
+        message: "Veuillez sélectionner le fichier et l'image de couverture.",
+        isError: true,
       );
       return;
     }
 
     if (_currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Erreur: Utilisateur non connecté."),
-          backgroundColor: Colors.red,
-        ),
+      AppNotifications.showSnackBar(
+        context,
+        message: "Erreur: Utilisateur non connecté.",
+        isError: true,
       );
       return;
     }
@@ -226,11 +228,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     final token = await TokenStorage.getToken();
     if (!mounted) return;
     if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Erreur: Session expirée. Veuillez vous reconnecter."),
-          backgroundColor: Colors.red,
-        ),
+      AppNotifications.showSnackBar(
+        context,
+        message: "Erreur: Session expirée. Veuillez vous reconnecter.",
+        isError: true,
       );
       return;
     }
@@ -375,9 +376,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       }
     } catch (e) {
       if (mounted) {
-        String errorMessage = "Échec de l'opération : $e";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Échec de l'opération : $e",
+          isError: true,
         );
       }
     } finally {

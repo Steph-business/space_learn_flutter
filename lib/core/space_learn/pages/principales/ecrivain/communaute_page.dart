@@ -32,6 +32,7 @@ class _TeamsPageState extends State<TeamsPage> {
   List<BookModel> _books = [];
   List<Evenement> _evenements = [];
   bool _isLoading = true;
+  bool _filterActiveOnly = true;
   String? _error;
 
   @override
@@ -267,43 +268,111 @@ class _TeamsPageState extends State<TeamsPage> {
                     ),
 
                   // Forums par Livre
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      "Forums de vos œuvres (${_books.length})",
-                      style: AppTextStyles.subtitle,
-                    ),
-                  ),
+                  Builder(
+                    builder: (context) {
+                      final activeBooks = _books.where((b) => b.nombreMessages > 0).toList();
+                      final displayBooks = _filterActiveOnly ? activeBooks : _books;
 
-                  if (_books.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: Container(
-                        padding: EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "Publiez un livre pour créer un forum qui lui est dédié.",
-                            style: TextStyle(color: AppColors.textHint),
-                            textAlign: TextAlign.center,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Forums de vos œuvres (${displayBooks.length})",
+                                  style: AppTextStyles.subtitle,
+                                ),
+                                const SizedBox(height: 12),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      _buildFilterChip(
+                                        label: "Discussions actives (${activeBooks.length})",
+                                        isSelected: _filterActiveOnly,
+                                        onTap: () => setState(() => _filterActiveOnly = true),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      _buildFilterChip(
+                                        label: "Toutes mes œuvres (${_books.length})",
+                                        isSelected: !_filterActiveOnly,
+                                        onTap: () => setState(() => _filterActiveOnly = false),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
-                    )
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: _books.length,
-                      itemBuilder: (context, index) {
-                        final book = _books[index];
-                        return _buildBookForumCard(book);
-                      },
-                    ),
+
+                          if (displayBooks.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: AppColors.cardBackground,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: AppColors.textPrimary.withOpacity(0.05),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Iconsax.messages_1,
+                                        size: 36,
+                                        color: AppColors.textHint,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _filterActiveOnly
+                                            ? "Aucune discussion active sur vos œuvres pour le moment."
+                                            : "Publiez un livre pour créer un forum qui lui est dédié.",
+                                        style: GoogleFonts.poppins(
+                                          color: AppColors.textHint,
+                                          fontSize: 13,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      if (_filterActiveOnly && _books.isNotEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        GestureDetector(
+                                          onTap: () => setState(() => _filterActiveOnly = false),
+                                          child: Text(
+                                            "Voir toutes mes œuvres (${_books.length})",
+                                            style: GoogleFonts.poppins(
+                                              color: AppColors.primary,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: displayBooks.length,
+                              itemBuilder: (context, index) {
+                                final book = displayBooks[index];
+                                return _buildBookForumCard(book);
+                              },
+                            ),
+                        ],
+                      );
+                    },
+                  ),
 
                   SizedBox(height: 100),
                 ],
@@ -634,6 +703,40 @@ class _TeamsPageState extends State<TeamsPage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.15)
+              : AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.textPrimary.withOpacity(0.08),
+            width: 1.2,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
       ),
     );
   }

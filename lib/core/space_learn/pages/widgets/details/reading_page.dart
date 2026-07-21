@@ -25,8 +25,14 @@ import '../../../data/dataServices/readerStatsService.dart';
 class ReadingPage extends StatefulWidget {
   final Map<String, dynamic> book;
   final int? initialPage;
+  final bool isExtrait;
 
-  const ReadingPage({super.key, required this.book, this.initialPage});
+  const ReadingPage({
+    super.key,
+    required this.book,
+    this.initialPage,
+    this.isExtrait = false,
+  });
 
   @override
   State<ReadingPage> createState() => _ReadingPageState();
@@ -322,6 +328,13 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   void _onPageChanged(int page) {
+    if (widget.isExtrait && page > 5) {
+      // Pour les extraits, on limite à la page 5
+      _pdfViewerController.jumpToPage(5);
+      _showExtraitLimitDialog();
+      return;
+    }
+
     setState(() {
       _currentPage = page;
     });
@@ -873,7 +886,9 @@ class _ReadingPageState extends State<ReadingPage> {
               }
             },
             onChapterChanged: (value) {
-              if (mounted && value != null && value.chapter != null) {
+              if (widget.isExtrait && _currentPage > 2) {
+                _showExtraitLimitDialog();
+              } else if (mounted && value != null && value.chapter != null) {
                 setState(() {
                   _currentChapterTitle = value.chapter!.Title ?? '';
                 });
@@ -940,6 +955,61 @@ class _ReadingPageState extends State<ReadingPage> {
       },
     );
   }
+
+  void _showExtraitLimitDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceVariant,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          "Fin de l'extrait",
+          style: GoogleFonts.ebGaramond(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Text(
+          "Vous avez atteint la limite de lecture gratuite pour cet extrait. "
+          "Achetez l'\u0153uvre compl\u00e8te pour d\u00e9couvrir la suite et soutenir l'auteur.",
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            child: Text(
+              "Quitter",
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            child: Text(
+              "J'ach\u00e8te le livre",
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildHeader() {
     final bool isDark = _backgroundColor.computeLuminance() < 0.5;

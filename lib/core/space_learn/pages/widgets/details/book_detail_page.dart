@@ -18,6 +18,8 @@ import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/readingProgressService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/readingActivityModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/chapitre_service.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/chapitre_model.dart';
 import 'all_reviews_page.dart';
 
 class BookDetailPage extends StatefulWidget {
@@ -58,6 +60,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
   ReadingActivityModel? _readingProgress;
   Set<String> _ownedBookIds = {};
 
+  // Chapitres
+  final ChapitreService _chapitreService = ChapitreService();
+  List<ChapitreModel> _chapitres = [];
+  bool _isLoadingChapitres = true;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +74,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
     _checkFavoriteStatus();
     _loadReviews();
     _checkOwnershipStatus();
+    _loadChapitres();
   }
 
   Future<void> _loadFullBookDetails() async {
@@ -130,6 +138,24 @@ class _BookDetailPageState extends State<BookDetailPage> {
         }
       }
     } catch (e) {
+    }
+  }
+
+  Future<void> _loadChapitres() async {
+    try {
+      final chapitres = await _chapitreService.getChapitres(widget.book.id);
+      if (mounted) {
+        setState(() {
+          _chapitres = chapitres;
+          _isLoadingChapitres = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingChapitres = false;
+        });
+      }
     }
   }
 
@@ -199,6 +225,169 @@ class _BookDetailPageState extends State<BookDetailPage> {
     } catch (e) {
       if (mounted) setState(() => _isLoadingReviews = false);
     }
+  }
+
+  void _showAllChaptersModal(BuildContext context) {
+    final isOwned = _isOwned;
+    final book = _fullBook ?? widget.book;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final chaptersList = _chapitres;
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Tous les chapitres",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    chaptersList.isNotEmpty
+                        ? "${chaptersList.length} chapitres"
+                        : "3 chapitres",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: chaptersList.isNotEmpty
+                    ? ListView.separated(
+                        itemCount: chaptersList.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final ch = chaptersList[index];
+                          final isLocked = !isOwned && !ch.estGratuit;
+                          final numStr = ch.numero < 10
+                              ? "0${ch.numero}"
+                              : "${ch.numero}";
+                          return _buildChapterTile(
+                            number: numStr,
+                            title: ch.titre,
+                            description: ch.description.isNotEmpty
+                                ? ch.description
+                                : (isLocked
+                                    ? "Contenu verrouillé - Achetez le livre pour lire la suite."
+                                    : "Découvrez cet extrait gratuit."),
+                            isLocked: isLocked,
+                            onTap: isLocked
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ReadingPage(
+                                          book: book.toJson(),
+                                          isExtrait: !isOwned,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                          );
+                        },
+                      )
+                    : ListView(
+                        children: [
+                          _buildChapterTile(
+                            number: "01",
+                            title: "Introduction",
+                            description:
+                                "Découvrez les premières pages de l'œuvre.",
+                            isLocked: false,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReadingPage(
+                                    book: book.toJson(),
+                                    isExtrait: !isOwned,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          _buildChapterTile(
+                            number: "02",
+                            title: "Développement",
+                            description: "Le cœur de l'histoire prend forme.",
+                            isLocked: !isOwned,
+                            onTap: isOwned
+                                ? () {
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ReadingPage(
+                                          book: book.toJson(),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildChapterTile(
+                            number: "03",
+                            title: "Conclusion",
+                            description:
+                                "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                            isLocked: !isOwned,
+                            onTap: isOwned
+                                ? () {
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ReadingPage(
+                                          book: book.toJson(),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _loadRelatedBooks() async {
@@ -446,84 +635,159 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
                       SizedBox(height: 40),
 
-                      // À propos de l'auteur
-                      Text(
-                        "À propos de ${book.authorName}",
-                        style: AppTextStyles.sectionTitle,
+                      // Sommaire
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Sommaire',
+                            style: AppTextStyles.sectionTitle,
+                          ),
+                          Text(
+                            _chapitres.isNotEmpty
+                                ? "${_chapitres.length} CHAPITRES"
+                                : "3 CHAPITRES",
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 16),
-                      Container(
-                        padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.textPrimary.withOpacity(0.05),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 30,
-                                  backgroundColor: const Color(
-                                    0xFFFFC37D,
-                                  ).withOpacity(0.1),
-                                  backgroundImage: ProfileImageHelper.getProfileImageProvider(book.auteur?.profilePhoto),
-                                  child:
-                                      (book.auteur?.profilePhoto == null ||
-                                          book.auteur!.profilePhoto!.isEmpty)
-                                      ? Icon(
-                                          Icons.person,
-                                          color: AppColors.primaryLight,
-                                          size: 30,
-                                        )
-                                      : null,
+
+                      if (_chapitres.isNotEmpty)
+                        ..._chapitres.map((ch) {
+                          final isLocked = !isOwned && !ch.estGratuit;
+                          final numStr = ch.numero < 10
+                              ? "0${ch.numero}"
+                              : "${ch.numero}";
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: _buildChapterTile(
+                              number: numStr,
+                              title: ch.titre,
+                              description: ch.description.isNotEmpty
+                                  ? ch.description
+                                  : (isLocked
+                                      ? "Contenu verrouillé - Achetez le livre pour lire la suite."
+                                      : "Découvrez cet extrait gratuit."),
+                              isLocked: isLocked,
+                              onTap: isLocked
+                                  ? null
+                                  : () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ReadingPage(
+                                            book: book.toJson(),
+                                            isExtrait: !isOwned,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                            ),
+                          );
+                        }).toList()
+                      else ...[
+                        _buildChapterTile(
+                          number: "01",
+                          title: "Introduction",
+                          description:
+                              "Découvrez les premières pages de l'œuvre.",
+                          isLocked: false,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReadingPage(
+                                  book: book.toJson(),
+                                  isExtrait: !isOwned,
                                 ),
-                                SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        book.authorName,
-                                        style: AppTextStyles.subtitle,
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(height: 8),
+                        _buildChapterTile(
+                          number: "02",
+                          title: "Développement",
+                          description: "Le cœur de l'histoire prend forme.",
+                          isLocked: !isOwned,
+                          onTap: isOwned
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ReadingPage(
+                                        book: book.toJson(),
                                       ),
-                                      Text(
-                                        book.auteur?.biography ??
-                                            "Auteur passionné sur SpaceLearn",
-                                        style: AppTextStyles.grey12,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }
+                              : null,
+                        ),
+                        SizedBox(height: 8),
+                        _buildChapterTile(
+                          number: "03",
+                          title: "Conclusion",
+                          description:
+                              "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                          isLocked: !isOwned,
+                          onTap: isOwned
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ReadingPage(
+                                        book: book.toJson(),
                                       ),
-                                    ],
+                                    ),
+                                  );
+                                }
+                              : null,
+                        ),
+                      ],
+
+                      const SizedBox(height: 12),
+                      Center(
+                        child: InkWell(
+                          onTap: () => _showAllChaptersModal(context),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Voir tous les chapitres",
+                                  style: GoogleFonts.poppins(
+                                    color: AppColors.primary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              ],
-                            ),
-                            SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildSocialIcon(Icons.language, "Web"),
-                                SizedBox(width: 20),
-                                _buildSocialIcon(Icons.facebook, "FB"),
-                                SizedBox(width: 20),
-                                _buildSocialIcon(Icons.camera_alt, "IG"),
-                                SizedBox(width: 20),
-                                _buildSocialIcon(
-                                  Icons.alternate_email,
-                                  "Email",
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  color: AppColors.primary,
+                                  size: 12,
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
 
                       SizedBox(height: 40),
+
+
 
                       // Avis de la communauté
                       Row(
@@ -685,116 +949,160 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       )
                     : !isOwned
                     ? widget.showCart
-                          ? Row(
-                              children: [
-                                Column(
+                          ? Column(
                                   mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      "PRIX EBOOK",
-                                      style: GoogleFonts.poppins(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    Text(
-                                      "${book.prix} FCFA",
-                                      style: AppTextStyles.heroTitle22,
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(width: 32),
-                                Container(
-                                  height: 50,
-                                  width: 50,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surfaceVariant,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: AppColors.textPrimary.withOpacity(0.1),
-                                    ),
-                                  ),
-                                  child: IconButton(
-                                    onPressed: () {
-                                      context.read<CartProvider>().addItem(
-                                        book,
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            "${book.titre} ajouté au panier",
-                                          ),
-                                          backgroundColor: const Color(
-                                            0xFFFFB156,
-                                          ),
+                                    Row(
+                                      children: [
+                                        Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "PRIX EBOOK",
+                                              style: GoogleFonts.poppins(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                            Text(
+                                              "${book.prix} FCFA",
+                                              style: AppTextStyles.heroTitle22,
+                                            ),
+                                          ],
                                         ),
-                                      );
-                                    },
-                                    icon: Icon(
-                                      Icons.shopping_cart_outlined,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 50,
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => PaymentPage(
-                                              book: book.toJson(),
+                                        SizedBox(width: 32),
+                                        Container(
+                                          height: 50,
+                                          width: 50,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.surfaceVariant,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: AppColors.textPrimary.withOpacity(0.1),
                                             ),
                                           ),
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Color(
-                                          0xFFFFC37D,
-                                        ),
-                                        foregroundColor: AppColors.textPrimary,
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
+                                          child: IconButton(
+                                            onPressed: () {
+                                              context.read<CartProvider>().addItem(
+                                                book,
+                                              );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    "${book.titre} ajouté au panier",
+                                                  ),
+                                                  backgroundColor: const Color(
+                                                    0xFFFFB156,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            icon: Icon(
+                                              Icons.shopping_cart_outlined,
+                                              color: AppColors.textPrimary,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.shopping_bag,
-                                            size: 18,
+                                        SizedBox(width: 12),
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: 50,
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => PaymentPage(
+                                                      book: book.toJson(),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Color(
+                                                  0xFFFFC37D,
+                                                ),
+                                                foregroundColor: AppColors.textPrimary,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(
+                                                    12,
+                                                  ),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.shopping_bag,
+                                                    size: 18,
+                                                  ),
+                                                  SizedBox(width: 4),
+                                                  Flexible(
+                                                    child: Text(
+                                                      'Acheter',
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: GoogleFonts.poppins(
+                                                        fontSize: 14,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                           ),
-                                          SizedBox(width: 4),
-                                          Flexible(
-                                            child: Text(
-                                              'Acheter',
-                                              overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 50,
+                                      child: OutlinedButton(
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => ReadingPage(
+                                                book: book.toJson(),
+                                                isExtrait: true,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: AppColors.textPrimary,
+                                          side: BorderSide(color: AppColors.textPrimary.withOpacity(0.2)),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.menu_book, size: 18),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              "Lire un extrait",
                                               style: GoogleFonts.poppins(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                              ],
-                            )
+                                  ],
+                                )
                           : Center(
                               child: Text(
                                 "Consultation Auteur",
@@ -1298,23 +1606,75 @@ class _BookDetailPageState extends State<BookDetailPage> {
     );
   }
 
-  Widget _buildSocialIcon(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.textPrimary.withOpacity(0.05),
+
+
+  Widget _buildChapterTile({
+    required String number,
+    required String title,
+    required String description,
+    required bool isLocked,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: isLocked ? null : onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isLocked
+                ? AppColors.textPrimary.withOpacity(0.04)
+                : AppColors.primary.withOpacity(0.15),
           ),
-          child: Icon(icon, color: AppColors.textSecondary, size: 20),
         ),
-        SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 10),
+        child: Row(
+          children: [
+            Text(
+              "$number.",
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isLocked ? AppColors.textSecondary : AppColors.primary,
+              ),
+            ),
+            SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isLocked
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8),
+            Icon(
+              isLocked ? Icons.lock_outline : Icons.play_circle_outline,
+              color: isLocked ? AppColors.textSecondary : AppColors.primary,
+              size: 22,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

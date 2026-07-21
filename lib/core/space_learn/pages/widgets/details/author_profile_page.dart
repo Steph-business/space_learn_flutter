@@ -265,7 +265,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.65,
+          childAspectRatio: 0.68,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
         ),

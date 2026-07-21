@@ -394,7 +394,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           _followingIds = followings.map((f) => f.suitId).toSet();
 
           // 3. Finalize Lists
-          // À la une
+          // Nouveautés
           _featuredBooks = List.from(_allBooks);
           _featuredBooks.sort((a, b) {
             if (a.creeLe != null && b.creeLe != null) {
@@ -402,7 +402,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             }
             return b.id.compareTo(a.id);
           });
-          _featuredBooks = _featuredBooks.take(10).toList();
+          _featuredBooks = _featuredBooks.take(5).toList();
 
           // Auteurs à suivre
           final Map<String, UserModel> authorsToFollowMap = {};
@@ -563,7 +563,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             itemBuilder: (context) {
               final List<Map<String, dynamic>> menuItems = [
                 {'label': 'Tout', 'icon': Icons.dashboard_outlined},
-                {'label': 'À la une', 'icon': Icons.star_outline},
+                {'label': 'Nouveautés', 'icon': Icons.new_releases_outlined},
                 {'label': 'Recommandations', 'icon': Icons.recommend},
                 {'label': 'Auteurs', 'icon': Icons.people_outline},
                 {'label': 'Forum', 'icon': Icons.forum_outlined},
@@ -640,15 +640,15 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   SizedBox(height: 20),
                 ],
 
-                // À la une
+                // Nouveautés
                 if (_selectedSection == "Tout" ||
-                    _selectedSection == "À la une") ...[
+                    _selectedSection == "Nouveautés") ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("À la une", style: AppTextStyles.sectionTitle),
+                        Text("Nouveautés", style: AppTextStyles.sectionTitle),
                         GestureDetector(
                           onTap: () {
                             MainNavBar.mainNavBarKey.currentState
@@ -667,7 +667,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 // Catégories (Persistent or only in section?)
                 // Usually better to keep categories only when book sections are shown
                 if (_selectedSection == "Tout" ||
-                    _selectedSection == "À la une" ||
+                    _selectedSection == "Nouveautés" ||
                     _selectedSection == "Recommandations") ...[
                   _buildCategoryPills(),
                   SizedBox(height: 18),
@@ -803,22 +803,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
   // Helpers UI du nouveau design
 
-  Future<void> _ignoreRecommendation(BookModel book) async {
-    // Optimistic UI update
-    setState(() {
-      _featuredBooks.removeWhere((b) => b.id == book.id);
-      _allBooks.removeWhere((b) => b.id == book.id);
-    });
-    
-    try {
-      final token = await TokenStorage.getToken();
-      if (token != null) {
-        await _recommendationService.sendFeedback(book.id, "ignored", token);
-      }
-    } catch (e) {
-      // Revert if failed (optional, but good practice)
-    }
-  }
+
 
   Widget _buildFeaturedHorizontalList() {
     List<BookModel> displayBooks = [];
@@ -869,19 +854,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         messagesCount: book.nombreMessages,
                       ),
                     ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    icon: Icon(Icons.close, color: AppColors.textPrimary, size: 20),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black45,
-                      padding: const EdgeInsets.all(4),
-                      minimumSize: const Size(28, 28),
-                    ),
-                    onPressed: () => _ignoreRecommendation(book),
                   ),
                 ),
               ],
