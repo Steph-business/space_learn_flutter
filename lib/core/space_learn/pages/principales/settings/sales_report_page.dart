@@ -1,21 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
-class SalesReportPage extends StatelessWidget {
+class SalesReportPage extends StatefulWidget {
   const SalesReportPage({super.key});
+
+  @override
+  State<SalesReportPage> createState() => _SalesReportPageState();
+}
+
+class _SalesReportPageState extends State<SalesReportPage> {
+  final AuthService _authService = AuthService();
+  final BookService _bookService = BookService();
+  List<BookModel> _authorBooks = [];
+  bool _isLoading = true;
+  double _totalEarnings = 0.0;
+  double _availableBalance = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSalesData();
+  }
+
+  Future<void> _loadSalesData() async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token != null) {
+        final user = await _authService.getUser(token);
+        if (user != null) {
+          final books = await _bookService.getBooksByAuthorId(user.id);
+          
+          double earnings = 0.0;
+          for (var book in books) {
+            earnings += (book.telechargements * book.prix);
+          }
+
+          if (mounted) {
+            setState(() {
+              _authorBooks = books;
+              _totalEarnings = earnings;
+              _availableBalance = earnings;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final salesBooks = _authorBooks.where((b) => b.telechargements > 0).toList();
+
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -27,86 +85,172 @@ class SalesReportPage extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            "Votre tableau de bord",
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          SizedBox(height: 20),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : RefreshIndicator(
+              onRefresh: _loadSalesData,
+              color: AppColors.primary,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text(
+                    "Votre tableau de bord",
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
 
-          // Total Earnings Card
-          _buildEarningsCard(context),
-          SizedBox(height: 28),
+                  // Carte élégante et épurée (sans dégradé bleu/orange fluo)
+                  _buildEarningsCard(context),
+                  const SizedBox(height: 28),
 
-          Text(
-            "Historique des transactions",
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+                  Text(
+                    "Historique des transactions",
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (salesBooks.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBackground,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.monetization_on_outlined, size: 48, color: AppColors.textSecondary),
+                          const SizedBox(height: 12),
+                          Text(
+                            "Aucune vente enregistrée pour le moment",
+                            style: GoogleFonts.poppins(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...salesBooks.map((book) {
+                      final amountStr = "+ ${(book.telechargements * book.prix).toInt()} FCFA";
+                      final desc = "${book.telechargements} vente${book.telechargements > 1 ? 's' : ''}";
+                      return _buildTransactionItem(
+                        context,
+                        book.titre,
+                        desc,
+                        amountStr,
+                        "Récent",
+                      );
+                    }).toList(),
+                ],
+              ),
             ),
-          ),
-          SizedBox(height: 12),
-          _buildTransactionItem(context, "L'Énigme du Cosmos", "Vente de livre", "+ 3 500 FCFA", "10 Juillet 2026"),
-          _buildTransactionItem(context, "Physique Quantique 101", "Vente de livre", "+ 2 000 FCFA", "08 Juillet 2026"),
-          _buildTransactionItem(context, "Retrait d'argent", "Mobile Money", "- 15 000 FCFA", "01 Juillet 2026"),
-        ],
-      ),
     );
   }
 
   Widget _buildEarningsCard(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, Color(0xFF0284C7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(24),
-        
+        border: Border.all(color: AppColors.primary.withOpacity(0.25), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "Gains Totaux",
-            style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w600),
+            style: GoogleFonts.poppins(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            "178 500 FCFA",
-            style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 32, fontWeight: FontWeight.bold),
+            "${_totalEarnings.toInt()} FCFA",
+            style: GoogleFonts.poppins(
+              color: AppColors.primary,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Solde disponible", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
-                  Text("34 200 FCFA", style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    "Solde disponible",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "${_availableBalance.toInt()} FCFA",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
               ElevatedButton(
                 onPressed: () {
-                  AppNotifications.showSnackBar(context, message: "Demande de retrait mobile money envoyée !", isSuccess: true);
+                  if (_availableBalance <= 0) {
+                    AppNotifications.showSnackBar(
+                      context,
+                      message: "Solde insuffisant pour effectuer un retrait.",
+                      isSuccess: false,
+                    );
+                  } else {
+                    AppNotifications.showSnackBar(
+                      context,
+                      message: "Demande de retrait Mobile Money envoyée avec succès !",
+                      isSuccess: true,
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.cardBackground,
-                  foregroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: Text("Retirer", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                child: Text(
+                  "Retirer",
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ],
           ),
@@ -115,18 +259,28 @@ class SalesReportPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionItem(BuildContext context, String title, String type, String amount, String date) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildTransactionItem(
+    BuildContext context,
+    String title,
+    String type,
+    String amount,
+    String date,
+  ) {
     final isPositive = amount.startsWith('+');
     return Card(
       color: AppColors.cardBackground,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppColors.textPrimary.withOpacity(0.05)),
+      ),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isPositive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+            color: isPositive
+                ? Colors.green.withOpacity(0.12)
+                : Colors.red.withOpacity(0.12),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -135,8 +289,21 @@ class SalesReportPage extends StatelessWidget {
             size: 20,
           ),
         ),
-        title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-        subtitle: Text("$type • $date", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Text(
+          "$type • $date",
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+          ),
+        ),
         trailing: Text(
           amount,
           style: GoogleFonts.poppins(

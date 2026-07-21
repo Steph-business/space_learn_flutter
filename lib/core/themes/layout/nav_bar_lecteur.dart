@@ -30,7 +30,7 @@ class MainNavBarState extends State<MainNavBar> {
     "Accueil",
     "Boutique",
     "Bibliothèque",
-    "Teams",
+    "Communauté",
     "Paramètres",
   ];
 
@@ -38,7 +38,7 @@ class MainNavBarState extends State<MainNavBar> {
     Icons.home_filled,
     Iconsax.shop,
     Iconsax.book,
-    Iconsax.messages_1,
+    Iconsax.people,
     Icons.settings,
   ];
 

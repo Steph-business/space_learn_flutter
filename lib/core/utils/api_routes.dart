@@ -1,8 +1,8 @@
 /// api_routes.dart
 class ApiRoutes {
   // Change following IP to your machine's current IP
-  static const String host = "192.168.1.29";
-  static const String hosts = "192.168.1.29";
+  static const String host = "144.91.101.16";
+  static const String hosts = "144.91.101.16";
 
   // Backends fusionnés : l'authentification et les livres sont désormais servis
   // par le MÊME serveur Go (port 8082). Les chemins /auth/* et /utilisateurs/*
@@ -10,7 +10,7 @@ class ApiRoutes {
   static const String baseUrl = "http://$host:8083";
 
   // Base URL for the combined Go server on port 8082
-  static const String baseUrlsGin = "http://$host:8082";
+  static const String baseUrlsGin = "http://$host:8084";
 
   // Auth routes
   static const String profils = "$baseUrl/auth/profils";
@@ -179,6 +179,8 @@ class ApiRoutes {
     if (url.startsWith('http')) {
       // It's already absolute. We check if it's pointing to localhost/IP and swap for current base.
       final List<String> oldBases = [
+        '192.168.1.29',
+        '192.168.1.14',
         '192.168.252.193',
         '192.168.252.224',
         'localhost',

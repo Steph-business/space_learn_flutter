@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
@@ -12,6 +13,26 @@ class LanguageSelectionPage extends StatefulWidget {
 
 class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
   String _selectedLang = 'fr';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLang();
+  }
+
+  Future<void> _loadLang() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _selectedLang = prefs.getString('pref_app_language') ?? 'fr';
+      });
+    }
+  }
+
+  Future<void> _setLang(String code) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pref_app_language', code);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +108,7 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
       trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.primary) : null,
       onTap: () {
         setState(() => _selectedLang = code);
+        _setLang(code);
         AppNotifications.showSnackBar(context, message: "Langue modifiée avec succès !", isSuccess: true);
       },
     );

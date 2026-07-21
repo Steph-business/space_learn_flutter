@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
@@ -17,6 +18,32 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   bool _salesReminders = true;
   bool _newComments = true;
   bool _marketingPush = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _readingReminders = prefs.getBool('pref_readingReminders') ?? true;
+        _newChapters = prefs.getBool('pref_newChapters') ?? true;
+        _salesReminders = prefs.getBool('pref_salesReminders') ?? true;
+        _newComments = prefs.getBool('pref_newComments') ?? true;
+        _marketingPush = prefs.getBool('pref_marketingPush') ?? false;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _savePreference(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +101,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _readingReminders = val);
+                      _savePreference('pref_readingReminders', val);
                       AppNotifications.showSnackBar(context, message: "Préférences de rappels mises à jour.", isSuccess: true);
                     },
                   ),
@@ -85,6 +113,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _newChapters = val);
+                      _savePreference('pref_newChapters', val);
                       AppNotifications.showSnackBar(context, message: "Préférences de nouveautés mises à jour.", isSuccess: true);
                     },
                   ),
@@ -108,6 +137,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _salesReminders = val);
+                      _savePreference('pref_salesReminders', val);
                       AppNotifications.showSnackBar(context, message: "Préférences de notifications de ventes mises à jour.", isSuccess: true);
                     },
                   ),
@@ -119,6 +149,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _newComments = val);
+                      _savePreference('pref_newComments', val);
                       AppNotifications.showSnackBar(context, message: "Préférences de commentaires mises à jour.", isSuccess: true);
                     },
                   ),
@@ -139,6 +170,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
               activeColor: AppColors.primary,
               onChanged: (val) {
                 setState(() => _marketingPush = val);
+                _savePreference('pref_marketingPush', val);
                 AppNotifications.showSnackBar(context, message: "Préférences de promotions mises à jour.", isSuccess: true);
               },
             ),

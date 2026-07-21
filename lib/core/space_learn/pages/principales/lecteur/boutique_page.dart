@@ -255,7 +255,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.5,
+                childAspectRatio: 0.68,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 12,
               ),

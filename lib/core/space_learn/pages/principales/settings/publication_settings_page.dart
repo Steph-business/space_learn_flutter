@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
@@ -24,6 +25,29 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
   ];
 
   final List<String> _currencies = ["FCFA", "EUR", "USD"];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPublicationSettings();
+  }
+
+  Future<void> _loadPublicationSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _defaultPublic = prefs.getBool('pref_pub_default_public') ?? true;
+        _defaultLicense = prefs.getString('pref_pub_default_license') ?? "Tous droits réservés";
+        _defaultCurrency = prefs.getString('pref_pub_default_currency') ?? "FCFA";
+      });
+    }
+  }
+
+  Future<void> _savePubSetting(String key, dynamic value) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (value is bool) await prefs.setBool(key, value);
+    if (value is String) await prefs.setString(key, value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +103,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
                   activeColor: AppColors.primary,
                   onChanged: (val) {
                     setState(() => _defaultPublic = val);
+                    _savePubSetting('pref_pub_default_public', val);
                     AppNotifications.showSnackBar(context, message: "Visibilité par défaut mise à jour.", isSuccess: true);
                   },
                 ),
@@ -134,6 +159,9 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
             height: 52,
             child: ElevatedButton(
               onPressed: () {
+                _savePubSetting('pref_pub_default_public', _defaultPublic);
+                _savePubSetting('pref_pub_default_license', _defaultLicense);
+                _savePubSetting('pref_pub_default_currency', _defaultCurrency);
                 AppNotifications.showSnackBar(context, message: "Paramètres de publication enregistrés !", isSuccess: true);
                 Navigator.of(context).pop();
               },
@@ -167,6 +195,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
               trailing: _defaultLicense == license ? Icon(Icons.check, color: AppColors.primary) : null,
               onTap: () {
                 setState(() => _defaultLicense = license);
+                _savePubSetting('pref_pub_default_license', license);
                 Navigator.of(context).pop();
               },
             );
@@ -191,6 +220,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
               trailing: _defaultCurrency == currency ? Icon(Icons.check, color: AppColors.primary) : null,
               onTap: () {
                 setState(() => _defaultCurrency = currency);
+                _savePubSetting('pref_pub_default_currency', currency);
                 Navigator.of(context).pop();
               },
             );
