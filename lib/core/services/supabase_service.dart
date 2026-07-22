@@ -16,12 +16,15 @@ class SupabaseService {
           .get(Uri.parse('https://httpbin.org/get'))
           .timeout(const Duration(seconds: 5));
       // Test 2: Supabase connectivity
+      const apiKey = String.fromEnvironment(
+        'SUPABASE_ANON_KEY',
+        defaultValue: '***CLE_SUPABASE_RETIREE***',
+      );
       final response = await http
           .get(
             Uri.parse('https://uqmydsydlkwxcfcdtsbu.supabase.co/rest/v1/'),
             headers: {
-              'apikey':
-                  '***CLE_SUPABASE_RETIREE***',
+              'apikey': apiKey,
             },
           )
           .timeout(const Duration(seconds: 10));

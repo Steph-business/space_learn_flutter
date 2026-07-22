@@ -1,16 +1,13 @@
 /// api_routes.dart
 class ApiRoutes {
-  // Change following IP to your machine's current IP
-  static const String host = "144.91.101.16";
-  static const String hosts = "144.91.101.16";
+  // Configurable dynamic host with fallback to local IP
+  static const String host = String.fromEnvironment('API_HOST', defaultValue: '192.168.68.167');
+  static const String hosts = host;
 
-  // Backends fusionnés : l'authentification et les livres sont désormais servis
-  // par le MÊME serveur Go (port 8082). Les chemins /auth/* et /utilisateurs/*
-  // restent identiques, seule l'adresse de base change.
-  static const String baseUrl = "http://$host:8083";
+  static const String baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://$host:8083');
 
-  // Base URL for the combined Go server on port 8082
-  static const String baseUrlsGin = "http://$host:8084";
+  // Base URL for the combined Go server
+  static const String baseUrlsGin = String.fromEnvironment('API_BASE_URL_GIN', defaultValue: 'http://$host:8084');
 
   // Auth routes
   static const String profils = "$baseUrl/auth/profils";

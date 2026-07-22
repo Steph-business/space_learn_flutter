@@ -9,6 +9,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/librarySe
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/paymentModel.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_result_page.dart';
@@ -42,6 +43,99 @@ class _PaymentPageState extends State<PaymentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final rawPrix = widget.book['prix'];
+    final bool isFree = rawPrix == 0 || rawPrix == '0' || rawPrix == null || rawPrix == 'Gratuit';
+
+    if (isFree) {
+      return Scaffold(
+        backgroundColor: AppColors.darkSurface,
+        appBar: AppBar(
+          backgroundColor: AppColors.darkSurface,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text('Ouvrage Gratuit', style: AppTextStyles.subtitle),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.card_giftcard, color: Colors.green, size: 64),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  "Cet ouvrage est gratuit !",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "L'auteur a choisi d'offrir \"${widget.book['titre'] ?? 'cet ouvrage'}\" à tous ses lecteurs. Aucune transaction financière n'est requise.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      try {
+                        final token = await TokenStorage.getToken();
+                        final profileId = await ProfileStorage.getSelectedProfile() ?? '';
+                        if (token != null) {
+                          final bookId = widget.book['id']?.toString() ?? '';
+                          if (bookId.isNotEmpty) {
+                            await LibraryService().addToLibrary(bookId, profileId, 'GRATUIT', token);
+                          }
+                        }
+                      } catch (_) {}
+                      if (context.mounted) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (_) => const MainNavBar(),
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.auto_stories),
+                    label: Text(
+                      "Ajouter & Lire gratuitement",
+                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final String price = widget.book['prix']?.toString() ?? '9,99';
     final String currency = 'FCFA';
 

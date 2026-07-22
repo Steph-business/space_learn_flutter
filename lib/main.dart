@@ -25,12 +25,20 @@ Future<void> main() async {
   NotificationService.initializeLocalNotifications();
 
   try {
-    await Supabase.initialize(
-      url: 'https://uqmydsydlkwxcfcdtsbu.supabase.co',
-      anonKey:
-          '***CLE_SUPABASE_RETIREE***',
+    const supabaseUrl = String.fromEnvironment(
+      'SUPABASE_URL',
+      defaultValue: 'https://uqmydsydlkwxcfcdtsbu.supabase.co',
     );
-  } catch (e) {
+    const supabaseAnonKey = String.fromEnvironment(
+      'SUPABASE_ANON_KEY',
+      defaultValue: '***CLE_SUPABASE_RETIREE***',
+    );
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+  } catch (e, stackTrace) {
+    debugPrint('Supabase init exception: $e\n$stackTrace');
   }
 
   runApp(const MyApp());

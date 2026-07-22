@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../data/dataServices/notification_provider.dart';
 
 import '../../widgets/details/book_detail_page.dart';
+import '../../widgets/lecteur/boutique/livre_card.dart';
 import '../../widgets/details/author_profile_page.dart';
 import 'badges_page.dart';
 import '../../widgets/lecteur/accueil/daily_goal_section.dart';
@@ -814,11 +815,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     }
 
     if (displayBooks.isEmpty) {
-      return SizedBox(height: 320);
+      return SizedBox(height: 250);
     }
 
     return SizedBox(
-      height: 320,
+      height: 250,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -827,36 +828,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           final book = displayBooks[index];
           return Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Stack(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BookDetailPage(
-                          book: book,
-                          isOwned: _ownedBookIds.contains(book.id),
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: _buildSingleFeaturedCard(
-                        title: book.titre,
-                        author: "Par ${book.authorName}",
-                        imageUrl: book.imageCouverture,
-                        messagesCount: book.nombreMessages,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            child: SizedBox(
+              width: 160,
+              child: LivreCard(
+                book: book,
+                isOwned: _ownedBookIds.contains(book.id),
+              ),
             ),
           );
         },
@@ -864,78 +841,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     );
   }
 
-  Widget _buildSingleFeaturedCard({
-    required String title,
-    required String author,
-    String? imageUrl,
-    int messagesCount = 0,
-  }) {
-    return Container(
-      width: 220,
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        image: imageUrl != null && imageUrl.isNotEmpty
-            ? DecorationImage(
-                image: NetworkImage(imageUrl),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.2),
-                  BlendMode.darken,
-                ),
-              )
-            : null,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.transparent,
-              Colors.black.withOpacity(0.9),
-            ],
-            stops: const [0.0, 0.45, 1.0],
-          ),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: AppTextStyles.subtitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            SizedBox(height: 4),
-            Text(
-              author,
-              style: AppTextStyles.bodySecondary,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (messagesCount > 0) ...[
-              SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Iconsax.message, color: AppColors.textSecondary, size: 11),
-                  SizedBox(width: 4),
-                  Text(
-                    "$messagesCount message${messagesCount > 1 ? 's' : ''}",
-                    style: AppTextStyles.bodySmall11,
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildCategoryPills() {
     final List<BookModel> pool = _recommendations.isNotEmpty
@@ -1032,7 +938,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     }
 
     return SizedBox(
-      height: 320,
+      height: 250,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1043,27 +949,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             padding: const EdgeInsets.only(right: 16),
             child: SizedBox(
               width: 160,
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BookDetailPage(
-                        book: book,
-                        isOwned: _ownedBookIds.contains(book.id),
-                      ),
-                    ),
-                  );
-                },
-                child: _buildRecommendationCard(
-                  title: book.titre,
-                  author: book.authorName,
-                  price: book.prix > 0 ? "${book.prix}  FCFA" : "Gratuit",
-                  rating: (book.noteMoyenne).toStringAsFixed(1),
-                  reviewsCount: book.telechargements,
-                  imageUrl: book.imageCouverture,
-                  messagesCount: book.nombreMessages,
-                ),
+              child: LivreCard(
+                book: book,
+                isOwned: _ownedBookIds.contains(book.id),
               ),
             ),
           );
@@ -1072,79 +960,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     );
   }
 
-  Widget _buildRecommendationCard({
-    required String title,
-    required String author,
-    required String price,
-    required String rating,
-    int reviewsCount = 0,
-    String? imageUrl,
-    int messagesCount = 0,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(12),
-              image: imageUrl != null && imageUrl.isNotEmpty
-                  ? DecorationImage(
-                      image: NetworkImage(imageUrl),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        SizedBox(height: 12),
-        Text(
-          title,
-          style: AppTextStyles.cardTitleSmall,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        SizedBox(height: 2),
-        Text(
-          author,
-          style: AppTextStyles.bodySmall,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(price, style: AppTextStyles.price),
-            Row(
-              children: [
-                if (reviewsCount > 0) ...[
-                  Icon(Icons.star, color: Colors.amber, size: 12),
-                  SizedBox(width: 4),
-                  Text(rating, style: AppTextStyles.ratingAmber),
-                ],
-                if (messagesCount > 0) ...[
-                  SizedBox(width: 8),
-                  Icon(Iconsax.message, color: AppColors.textSecondary, size: 10),
-                  SizedBox(width: 4),
-                  Text(
-                    "$messagesCount",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildAuthorsList() {
     final hardcodedAuthors = [
