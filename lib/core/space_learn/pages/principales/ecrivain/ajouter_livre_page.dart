@@ -42,6 +42,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   String? _selectedCoverPath;
   Uint8List? _selectedCoverBytes;
   bool _isUploading = false;
+  bool _isFree = false;
 
   // Services
   final CategorieService _categorieService = CategorieService();
@@ -70,6 +71,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       _titreController.text = widget.book!.titre;
       _descriptionController.text = widget.book!.description;
       _prixController.text = widget.book!.prix.toString();
+      _isFree = widget.book!.prix == 0;
       _selectedCategorieId = widget.book!.categorieId;
       _selectedFileName = widget.book!.fichierUrl?.split('/').last;
       _selectedCoverName = widget.book!.imageCouverture?.split('/').last;
@@ -323,7 +325,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         }
       }
 
-      final int prixParsed = int.tryParse(_prixController.text) ?? 0;
+      final int prixParsed = _isFree ? 0 : (int.tryParse(_prixController.text) ?? 0);
       final format = _getFileFormat(_selectedFilePath ?? bookUrl);
 
       if (widget.book != null) {
@@ -516,9 +518,40 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
 
                 _buildTextField(
                   controller: _prixController,
-                  label: "Prix",
+                  label: "Prix (FCFA)",
                   icon: Icons.money,
                   keyboardType: TextInputType.number,
+                  enabled: !_isFree,
+                ),
+                SizedBox(height: 8),
+                CheckboxListTile(
+                  value: _isFree,
+                  onChanged: (val) {
+                    setState(() {
+                      _isFree = val ?? false;
+                      if (_isFree) {
+                        _prixController.text = "0";
+                      }
+                    });
+                  },
+                  activeColor: AppColors.secondaryVariant,
+                  title: Text(
+                    "Publier cet ouvrage gratuitement (0 FCFA)",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    "Les lecteurs accéderont librement à l'œuvre sans payer",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
                 ),
                 SizedBox(height: 16),
 
@@ -793,12 +826,16 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     required IconData icon,
     int maxLines = 1,
     TextInputType? keyboardType,
+    bool enabled = true,
   }) {
     return TextFormField(
       controller: controller,
+      enabled: enabled,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: AppColors.textPrimary),
+      style: GoogleFonts.poppins(
+        color: enabled ? AppColors.textPrimary : AppColors.textHint,
+      ),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(color: AppColors.textHint),

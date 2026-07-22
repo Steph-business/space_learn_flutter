@@ -20,6 +20,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/readingActivityM
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/chapitre_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/chapitre_model.dart';
+import 'package:share_plus/share_plus.dart';
 import 'all_reviews_page.dart';
 
 class BookDetailPage extends StatefulWidget {
@@ -449,7 +450,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.share, color: AppColors.textPrimary, size: 20),
-            onPressed: () {},
+            onPressed: () {
+              final shareText =
+                  "Je te recommande de lire '${book.titre}' de ${book.authorName} sur SpaceLearn !\n\nOuvre l'application SpaceLearn pour découvrir cet ouvrage !";
+              Share.share(shareText, subject: "Recommandation : ${book.titre}");
+            },
           ),
           IconButton(
             icon: _isLoadingFavorite

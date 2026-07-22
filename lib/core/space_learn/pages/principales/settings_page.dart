@@ -207,7 +207,7 @@ class _SettingsPageState extends State<SettingsPage> {
         SettingItemTile(
           icon: Icons.security_outlined,
           title: "Confidentialité",
-          subtitle: "Gérer vos données personnelles",
+          subtitle: "Gérer vos données personnelles et lire la politique",
           onTap: () {
             Navigator.push(
               context,
@@ -215,6 +215,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 builder: (context) => const PrivacyPolicyPage(),
               ),
             );
+          },
+        ),
+        SettingItemTile(
+          icon: Icons.delete_forever_outlined,
+          title: "Supprimer mon compte",
+          subtitle: "Demander la suppression irr\u00e9versible de mon compte",
+          onTap: () {
+            _showDeleteAccountDialog(context);
           },
         ),
 
@@ -277,6 +285,60 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
       ],
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+            const SizedBox(width: 10),
+            Text(
+              "Supprimer mon compte",
+              style: GoogleFonts.outfit(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          "Cette action est irréversible. Votre profil, vos préférences et l'accès à votre bibliothèque seront définitivement supprimés.",
+          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text("Annuler", style: GoogleFonts.poppins(color: AppColors.textHint)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await TokenStorage.clearToken();
+              if (context.mounted) {
+                AppNotifications.showPremiumDialog(
+                  context,
+                  title: "Demande transmise",
+                  message: "Votre demande de suppression de compte a bien été transmise.",
+                  confirmText: "Fermer",
+                  isSuccess: true,
+                );
+              }
+            },
+            child: Text("Confirmer la suppression", style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 

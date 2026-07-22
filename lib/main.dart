@@ -25,12 +25,20 @@ Future<void> main() async {
   NotificationService.initializeLocalNotifications();
 
   try {
-    await Supabase.initialize(
-      url: 'https://uqmydsydlkwxcfcdtsbu.supabase.co',
-      anonKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxbXlkc3lkbGt3eGNmY2R0c2J1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzYxNDc1MiwiZXhwIjoyMDczMTkwNzUyfQ.DwBlZ_KXwFnO22Bu1a5f_PZcBSrBYWLC2frv-JeXebA',
+    const supabaseUrl = String.fromEnvironment(
+      'SUPABASE_URL',
+      defaultValue: 'https://uqmydsydlkwxcfcdtsbu.supabase.co',
     );
-  } catch (e) {
+    const supabaseAnonKey = String.fromEnvironment(
+      'SUPABASE_ANON_KEY',
+      defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxbXlkc3lkbGt3eGNmY2R0c2J1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MTQ3NTIsImV4cCI6MjA3MzE5MDc1Mn0.anon',
+    );
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+  } catch (e, stackTrace) {
+    debugPrint('Supabase init exception: $e\n$stackTrace');
   }
 
   runApp(const MyApp());

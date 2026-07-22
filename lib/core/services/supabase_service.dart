@@ -16,12 +16,15 @@ class SupabaseService {
           .get(Uri.parse('https://httpbin.org/get'))
           .timeout(const Duration(seconds: 5));
       // Test 2: Supabase connectivity
+      const apiKey = String.fromEnvironment(
+        'SUPABASE_ANON_KEY',
+        defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxbXlkc3lkbGt3eGNmY2R0c2J1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MTQ3NTIsImV4cCI6MjA3MzE5MDc1Mn0.anon',
+      );
       final response = await http
           .get(
             Uri.parse('https://uqmydsydlkwxcfcdtsbu.supabase.co/rest/v1/'),
             headers: {
-              'apikey':
-                  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxbXlkc3lkbGt3eGNmY2R0c2J1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzYxNDc1MiwiZXhwIjoyMDczMTkwNzUyfQ.DwBlZ_KXwFnO22Bu1a5f_PZcBSrBYWLC2frv-JeXebA',
+              'apikey': apiKey,
             },
           )
           .timeout(const Duration(seconds: 10));
