@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/bookmark_model.dart';
 
 class BookmarkService {
   final http.Client client;
 
-  BookmarkService({http.Client? client}) : client = client ?? http.Client();
+  BookmarkService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<BookmarkModel> createBookmark({
     required String livreId,

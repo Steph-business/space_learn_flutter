@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/book_model.dart';
 
 class BookService {
   final http.Client client;
 
-  BookService({http.Client? client}) : client = client ?? http.Client();
+  BookService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<BookModel> createBook(BookModel book, String authToken) async {
     // Only send the fields needed for creation (exclude id, relations, timestamps)

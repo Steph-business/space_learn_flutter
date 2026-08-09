@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 
 class ReadingSettings {
@@ -35,7 +36,7 @@ class ReadingSettingsService {
   final http.Client client;
 
   ReadingSettingsService({http.Client? client})
-    : client = client ?? http.Client();
+    : client = client ?? ApiClient.instance;
 
   Future<ReadingSettings?> getSettings(String authToken) async {
     try {

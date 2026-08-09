@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/evenementModel.dart';
 
 class EvenementService {
   final http.Client client;
 
-  EvenementService({http.Client? client}) : client = client ?? http.Client();
+  EvenementService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<Evenement> createEvenement({
     required String typePublication,

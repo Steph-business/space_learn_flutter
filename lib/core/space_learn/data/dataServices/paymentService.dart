@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/paymentModel.dart';
 import '../model/authorRevenueModel.dart';
@@ -32,7 +33,7 @@ class CinetpayStatusResult {
 class PaymentService {
   final http.Client client;
 
-  PaymentService({http.Client? client}) : client = client ?? http.Client();
+  PaymentService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<PaymentModel> createPayment(
     PaymentModel payment,

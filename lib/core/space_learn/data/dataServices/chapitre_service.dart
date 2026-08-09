@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/chapitre_model.dart';
 
 class ChapitreService {
   final http.Client client;
 
-  ChapitreService({http.Client? client}) : client = client ?? http.Client();
+  ChapitreService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   /// Récupère les chapitres d'un livre depuis le backend.
   Future<List<ChapitreModel>> getChapitres(String livreId) async {

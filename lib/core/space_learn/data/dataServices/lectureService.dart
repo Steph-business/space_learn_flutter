@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/activite_model.dart';
 
 class Lectureservice {
   final http.Client client;
 
-  Lectureservice({http.Client? client}) : client = client ?? http.Client();
+  Lectureservice({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<ReviewModel> createReview({
     required String livreId,

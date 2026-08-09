@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/relationModel.dart';
 
 class RelationService {
   final http.Client client;
 
-  RelationService({http.Client? client}) : client = client ?? http.Client();
+  RelationService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<RelationModel> followUser(String suitId, String authToken) async {
     final url = ApiRoutes.followUser.replaceFirst(':suit_id', suitId);

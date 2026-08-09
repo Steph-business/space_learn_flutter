@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../model/messageModel.dart';
 import '../../../utils/api_routes.dart';
 
 class MessageService {
   final http.Client client;
 
-  MessageService({http.Client? client}) : client = client ?? http.Client();
+  MessageService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<Message> createMessage(
     String discussionId,

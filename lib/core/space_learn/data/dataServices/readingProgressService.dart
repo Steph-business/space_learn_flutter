@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/readingActivityModel.dart';
 
@@ -7,7 +8,7 @@ class ReadingProgressService {
   final http.Client client;
 
   ReadingProgressService({http.Client? client})
-    : client = client ?? http.Client();
+    : client = client ?? ApiClient.instance;
 
   Future<ReadingActivityModel?> getReadingProgress(
     String livreId,

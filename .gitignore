@@ -43,3 +43,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/build/
+/android/.gradle/
+
+# Sorties d'outils et fichiers de travail jetables
+analysis_output.txt
+build_output.txt
+hs_err_pid*.log
+flutter_01.png
+.mvn/
+
+# Signature Android — ne jamais commiter
+**/android/key.properties
+**/*.jks
+**/*.keystore

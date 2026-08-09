@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 
 class AuthorStatsService {
   final http.Client client;
 
-  AuthorStatsService({http.Client? client}) : client = client ?? http.Client();
+  AuthorStatsService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<Map<String, dynamic>> getAuthorStats(
     String authorId,

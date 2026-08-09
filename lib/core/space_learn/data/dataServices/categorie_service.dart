@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/categorie.dart';
 
 class CategorieService {
   final http.Client client;
 
-  CategorieService({http.Client? client}) : client = client ?? http.Client();
+  CategorieService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<List<Categorie>> getCategories() async {
     final response = await client.get(Uri.parse(ApiRoutes.categories));

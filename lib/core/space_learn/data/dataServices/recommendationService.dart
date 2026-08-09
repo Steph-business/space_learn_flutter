@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/recommendationModel.dart';
 
@@ -7,7 +8,7 @@ class RecommendationService {
   final http.Client client;
 
   RecommendationService({http.Client? client})
-    : client = client ?? http.Client();
+    : client = client ?? ApiClient.instance;
 
   Future<List<RecommendationModel>> getRecommendations(String authToken) async {
     final response = await client.get(

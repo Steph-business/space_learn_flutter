@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
+import 'package:space_learn_flutter/core/services/api_client.dart';
 import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,10 +42,38 @@ Future<void> main() async {
     debugPrint('Supabase init exception: $e\n$stackTrace');
   }
 
+  // Session expirée (401 sur une route métier) : purger la session locale et
+  // ramener l'utilisateur à l'écran de connexion, quelle que soit la page
+  // depuis laquelle la requête a été émise.
+  ApiClient.onUnauthorized = _handleSessionExpired;
+
   runApp(const MyApp());
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> _handleSessionExpired() async {
+  await TokenStorage.clearToken();
+  await ProfileStorage.clearSelectedProfile();
+  await ProfileStorage.clearSelectedProfileRole();
+
+  final navigator = navigatorKey.currentState;
+  if (navigator == null) return;
+
+  await navigator.pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => const LoginPage()),
+    (route) => false,
+  );
+
+  final messengerContext = navigatorKey.currentContext;
+  if (messengerContext != null && messengerContext.mounted) {
+    ScaffoldMessenger.of(messengerContext).showSnackBar(
+      const SnackBar(
+        content: Text('Votre session a expiré. Veuillez vous reconnecter.'),
+      ),
+    );
+  }
+}
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

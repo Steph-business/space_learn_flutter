@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/favoriteModel.dart';
 
 class FavoriteService {
   final http.Client client;
 
-  FavoriteService({http.Client? client}) : client = client ?? http.Client();
+  FavoriteService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<FavoriteModel> addFavorite(String livreId, String authToken) async {
     final response = await client.post(

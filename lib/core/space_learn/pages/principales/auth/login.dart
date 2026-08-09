@@ -4,6 +4,8 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 
@@ -65,6 +67,26 @@ class _LoginPageState extends State<LoginPage> {
     }
     if (widget.initialPassword != null) {
       _passwordController.text = widget.initialPassword!;
+    }
+  }
+
+  Future<void> _handleOAuthSignIn(OAuthProvider provider) async {
+    try {
+      setState(() => _isLoading = true);
+      await Supabase.instance.client.auth.signInWithOAuth(
+        provider,
+        redirectTo: kIsWeb ? null : 'io.supabase.spacelearn://login-callback',
+      );
+    } catch (e) {
+      if (mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur de connexion ${provider.name} : $e",
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -477,15 +499,54 @@ class _LoginPageState extends State<LoginPage> {
 
                   SizedBox(height: 18),
 
+                  // Continue with Google button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton(
+                      onPressed: _isLoading ? null : () => _handleOAuthSignIn(OAuthProvider.google),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        backgroundColor: AppColors.cardBackground,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        side: BorderSide(color: AppColors.textPrimary.withOpacity(0.1)),
+                        elevation: 2,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Text('G', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 15)),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Continuer avec Google',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 12),
+
                   // Continue with Apple button
                   SizedBox(
                     width: double.infinity,
                     height: 52,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Apple sign-in placeholder
-                      },
-                      icon: Icon(Icons.apple, size: 22),
+                      onPressed: _isLoading ? null : () => _handleOAuthSignIn(OAuthProvider.apple),
+                      icon: const Icon(Icons.apple, size: 24),
                       label: Text(
                         'Continuer avec Apple',
                         style: GoogleFonts.poppins(
@@ -494,12 +555,12 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.black87,
+                        foregroundColor: AppColors.textPrimary,
                         backgroundColor: AppColors.cardBackground,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        side: BorderSide.none,
+                        side: BorderSide(color: AppColors.textPrimary.withOpacity(0.1)),
                         elevation: 2,
                       ),
                     ),

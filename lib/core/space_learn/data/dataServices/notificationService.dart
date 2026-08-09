@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:space_learn_flutter/main.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
@@ -20,7 +21,7 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  NotificationService({http.Client? client}) : client = client ?? http.Client();
+  NotificationService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   static void initializeLocalNotifications() {
     const initializationSettings = InitializationSettings(

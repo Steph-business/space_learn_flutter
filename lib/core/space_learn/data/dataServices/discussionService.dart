@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../model/discussionModel.dart';
 import '../../../utils/api_routes.dart';
 
 class DiscussionService {
   final http.Client client;
 
-  DiscussionService({http.Client? client}) : client = client ?? http.Client();
+  DiscussionService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<Discussion> createDiscussion({
     required String type,

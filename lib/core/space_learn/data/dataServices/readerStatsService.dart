@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../../../utils/token_storage.dart';
 import '../model/readerStatsModel.dart';
@@ -8,7 +9,7 @@ import '../model/bookReaderStatsModel.dart';
 class ReaderStatsService {
   final http.Client client;
 
-  ReaderStatsService({http.Client? client}) : client = client ?? http.Client();
+  ReaderStatsService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<ReaderStatsModel> getReaderStats(String userId) async {
     // ... existing global stats code ...

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../model/analytics.dart';
 import '../../../utils/api_routes.dart';
 
@@ -8,7 +9,7 @@ class AnalyticsService {
   final http.Client httpClient;
 
   AnalyticsService({http.Client? httpClient})
-    : httpClient = httpClient ?? http.Client();
+    : httpClient = httpClient ?? ApiClient.instance;
 
   Future<Analytics> fetchAnalyticsData(
     String utilisateurId,

@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/citation_model.dart';
 
 class CitationService {
   final http.Client client;
 
-  CitationService({http.Client? client}) : client = client ?? http.Client();
+  CitationService({http.Client? client}) : client = client ?? ApiClient.instance;
 
   Future<CitationModel?> getDailyCitation(String authToken) async {
     try {
