@@ -61,3 +61,7 @@ flutter_01.png
 # Configuration de build (--dart-define-from-file) : contient des valeurs
 # propres à chaque environnement. Le modèle versionné est dart_define.example.json.
 dart_define.json
+
+# Sauvegardes locales de depot
+backup_*.git/
+*.bundle
