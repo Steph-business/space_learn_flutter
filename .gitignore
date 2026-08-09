@@ -57,3 +57,7 @@ flutter_01.png
 **/android/key.properties
 **/*.jks
 **/*.keystore
+
+# Configuration de build (--dart-define-from-file) : contient des valeurs
+# propres à chaque environnement. Le modèle versionné est dart_define.example.json.
+dart_define.json

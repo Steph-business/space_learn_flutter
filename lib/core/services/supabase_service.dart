@@ -16,10 +16,8 @@ class SupabaseService {
           .get(Uri.parse('https://httpbin.org/get'))
           .timeout(const Duration(seconds: 5));
       // Test 2: Supabase connectivity
-      const apiKey = String.fromEnvironment(
-        'SUPABASE_ANON_KEY',
-        defaultValue: '***CLE_SUPABASE_RETIREE***',
-      );
+      // Fournie au build via --dart-define=SUPABASE_ANON_KEY=...
+      const apiKey = String.fromEnvironment('SUPABASE_ANON_KEY');
       final response = await http
           .get(
             Uri.parse('https://uqmydsydlkwxcfcdtsbu.supabase.co/rest/v1/'),

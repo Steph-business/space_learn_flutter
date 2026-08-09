@@ -30,10 +30,10 @@ Future<void> main() async {
       'SUPABASE_URL',
       defaultValue: 'https://uqmydsydlkwxcfcdtsbu.supabase.co',
     );
-    const supabaseAnonKey = String.fromEnvironment(
-      'SUPABASE_ANON_KEY',
-      defaultValue: '***CLE_SUPABASE_RETIREE***',
-    );
+    // La clé anon est publique par nature, mais elle n'a pas de valeur par
+    // défaut : elle doit être fournie au build via
+    // --dart-define=SUPABASE_ANON_KEY=... (ou --dart-define-from-file).
+    const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,

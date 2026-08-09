@@ -1,0 +1,10 @@
+{
+  "_commentaire": "Modele de configuration de build. Copier en dart_define.json (ignore par Git) et renseigner les valeurs, puis builder avec : flutter run --dart-define-from-file=dart_define.json",
+
+  "API_HOST": "192.168.1.10",
+  "API_BASE_URL": "http://192.168.1.10:8083",
+  "API_BASE_URL_GIN": "http://192.168.1.10:8084",
+
+  "SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
+  "SUPABASE_ANON_KEY": ""
+}
