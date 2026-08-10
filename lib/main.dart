@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
@@ -19,6 +20,8 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
     as ecrivainHome;
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
     as lecteurHome;
+import 'package:space_learn_flutter/core/widgets/splash_screen.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,7 +50,12 @@ Future<void> main() async {
   // depuis laquelle la requête a été émise.
   ApiClient.onUnauthorized = _handleSessionExpired;
 
-  runApp(const MyApp());
+  // Le mode de thème est lu AVANT le premier rendu : sans cela la première
+  // frame s'affiche dans la palette par défaut puis bascule, et les écrans qui
+  // lisent AppColors au moment de leur construction restent sur l'ancienne.
+  final savedThemeMode = await ThemeProvider.loadSavedMode();
+
+  runApp(MyApp(initialThemeMode: savedThemeMode));
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -76,7 +84,9 @@ Future<void> _handleSessionExpired() async {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final ThemeMode initialThemeMode;
+
+  const MyApp({super.key, this.initialThemeMode = ThemeProvider.defaultThemeMode});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -139,47 +149,118 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  /// Construit un ThemeData complet pour une luminosité donnée.
+  ///
+  /// Les surfaces et couleurs de texte sont fixées explicitement : plusieurs
+  /// écrans lisent `Theme.of(context)` plutôt que `AppColors`, et les deux
+  /// doivent décrire exactement la même palette pour éviter qu'une partie de
+  /// l'interface reste sombre alors que l'autre est passée en clair.
+  ThemeData _buildTheme({
+    required Brightness brightness,
+    required Color scaffold,
+    required Color surface,
+    required Color onSurface,
+  }) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: brightness,
+      primary: AppColors.primary,
+      secondary: AppColors.secondary,
+      surface: surface,
+      onSurface: onSurface,
+    );
+
+    return ThemeData(
+      brightness: brightness,
+      primaryColor: AppColors.primary,
+      scaffoldBackgroundColor: scaffold,
+      colorScheme: colorScheme,
+      canvasColor: scaffold,
+      cardColor: surface,
+      dividerColor: onSurface.withValues(alpha: 0.08),
+      iconTheme: IconThemeData(color: onSurface),
+      appBarTheme: AppBarTheme(
+        backgroundColor: scaffold,
+        foregroundColor: onSurface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: onSurface),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: scaffold,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: onSurface.withValues(alpha: 0.55),
+        elevation: 0,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(
+          create: (_) => ThemeProvider(initialMode: widget.initialThemeMode),
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
+          // Point de synchronisation unique entre le thème Flutter et la
+          // palette globale AppColors. Il doit rester ici, au-dessus de
+          // MaterialApp : toute reconstruction déclenchée par un changement de
+          // thème passe par ce builder, donc tous les écrans reconstruits
+          // ensuite lisent la bonne palette. C'est ce qui manquait quand
+          // l'en-tête et la barre de navigation restaient sombres en mode clair.
+          AppColors.isDark = themeProvider.isDarkMode;
+
+          // La barre de statut système ne suit pas le thème toute seule : en
+          // mode clair, l'en-tête devient blanc et il faut des icônes sombres
+          // pour qu'elles restent lisibles.
+          SystemChrome.setSystemUIOverlayStyle(
+            SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness:
+                  themeProvider.isDarkMode ? Brightness.light : Brightness.dark,
+              statusBarBrightness:
+                  themeProvider.isDarkMode ? Brightness.dark : Brightness.light,
+              systemNavigationBarColor: AppColors.scaffoldBackground,
+              systemNavigationBarIconBrightness:
+                  themeProvider.isDarkMode ? Brightness.light : Brightness.dark,
+            ),
+          );
+
           return MaterialApp(
             navigatorKey: navigatorKey,
             title: 'Space Learn',
             themeMode: themeProvider.themeMode,
-            theme: ThemeData(
+            // Chaque ThemeData décrit sa propre palette. Auparavant les deux
+            // utilisaient AppColors.scaffoldBackground, c'est-à-dire la couleur
+            // du mode actif : le thème clair pouvait donc avoir un fond noir.
+            theme: _buildTheme(
               brightness: Brightness.light,
-              primarySwatch: Colors.orange,
-              primaryColor: AppColors.primary,
-              scaffoldBackgroundColor: AppColors.scaffoldBackground,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.primary,
-                brightness: Brightness.light,
-                primary: AppColors.primary,
-                secondary: AppColors.secondary,
-              ),
+              scaffold: AppColors.scaffoldLight,
+              surface: AppColors.cardLight,
+              onSurface: AppColors.textOnLight,
             ),
-            darkTheme: ThemeData(
+            darkTheme: _buildTheme(
               brightness: Brightness.dark,
-              primarySwatch: Colors.orange,
-              primaryColor: AppColors.primary,
-              scaffoldBackgroundColor: AppColors.scaffoldBackground,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.primary,
-                brightness: Brightness.dark,
-                primary: AppColors.primary,
-                secondary: AppColors.secondary,
-              ),
+              scaffold: AppColors.scaffoldDark,
+              surface: AppColors.cardDark,
+              onSurface: AppColors.textOnDark,
             ),
             debugShowCheckedModeBanner: false,
             home: _isLoading
-                ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+                ? const SplashScreen()
                 : _getHomeWidget(),
           );
         },

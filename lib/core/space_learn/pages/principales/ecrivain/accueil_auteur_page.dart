@@ -68,13 +68,13 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
           onBackPressed: () => setState(() => _currentIndex = 0),
         );
       case 2:
-        return const AjouterLivrePage();
+        return AjouterLivrePage();
       case 3:
         return TeamsPage(
           onBackPressed: () => setState(() => _currentIndex = 0),
         );
       case 4:
-        return const SettingsPageAuteur();
+        return SettingsPageAuteur();
       default:
         return HomeContentAuteur(key: _homeKey, profileId: '', userName: 'Auteur');
     }

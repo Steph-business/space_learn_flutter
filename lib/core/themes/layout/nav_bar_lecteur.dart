@@ -67,15 +67,15 @@ class MainNavBarState extends State<MainNavBar> {
       case 0:
         return widget.child ?? Center(child: Text('Accueil'));
       case 1:
-        return const MarketplacePage();
+        return MarketplacePage();
       case 2:
-        return const BibliothequePage();
+        return BibliothequePage();
       case 3:
         return TeamsPageLecteur(
           onBackPressed: () => setState(() => _selectedIndex = 0),
         );
       case 4:
-        return const SettingsPage();
+        return SettingsPage();
       default:
         return widget.child ?? Center(child: Text('Accueil'));
     }

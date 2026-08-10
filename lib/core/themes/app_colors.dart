@@ -1,20 +1,39 @@
 import 'package:flutter/material.dart';
 
 
-/// Palette de couleurs centralisée pour SpaceLearn (thème sombre).
+/// Palette de couleurs centralisée pour SpaceLearn.
 /// Toutes les pages doivent référencer ces constantes au lieu de
 /// définir des couleurs en dur.
+///
+/// `isDark` est volontairement un état global : la quasi-totalité des écrans
+/// lit les couleurs via ces getters, sans passer par `Theme.of(context)`.
+/// Il est resynchronisé sur le thème réellement actif à chaque construction de
+/// `MaterialApp` (cf. `main.dart`) — ne l'affectez nulle part ailleurs, sous
+/// peine de voir une partie de l'interface se désynchroniser de l'autre.
 class AppColors {
   AppColors._(); // empêche l'instanciation
 
-  static bool isDark = true;
+  /// Clair par défaut : c'est le thème par défaut de l'application, et cela
+  /// garantit que la toute première frame (rendue avant la lecture asynchrone
+  /// des préférences) est déjà dans la bonne palette.
+  static bool isDark = false;
 
   // ───────────────────────── Backgrounds ─────────────────────────
+  /// Valeurs absolues des fonds, indépendantes de [isDark]. Elles servent à
+  /// construire les deux ThemeData de MaterialApp, qui doivent chacun décrire
+  /// leur propre palette et non celle du mode actif.
+  static const Color scaffoldLight = Color(0xFFFFFFFF);
+  static const Color scaffoldDark = Color(0xFF000000);
+  static const Color cardLight = Color(0xFFF8F9FA);
+  static const Color cardDark = Color(0xFF121212);
+  static const Color textOnLight = Color(0xFF000000);
+  static const Color textOnDark = Color(0xFFFFFFFF);
+
   /// Fond principal du Scaffold
-  static Color get scaffoldBackground => isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
+  static Color get scaffoldBackground => isDark ? scaffoldDark : scaffoldLight;
 
   /// Fond des cartes, conteneurs, champs de saisie
-  static Color get cardBackground => isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
+  static Color get cardBackground => isDark ? cardDark : cardLight;
 
   /// Fond alternatif (plus clair que le scaffold)
   static Color get surfaceVariant => isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF1F3F5);
@@ -83,7 +102,7 @@ class AppColors {
 
   // ───────────────────────── Textes ──────────────────────────────
   /// Texte principal
-  static Color get textPrimary => isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
+  static Color get textPrimary => isDark ? textOnDark : textOnLight;
 
   /// Texte secondaire
   static Color get textSecondary => isDark ? const Color(0xFFAAAAAA) : const Color(0xFF555555);
