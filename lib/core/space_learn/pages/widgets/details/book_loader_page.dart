@@ -83,7 +83,7 @@ class _BookLoaderPageState extends State<BookLoaderPage> {
       ),
       body: Center(
         child: _erreur == null
-            ? const CircularProgressIndicator(color: AppColors.primary)
+            ? CircularProgressIndicator(color: AppColors.accentInk)
             : Padding(
                 padding: const EdgeInsets.all(AppDimensions.screenPadding),
                 child: Column(

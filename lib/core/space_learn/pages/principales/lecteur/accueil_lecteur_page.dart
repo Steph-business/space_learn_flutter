@@ -1023,7 +1023,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                           : "?",
                       style: GoogleFonts.poppins(
                         fontSize: 24,
-                        color: AppColors.secondary,
+                        color: AppColors.accentInk,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1181,7 +1181,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               "OK",
-              style: TextStyle(color: AppColors.secondary),
+              style: TextStyle(color: AppColors.accentInk),
             ),
           ),
         ],
@@ -1599,7 +1599,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       behavior: HitTestBehavior.opaque,
       child: Column(
         children: [
-          Icon(icon, color: AppColors.secondary, size: 20),
+          Icon(icon, color: AppColors.accentInk, size: 20),
           SizedBox(height: 8),
           Text(value, style: AppTextStyles.subtitle),
           Text(label, style: AppTextStyles.grey11),

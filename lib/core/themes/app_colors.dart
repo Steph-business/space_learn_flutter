@@ -50,6 +50,18 @@ class AppColors {
   /// la surface du thème. À utiliser à la place d'un `Colors.white` en dur.
   static const Color onAccent = Color(0xFF1A1A1A);
 
+  /// L'accent **posé sur une surface du thème** : texte de lien, icône active,
+  /// prix, libellé de bouton plat.
+  ///
+  /// [primary] est un orange clair. C'est excellent en aplat, mais illisible en
+  /// encre sur fond clair — 1,80:1 sur blanc, là où le seuil est de 4,5:1. Ce
+  /// jeton reprend donc l'orange de la marque en sombre, et sa déclinaison
+  /// foncée en clair (5,02:1 sur blanc, 4,76:1 sur une carte).
+  ///
+  /// Règle : un accent qui **porte** du texte, c'est [primary] + [onAccent] ;
+  /// un accent qui **est** du texte, c'est [accentInk].
+  static Color get accentInk => isDark ? primary : amberDark;
+
   // ───────────────────────── Sélecteurs segmentés ────────────────
   /// Piste d'un sélecteur segmenté (le rail derrière la pastille active).
   static Color get segmentTrack => isDark ? surfaceVariant : const Color(0xFFE9ECEF);

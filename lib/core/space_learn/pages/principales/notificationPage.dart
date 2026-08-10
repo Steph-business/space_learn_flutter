@@ -73,7 +73,7 @@ class _NotificationPageState extends State<NotificationPage> {
                 PopupMenuButton<String>(
                   icon: Icon(
                     Icons.more_vert,
-                    color: AppColors.primaryLight,
+                    color: AppColors.accentInk,
                   ),
                   offset: Offset(0, 45),
                   color: AppColors.cardBackground,
@@ -154,13 +154,13 @@ class _NotificationPageState extends State<NotificationPage> {
                           Icon(
                             Icons.checklist,
                             size: 16,
-                            color: AppColors.primaryLight,
+                            color: AppColors.accentInk,
                           ),
                           SizedBox(width: 8),
                           Text(
                             "Tout lire",
                             style: GoogleFonts.poppins(
-                              color: AppColors.primaryLight,
+                              color: AppColors.accentInk,
                               fontSize: 13,
                             ),
                           ),
@@ -193,7 +193,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
         return RefreshIndicator(
           onRefresh: _fetchGrouped,
-          color: AppColors.primaryLight,
+          color: AppColors.accentInk,
           backgroundColor: AppColors.cardBackground,
           edgeOffset: 100,
           child: ListView(

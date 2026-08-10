@@ -43,7 +43,7 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.accentInk),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -105,7 +105,7 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
           color: isSelected ? AppColors.primary : (AppColors.textPrimary),
         ),
       ),
-      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.primary) : null,
+      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.accentInk) : null,
       onTap: () {
         setState(() => _selectedLang = code);
         _setLang(code);

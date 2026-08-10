@@ -58,7 +58,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.accentInk),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -192,7 +192,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
           children: _licenses.map((license) {
             return ListTile(
               title: Text(license, style: GoogleFonts.poppins(color: AppColors.textPrimary)),
-              trailing: _defaultLicense == license ? Icon(Icons.check, color: AppColors.primary) : null,
+              trailing: _defaultLicense == license ? Icon(Icons.check, color: AppColors.accentInk) : null,
               onTap: () {
                 setState(() => _defaultLicense = license);
                 _savePubSetting('pref_pub_default_license', license);
@@ -217,7 +217,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
           children: _currencies.map((currency) {
             return ListTile(
               title: Text(currency, style: GoogleFonts.poppins(color: AppColors.textPrimary)),
-              trailing: _defaultCurrency == currency ? Icon(Icons.check, color: AppColors.primary) : null,
+              trailing: _defaultCurrency == currency ? Icon(Icons.check, color: AppColors.accentInk) : null,
               onTap: () {
                 setState(() => _defaultCurrency = currency);
                 _savePubSetting('pref_pub_default_currency', currency);

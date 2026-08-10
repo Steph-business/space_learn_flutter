@@ -67,7 +67,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
         backgroundColor: bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.accentInk),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -224,7 +224,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
         style: GoogleFonts.poppins(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: AppColors.primary,
+          color: AppColors.accentInk,
         ),
       ),
     );
@@ -244,7 +244,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
           isExpanded: true,
           dropdownColor: cardBg,
           style: GoogleFonts.poppins(color: textColor, fontSize: 16),
-          icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+          icon: Icon(Icons.arrow_drop_down, color: AppColors.accentInk),
           items: _fonts.map((font) {
             return DropdownMenuItem(
               value: font,
@@ -282,7 +282,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                     });
                   },
                   icon: const Icon(Icons.remove),
-                  color: AppColors.primary,
+                  color: AppColors.accentInk,
                 ),
                 IconButton(
                   onPressed: () {
@@ -291,7 +291,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                     });
                   },
                   icon: const Icon(Icons.add),
-                  color: AppColors.primary,
+                  color: AppColors.accentInk,
                 ),
               ],
             ),

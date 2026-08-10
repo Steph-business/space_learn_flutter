@@ -121,7 +121,7 @@ class LivreCard extends StatelessWidget {
                             Icon(
                               Icons.calendar_today_outlined,
                               size: 10,
-                              color: AppColors.primary.withOpacity(0.7),
+                              color: AppColors.accentInk.withOpacity(0.7),
                             ),
                             SizedBox(width: 4),
                             Text(
@@ -161,7 +161,7 @@ class LivreCard extends StatelessWidget {
                                       style: GoogleFonts.poppins(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
+                                        color: AppColors.accentInk,
                                       ),
                                     ),
                                   ],
@@ -204,7 +204,7 @@ class LivreCard extends StatelessWidget {
                             ),
                             child: Icon(
                               Icons.play_arrow_rounded,
-                              color: AppColors.primary,
+                              color: AppColors.accentInk,
                               size: 20,
                             ),
                           ),

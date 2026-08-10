@@ -142,8 +142,8 @@ class _PayoutInfoPageState extends State<PayoutInfoPage> {
         ),
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? Center(
+              child: CircularProgressIndicator(color: AppColors.accentInk))
           : Form(
               key: _formKey,
               child: ListView(

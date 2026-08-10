@@ -246,7 +246,7 @@ class _RecherchePageState extends State<RecherchePage> {
                   Text(
                     "Par ${book.authorName}",
                     style: GoogleFonts.poppins(
-                      color: AppColors.primary,
+                      color: AppColors.accentInk,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),

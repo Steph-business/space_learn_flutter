@@ -13,19 +13,26 @@ class AppNotifications {
     bool isError = false,
     bool isSuccess = false,
   }) {
+    // Le fond se construit toujours à partir de la surface du thème, teintée de
+    // la couleur sémantique. Les fonds sombres écrits en dur qui figuraient ici
+    // ne suivaient pas le passage en mode clair : le message, peint en
+    // textPrimary donc en noir, se retrouvait noir sur noir (1,23:1).
+    Color teinter(Color semantique) =>
+        Color.alphaBlend(semantique.withValues(alpha: 0.14), AppColors.cardBackground);
+
     Color bg = AppColors.cardBackground;
     Color borderCol = AppColors.textHint;
     IconData icon = Icons.info_outline;
     Color iconColor = AppColors.primary;
 
     if (isError) {
-      bg = const Color(0xFF1E1B1B);
-      borderCol = AppColors.error.withOpacity(0.3);
+      bg = teinter(AppColors.error);
+      borderCol = AppColors.error.withValues(alpha: 0.35);
       icon = Icons.error_outline_rounded;
       iconColor = AppColors.error;
     } else if (isSuccess) {
-      bg = const Color(0xFF14201A);
-      borderCol = AppColors.success.withOpacity(0.3);
+      bg = teinter(AppColors.success);
+      borderCol = AppColors.success.withValues(alpha: 0.35);
       icon = Icons.check_circle_outline_rounded;
       iconColor = AppColors.success;
     }
@@ -48,7 +55,7 @@ class AppNotifications {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.15),
+                color: iconColor.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: iconColor, size: 20),
@@ -58,7 +65,7 @@ class AppNotifications {
               child: Text(
                 message,
                 style: GoogleFonts.poppins(
-                  color: AppColors.textPrimary.withOpacity(0.9),
+                  color: AppColors.textPrimary.withValues(alpha: 0.9),
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                 ),
@@ -110,7 +117,7 @@ class AppNotifications {
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.textPrimary.withOpacity(0.08)),
+              border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.08)),
               
             ),
             child: Column(
@@ -122,9 +129,9 @@ class AppNotifications {
                   height: 56,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: accentColor.withOpacity(0.12),
+                    color: accentColor.withValues(alpha: 0.12),
                     border: Border.all(
-                      color: accentColor.withOpacity(0.3),
+                      color: accentColor.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                   ),
@@ -151,7 +158,7 @@ class AppNotifications {
                 Text(
                   message,
                   style: GoogleFonts.poppins(
-                    color: AppColors.textPrimary.withOpacity(0.7),
+                    color: AppColors.textPrimary.withValues(alpha: 0.7),
                     fontSize: 14,
                     height: 1.5,
                   ),
@@ -198,7 +205,7 @@ class AppNotifications {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: accentColor,
-                            foregroundColor: AppColors.textPrimary,
+                            foregroundColor: AppColors.onAccent,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

@@ -322,7 +322,7 @@ class _LoginPageState extends State<LoginPage> {
                           style: GoogleFonts.poppins(
                             fontSize: 36,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
+                            color: AppColors.accentInk,
                           ),
                         ),
                       ],
@@ -617,7 +617,7 @@ class _LoginPageState extends State<LoginPage> {
                           TextSpan(
                             text: "S'inscrire",
                             style: GoogleFonts.poppins(
-                              color: AppColors.primary,
+                              color: AppColors.accentInk,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),

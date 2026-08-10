@@ -318,42 +318,42 @@ class AppTextStyles {
 
   /// Lien / texte accent — 13px normal primaire
   static TextStyle get link => GoogleFonts.hankenGrotesk(
-    color: AppColors.primary,
+    color: AppColors.accentInk,
     fontSize: 13,
     fontWeight: FontWeight.normal,
   );
 
   /// Lien gras — 13px semi-bold primaire
   static TextStyle get linkBold => GoogleFonts.hankenGrotesk(
-    color: AppColors.primary,
+    color: AppColors.accentInk,
     fontSize: 13,
     fontWeight: FontWeight.w600,
   );
 
   /// Lien 12px — 12px normal primaire
   static TextStyle get link12 => GoogleFonts.hankenGrotesk(
-    color: AppColors.primary,
+    color: AppColors.accentInk,
     fontSize: 12,
     fontWeight: FontWeight.normal,
   );
 
   /// Lien 14px — 14px normal primaire
   static TextStyle get link14 => GoogleFonts.hankenGrotesk(
-    color: AppColors.primary,
+    color: AppColors.accentInk,
     fontSize: 14,
     fontWeight: FontWeight.normal,
   );
 
   /// Prix — 13px bold secondary (sky blue)
   static TextStyle get price => GoogleFonts.hankenGrotesk(
-    color: AppColors.secondary,
+    color: AppColors.accentInk,
     fontSize: 13,
     fontWeight: FontWeight.bold,
   );
 
   /// Prix large — 16px bold secondary
   static TextStyle get priceLarge => GoogleFonts.hankenGrotesk(
-    color: AppColors.secondary,
+    color: AppColors.accentInk,
     fontSize: 16,
     fontWeight: FontWeight.bold,
   );
@@ -478,7 +478,7 @@ class AppTextStyles {
 
   /// Lettre d'avatar — 24px bold secondary
   static TextStyle get avatarLetter => GoogleFonts.hankenGrotesk(
-    color: AppColors.secondary,
+    color: AppColors.accentInk,
     fontSize: 24,
     fontWeight: FontWeight.bold,
   );
@@ -529,7 +529,7 @@ class AppTextStyles {
 
   /// Stat big — 32px bold secondary
   static TextStyle get statBig => GoogleFonts.hankenGrotesk(
-    color: AppColors.secondary,
+    color: AppColors.accentInk,
     fontSize: 32,
     fontWeight: FontWeight.bold,
   );

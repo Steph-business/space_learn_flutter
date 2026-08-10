@@ -26,7 +26,7 @@ class _DownloadManagerPageState extends State<DownloadManagerPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.accentInk),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(

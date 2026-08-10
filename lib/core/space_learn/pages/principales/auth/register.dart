@@ -239,7 +239,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.primary,
+                          color: AppColors.accentInk,
                         ),
                       ),
                     ],
@@ -394,7 +394,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           text: 'Se connecter',
                           style: GoogleFonts.poppins(
                             fontSize: 13,
-                            color: AppColors.primary,
+                            color: AppColors.accentInk,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

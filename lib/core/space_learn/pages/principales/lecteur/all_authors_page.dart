@@ -233,7 +233,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
       ),
       body: _isLoading
           ? Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+              child: CircularProgressIndicator(color: AppColors.accentInk),
             )
           : _error != null
           ? Center(
@@ -293,7 +293,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                               author.profilePhoto,
                               fallbackInitial: author.nomComplet.substring(0, 1).toUpperCase(),
                               textStyle: TextStyle(
-                                color: AppColors.primary,
+                                color: AppColors.accentInk,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
                               ),

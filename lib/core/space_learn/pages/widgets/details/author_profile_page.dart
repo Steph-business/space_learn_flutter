@@ -322,7 +322,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                         Text(
                           book.prix == 0 ? "Gratuit" : "${book.prix}FCFA",
                           style: GoogleFonts.poppins(
-                            color: AppColors.secondary,
+                            color: AppColors.accentInk,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),

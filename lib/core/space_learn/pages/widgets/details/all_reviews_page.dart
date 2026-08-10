@@ -95,7 +95,7 @@ class AllReviewsPage extends StatelessWidget {
                         photoUrl.contains('example.com'))
                     ? Icon(
                         Icons.person,
-                        color: AppColors.primary,
+                        color: AppColors.accentInk,
                         size: 18,
                       )
                     : null,

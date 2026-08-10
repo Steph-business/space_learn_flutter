@@ -167,7 +167,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                 Text(
                                   "${book.prix} FCFA",
                                   style: GoogleFonts.poppins(
-                                    color: AppColors.primaryLight,
+                                    color: AppColors.accentInk,
                                     fontSize: 14,
                                   ),
                                 ),

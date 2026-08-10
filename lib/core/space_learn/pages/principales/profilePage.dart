@@ -79,7 +79,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return Scaffold(
         backgroundColor: AppColors.scaffoldBackground,
         body: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+          child: CircularProgressIndicator(color: AppColors.accentInk),
         ),
       );
     }
@@ -100,7 +100,7 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.accentInk),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -129,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.primary.withOpacity(0.1),
-                      border: Border.all(color: AppColors.primary, width: 3),
+                      border: Border.all(color: AppColors.accentInk, width: 3),
                     ),
                     child: ClipOval(
                       child: ProfileImageHelper.buildProfileImage(
@@ -140,7 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         textStyle: GoogleFonts.poppins(
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: AppColors.accentInk,
                         ),
                         width: 120,
                         height: 120,
@@ -236,7 +236,7 @@ class _ProfilePageState extends State<ProfilePage> {
               decoration: InputDecoration(
                 labelText: "Genre",
                 labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
-                prefixIcon: Icon(Icons.person_outline, color: AppColors.primary),
+                prefixIcon: Icon(Icons.person_outline, color: AppColors.accentInk),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
@@ -269,7 +269,7 @@ class _ProfilePageState extends State<ProfilePage> {
               decoration: InputDecoration(
                 labelText: "Tranche d'âge",
                 labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
-                prefixIcon: Icon(Icons.cake_outlined, color: AppColors.primary),
+                prefixIcon: Icon(Icons.cake_outlined, color: AppColors.accentInk),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
@@ -375,7 +375,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Text(
                         "Étape ${_currentStep + 1} sur $stepsCount",
                         style: GoogleFonts.poppins(
-                          color: AppColors.primary,
+                          color: AppColors.accentInk,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -589,7 +589,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
                   ),
                   dropdownColor: AppColors.scaffoldBackground,
-                  icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                  icon: Icon(Icons.arrow_drop_down, color: AppColors.accentInk),
                   isExpanded: true,
                   style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
                   items: _genders.map((String value) {
@@ -632,7 +632,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
                   ),
                   dropdownColor: AppColors.scaffoldBackground,
-                  icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                  icon: Icon(Icons.arrow_drop_down, color: AppColors.accentInk),
                   isExpanded: true,
                   style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
                   items: _ageRanges.map((String value) {
@@ -733,7 +733,7 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
-        prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+        prefixIcon: Icon(icon, color: AppColors.accentInk, size: 20),
         filled: true,
         fillColor: AppColors.textHint,
         enabledBorder: OutlineInputBorder(
@@ -742,7 +742,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.primary, width: 1.8),
+          borderSide: BorderSide(color: AppColors.accentInk, width: 1.8),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
@@ -823,7 +823,7 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
-        prefixIcon: Icon(icon, color: AppColors.primary),
+        prefixIcon: Icon(icon, color: AppColors.accentInk),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
@@ -834,7 +834,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: AppColors.accentInk, width: 2),
         ),
         filled: true,
         fillColor: AppColors.cardBackground,
@@ -855,7 +855,7 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black38),
-        prefixIcon: Icon(icon, color: AppColors.primary),
+        prefixIcon: Icon(icon, color: AppColors.accentInk),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: isDark ? AppColors.textHint : AppColors.textSecondary),
@@ -891,7 +891,7 @@ class _ProfilePageState extends State<ProfilePage> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: AppColors.accentInk,
             ),
           ),
           SizedBox(height: 16),
@@ -932,7 +932,7 @@ class _ProfilePageState extends State<ProfilePage> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: AppColors.accentInk,
             ),
           ),
           SizedBox(height: 4),

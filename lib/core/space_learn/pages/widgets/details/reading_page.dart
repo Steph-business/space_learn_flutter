@@ -631,7 +631,7 @@ class _ReadingPageState extends State<ReadingPage> {
                       child: Text(
                         _getSpeedLabel(_ttsService.speechRate),
                         style: GoogleFonts.poppins(
-                          color: AppColors.primary,
+                          color: AppColors.accentInk,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -645,7 +645,7 @@ class _ReadingPageState extends State<ReadingPage> {
             if (_ttsService.isPlaying)
               Padding(
                 padding: EdgeInsets.only(bottom: 12),
-                child: _TtsAudioWaveform(color: AppColors.primary),
+                child: _TtsAudioWaveform(color: AppColors.accentInk),
               ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -841,7 +841,7 @@ class _ReadingPageState extends State<ReadingPage> {
               Icon(
                 Icons.cloud_download_outlined,
                 size: 64,
-                color: AppColors.primary,
+                color: AppColors.accentInk,
               ),
               SizedBox(height: 24),
               Text(
@@ -879,7 +879,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: AppColors.accentInk,
                 ),
               ),
             ],
@@ -1549,7 +1549,7 @@ class _ReadingPageState extends State<ReadingPage> {
         if (index >= bookmarks.length) return const SizedBox.shrink();
         final bk = bookmarks[index];
         return ListTile(
-          leading: Icon(Icons.bookmark, color: AppColors.primaryLight),
+          leading: Icon(Icons.bookmark, color: AppColors.accentInk),
           title: Text(
             "Page ${bk.pageNumber}",
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
@@ -1785,7 +1785,7 @@ class _ReadingPageState extends State<ReadingPage> {
         ),
         child: Row(
           children: [
-            Icon(Icons.search, color: AppColors.primary, size: 22),
+            Icon(Icons.search, color: AppColors.accentInk, size: 22),
             SizedBox(width: 12),
             Expanded(
               child: TextField(
@@ -1826,7 +1826,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 visualDensity: VisualDensity.compact,
                 icon: Icon(
                   Icons.keyboard_arrow_up,
-                  color: AppColors.primary,
+                  color: AppColors.accentInk,
                 ),
                 onPressed: () {
                   _searchResult!.previousInstance();
@@ -1837,7 +1837,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 visualDensity: VisualDensity.compact,
                 icon: Icon(
                   Icons.keyboard_arrow_down,
-                  color: AppColors.primary,
+                  color: AppColors.accentInk,
                 ),
                 onPressed: () {
                   _searchResult!.nextInstance();

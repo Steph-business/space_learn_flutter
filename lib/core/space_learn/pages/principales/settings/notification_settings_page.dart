@@ -54,7 +54,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.accentInk),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -188,7 +188,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         style: GoogleFonts.poppins(
           fontSize: 12,
           fontWeight: FontWeight.bold,
-          color: AppColors.primary,
+          color: AppColors.accentInk,
           letterSpacing: 1.2,
         ),
       ),

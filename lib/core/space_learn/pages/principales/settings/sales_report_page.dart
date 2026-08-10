@@ -340,10 +340,10 @@ class _SalesReportPageState extends State<SalesReportPage> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? Center(child: CircularProgressIndicator(color: AppColors.accentInk))
           : RefreshIndicator(
               onRefresh: _charger,
-              color: AppColors.primary,
+              color: AppColors.accentInk,
               child: ListView(
                 padding: const EdgeInsets.all(AppDimensions.screenPadding),
                 children: [
@@ -411,7 +411,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
           Text(
             _montant(solde.disponible),
             style: GoogleFonts.poppins(
-              color: AppColors.primary,
+              color: AppColors.accentInk,
               fontSize: 30,
               fontWeight: FontWeight.bold,
             ),

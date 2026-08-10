@@ -287,7 +287,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadBooks,
-              color: AppColors.primary,
+              color: AppColors.accentInk,
               backgroundColor: AppColors.cardBackground,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),

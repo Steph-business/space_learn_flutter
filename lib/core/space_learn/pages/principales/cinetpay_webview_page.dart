@@ -156,18 +156,18 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.primary,
+                      color: AppColors.accentInk,
                     ),
                   )
                 : Icon(
                     Icons.check_circle_outline,
                     size: 16,
-                    color: AppColors.primary,
+                    color: AppColors.accentInk,
                   ),
             label: Text(
               'J\'ai payé',
               style: GoogleFonts.poppins(
-                color: AppColors.primary,
+                color: AppColors.accentInk,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -185,7 +185,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: AppColors.primary),
+                    CircularProgressIndicator(color: AppColors.accentInk),
                     SizedBox(height: 16),
                     Text(
                       'Chargement du paiement...',
@@ -226,7 +226,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
                   Text(
                     '${widget.montant.toStringAsFixed(0)} XOF',
                     style: GoogleFonts.poppins(
-                      color: AppColors.primary,
+                      color: AppColors.accentInk,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -244,7 +244,11 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E2E),
+        // Ce fond était écrit en dur (#1E1E2E), hérité de l'époque où
+        // l'application n'existait qu'en sombre. Le titre, lui, suit le thème :
+        // en mode clair c'était du noir sur un pavé noir, au moment précis où
+        // le lecteur décide d'abandonner un paiement.
+        backgroundColor: AppColors.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Annuler le paiement ?',
@@ -262,7 +266,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Continuer',
-              style: GoogleFonts.poppins(color: AppColors.primary),
+              style: GoogleFonts.poppins(color: AppColors.accentInk),
             ),
           ),
           TextButton(

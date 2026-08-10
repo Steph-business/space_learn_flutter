@@ -346,7 +346,7 @@ class _TeamsPageState extends State<TeamsPage> {
                                           child: Text(
                                             "Voir toutes mes œuvres (${_books.length})",
                                             style: GoogleFonts.poppins(
-                                              color: AppColors.primary,
+                                              color: AppColors.accentInk,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),

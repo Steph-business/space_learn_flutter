@@ -98,7 +98,7 @@ class CartPage extends StatelessWidget {
                                   Text(
                                     "${book.prix} FCFA",
                                     style: GoogleFonts.poppins(
-                                      color: AppColors.primary,
+                                      color: AppColors.accentInk,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 14,
                                     ),

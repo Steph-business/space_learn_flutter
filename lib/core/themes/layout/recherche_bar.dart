@@ -33,7 +33,7 @@ class CustomSearchBar extends StatelessWidget {
               children: [
                 Icon(
                   Icons.search_rounded,
-                  color: AppColors.primary,
+                  color: AppColors.accentInk,
                   size: 20,
                 ),
                 SizedBox(width: 12),

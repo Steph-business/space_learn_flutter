@@ -190,11 +190,21 @@ class _MyAppState extends State<MyApp> {
     required Color surface,
     required Color onSurface,
   }) {
+    // onPrimary et onSecondary doivent être imposés.
+    //
+    // `fromSeed` les déduit du germe, et sa déduction s'inverse d'un thème à
+    // l'autre : blanc en clair, brun sombre en sombre. Or nos accents sont des
+    // oranges clairs qui ne changent pas avec le thème. Le blanc déduit tenait
+    // donc 1,80:1 sur #FFB156 — illisible — et tout ce qui lit le ColorScheme
+    // en héritait : FilledButton, FAB, Chip, Switch, Slider, indicateurs de
+    // progression. onAccent tient de 7,2:1 à 11,1:1 sur toute la gamme.
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: brightness,
       primary: AppColors.primary,
+      onPrimary: AppColors.onAccent,
       secondary: AppColors.secondary,
+      onSecondary: AppColors.onAccent,
       surface: surface,
       onSurface: onSurface,
     );

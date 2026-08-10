@@ -325,7 +325,7 @@ class SettingsPageAuteur extends StatelessWidget {
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.primary) : null,
+      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.accentInk) : null,
       onTap: () {
         themeProvider.setThemeMode(mode);
         Navigator.of(context).pop();

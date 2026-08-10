@@ -168,7 +168,7 @@ class PublicationCard extends StatelessWidget {
                         child: Text(
                           "${book.prix} FCFA",
                           style: GoogleFonts.poppins(
-                            color: AppColors.secondary,
+                            color: AppColors.accentInk,
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),

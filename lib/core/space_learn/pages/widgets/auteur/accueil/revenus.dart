@@ -157,7 +157,7 @@ class _RevenusState extends State<Revenus> {
                                 Icon(
                                   Icons.check_rounded,
                                   size: 18,
-                                  color: AppColors.primary,
+                                  color: AppColors.accentInk,
                                 ),
                               ],
                             ],
@@ -174,7 +174,7 @@ class _RevenusState extends State<Revenus> {
                         color: AppColors.scaffoldBackground,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.accentInk.withOpacity(0.3),
                           width: 1.2,
                         ),
                       ),
@@ -184,7 +184,7 @@ class _RevenusState extends State<Revenus> {
                           Text(
                             _currentPeriod.label,
                             style: GoogleFonts.poppins(
-                              color: AppColors.primary,
+                              color: AppColors.accentInk,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                             ),
@@ -193,7 +193,7 @@ class _RevenusState extends State<Revenus> {
                           Icon(
                             Icons.keyboard_arrow_down_rounded,
                             size: 18,
-                            color: AppColors.primary,
+                            color: AppColors.accentInk,
                           ),
                         ],
                       ),
@@ -248,7 +248,7 @@ class _RevenusState extends State<Revenus> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            color: AppColors.primary,
+                            color: AppColors.accentInk,
                           ),
                         ),
                       ),
@@ -375,7 +375,7 @@ class _RevenusState extends State<Revenus> {
         LineChartBarData(
           spots: spots.isEmpty ? [const FlSpot(0, 0)] : spots,
           isCurved: true,
-          color: AppColors.secondary,
+          color: AppColors.accentInk,
           barWidth: 3,
           isStrokeCapRound: true,
           dotData: FlDotData(
@@ -383,7 +383,7 @@ class _RevenusState extends State<Revenus> {
             getDotPainter: (spot, percent, barData, index) =>
                 FlDotCirclePainter(
               radius: 4,
-              color: AppColors.primary,
+              color: AppColors.accentInk,
               strokeWidth: 2,
               strokeColor: AppColors.cardBackground,
             ),

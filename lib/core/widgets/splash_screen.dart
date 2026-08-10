@@ -115,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen>
                               style: GoogleFonts.poppins(
                                 fontSize: 34,
                                 fontWeight: FontWeight.w900,
-                                color: AppColors.primary,
+                                color: AppColors.accentInk,
                                 letterSpacing: 1.2,
                               ),
                             ),

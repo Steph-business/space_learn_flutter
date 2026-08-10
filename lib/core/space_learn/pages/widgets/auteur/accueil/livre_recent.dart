@@ -86,7 +86,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
               child: Text(
                 "Voir tout",
                 style: GoogleFonts.poppins(
-                  color: AppColors.primaryLight,
+                  color: AppColors.accentInk,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -188,7 +188,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
         child: Text(
           label,
           style: GoogleFonts.poppins(
-            color: AppColors.primaryLight.withOpacity(0.8),
+            color: AppColors.accentInk.withOpacity(0.8),
             fontWeight: FontWeight.bold,
             fontSize: 12,
             letterSpacing: 1.1,

@@ -179,7 +179,7 @@ class _StatistiqueState extends State<Statistique> {
                   letterSpacing: 1.1,
                 ),
               ),
-              Icon(icon, color: AppColors.primary, size: 18),
+              Icon(icon, color: AppColors.accentInk, size: 18),
             ],
           ),
           SizedBox(height: 12),

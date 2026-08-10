@@ -138,7 +138,7 @@ class LivreCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: AppColors.primary, // Cyan for price
+                      color: AppColors.accentInk, // Cyan for price
                     ),
                   ),
                   SizedBox(height: 12),

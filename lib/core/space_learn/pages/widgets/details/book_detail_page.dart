@@ -631,7 +631,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       Text(
                         'Lire la suite ⌄',
                         style: GoogleFonts.poppins(
-                          color: AppColors.primary,
+                          color: AppColors.accentInk,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -778,15 +778,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 Text(
                                   "Voir tous les chapitres",
                                   style: GoogleFonts.poppins(
-                                    color: AppColors.primary,
+                                    color: AppColors.accentInk,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                const Icon(
+                                Icon(
                                   Icons.arrow_forward_ios_rounded,
-                                  color: AppColors.primary,
+                                  color: AppColors.accentInk,
                                   size: 12,
                                 ),
                               ],
@@ -823,7 +823,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               'Voir tout',
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
-                                color: AppColors.primary,
+                                color: AppColors.accentInk,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -868,7 +868,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AppColors.primary.withOpacity(0.3),
+                              color: AppColors.accentInk.withOpacity(0.3),
                               width: 1.5,
                             ),
                             gradient: LinearGradient(
@@ -888,7 +888,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 children: [
                                   Icon(
                                     Icons.star_rounded,
-                                    color: AppColors.primary,
+                                    color: AppColors.accentInk,
                                     size: 20,
                                   ),
                                   SizedBox(width: 8),
@@ -1145,7 +1145,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       Text(
                                         "${_readingProgress!.pourcentage}%",
                                         style: GoogleFonts.poppins(
-                                          color: AppColors.primary,
+                                          color: AppColors.accentInk,
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -1320,7 +1320,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: AppColors.accentInk,
                   ),
                 ),
                 Row(
@@ -1372,7 +1372,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
     return Container(
       color: AppColors.surfaceVariant,
       child: Center(
-        child: Icon(Icons.book, color: AppColors.primary, size: 30),
+        child: Icon(Icons.book, color: AppColors.accentInk, size: 30),
       ),
     );
   }
@@ -1437,7 +1437,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         photoUrl.contains('example.com'))
                     ? Icon(
                         Icons.person,
-                        color: AppColors.primary,
+                        color: AppColors.accentInk,
                         size: 18,
                       )
                     : null,

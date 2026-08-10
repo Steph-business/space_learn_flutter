@@ -15,7 +15,7 @@ class HelpFaqPage extends StatelessWidget {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.accentInk),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -73,7 +73,7 @@ class HelpFaqPage extends StatelessWidget {
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: ListTile(
-              leading: Icon(Icons.mail_outline, color: AppColors.primary, size: 28),
+              leading: Icon(Icons.mail_outline, color: AppColors.accentInk, size: 28),
               title: Text("Contacter l'assistance", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               subtitle: Text("Nous vous répondrons dans les plus brefs délais.", style: GoogleFonts.poppins(color: AppColors.textSecondary)),
               trailing: Icon(Icons.arrow_forward_ios, size: 14),

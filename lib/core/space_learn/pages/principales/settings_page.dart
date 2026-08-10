@@ -357,7 +357,7 @@ class _SettingsPageState extends State<SettingsPage> {
           child: SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+            child: CircularProgressIndicator(color: AppColors.accentInk, strokeWidth: 2),
           ),
         ),
       );
@@ -392,7 +392,7 @@ class _SettingsPageState extends State<SettingsPage> {
           style: GoogleFonts.poppins(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: AppColors.accentInk,
           ),
         ),
         SizedBox(height: 4),
@@ -530,7 +530,7 @@ class _SettingsPageState extends State<SettingsPage> {
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.primary) : null,
+      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.accentInk) : null,
       onTap: () {
         themeProvider.setThemeMode(mode);
         Navigator.of(context).pop();

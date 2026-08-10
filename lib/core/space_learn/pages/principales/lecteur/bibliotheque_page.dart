@@ -591,7 +591,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                       trailing: isSelected
                           ? Icon(
                               Icons.check,
-                              color: AppColors.primaryLight,
+                              color: AppColors.accentInk,
                             )
                           : null,
                       onTap: () {

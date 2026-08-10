@@ -169,12 +169,12 @@ class _OtpPageState extends State<OtpPage> {
     );
 
     final focusedPinTheme = defaultPinTheme.copyDecorationWith(
-      border: Border.all(color: AppColors.primary, width: 2),
+      border: Border.all(color: AppColors.accentInk, width: 2),
       borderRadius: BorderRadius.circular(12),
     );
 
     final submittedPinTheme = defaultPinTheme.copyDecorationWith(
-      border: Border.all(color: AppColors.primary.withOpacity(0.5)),
+      border: Border.all(color: AppColors.accentInk.withOpacity(0.5)),
       borderRadius: BorderRadius.circular(12),
     );
 

@@ -148,7 +148,7 @@ class _ProfilPageState extends State<ProfilPage> {
                           style: GoogleFonts.poppins(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
+                            color: AppColors.accentInk,
                             letterSpacing: 1,
                           ),
                         ),
@@ -310,7 +310,7 @@ class _ProfilPageState extends State<ProfilPage> {
                 color: AppColors.primary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, size: 22, color: AppColors.primary),
+              child: Icon(icon, size: 22, color: AppColors.accentInk),
             ),
             SizedBox(height: 10),
             Text(

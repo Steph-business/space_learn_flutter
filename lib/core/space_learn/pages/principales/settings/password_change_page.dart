@@ -27,7 +27,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.accentInk),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -117,9 +117,9 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
-        prefixIcon: Icon(Icons.lock_outline, color: AppColors.primary),
+        prefixIcon: Icon(Icons.lock_outline, color: AppColors.accentInk),
         suffixIcon: IconButton(
-          icon: Icon(obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppColors.primary),
+          icon: Icon(obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppColors.accentInk),
           onPressed: onToggle,
         ),
         filled: true,

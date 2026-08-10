@@ -268,7 +268,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primaryLight,
+                  color: AppColors.accentInk,
                 ),
               ),
             ],
@@ -285,7 +285,7 @@ class _PaymentPageState extends State<PaymentPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => Center(
-        child: CircularProgressIndicator(color: AppColors.primaryLight),
+        child: CircularProgressIndicator(color: AppColors.accentInk),
       ),
     );
 
@@ -403,7 +403,7 @@ class _PaymentPageState extends State<PaymentPage> {
               Navigator.of(context).popUntil((route) => route.isFirst);
               MainNavBar.mainNavBarKey.currentState?.navigateToMarketplace();
             },
-            child: Text('OK', style: TextStyle(color: AppColors.primaryLight)),
+            child: Text('OK', style: TextStyle(color: AppColors.accentInk)),
           ),
         ],
       ),
@@ -470,7 +470,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                 ),
                 child: Icon(
                   Icons.check_rounded,
-                  color: AppColors.primaryLight,
+                  color: AppColors.accentInk,
                   size: 64,
                 ),
               ),
@@ -495,7 +495,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                 'Redirection dans $_secondsRemaining...',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: AppColors.primaryLight,
+                  color: AppColors.accentInk,
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
