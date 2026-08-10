@@ -17,7 +17,7 @@ import '../../../../utils/token_storage.dart';
 import '../../../data/dataServices/readingProgressService.dart';
 import '../../../data/dataServices/bookmarkService.dart';
 import '../../../data/model/bookmark_model.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/partageService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/dataServices/readingSettingsService.dart';
 import '../../../data/dataServices/readerStatsService.dart';
@@ -1154,37 +1154,12 @@ class _ReadingPageState extends State<ReadingPage> {
                 ),
                 _buildFloatingBarIcon(
                   icon: Icons.share_outlined,
-                  onTap: () async {
-                    try {
-                      final bookId = widget.book['id'] ?? widget.book['ID'];
-                      final url = ApiRoutes.shareBook.replaceFirst(
-                        ':id',
-                        bookId.toString(),
-                      );
-                      final response = await http.get(Uri.parse(url));
-                      if (response.statusCode == 200) {
-                        final data = json.decode(response.body)['data'];
-                        Share.share(
-                          data['share_text'] ??
-                              "Découvrez ce livre sur SpaceLearn !",
-                          subject:
-                              data['title'] ??
-                              widget.book['titre'] ??
-                              "SpaceLearn",
-                        );
-                      } else {
-                        final title = widget.book['titre'] ?? 'SpaceLearn Book';
-                        Share.share(
-                          "Je lis '$title' sur SpaceLearn ! Rejoins-moi !",
-                        );
-                      }
-                    } catch (e) {
-                      final title = widget.book['titre'] ?? 'SpaceLearn Book';
-                      Share.share(
-                        "Je lis '$title' sur SpaceLearn ! Rejoins-moi !",
-                      );
-                    }
-                  },
+                  onTap: () => PartageService().partagerLivre(
+                    livreId:
+                        (widget.book['id'] ?? widget.book['ID'] ?? '').toString(),
+                    titreDeSecours:
+                        (widget.book['titre'] ?? 'ce livre').toString(),
+                  ),
                 ),
                 _buildFloatingBarIcon(
                   icon: Icons.close,

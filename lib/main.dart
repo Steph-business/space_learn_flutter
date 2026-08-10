@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -7,6 +9,8 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_prov
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
 import 'package:space_learn_flutter/core/services/api_client.dart';
+import 'package:space_learn_flutter/core/services/deep_link_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_loader_page.dart';
 import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -52,6 +56,11 @@ Future<void> main() async {
   // depuis laquelle la requête a été émise.
   ApiClient.onUnauthorized = _handleSessionExpired;
 
+  // Liens de recommandation : https://<domaine>/book/<id> doit ouvrir la fiche
+  // du livre plutôt qu'un navigateur.
+  DeepLinkService.instance.onLivreDemande = _ouvrirLivreDepuisLien;
+  unawaited(DeepLinkService.instance.demarrer());
+
   // Sans ces données, tout DateFormat portant une locale explicite lève une
   // LocaleDataException à l'affichage (cas déjà présent dans la page de détail
   // d'un événement, qui formate en 'fr_FR').
@@ -67,6 +76,19 @@ Future<void> main() async {
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+/// Ouvre la fiche d'un livre reçu par lien de recommandation.
+///
+/// L'écran de chargement est empilé sur la navigation en cours plutôt que de la
+/// remplacer : le lecteur revient d'un simple retour là où il en était.
+void _ouvrirLivreDepuisLien(String livreId) {
+  final navigator = navigatorKey.currentState;
+  if (navigator == null) return;
+
+  navigator.push(
+    MaterialPageRoute(builder: (_) => BookLoaderPage(livreId: livreId)),
+  );
+}
 
 Future<void> _handleSessionExpired() async {
   await TokenStorage.clearToken();

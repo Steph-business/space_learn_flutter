@@ -32,6 +32,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   final _formKey = GlobalKey<FormState>();
   final _titreController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _argumentaireController = TextEditingController();
   final _prixController = TextEditingController();
   final _categorieController = TextEditingController();
 
@@ -70,6 +71,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     if (widget.book != null) {
       _titreController.text = widget.book!.titre;
       _descriptionController.text = widget.book!.description;
+      _argumentaireController.text = widget.book!.argumentairePartage;
       _prixController.text = widget.book!.prix.toString();
       _isFree = widget.book!.prix == 0;
       _selectedCategorieId = widget.book!.categorieId;
@@ -124,6 +126,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   void dispose() {
     _titreController.dispose();
     _descriptionController.dispose();
+    _argumentaireController.dispose();
     _prixController.dispose();
     _categorieController.dispose();
     super.dispose();
@@ -340,6 +343,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           'id': widget.book!.id,
           'titre': _titreController.text.trim(),
           'description': _descriptionController.text.trim(),
+          'argumentaire_partage': _argumentaireController.text.trim(),
           'prix': prixParsed,
           'categorie_id': categorieId,
           'fichier_url': bookUrl,
@@ -360,6 +364,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           auteurId: _currentUserId!,
           titre: _titreController.text.trim(),
           description: _descriptionController.text.trim(),
+          argumentairePartage: _argumentaireController.text.trim(),
           imageCouverture: coverUrl,
           fichierUrl: bookUrl,
           format: format,
@@ -514,6 +519,20 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   icon: Icons.description,
                   maxLines: 4,
                 ),
+                SizedBox(height: 16),
+
+                // L'argumentaire est le texte qui circulera quand un lecteur
+                // recommandera le livre. La description decrit l'ouvrage ;
+                // ici l'auteur s'adresse au lecteur.
+                _buildTextField(
+                  controller: _argumentaireController,
+                  label: "Argumentaire de recommandation (facultatif)",
+                  icon: Icons.campaign_outlined,
+                  maxLines: 5,
+                  onChanged: (_) => setState(() {}),
+                ),
+                SizedBox(height: 8),
+                _apercuPartage(),
                 SizedBox(height: 16),
 
                 _buildTextField(
@@ -820,6 +839,66 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     );
   }
 
+
+  /// Aperçu du message que recevront les lecteurs.
+  ///
+  /// L'auteur doit voir ce qu'il écrit tel qu'il circulera : un argumentaire
+  /// rédigé à l'aveugle est rarement le bon. Le rendu final est composé par le
+  /// serveur, qui y ajoute le prix et le lien.
+  Widget _apercuPartage() {
+    final argumentaire = _argumentaireController.text.trim();
+    final corps = argumentaire.isNotEmpty
+        ? argumentaire
+        : _descriptionController.text.trim();
+
+    if (corps.isEmpty) {
+      return Text(
+        "Ce texte accompagnera votre livre quand un lecteur le recommandera. "
+        "À défaut, votre description sera utilisée.",
+        style: AppTextStyles.greyMedium12,
+      );
+    }
+
+    final titre = _titreController.text.trim().toUpperCase();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.visibility_outlined,
+                  size: 15, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+              Text("Aperçu du partage", style: AppTextStyles.greyMedium12),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            [
+              '📘 ${titre.isEmpty ? 'TITRE DU LIVRE' : titre}',
+              '',
+              corps,
+              '',
+              "👉🏽 Clique ici pour l'obtenir : …",
+            ].join('\n'),
+            style: GoogleFonts.poppins(
+              fontSize: 12.5,
+              height: 1.5,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -827,12 +906,14 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     int maxLines = 1,
     TextInputType? keyboardType,
     bool enabled = true,
+    ValueChanged<String>? onChanged,
   }) {
     return TextFormField(
       controller: controller,
       enabled: enabled,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      onChanged: onChanged,
       style: GoogleFonts.poppins(
         color: enabled ? AppColors.textPrimary : AppColors.textHint,
       ),

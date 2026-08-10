@@ -10,6 +10,9 @@ class BookModel {
   final String auteurId; // auteur_id
   final String titre;
   final String description;
+
+  /// Texte de recommandation redige par l'auteur, diffuse lors d'un partage.
+  final String argumentairePartage;
   final String? imageCouverture;
   final String? fichierUrl;
   final String format; // PDF | EPUB | MOBI
@@ -42,6 +45,7 @@ class BookModel {
     required this.auteurId,
     required this.titre,
     required this.description,
+    this.argumentairePartage = '',
     this.imageCouverture,
     this.fichierUrl,
     required this.format,
@@ -142,6 +146,7 @@ class BookModel {
       auteurId: authorId,
       titre: json['titre'] ?? json['title'] ?? '',
       description: json['description'] ?? '',
+      argumentairePartage: json['argumentaire_partage'] ?? '',
       imageCouverture: _sanitizeImageUrl(
         json['image_couverture'],
         useGin: true,
@@ -293,6 +298,7 @@ class BookModel {
       'auteur_id': auteurId,
       'titre': titre,
       'description': description,
+      'argumentaire_partage': argumentairePartage,
       'image_couverture': imageCouverture,
       'fichier_url': fichierUrl,
       'format': format,
