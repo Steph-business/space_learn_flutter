@@ -281,7 +281,17 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  SizedBox(height: 24),
+                  SizedBox(height: 16),
+
+                  // Brand Logo
+                  Image.asset(
+                    'asset/logo_space_learn.png',
+                    width: 110,
+                    height: 110,
+                    fit: BoxFit.contain,
+                  ),
+
+                  SizedBox(height: 16),
 
                   // Title
                   Text(

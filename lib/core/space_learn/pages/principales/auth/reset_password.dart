@@ -172,23 +172,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
                 SizedBox(height: 32),
 
-                // Icon
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.15),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.lock_reset_outlined,
-                    size: 30,
-                    color: AppColors.primary,
-                  ),
+                // Brand Logo
+                Image.asset(
+                  'asset/logo_space_learn.png',
+                  width: 110,
+                  height: 110,
+                  fit: BoxFit.contain,
                 ),
 
                 SizedBox(height: 20),

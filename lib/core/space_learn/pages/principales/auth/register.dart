@@ -198,10 +198,20 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                SizedBox(height: 20),
+                  SizedBox(height: 12),
 
-                // Title
-                Text(
+                  // Brand Logo
+                  Image.asset(
+                    'asset/logo_space_learn.png',
+                    width: 110,
+                    height: 110,
+                    fit: BoxFit.contain,
+                  ),
+
+                  SizedBox(height: 12),
+
+                  // Title
+                  Text(
                   'Inscription',
                   style: GoogleFonts.poppins(
                     fontSize: 16,

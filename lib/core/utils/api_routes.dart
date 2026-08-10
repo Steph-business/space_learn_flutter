@@ -1,13 +1,22 @@
 /// api_routes.dart
 class ApiRoutes {
   // Configurable dynamic host with fallback to local IP
-  static const String host = String.fromEnvironment('API_HOST', defaultValue: '192.168.68.167');
+  static const String host = String.fromEnvironment(
+    'API_HOST',
+    defaultValue: '192.168.1.12',
+  );
   static const String hosts = host;
 
-  static const String baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://$host:8083');
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://$host:8083',
+  );
 
   // Base URL for the combined Go server
-  static const String baseUrlsGin = String.fromEnvironment('API_BASE_URL_GIN', defaultValue: 'http://$host:8084');
+  static const String baseUrlsGin = String.fromEnvironment(
+    'API_BASE_URL_GIN',
+    defaultValue: 'http://$host:8084',
+  );
 
   // Auth routes
   static const String profils = "$baseUrl/auth/profils";

@@ -34,6 +34,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
   final AuthService _authService = AuthService();
   final RelationService _relationService = RelationService();
   
+  String? _authorId;
   List<BookModel> _books = [];
   List<dynamic> _followers = [];
   Map<String, dynamic> _stats = {};
@@ -61,6 +62,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
       
       if (mounted) {
         setState(() {
+          _authorId = authorId;
           _books = books;
           _stats = stats;
           _followers = followers;
@@ -87,7 +89,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Revenus(stats: _stats),
+              child: Revenus(stats: _stats, authorId: _authorId),
             ),
 
             Padding(

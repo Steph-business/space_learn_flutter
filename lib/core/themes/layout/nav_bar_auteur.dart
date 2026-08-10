@@ -77,61 +77,65 @@ class NavBarAuteur extends StatelessWidget {
   }) {
     final isActive = currentIndex == index;
 
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: isActive && !isSpecial
-            ? BoxDecoration(
-                color: AppColors.secondaryVariant.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              )
-            : null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSpecial)
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.secondaryVariant, AppColors.secondary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(index),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: isActive && !isSpecial
+              ? BoxDecoration(
+                  color: AppColors.secondaryVariant.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  
-                ),
-                child: Icon(
+                )
+              : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isSpecial)
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.secondaryVariant, AppColors.secondary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isActive ? activeIcon : icon,
+                    size: 20,
+                    color: AppColors.textPrimary,
+                  ),
+                )
+              else
+                Icon(
                   isActive ? activeIcon : icon,
-                  size: 20,
-                  color: AppColors.textPrimary,
+                  size: 22,
+                  color: isActive
+                      ? AppColors.secondaryVariant
+                      : AppColors.textHint,
                 ),
-              )
-            else
-              Icon(
-                isActive ? activeIcon : icon,
-                size: 22,
-                color: isActive
-                    ? AppColors.secondaryVariant
-                    : AppColors.textHint,
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: isSpecial ? 10 : 10.5,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  color: isSpecial
+                      ? AppColors.secondaryVariant
+                      : isActive
+                      ? AppColors.secondaryVariant
+                      : AppColors.textHint,
+                ),
               ),
-            SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: isSpecial ? 10 : 11,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isSpecial
-                    ? AppColors.secondaryVariant
-                    : isActive
-                    ? AppColors.secondaryVariant
-                    : AppColors.textHint,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

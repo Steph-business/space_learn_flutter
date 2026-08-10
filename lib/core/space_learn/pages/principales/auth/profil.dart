@@ -119,24 +119,14 @@ class _ProfilPageState extends State<ProfilPage> {
 
                   SizedBox(height: 24),
 
-                  // Rocket Icon
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withOpacity(0.15),
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.3),
-                        width: 2,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.rocket_launch,
-                      size: 32,
-                      color: AppColors.primary,
-                    ),
+                  // Brand Logo
+                  Image.asset(
+                    'asset/logo_space_learn.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.contain,
                   ),
+
 
                   SizedBox(height: 24),
 

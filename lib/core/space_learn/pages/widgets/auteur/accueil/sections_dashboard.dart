@@ -98,8 +98,8 @@ class TopLivresSection extends StatelessWidget {
 
   Widget _buildItem(BuildContext context, String rank, BookModel book) {
     final views = book.telechargements.toString();
-    final revenue =
-        "${(book.prix * book.telechargements).toStringAsFixed(0)} FCFA";
+    final priceDisplay =
+        book.prix == 0 ? "Gratuit" : "${book.prix} FCFA";
 
     return Row(
       children: [
@@ -149,7 +149,7 @@ class TopLivresSection extends StatelessWidget {
         ),
         SizedBox(width: 8),
         Text(
-          revenue,
+          priceDisplay,
           style: GoogleFonts.poppins(
             color: AppColors.secondaryVariant,
             fontSize: 13,
