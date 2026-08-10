@@ -6,8 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:space_learn_flutter/core/services/supabase_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/uploadService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/categorie_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
@@ -43,6 +43,8 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   String? _selectedCoverPath;
   Uint8List? _selectedCoverBytes;
   bool _isUploading = false;
+  double _progressionUpload = 0;
+  String _etapeUpload = '';
   bool _isFree = false;
 
   // Services
@@ -244,57 +246,13 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     setState(() => _isUploading = true);
 
     try {
-      String? coverUrl = widget.book?.imageCouverture;
-      String? bookUrl = widget.book?.fichierUrl;
+      // Le format se deduit du fichier choisi, ou de celui deja en place.
 
-      // 1. Upload Cover
-      if (_selectedCoverPath != null || _selectedCoverBytes != null) {
-        final coverExt = _selectedCoverPath != null ? p.extension(_selectedCoverPath!) : '.jpg';
-        final coverPath = '${DateTime.now().millisecondsSinceEpoch}$coverExt';
-
-        if (kIsWeb && _selectedCoverBytes != null) {
-          coverUrl = await SupabaseService.uploadBytes(
-            bucket: 'book_covers',
-            path: coverPath,
-            bytes: _selectedCoverBytes!,
-          );
-        } else if (_selectedCoverPath != null) {
-          coverUrl = await SupabaseService.uploadFile(
-            bucket: 'book_covers',
-            path: coverPath,
-            file: File(_selectedCoverPath!),
-          );
-        }
-
-        if (coverUrl == null) {
-          throw Exception("Erreur lors de l'upload de la couverture");
-        }
-      }
-
-      // 2. Upload Book
-      if (_selectedFilePath != null || _selectedFileBytes != null) {
-        final bookExt = _selectedFilePath != null ? p.extension(_selectedFilePath!) : '.pdf';
-        final bookPath = '${DateTime.now().millisecondsSinceEpoch}$bookExt';
-
-        if (kIsWeb && _selectedFileBytes != null) {
-          bookUrl = await SupabaseService.uploadBytes(
-            bucket: 'books',
-            path: bookPath,
-            bytes: _selectedFileBytes!,
-          );
-        } else if (_selectedFilePath != null) {
-          bookUrl = await SupabaseService.uploadFile(
-            bucket: 'books',
-            path: bookPath,
-            file: File(_selectedFilePath!),
-          );
-        }
-
-        if (bookUrl == null) {
-          throw Exception("Erreur lors de l'upload du livre");
-        }
-      }
-
+      // Les fichiers ne sont plus envoyes directement a Supabase : ils
+      // transitent par le backend, seul detenteur de la cle de service, qui
+      // verifie que l'appelant est bien l'auteur du livre. L'envoi ne peut donc
+      // avoir lieu qu'une fois le livre cree — d'ou l'ordre : enregistrer
+      // d'abord, televerser ensuite, publier en dernier.
       // 3. Determine category ID
       String categorieId = widget.book?.categorieId ?? '';
       if (_showCustomCategorie && _categorieController.text.isNotEmpty) {
@@ -329,57 +287,100 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       }
 
       final int prixParsed = _isFree ? 0 : (int.tryParse(_prixController.text) ?? 0);
-      final format = _getFileFormat(_selectedFilePath ?? bookUrl);
+      final format = _getFileFormat(_selectedFilePath ?? widget.book?.fichierUrl);
 
+      // Le serveur remplace l'integralite des champs a chaque mise a jour :
+      // un envoi partiel effacerait ceux qu'on omet. On compose donc toujours
+      // la charge complete.
+      Map<String, dynamic> champs(String statut) => {
+            'titre': _titreController.text.trim(),
+            'description': _descriptionController.text.trim(),
+            'argumentaire_partage': _argumentaireController.text.trim(),
+            'prix': prixParsed,
+            'categorie_id': categorieId,
+            'format': format,
+            'statut': statut,
+            'stock': widget.book?.stock ?? 999,
+          };
+
+      final bool fichiersAEnvoyer = _selectedFilePath != null ||
+          _selectedFileBytes != null ||
+          _selectedCoverPath != null ||
+          _selectedCoverBytes != null;
+
+      // Tant que les fichiers ne sont pas en place, le livre reste brouillon :
+      // un livre publie sans manuscrit apparaitrait au catalogue et serait
+      // achetable pour rien.
+      final statutInitial = (isDraft || fichiersAEnvoyer) ? 'brouillon' : 'publie';
+
+      String livreId;
       if (widget.book != null) {
-        // Mode modification
         if (widget.book!.id.isEmpty) {
           throw Exception(
             "Erreur : Impossible de modifier un livre sans identifiant valide.",
           );
         }
-
-        final updates = {
-          'id': widget.book!.id,
-          'titre': _titreController.text.trim(),
-          'description': _descriptionController.text.trim(),
-          'argumentaire_partage': _argumentaireController.text.trim(),
-          'prix': prixParsed,
-          'categorie_id': categorieId,
-          'fichier_url': bookUrl,
-          'image_couverture': coverUrl,
-          'format': format,
-          'statut': isDraft ? 'brouillon' : 'publie',
-          'stock': widget.book!.stock,
-        };
-        await _bookService.updateBook(widget.book!.id, updates, token);
-
-        if (mounted) {
-          _showSuccessDialog(isModification: true, isDraft: isDraft);
-        }
+        livreId = widget.book!.id;
+        await _bookService.updateBook(livreId, champs(statutInitial), token);
       } else {
-        // Mode création
-        final bookToCreate = BookModel(
-          id: '',
-          auteurId: _currentUserId!,
-          titre: _titreController.text.trim(),
-          description: _descriptionController.text.trim(),
-          argumentairePartage: _argumentaireController.text.trim(),
-          imageCouverture: coverUrl,
-          fichierUrl: bookUrl,
-          format: format,
-          prix: prixParsed,
-          stock: 999,
-          categorieId: categorieId,
-          statut: isDraft ? 'brouillon' : 'publie',
-          auteur: null,
+        final cree = await _bookService.createBook(
+          BookModel(
+            id: '',
+            auteurId: _currentUserId!,
+            titre: _titreController.text.trim(),
+            description: _descriptionController.text.trim(),
+            argumentairePartage: _argumentaireController.text.trim(),
+            format: format,
+            prix: prixParsed,
+            stock: 999,
+            categorieId: categorieId,
+            statut: statutInitial,
+            auteur: null,
+          ),
+          token,
         );
+        livreId = cree.id;
+      }
 
-        await _bookService.createBook(bookToCreate, token);
+      // Televersement via le backend : c'est lui qui detient la cle de service
+      // et qui enregistre le chemin du fichier sur le livre.
+      if (_selectedCoverPath != null || _selectedCoverBytes != null) {
+        setState(() => _etapeUpload = "Envoi de la couverture");
+        await UploadService.envoyer(
+          authToken: token,
+          livreId: livreId,
+          type: TypeFichier.couverture,
+          cheminFichier: _selectedCoverPath,
+          octets: _selectedCoverBytes,
+          nomFichier: _selectedCoverName,
+          onProgress: (p) => setState(() => _progressionUpload = p),
+        );
+      }
 
-        if (mounted) {
-          _showSuccessDialog(isModification: false, isDraft: isDraft);
-        }
+      if (_selectedFilePath != null || _selectedFileBytes != null) {
+        setState(() {
+          _etapeUpload = "Envoi du livre";
+          _progressionUpload = 0;
+        });
+        await UploadService.envoyer(
+          authToken: token,
+          livreId: livreId,
+          type: TypeFichier.manuscrit,
+          cheminFichier: _selectedFilePath,
+          octets: _selectedFileBytes,
+          nomFichier: _selectedFileName,
+          onProgress: (p) => setState(() => _progressionUpload = p),
+        );
+      }
+
+      // Publication effective une fois les fichiers en place.
+      if (!isDraft && statutInitial != 'publie') {
+        setState(() => _etapeUpload = "Publication");
+        await _bookService.updateBook(livreId, champs('publie'), token);
+      }
+
+      if (mounted) {
+        _showSuccessDialog(isModification: widget.book != null, isDraft: isDraft);
       }
     } catch (e) {
       if (mounted) {
@@ -391,7 +392,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isUploading = false);
+        setState(() {
+          _isUploading = false;
+          _progressionUpload = 0;
+          _etapeUpload = '';
+        });
       }
     }
   }
@@ -664,13 +669,38 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                           ),
                         ),
                         child: _isUploading
-                            ? SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: AppColors.textPrimary,
-                                  strokeWidth: 2,
-                                ),
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(
+                                      // Progression reelle des que l'envoi a
+                                      // commence : un manuscrit de 20 Mo sur
+                                      // reseau lent laisse sinon l'auteur sans
+                                      // aucun signe de vie.
+                                      value: _progressionUpload > 0
+                                          ? _progressionUpload
+                                          : null,
+                                      color: AppColors.textPrimary,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  if (_etapeUpload.isNotEmpty) ...[
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      _progressionUpload > 0
+                                          ? '$_etapeUpload ${(_progressionUpload * 100).round()} %'
+                                          : _etapeUpload,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               )
                             : Text(
                                 widget.book != null
