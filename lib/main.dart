@@ -14,6 +14,7 @@ import 'package:space_learn_flutter/core/services/deep_link_service.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_loader_page.dart';
 import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
@@ -29,7 +30,6 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/a
     as lecteurHome;
 import 'package:space_learn_flutter/core/widgets/splash_screen.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Initialize Local Notifications
@@ -44,10 +44,7 @@ Future<void> main() async {
     // défaut : elle doit être fournie au build via
     // --dart-define=SUPABASE_ANON_KEY=... (ou --dart-define-from-file).
     const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-    );
+    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   } catch (e, stackTrace) {
     debugPrint('Supabase init exception: $e\n$stackTrace');
   }
@@ -115,7 +112,10 @@ Future<void> _handleSessionExpired() async {
 class MyApp extends StatefulWidget {
   final ThemeMode initialThemeMode;
 
-  const MyApp({super.key, this.initialThemeMode = ThemeProvider.defaultThemeMode});
+  const MyApp({
+    super.key,
+    this.initialThemeMode = ThemeProvider.defaultThemeMode,
+  });
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -138,7 +138,7 @@ class _MyAppState extends State<MyApp> {
     try {
       final token = await TokenStorage.getToken();
       final isRegistered = await ProfileStorage.getIsRegisteredUser();
-      
+
       if (token != null && token.isNotEmpty) {
         final authService = AuthService();
         final user = await authService.getUser(token);
@@ -178,70 +178,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  /// Construit un ThemeData complet pour une luminosité donnée.
-  ///
-  /// Les surfaces et couleurs de texte sont fixées explicitement : plusieurs
-  /// écrans lisent `Theme.of(context)` plutôt que `AppColors`, et les deux
-  /// doivent décrire exactement la même palette pour éviter qu'une partie de
-  /// l'interface reste sombre alors que l'autre est passée en clair.
-  ThemeData _buildTheme({
-    required Brightness brightness,
-    required Color scaffold,
-    required Color surface,
-    required Color onSurface,
-  }) {
-    // onPrimary et onSecondary doivent être imposés.
-    //
-    // `fromSeed` les déduit du germe, et sa déduction s'inverse d'un thème à
-    // l'autre : blanc en clair, brun sombre en sombre. Or nos accents sont des
-    // oranges clairs qui ne changent pas avec le thème. Le blanc déduit tenait
-    // donc 1,80:1 sur #FFB156 — illisible — et tout ce qui lit le ColorScheme
-    // en héritait : FilledButton, FAB, Chip, Switch, Slider, indicateurs de
-    // progression. onAccent tient de 7,2:1 à 11,1:1 sur toute la gamme.
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: brightness,
-      primary: AppColors.primary,
-      onPrimary: AppColors.onAccent,
-      secondary: AppColors.secondary,
-      onSecondary: AppColors.onAccent,
-      surface: surface,
-      onSurface: onSurface,
-    );
-
-    return ThemeData(
-      brightness: brightness,
-      primaryColor: AppColors.primary,
-      scaffoldBackgroundColor: scaffold,
-      colorScheme: colorScheme,
-      canvasColor: scaffold,
-      cardColor: surface,
-      dividerColor: onSurface.withValues(alpha: 0.08),
-      iconTheme: IconThemeData(color: onSurface),
-      appBarTheme: AppBarTheme(
-        backgroundColor: scaffold,
-        foregroundColor: onSurface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: onSurface),
-      ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: scaffold,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: onSurface.withValues(alpha: 0.55),
-        elevation: 0,
-      ),
-      bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: surface,
-        surfaceTintColor: Colors.transparent,
-      ),
-      dialogTheme: DialogThemeData(
-        backgroundColor: surface,
-        surfaceTintColor: Colors.transparent,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -268,13 +204,16 @@ class _MyAppState extends State<MyApp> {
           SystemChrome.setSystemUIOverlayStyle(
             SystemUiOverlayStyle(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness:
-                  themeProvider.isDarkMode ? Brightness.light : Brightness.dark,
-              statusBarBrightness:
-                  themeProvider.isDarkMode ? Brightness.dark : Brightness.light,
+              statusBarIconBrightness: themeProvider.isDarkMode
+                  ? Brightness.light
+                  : Brightness.dark,
+              statusBarBrightness: themeProvider.isDarkMode
+                  ? Brightness.dark
+                  : Brightness.light,
               systemNavigationBarColor: AppColors.scaffoldBackground,
-              systemNavigationBarIconBrightness:
-                  themeProvider.isDarkMode ? Brightness.light : Brightness.dark,
+              systemNavigationBarIconBrightness: themeProvider.isDarkMode
+                  ? Brightness.light
+                  : Brightness.dark,
             ),
           );
 
@@ -282,25 +221,11 @@ class _MyAppState extends State<MyApp> {
             navigatorKey: navigatorKey,
             title: 'Space Learn',
             themeMode: themeProvider.themeMode,
-            // Chaque ThemeData décrit sa propre palette. Auparavant les deux
-            // utilisaient AppColors.scaffoldBackground, c'est-à-dire la couleur
-            // du mode actif : le thème clair pouvait donc avoir un fond noir.
-            theme: _buildTheme(
-              brightness: Brightness.light,
-              scaffold: AppColors.scaffoldLight,
-              surface: AppColors.cardLight,
-              onSurface: AppColors.textOnLight,
-            ),
-            darkTheme: _buildTheme(
-              brightness: Brightness.dark,
-              scaffold: AppColors.scaffoldDark,
-              surface: AppColors.cardDark,
-              onSurface: AppColors.textOnDark,
-            ),
+            // Chaque ThemeData décrit sa propre palette (cf. AppTheme).
+            theme: AppTheme.clair,
+            darkTheme: AppTheme.sombre,
             debugShowCheckedModeBanner: false,
-            home: _isLoading
-                ? const SplashScreen()
-                : _getHomeWidget(),
+            home: _isLoading ? const SplashScreen() : _getHomeWidget(),
           );
         },
       ),
