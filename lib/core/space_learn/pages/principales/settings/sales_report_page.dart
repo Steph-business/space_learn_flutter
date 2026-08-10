@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:intl/intl.dart';
+
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/reversementService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/reversement_model.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/payout_info_page.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
-import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/themes/widgets/app_card.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
+/// Rapport de ventes de l'auteur.
+///
+/// Les montants viennent du registre de reversements du backend, c'est-à-dire
+/// des paiements réellement encaissés. La version précédente estimait un
+/// « solde disponible » côté client à partir du nombre de téléchargements, et
+/// proposait un bouton « Retirer » qui n'appelait aucune API : l'auteur voyait
+/// une confirmation de virement alors que rien ne partait.
 class SalesReportPage extends StatefulWidget {
   const SalesReportPage({super.key});
 
@@ -15,302 +27,381 @@ class SalesReportPage extends StatefulWidget {
 }
 
 class _SalesReportPageState extends State<SalesReportPage> {
-  final AuthService _authService = AuthService();
+  final ReversementService _reversementService = ReversementService();
   final BookService _bookService = BookService();
-  List<BookModel> _authorBooks = [];
+
+  ResumeReversements _resume = ResumeReversements.vide;
+  List<ReversementModel> _reversements = [];
+  Map<String, String> _titresParLivre = {};
+
   bool _isLoading = true;
-  double _totalEarnings = 0.0;
-  double _availableBalance = 0.0;
+  String? _erreur;
+  bool _numeroManquant = false;
 
   @override
   void initState() {
     super.initState();
-    _loadSalesData();
+    _charger();
   }
 
-  Future<void> _loadSalesData() async {
+  Future<void> _charger() async {
+    if (mounted) setState(() => _erreur = null);
+
     try {
       final token = await TokenStorage.getToken();
-      if (token != null) {
-        final user = await _authService.getUser(token);
-        if (user != null) {
-          final books = await _bookService.getBooksByAuthorId(user.id);
-          
-          double earnings = 0.0;
-          for (var book in books) {
-            earnings += (book.telechargements * book.prix);
-          }
-
-          if (mounted) {
-            setState(() {
-              _authorBooks = books;
-              _totalEarnings = earnings;
-              _availableBalance = earnings;
-              _isLoading = false;
-            });
-          }
-          return;
+      if (token == null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _erreur = 'Session expirée. Reconnectez-vous.';
+          });
         }
+        return;
       }
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+
+      final (resume, reversements) =
+          await _reversementService.getMesReversements(token);
+
+      // Les reversements ne portent que l'identifiant du livre : on résout les
+      // titres pour que l'historique soit lisible.
+      final infos = await _reversementService.getInfosPaiement(token);
+      final titres = await _chargerTitres(token);
+
+      if (!mounted) return;
+      setState(() {
+        _resume = resume;
+        _reversements = reversements;
+        _titresParLivre = titres;
+        _numeroManquant = infos == null || !infos.estRenseigne;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _erreur = e.toString().replaceFirst('Exception: ', '');
+      });
     }
+  }
+
+  Future<Map<String, String>> _chargerTitres(String token) async {
+    try {
+      final livres = await _bookService.getAllBooks(authToken: token);
+      return {
+        for (final BookModel l in livres) l.id: l.titre,
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  String _formaterMontant(double montant, String devise) {
+    final f = NumberFormat.decimalPattern('fr_FR');
+    return '${f.format(montant.round())} $devise';
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final salesBooks = _authorBooks.where((b) => b.telechargements > 0).toList();
-
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "Rapports de Ventes",
+          'Rapports de ventes',
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Compte de versement',
+            icon: Icon(Icons.account_balance_wallet_outlined,
+                color: AppColors.textPrimary),
+            onPressed: _ouvrirCompteVersement,
+          ),
+        ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
           : RefreshIndicator(
-              onRefresh: _loadSalesData,
+              onRefresh: _charger,
               color: AppColors.primary,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppDimensions.screenPadding),
                 children: [
+                  if (_erreur != null) ...[
+                    _bandeauErreur(_erreur!),
+                    const SizedBox(height: AppDimensions.sectionGap),
+                  ],
+                  if (_numeroManquant) ...[
+                    _bandeauNumeroManquant(),
+                    const SizedBox(height: AppDimensions.sectionGap),
+                  ],
+                  _carteGains(),
+                  const SizedBox(height: AppDimensions.sectionGap),
                   Text(
-                    "Votre tableau de bord",
+                    'Historique des versements',
                     style: GoogleFonts.poppins(
-                      fontSize: 22,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Carte élégante et épurée (sans dégradé bleu/orange fluo)
-                  _buildEarningsCard(context),
-                  const SizedBox(height: 28),
-
-                  Text(
-                    "Historique des transactions",
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  if (salesBooks.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(Icons.monetization_on_outlined, size: 48, color: AppColors.textSecondary),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Aucune vente enregistrée pour le moment",
-                            style: GoogleFonts.poppins(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    )
+                  const SizedBox(height: AppDimensions.spaceMd),
+                  if (_reversements.isEmpty)
+                    _etatVide()
                   else
-                    ...salesBooks.map((book) {
-                      final amountStr = "+ ${(book.telechargements * book.prix).toInt()} FCFA";
-                      final desc = "${book.telechargements} vente${book.telechargements > 1 ? 's' : ''}";
-                      return _buildTransactionItem(
-                        context,
-                        book.titre,
-                        desc,
-                        amountStr,
-                        "Récent",
-                      );
-                    }).toList(),
+                    ..._reversements.map(_ligneReversement),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildEarningsCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withOpacity(0.25), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+  Future<void> _ouvrirCompteVersement() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PayoutInfoPage()),
+    );
+    if (mounted) _charger();
+  }
+
+  Widget _carteGains() {
+    final devise = _resume.devise;
+    final pourcentage = (_resume.tauxCommission * 100).round();
+
+    return AppCard(
+      padding: const EdgeInsets.all(AppDimensions.spaceXl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Gains Totaux",
+            'Total versé',
+            style: GoogleFonts.poppins(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spaceXs),
+          Text(
+            _formaterMontant(_resume.totalVerse, devise),
+            style: GoogleFonts.poppins(
+              color: AppColors.primary,
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spaceLg),
+          Divider(color: AppColors.borderLight, height: 1),
+          const SizedBox(height: AppDimensions.spaceLg),
+          Row(
+            children: [
+              Expanded(
+                child: _statistique(
+                  'En attente de virement',
+                  _formaterMontant(_resume.totalEnAttente, devise),
+                ),
+              ),
+              Expanded(
+                child: _statistique(
+                  'Commission plateforme',
+                  '$pourcentage %',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimensions.spaceMd),
+          Text(
+            'Les montants sont virés automatiquement sur votre compte Mobile Money à chaque vente, commission déduite.',
+            style: GoogleFonts.poppins(
+              color: AppColors.textHint,
+              fontSize: 11.5,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statistique(String libelle, String valeur) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          libelle,
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 11.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          valeur,
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _bandeauNumeroManquant() {
+    return AppCard(
+      onTap: _ouvrirCompteVersement,
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 22),
+          const SizedBox(width: AppDimensions.spaceMd),
+          Expanded(
+            child: Text(
+              "Renseignez votre numéro Mobile Money pour recevoir vos ventes. Vos gains sont enregistrés en attendant.",
+              style: GoogleFonts.poppins(
+                color: AppColors.textPrimary,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
+          Icon(Icons.arrow_forward_ios_rounded,
+              color: AppColors.textHint, size: 14),
+        ],
+      ),
+    );
+  }
+
+  Widget _bandeauErreur(String message) {
+    return AppCard(
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: AppColors.error, size: 22),
+          const SizedBox(width: AppDimensions.spaceMd),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.poppins(
+                color: AppColors.textPrimary,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _etatVide() {
+    return AppCard(
+      padding: const EdgeInsets.all(AppDimensions.spaceXl),
+      child: Column(
+        children: [
+          Icon(Icons.receipt_long_outlined,
+              size: 44, color: AppColors.textSecondary),
+          const SizedBox(height: AppDimensions.spaceMd),
+          Text(
+            'Aucune vente pour le moment',
             style: GoogleFonts.poppins(
               color: AppColors.textSecondary,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "${_totalEarnings.toInt()} FCFA",
-            style: GoogleFonts.poppins(
-              color: AppColors.primary,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Solde disponible",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    "${_availableBalance.toInt()} FCFA",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (_availableBalance <= 0) {
-                    AppNotifications.showSnackBar(
-                      context,
-                      message: "Solde insuffisant pour effectuer un retrait.",
-                      isSuccess: false,
-                    );
-                  } else {
-                    AppNotifications.showSnackBar(
-                      context,
-                      message: "Demande de retrait Mobile Money envoyée avec succès !",
-                      isSuccess: true,
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.black,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  "Retirer",
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionItem(
-    BuildContext context,
-    String title,
-    String type,
-    String amount,
-    String date,
-  ) {
-    final isPositive = amount.startsWith('+');
-    return Card(
-      color: AppColors.cardBackground,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.textPrimary.withOpacity(0.05)),
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isPositive
-                ? Colors.green.withOpacity(0.12)
-                : Colors.red.withOpacity(0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-            color: isPositive ? Colors.green : Colors.red,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-            fontSize: 14,
-          ),
-        ),
-        subtitle: Text(
-          "$type • $date",
-          style: GoogleFonts.poppins(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-          ),
-        ),
-        trailing: Text(
-          amount,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            color: isPositive ? Colors.green : Colors.red,
-            fontSize: 14,
-          ),
+  Widget _ligneReversement(ReversementModel rev) {
+    final titre = _titresParLivre[rev.livreId] ?? 'Livre';
+    final date = rev.envoyeLe ?? rev.creeLe;
+    final dateStr =
+        date == null ? '' : DateFormat('d MMM y', 'fr_FR').format(date.toLocal());
+
+    final (couleur, icone) = switch (rev.statut) {
+      'paye' || 'envoye' => (AppColors.success, Icons.check_rounded),
+      'sans_infos' => (AppColors.warning, Icons.phone_disabled_rounded),
+      'echoue' => (AppColors.error, Icons.refresh_rounded),
+      _ => (AppColors.textHint, Icons.schedule_rounded),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimensions.spaceMd),
+      child: AppCard(
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: couleur.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icone, color: couleur, size: 18),
+            ),
+            const SizedBox(width: AppDimensions.spaceMd),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    dateStr.isEmpty
+                        ? rev.libelleStatut
+                        : '${rev.libelleStatut} • $dateStr',
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppDimensions.spaceSm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '+ ${_formaterMontant(rev.montantNet, rev.devise)}',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    color: rev.estVerse
+                        ? AppColors.success
+                        : AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+                // La commission est affichée explicitement : l'auteur doit
+                // pouvoir rapprocher ce qu'il reçoit du prix de vente.
+                Text(
+                  'sur ${_formaterMontant(rev.montantBrut, rev.devise)}',
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textHint,
+                    fontSize: 10.5,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
@@ -49,6 +51,12 @@ Future<void> main() async {
   // ramener l'utilisateur à l'écran de connexion, quelle que soit la page
   // depuis laquelle la requête a été émise.
   ApiClient.onUnauthorized = _handleSessionExpired;
+
+  // Sans ces données, tout DateFormat portant une locale explicite lève une
+  // LocaleDataException à l'affichage (cas déjà présent dans la page de détail
+  // d'un événement, qui formate en 'fr_FR').
+  await initializeDateFormatting('fr_FR', null);
+  Intl.defaultLocale = 'fr_FR';
 
   // Le mode de thème est lu AVANT le premier rendu : sans cela la première
   // frame s'affiche dans la palette par défaut puis bascule, et les écrans qui
