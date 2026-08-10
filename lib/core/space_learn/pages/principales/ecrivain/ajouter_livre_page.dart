@@ -47,6 +47,13 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   String _etapeUpload = '';
   bool _isFree = false;
 
+  // Le formulaire est decoupe en deux temps : decrire l'œuvre, puis rediger
+  // l'argumentaire de recommandation. L'auteur ne voit ainsi qu'une intention
+  // a la fois, et l'argumentaire arrive une fois le livre deja renseigne.
+  static const List<String> _titresEtapes = ["L'œuvre", "La recommandation"];
+  int _etape = 0;
+  final ScrollController _scrollController = ScrollController();
+
   // Services
   final CategorieService _categorieService = CategorieService();
   final BookService _bookService = BookService();
@@ -131,6 +138,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     _argumentaireController.dispose();
     _prixController.dispose();
     _categorieController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -211,15 +219,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   }
 
   Future<void> _publishBook({bool isDraft = false}) async {
-    if (!_formKey.currentState!.validate()) return;
-
-    if (widget.book == null &&
-        (_selectedFileName == null || _selectedCoverName == null)) {
-      AppNotifications.showSnackBar(
-        context,
-        message: "Veuillez sélectionner le fichier et l'image de couverture.",
-        isError: true,
-      );
+    // Publier depuis l'etape 2 doit quand meme controler l'etape 1 : ses
+    // champs restent montes, mais l'auteur ne les voit plus. En cas d'erreur on
+    // le ramene la ou se trouve le probleme.
+    if (!_verifierEtapeOeuvre()) {
+      if (_etape != 0) setState(() => _etape = 0);
       return;
     }
 
@@ -505,222 +509,440 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildTextField(
-                  controller: _titreController,
-                  label: "Titre du livre",
-                  icon: Icons.book,
-                ),
-                SizedBox(height: 16),
-                _buildTextField(
-                  controller: _descriptionController,
-                  label: "Description/Synopsis",
-                  icon: Icons.description,
-                  maxLines: 4,
-                ),
-                SizedBox(height: 16),
-
-                // L'argumentaire est le texte qui circulera quand un lecteur
-                // recommandera le livre. La description decrit l'ouvrage ;
-                // ici l'auteur s'adresse au lecteur.
-                _buildTextField(
-                  controller: _argumentaireController,
-                  label: "Argumentaire de recommandation (facultatif)",
-                  icon: Icons.campaign_outlined,
-                  maxLines: 5,
-                  onChanged: (_) => setState(() {}),
-                ),
-                SizedBox(height: 8),
-                _apercuPartage(),
-                SizedBox(height: 16),
-
-                _buildTextField(
-                  controller: _prixController,
-                  label: "Prix (FCFA)",
-                  icon: Icons.money,
-                  keyboardType: TextInputType.number,
-                  enabled: !_isFree,
-                ),
-                SizedBox(height: 8),
-                CheckboxListTile(
-                  value: _isFree,
-                  onChanged: (val) {
-                    setState(() {
-                      _isFree = val ?? false;
-                      if (_isFree) {
-                        _prixController.text = "0";
-                      }
-                    });
-                  },
-                  activeColor: AppColors.secondaryVariant,
-                  title: Text(
-                    "Publier cet ouvrage gratuitement (0 FCFA)",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  subtitle: Text(
-                    "Les lecteurs accéderont librement à l'œuvre sans payer",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                SizedBox(height: 16),
-
-                // Champ de catégorie avec dropdown
-                _buildCategorieField(),
-                SizedBox(height: 20),
-
-                // File Upload Area
-                Text(
-                  "Fichier (PDF/EPUB)",
-                  style: GoogleFonts.poppins(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 8),
-                _buildUploadCard(
-                  title: "Fichier (PDF/EPUB)",
-                  subtitle: _selectedFileName ?? "Sélectionner un fichier",
-                  icon: Icons.upload_file,
-                  isSelected: _selectedFileName != null,
-                  onTap: _pickFile,
-                  currentUrl: _selectedFilePath == null
-                      ? widget.book?.fichierUrl
-                      : null,
-                ),
-
-                SizedBox(height: 16),
-
-                // Cover Upload Area
-                Text(
-                  "Image de couverture",
-                  style: GoogleFonts.poppins(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 8),
-                _buildUploadCard(
-                  title: "Image de couverture",
-                  subtitle: _selectedCoverName ?? "Sélectionner une image",
-                  icon: Icons.image,
-                  isSelected: _selectedCoverName != null,
-                  onTap: _pickCover,
-                  currentUrl: _selectedCoverPath == null
-                      ? widget.book?.imageCouverture
-                      : null,
-                  localPath: _selectedCoverPath,
-                  isImage: true,
-                ),
-                SizedBox(height: 40),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _isUploading ? null : () => _publishBook(isDraft: true),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          side: BorderSide(
-                            color: _isUploading ? Colors.grey : AppColors.secondaryVariant,
-                          ),
-                        ),
-                        child: Text(
-                          "Brouillon",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: _isUploading ? Colors.grey : AppColors.secondaryVariant,
-                          ),
+        child: Column(
+          children: [
+            _indicateurEtapes(),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Les deux etapes restent montees en permanence :
+                      // Offstage masque sans demonter. La validation du Form
+                      // couvre ainsi tous les champs, quelle que soit l'etape
+                      // affichee, et rien n'est reconstruit en changeant de vue.
+                      Offstage(
+                        offstage: _etape != 0,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _etapeOeuvre(),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _isUploading ? null : () => _publishBook(isDraft: false),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryVariant,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
-                          shadowColor: AppColors.secondaryVariant.withValues(
-                            alpha: 0.4,
-                          ),
+                      Offstage(
+                        offstage: _etape != 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _etapeRecommandation(),
                         ),
-                        child: _isUploading
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    height: 18,
-                                    width: 18,
-                                    child: CircularProgressIndicator(
-                                      // Progression reelle des que l'envoi a
-                                      // commence : un manuscrit de 20 Mo sur
-                                      // reseau lent laisse sinon l'auteur sans
-                                      // aucun signe de vie.
-                                      value: _progressionUpload > 0
-                                          ? _progressionUpload
-                                          : null,
-                                      color: AppColors.textPrimary,
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                  if (_etapeUpload.isNotEmpty) ...[
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      _progressionUpload > 0
-                                          ? '$_etapeUpload ${(_progressionUpload * 100).round()} %'
-                                          : _etapeUpload,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              )
-                            : Text(
-                                widget.book != null
-                                    ? "Modifier"
-                                    : "Publier",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                      ),
+                      const SizedBox(height: 32),
+                      _barreActions(),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────── Etape 1 : l'œuvre ───────────────────────────
+
+  List<Widget> _etapeOeuvre() {
+    return [
+      _enteteSection(
+        "Votre œuvre",
+        "Les informations qui apparaîtront sur la fiche du livre.",
+      ),
+      _buildTextField(
+        controller: _titreController,
+        label: "Titre du livre",
+        icon: Icons.book,
+      ),
+      const SizedBox(height: 16),
+      _buildTextField(
+        controller: _descriptionController,
+        label: "Description/Synopsis",
+        icon: Icons.description,
+        maxLines: 4,
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: 16),
+      _buildCategorieField(),
+      const SizedBox(height: 24),
+
+      _sousTitre("Prix"),
+      const SizedBox(height: 12),
+      _buildTextField(
+        controller: _prixController,
+        label: "Prix (FCFA)",
+        icon: Icons.money,
+        keyboardType: TextInputType.number,
+        enabled: !_isFree,
+      ),
+      const SizedBox(height: 8),
+      CheckboxListTile(
+        value: _isFree,
+        onChanged: (val) {
+          setState(() {
+            _isFree = val ?? false;
+            if (_isFree) {
+              _prixController.text = "0";
+            }
+          });
+        },
+        activeColor: AppColors.secondaryVariant,
+        title: Text(
+          "Publier cet ouvrage gratuitement (0 FCFA)",
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: Text(
+          "Les lecteurs accéderont librement à l'œuvre sans payer",
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 11,
+          ),
+        ),
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: EdgeInsets.zero,
+      ),
+      const SizedBox(height: 24),
+
+      _sousTitre("Fichiers"),
+      const SizedBox(height: 12),
+      _buildUploadCard(
+        title: "Fichier (PDF/EPUB)",
+        subtitle: _selectedFileName ?? "Sélectionner un fichier",
+        icon: Icons.upload_file,
+        isSelected: _selectedFileName != null,
+        onTap: _pickFile,
+        currentUrl: _selectedFilePath == null ? widget.book?.fichierUrl : null,
+      ),
+      const SizedBox(height: 12),
+      _buildUploadCard(
+        title: "Image de couverture",
+        subtitle: _selectedCoverName ?? "Sélectionner une image",
+        icon: Icons.image,
+        isSelected: _selectedCoverName != null,
+        onTap: _pickCover,
+        currentUrl: _selectedCoverPath == null
+            ? widget.book?.imageCouverture
+            : null,
+        localPath: _selectedCoverPath,
+        isImage: true,
+      ),
+    ];
+  }
+
+  // ───────────────────── Etape 2 : la recommandation ──────────────────────
+
+  List<Widget> _etapeRecommandation() {
+    return [
+      _enteteSection(
+        "Votre argumentaire",
+        "Ce texte circulera à votre place quand un lecteur recommandera "
+            "l'ouvrage. Adressez-vous directement à lui, comme dans une "
+            "conversation.",
+      ),
+      _buildTextField(
+        controller: _argumentaireController,
+        label: "Argumentaire de recommandation (facultatif)",
+        icon: Icons.campaign_outlined,
+        maxLines: 6,
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: 16),
+      _apercuPartage(),
+    ];
+  }
+
+  // ──────────────────────────── Navigation ────────────────────────────────
+
+  Widget _indicateurEtapes() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+      child: Row(
+        children: List.generate(_titresEtapes.length, (i) {
+          final atteinte = i <= _etape;
+          return Expanded(
+            child: GestureDetector(
+              // Revenir en arriere par l'indicateur est naturel ; avancer par
+              // ce biais passe par la meme validation que le bouton.
+              onTap: _isUploading ? null : () => _allerAEtape(i),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: i == _titresEtapes.length - 1 ? 0 : 10,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: atteinte
+                            ? AppColors.secondaryVariant
+                            : AppColors.textSecondary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Étape ${i + 1}",
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: atteinte
+                            ? AppColors.secondaryVariant
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      _titresEtapes[i],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: atteinte
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 20),
-              ],
+              ),
             ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _barreActions() {
+    if (_etape == 0) {
+      return ElevatedButton(
+        onPressed: _isUploading ? null : () => _allerAEtape(1),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.secondaryVariant,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 4,
+          shadowColor: AppColors.secondaryVariant.withValues(alpha: 0.4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Continuer",
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward, size: 18, color: Colors.white),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _isUploading
+                    ? null
+                    : () => _publishBook(isDraft: true),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  side: BorderSide(
+                    color: _isUploading
+                        ? Colors.grey
+                        : AppColors.secondaryVariant,
+                  ),
+                ),
+                child: Text(
+                  "Brouillon",
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _isUploading
+                        ? Colors.grey
+                        : AppColors.secondaryVariant,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _isUploading
+                    ? null
+                    : () => _publishBook(isDraft: false),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondaryVariant,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 4,
+                  shadowColor: AppColors.secondaryVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                ),
+                child: _isUploading
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              // Progression reelle des que l'envoi a
+                              // commence : un manuscrit de 20 Mo sur
+                              // reseau lent laisse sinon l'auteur sans
+                              // aucun signe de vie.
+                              value: _progressionUpload > 0
+                                  ? _progressionUpload
+                                  : null,
+                              color: AppColors.textPrimary,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                          if (_etapeUpload.isNotEmpty) ...[
+                            const SizedBox(width: 10),
+                            Text(
+                              _progressionUpload > 0
+                                  ? '$_etapeUpload ${(_progressionUpload * 100).round()} %'
+                                  : _etapeUpload,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ],
+                      )
+                    : Text(
+                        widget.book != null ? "Modifier" : "Publier",
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: _isUploading ? null : () => _allerAEtape(0),
+          icon: const Icon(Icons.arrow_back, size: 16),
+          label: Text(
+            "Revenir à l'œuvre",
+            style: GoogleFonts.poppins(fontSize: 13),
+          ),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.textSecondary,
           ),
         ),
+      ],
+    );
+  }
+
+  /// Change d'etape. Avancer exige que l'etape courante soit complete ;
+  /// reculer est toujours possible.
+  void _allerAEtape(int cible) {
+    if (cible == _etape) return;
+    if (cible > _etape && !_verifierEtapeOeuvre()) return;
+    setState(() => _etape = cible);
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  /// Controle complet de l'etape 1. Utilise aussi bien par « Continuer » que
+  /// par la publication, pour qu'il n'existe qu'une seule definition de ce
+  /// qu'est un livre valide.
+  bool _verifierEtapeOeuvre() {
+    if (!_formKey.currentState!.validate()) return false;
+
+    if (widget.book == null &&
+        (_selectedFileName == null || _selectedCoverName == null)) {
+      AppNotifications.showSnackBar(
+        context,
+        message: "Veuillez sélectionner le fichier et l'image de couverture.",
+        isError: true,
+      );
+      return false;
+    }
+    return true;
+  }
+
+  Widget _enteteSection(String titre, String sousTitre) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            titre,
+            style: GoogleFonts.poppins(
+              fontSize: 19,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            sousTitre,
+            style: GoogleFonts.poppins(
+              fontSize: 12.5,
+              height: 1.45,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sousTitre(String texte) {
+    return Text(
+      texte.toUpperCase(),
+      style: GoogleFonts.poppins(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+        color: AppColors.textSecondary,
       ),
     );
   }
