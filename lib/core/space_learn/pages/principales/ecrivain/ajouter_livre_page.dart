@@ -943,7 +943,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 ),
                 child: Icon(
                   isSelected ? Icons.check : icon,
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  color: isSelected ? AppColors.onAccent : AppColors.textPrimary,
                   size: 20,
                 ),
               ),
@@ -955,7 +955,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   Text(
                     subtitle,
                     style: GoogleFonts.poppins(
-                      color: isSelected ? Colors.white : AppColors.textPrimary,
+                      // Le fond sélectionné n'est qu'un voile orange à 10 % :
+                      // un texte blanc y devenait illisible en mode clair.
+                      color: AppColors.textPrimary,
                       fontSize: 14,
                       fontWeight: isSelected
                           ? FontWeight.w600

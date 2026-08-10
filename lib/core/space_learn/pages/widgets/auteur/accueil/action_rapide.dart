@@ -1,4 +1,6 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/themes/widgets/app_card.dart';
 import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
@@ -48,47 +50,43 @@ class AuteurActionsRapide extends StatelessWidget {
         ),
         itemBuilder: (context, index) {
           final item = actions[index];
-          return GestureDetector(
+          // Les rôles étaient inversés ici : `textPrimary` servait de fond et
+          // `cardBackground` de couleur de texte, ce qui donnait une carte
+          // noire en mode clair et blanche en mode sombre — à contre-courant du
+          // reste de l'écran.
+          return AppCard(
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => item["page"] as Widget),
               );
             },
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.textPrimary,
-                borderRadius: BorderRadius.circular(16),
-                
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    backgroundColor: (item["color"] as Color).withOpacity(0.1),
-                    child: Icon(
-                      item["icon"] as IconData,
-                      color: item["color"] as Color,
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  backgroundColor: (item["color"] as Color).withOpacity(0.12),
+                  child: Icon(
+                    item["icon"] as IconData,
+                    color: item["color"] as Color,
                   ),
-                  SizedBox(height: 10),
-                  Text(
-                    item["title"] as String,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.cardBackground,
-                    ),
+                ),
+                const SizedBox(height: AppDimensions.spaceMd),
+                Text(
+                  item["title"] as String,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
-                  Text(
-                    item["subtitle"] as String,
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                ),
+                Text(
+                  item["subtitle"] as String,
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },

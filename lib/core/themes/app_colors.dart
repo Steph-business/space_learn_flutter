@@ -45,6 +45,24 @@ class AppColors {
   /// Couleur primaire d'accent (orange) — boutons, liens, icônes actives
   static const Color primary = Color(0xFFFFB156);
 
+  /// Texte et icônes posés sur un aplat d'accent (bouton orange, badge coloré).
+  /// Reste identique dans les deux thèmes : c'est le fond qui est coloré, pas
+  /// la surface du thème. À utiliser à la place d'un `Colors.white` en dur.
+  static const Color onAccent = Color(0xFF1A1A1A);
+
+  // ───────────────────────── Sélecteurs segmentés ────────────────
+  /// Piste d'un sélecteur segmenté (le rail derrière la pastille active).
+  static Color get segmentTrack => isDark ? surfaceVariant : const Color(0xFFE9ECEF);
+
+  /// Pastille active d'un sélecteur segmenté.
+  static Color get segmentThumb => isDark ? const Color(0xFF2A2A2A) : scaffoldLight;
+
+  /// Libellé du segment actif — doit contraster avec [segmentThumb].
+  static Color get segmentLabelActive => textPrimary;
+
+  /// Libellé d'un segment inactif.
+  static Color get segmentLabelInactive => textHint;
+
   /// Variante plus claire du primaire — hover, highlights
   static const Color primaryLight = Color(0xFFFFC37D);
 

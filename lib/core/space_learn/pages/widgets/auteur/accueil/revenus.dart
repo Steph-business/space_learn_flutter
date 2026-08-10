@@ -1,4 +1,6 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/widgets/app_card.dart';
+import 'package:space_learn_flutter/core/themes/widgets/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,13 +23,7 @@ class _RevenusState extends State<Revenus> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground, // Dark slate
-        borderRadius: BorderRadius.circular(20),
-        
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -87,68 +83,12 @@ class _RevenusState extends State<Revenus> {
 
           SizedBox(height: 24),
 
-          // Toggle Button
-          Container(
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(
-                0xFF0F172A,
-              ), // Even darker background for toggle
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.all(4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => isRevenueSelected = false),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: !isRevenueSelected
-                            ? AppColors.cardBackground
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        "Lectures",
-                        style: GoogleFonts.poppins(
-                          color: !isRevenueSelected
-                              ? Colors.white
-                              : AppColors.textHint,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => isRevenueSelected = true),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isRevenueSelected
-                            ? AppColors.cardBackground
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        "Revenus",
-                        style: GoogleFonts.poppins(
-                          color: isRevenueSelected
-                              ? Colors.white
-                              : AppColors.textHint,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          // Sélecteur Lectures / Revenus
+          AppSegmentedControl(
+            labels: const ["Lectures", "Revenus"],
+            selectedIndex: isRevenueSelected ? 1 : 0,
+            onChanged: (index) =>
+                setState(() => isRevenueSelected = index == 1),
           ),
         ],
       ),
@@ -230,9 +170,12 @@ class _RevenusState extends State<Revenus> {
             getDotPainter: (spot, percent, barData, index) =>
                 FlDotCirclePainter(
                   radius: 4,
-                  color: Colors.orange, // Orange dots as in image
+                  color: AppColors.primary,
                   strokeWidth: 2,
-                  strokeColor: Colors.white,
+                  // Contour à la couleur de la carte : le point paraît détouré
+                  // dans les deux thèmes, là où un blanc en dur disparaissait
+                  // sur fond clair.
+                  strokeColor: AppColors.cardBackground,
                 ),
           ),
           belowBarData: BarAreaData(

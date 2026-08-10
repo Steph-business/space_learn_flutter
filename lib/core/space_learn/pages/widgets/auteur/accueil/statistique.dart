@@ -1,11 +1,12 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
+import 'package:space_learn_flutter/core/themes/widgets/app_card.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/abonnes_page.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart';
@@ -75,7 +76,6 @@ class _StatistiqueState extends State<Statistique> {
                 "${totalRevenue.toStringAsFixed(0)} FCFA",
                 "", // Removed fake growth
                 Icons.account_balance_wallet_rounded,
-                AppColors.cardBackground,
               ),
             ),
             SizedBox(width: 16),
@@ -96,46 +96,39 @@ class _StatistiqueState extends State<Statistique> {
                   "$readersCount",
                   "", // Removed fake growth
                   Icons.people_alt_rounded,
-                  AppColors.cardBackground,
                 ),
               ),
             ),
           ],
         ),
         SizedBox(height: 16),
-        GestureDetector(
+        AppCard(
           onTap: () {
             HomePageAuteur.navKey.currentState?.setIndex(3);
           },
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryVariant.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.campaign_rounded,
-                    color: AppColors.secondaryVariant,
-                    size: 20,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryVariant.withOpacity(0.12),
+                  shape: BoxShape.circle,
                 ),
-                SizedBox(width: 15),
-                Column(
+                child: Icon(
+                  Icons.campaign_rounded,
+                  color: AppColors.secondaryVariant,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppDimensions.spaceLg),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       "COMMUNAUTÉ",
                       style: GoogleFonts.poppins(
-                        color: AppColors.textPrimary.withOpacity(0.5),
+                        color: AppColors.textSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1.1,
@@ -151,14 +144,13 @@ class _StatistiqueState extends State<Statistique> {
                     ),
                   ],
                 ),
-                Spacer(),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: AppColors.textHint,
-                  size: 14,
-                ),
-              ],
-            ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: AppColors.textHint,
+                size: 14,
+              ),
+            ],
           ),
         ),
       ],
@@ -170,14 +162,8 @@ class _StatistiqueState extends State<Statistique> {
     String value,
     String growth,
     IconData icon,
-    Color bgColor,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -187,7 +173,7 @@ class _StatistiqueState extends State<Statistique> {
               Text(
                 title,
                 style: GoogleFonts.poppins(
-                  color: AppColors.textPrimary.withOpacity(0.5),
+                  color: AppColors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.1,

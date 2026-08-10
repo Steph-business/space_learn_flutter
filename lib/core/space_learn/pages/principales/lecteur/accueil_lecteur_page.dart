@@ -587,7 +587,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       Text(
                         item['label'],
                         style: GoogleFonts.poppins(
-                          color: isSelected ? Colors.white : AppColors.textPrimary,
+                          color: isSelected
+                              ? AppColors.secondaryVariant
+                              : AppColors.textPrimary,
                           fontSize: 13,
                           fontWeight: isSelected
                               ? FontWeight.w600
@@ -902,7 +904,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               child: Text(
                 catName,
                 style: GoogleFonts.poppins(
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  color: isSelected ? AppColors.onAccent : AppColors.textPrimary,
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
