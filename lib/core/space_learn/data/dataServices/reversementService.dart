@@ -6,10 +6,32 @@ import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/reversement_model.dart';
 
-/// Accès aux reversements de l'auteur connecté.
+/// Erreur métier renvoyée par le portefeuille.
+///
+/// Le code HTTP porte l'information : l'écran doit distinguer « solde
+/// insuffisant » de « numéro Mobile Money manquant » pour guider l'auteur vers
+/// la bonne action.
+class ReversementException implements Exception {
+  final String message;
+  final int statusCode;
+
+  const ReversementException(this.message, this.statusCode);
+
+  /// L'auteur n'a pas encore enregistré son numéro Mobile Money.
+  bool get numeroManquant => statusCode == 428;
+
+  bool get soldeInsuffisant => statusCode == 409;
+
+  bool get sousLeMinimum => statusCode == 400;
+
+  @override
+  String toString() => message;
+}
+
+/// Accès au portefeuille de l'auteur connecté.
 ///
 /// L'identité vient du token : aucune route ne prend d'identifiant d'auteur en
-/// paramètre, un auteur ne peut donc consulter que ses propres versements.
+/// paramètre, un auteur ne peut donc consulter et retirer que ses propres gains.
 class ReversementService {
   final http.Client client;
 
@@ -19,7 +41,8 @@ class ReversementService {
   // Déclarées ici plutôt que dans ApiRoutes pour ne pas toucher un fichier en
   // cours de modification ; à déplacer dans ApiRoutes à l'occasion.
   static final String _base = '${ApiRoutes.baseUrlsGin}/api/reversements';
-  static String get _mesReversements => '$_base/me';
+  static String get _portefeuille => '$_base/me';
+  static String get _retraits => '$_base/me/retraits';
   static String get _infosPaiement => '$_base/me/infos-paiement';
 
   Map<String, String> _headers(String token, {bool json = false}) => {
@@ -27,55 +50,86 @@ class ReversementService {
         'Authorization': 'Bearer $token',
       };
 
-  /// Historique des reversements + agrégats.
-  Future<(ResumeReversements, List<ReversementModel>)> getMesReversements(
-    String authToken, {
-    int limit = 50,
-    int offset = 0,
-  }) async {
-    final uri = Uri.parse(_mesReversements).replace(queryParameters: {
-      'limit': '$limit',
-      'offset': '$offset',
-    });
+  Never _erreur(http.Response reponse, String defaut) {
+    String message = defaut;
+    try {
+      final corps = jsonDecode(reponse.body) as Map<String, dynamic>;
+      if (corps['message'] is String) message = corps['message'] as String;
+    } catch (_) {}
+    throw ReversementException(message, reponse.statusCode);
+  }
 
-    final response = await client.get(uri, headers: _headers(authToken));
+  /// Solde, historique des ventes créditées et demandes de retrait.
+  Future<Portefeuille> getPortefeuille(String authToken, {int limit = 50}) async {
+    final uri = Uri.parse(_portefeuille)
+        .replace(queryParameters: {'limit': '$limit'});
 
-    if (response.statusCode != 200) {
-      throw Exception('Échec du chargement des reversements : ${response.body}');
+    final reponse = await client.get(uri, headers: _headers(authToken));
+    if (reponse.statusCode != 200) {
+      _erreur(reponse, 'Échec du chargement du portefeuille');
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = (body['data'] ?? {}) as Map<String, dynamic>;
+    final corps = jsonDecode(reponse.body) as Map<String, dynamic>;
+    final data = corps['data'];
+    if (data is! Map<String, dynamic>) return Portefeuille.vide;
+    return Portefeuille.fromJson(data);
+  }
 
-    final resume = data['resume'] is Map<String, dynamic>
-        ? ResumeReversements.fromJson(data['resume'] as Map<String, dynamic>)
-        : ResumeReversements.vide;
+  /// Demande un virement vers le Mobile Money enregistré.
+  Future<(RetraitModel, SoldeAuteur)> demanderRetrait({
+    required String authToken,
+    required double montant,
+  }) async {
+    final reponse = await client.post(
+      Uri.parse(_retraits),
+      headers: _headers(authToken, json: true),
+      body: jsonEncode({'montant': montant}),
+    );
 
-    final liste = (data['reversements'] as List?)
-            ?.whereType<Map<String, dynamic>>()
-            .map(ReversementModel.fromJson)
-            .toList() ??
-        <ReversementModel>[];
+    if (reponse.statusCode != 200 && reponse.statusCode != 201) {
+      _erreur(reponse, 'Échec de la demande de retrait');
+    }
 
-    return (resume, liste);
+    final data = (jsonDecode(reponse.body) as Map<String, dynamic>)['data']
+        as Map<String, dynamic>;
+    return (
+      RetraitModel.fromJson(data['retrait'] as Map<String, dynamic>),
+      SoldeAuteur.fromJson(data['solde'] as Map<String, dynamic>),
+    );
+  }
+
+  /// Annule une demande encore en attente. Le montant retourne au solde.
+  Future<SoldeAuteur> annulerRetrait({
+    required String authToken,
+    required String retraitId,
+  }) async {
+    final reponse = await client.delete(
+      Uri.parse('$_retraits/$retraitId'),
+      headers: _headers(authToken),
+    );
+
+    if (reponse.statusCode != 200) {
+      _erreur(reponse, "Échec de l'annulation du retrait");
+    }
+
+    final data = (jsonDecode(reponse.body) as Map<String, dynamic>)['data']
+        as Map<String, dynamic>;
+    return SoldeAuteur.fromJson(data['solde'] as Map<String, dynamic>);
   }
 
   /// Coordonnées Mobile Money enregistrées.
   ///
-  /// Le backend répond 200 même sans enregistrement, en proposant le téléphone
+  /// Le serveur répond 200 même sans enregistrement, en proposant le téléphone
   /// du compte avec `par_defaut: true`.
   Future<InfosPaiementModel?> getInfosPaiement(String authToken) async {
-    final response = await client.get(
+    final reponse = await client.get(
       Uri.parse(_infosPaiement),
       headers: _headers(authToken),
     );
+    if (reponse.statusCode != 200) return null;
 
-    if (response.statusCode != 200) return null;
-
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = body['data'];
+    final data = (jsonDecode(reponse.body) as Map<String, dynamic>)['data'];
     if (data is! Map<String, dynamic>) return null;
-
     return InfosPaiementModel.fromJson(data);
   }
 
@@ -87,7 +141,7 @@ class ReversementService {
     String? nomComplet,
     String? email,
   }) async {
-    final response = await client.put(
+    final reponse = await client.put(
       Uri.parse(_infosPaiement),
       headers: _headers(authToken, json: true),
       body: jsonEncode({
@@ -98,18 +152,12 @@ class ReversementService {
       }),
     );
 
-    if (response.statusCode != 200) {
-      String message = 'Échec de l\'enregistrement du numéro';
-      try {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        if (body['message'] is String) message = body['message'] as String;
-      } catch (_) {}
-      throw Exception(message);
+    if (reponse.statusCode != 200) {
+      _erreur(reponse, "Échec de l'enregistrement du numéro");
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return InfosPaiementModel.fromJson(
-      (body['data'] ?? {}) as Map<String, dynamic>,
-    );
+    final data = (jsonDecode(reponse.body) as Map<String, dynamic>)['data']
+        as Map<String, dynamic>;
+    return InfosPaiementModel.fromJson(data);
   }
 }
