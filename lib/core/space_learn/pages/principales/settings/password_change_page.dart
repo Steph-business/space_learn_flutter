@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
@@ -35,7 +36,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
         title: Text(
           "Changer le mot de passe",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: isDark ? Colors.white : AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -94,7 +95,9 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
                   ),
                 ),
                 child: Text(
@@ -142,13 +145,13 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
         filled: true,
         fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: isDark ? AppColors.textHint : Colors.grey,
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: isDark ? AppColors.textHint : Colors.grey,
           ),

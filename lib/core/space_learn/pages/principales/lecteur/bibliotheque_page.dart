@@ -1,5 +1,6 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
@@ -277,10 +278,12 @@ class _BibliothequePageState extends State<BibliothequePage> {
                             padding: EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: AppColors.cardBackground,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
                               border: Border.all(
                                 color: _isGridView
-                                    ? AppColors.primary
+                                    ? AppColors.accentInk
                                     : Colors.transparent,
                                 width: 1,
                               ),
@@ -450,7 +453,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                 fontSize: 16,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
-                    ? AppColors.primaryLight
+                    ? AppColors.accentInk
                     : AppColors.textSecondary,
               ),
             ),
@@ -461,7 +464,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               width: (label.length * 8.0) + 8, // Simple heuristic for width
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
               ),
             )
           else
@@ -479,9 +482,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isActive ? AppColors.cardBackground : AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           border: Border.all(
-            color: isActive ? AppColors.primaryLight : Colors.transparent,
+            color: isActive ? AppColors.accentInk : Colors.transparent,
             width: 1,
           ),
         ),
@@ -490,16 +493,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
           children: [
             Icon(
               icon,
-              color: isActive ? AppColors.primaryLight : AppColors.textPrimary,
+              color: isActive ? AppColors.accentInk : AppColors.textPrimary,
               size: 18,
             ),
             SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.poppins(
-                color: isActive
-                    ? AppColors.primaryLight
-                    : AppColors.textPrimary,
+                color: isActive ? AppColors.accentInk : AppColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -518,9 +519,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           border: Border.all(
-            color: hasActiveGenre ? AppColors.primaryLight : Colors.transparent,
+            color: hasActiveGenre ? AppColors.accentInk : Colors.transparent,
             width: 1,
           ),
         ),
@@ -530,7 +531,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
             Icon(
               Icons.tune_rounded,
               color: hasActiveGenre
-                  ? AppColors.primaryLight
+                  ? AppColors.accentInk
                   : AppColors.textPrimary,
               size: 18,
             ),
@@ -539,7 +540,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               hasActiveGenre ? "Genre: $filtreActif" : "Genre",
               style: GoogleFonts.poppins(
                 color: hasActiveGenre
-                    ? AppColors.primaryLight
+                    ? AppColors.accentInk
                     : AppColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -589,7 +590,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         cat,
                         style: GoogleFonts.poppins(
                           color: isSelected
-                              ? AppColors.primaryLight
+                              ? AppColors.accentInk
                               : Colors.white,
                           fontWeight: isSelected
                               ? FontWeight.w600
@@ -666,7 +667,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
                   vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                 ),
                 elevation: 0,
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
@@ -31,7 +32,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
         title: Text(
           "Confidentialité",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: isDark ? Colors.white : AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -60,7 +61,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
           Card(
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
             child: Column(
               children: [

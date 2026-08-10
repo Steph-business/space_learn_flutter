@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.dart';
@@ -193,7 +194,9 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                       filled: true,
                       fillColor: AppColors.scaffoldBackground,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusPill,
+                        ),
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
@@ -273,7 +276,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
         border: Border.all(color: color.withOpacity(0.3), width: 0.5),
       ),
       child: Text(
@@ -295,7 +298,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

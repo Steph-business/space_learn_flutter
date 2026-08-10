@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
@@ -52,12 +53,16 @@ class CartPage extends StatelessWidget {
                         padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusCard,
+                          ),
                         ),
                         child: Row(
                           children: [
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
                               child: Container(
                                 width: 70,
                                 height: 90,
@@ -170,7 +175,7 @@ class CartPage extends StatelessWidget {
               foregroundColor: AppColors.onAccent,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
               ),
             ),
             child: Text("Aller à la boutique"),
@@ -229,7 +234,9 @@ class CartPage extends StatelessWidget {
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.onAccent,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusCard,
+                    ),
                   ),
                   elevation: 0,
                 ),

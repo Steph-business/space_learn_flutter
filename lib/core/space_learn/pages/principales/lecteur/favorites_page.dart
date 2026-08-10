@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/favoriteModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
@@ -115,7 +116,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   color: AppColors.surfaceVariant,
                   margin: const EdgeInsets.only(bottom: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
                   ),
                   child: InkWell(
                     onTap: () {
@@ -132,7 +135,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       child: Row(
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusSmall,
+                            ),
                             child:
                                 book.imageCouverture != null &&
                                     book.imageCouverture!.isNotEmpty

@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
@@ -225,7 +226,9 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                         padding: EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusCard,
+                          ),
                         ),
                         child: Center(
                           child: Text(
@@ -277,7 +280,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(
             color: AppColors.accentInk.withOpacity(0.3),
             width: 1.5,
@@ -374,7 +377,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
         ),
         child: Row(
@@ -385,14 +388,18 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                 width: 50,
                 height: 70,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                   color: AppColors.textPrimary.withOpacity(0.05),
                 ),
                 child:
                     book.imageCouverture != null &&
                         !book.imageCouverture!.contains('example.com')
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusSmall,
+                        ),
                         child: Image.network(
                           book.imageCouverture!,
                           fit: BoxFit.cover,
@@ -430,7 +437,9 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                         ),
                         decoration: BoxDecoration(
                           color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                         ),
                         child: Text(
                           activityScore,
@@ -472,7 +481,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
             margin: EdgeInsets.only(right: 16, bottom: 10),
             decoration: BoxDecoration(
               color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               border: Border.all(color: colorType.withOpacity(0.3)),
             ),
             padding: const EdgeInsets.all(16),
@@ -485,7 +494,9 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: colorType.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusSmall,
+                        ),
                       ),
                       child: Icon(iconType, color: colorType, size: 16),
                     ),

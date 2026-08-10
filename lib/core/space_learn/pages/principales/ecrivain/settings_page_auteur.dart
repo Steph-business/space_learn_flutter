@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -305,7 +306,7 @@ class SettingsPageAuteur extends StatelessWidget {
             padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
               border: Border.all(
                 color: isDark
                     ? AppColors.textHint
@@ -366,12 +367,12 @@ class SettingsPageAuteur extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: isSelected ? AppColors.primary : (AppColors.textSecondary),
+        color: isSelected ? AppColors.accentInk : (AppColors.textSecondary),
       ),
       title: Text(
         title,
         style: GoogleFonts.poppins(
-          color: isSelected ? AppColors.primary : (AppColors.textPrimary),
+          color: isSelected ? AppColors.accentInk : (AppColors.textPrimary),
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),

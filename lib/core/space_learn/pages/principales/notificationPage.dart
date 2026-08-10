@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
@@ -65,7 +66,7 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               title: Text(
                 "Notifications",
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.poppins(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
                   fontSize: 22,
@@ -78,7 +79,9 @@ class _NotificationPageState extends State<NotificationPage> {
                   offset: Offset(0, 45),
                   color: AppColors.cardBackground,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
                   ),
                   onSelected: (value) async {
                     if (value == 'mark_all') {
@@ -104,7 +107,7 @@ class _NotificationPageState extends State<NotificationPage> {
                             Icons.list,
                             size: 16,
                             color: _filter == 'tous'
-                                ? AppColors.primaryLight
+                                ? AppColors.accentInk
                                 : AppColors.textSecondary,
                           ),
                           SizedBox(width: 8),
@@ -121,7 +124,7 @@ class _NotificationPageState extends State<NotificationPage> {
                             Icons.mark_email_unread_outlined,
                             size: 16,
                             color: _filter == 'non_read'
-                                ? AppColors.primaryLight
+                                ? AppColors.accentInk
                                 : AppColors.textSecondary,
                           ),
                           SizedBox(width: 8),
@@ -138,7 +141,7 @@ class _NotificationPageState extends State<NotificationPage> {
                             Icons.archive_outlined,
                             size: 16,
                             color: _filter == 'archives'
-                                ? AppColors.primaryLight
+                                ? AppColors.accentInk
                                 : AppColors.textSecondary,
                           ),
                           SizedBox(width: 8),

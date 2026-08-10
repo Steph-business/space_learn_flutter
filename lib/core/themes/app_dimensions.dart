@@ -7,6 +7,17 @@ class AppDimensions {
   AppDimensions._();
 
   // ───────────────────────── Rayons ─────────────────────────
+  //
+  // Cinq valeurs, une par échelle d'élément. Le code en comptait quatorze
+  // écrites en dur (2, 3, 4, 6, 8, 10, 12, 14, 15, 16, 20, 24, 28, 30), ce qui
+  // donnait des arrondis différents sur deux cartes voisines du même écran.
+  //
+  //   0 – 4   → [radiusXs]     traits, jauges, minuscules pastilles
+  //   6 – 10  → [radiusSmall]  badges, puces, sélecteurs
+  //   12 – 15 → [radiusInner]  champs, boutons, éléments internes
+  //   16 – 20 → [radiusCard]   cartes, dialogues, feuilles
+  //   24 +    → [radiusPill]   avatars, gélules, boutons flottants
+
   /// Rayon des cartes et grandes surfaces.
   static const double radiusCard = 16;
 
@@ -15,6 +26,12 @@ class AppDimensions {
 
   /// Rayon des petits éléments (badges, sélecteurs).
   static const double radiusSmall = 8;
+
+  /// Rayon minimal — barres de progression, filets, indicateurs.
+  static const double radiusXs = 4;
+
+  /// Rayon des formes en gélule — avatars, boutons flottants, onglets ronds.
+  static const double radiusPill = 24;
 
   // ───────────────────────── Espacements ────────────────────
   static const double spaceXs = 4;

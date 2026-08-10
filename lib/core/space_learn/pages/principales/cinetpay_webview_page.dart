@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
@@ -254,7 +255,9 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
         // en mode clair c'était du noir sur un pavé noir, au moment précis où
         // le lecteur décide d'abandonner un paiement.
         backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        ),
         title: Text(
           'Annuler le paiement ?',
           style: GoogleFonts.poppins(

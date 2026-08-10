@@ -3,6 +3,7 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -268,7 +269,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusCard,
+                    ),
                     border: Border.all(
                       color: AppColors.textPrimary.withOpacity(0.05),
                     ),
@@ -354,7 +357,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       elevation: 4,
                       shadowColor: AppColors.primary.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
                       ),
                     ),
                     child: _isLoading

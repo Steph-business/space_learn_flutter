@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -294,7 +295,9 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        ),
         title: Row(
           children: [
             const Icon(
@@ -305,7 +308,7 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(width: 10),
             Text(
               "Supprimer mon compte",
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.poppins(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -332,7 +335,7 @@ class _SettingsPageState extends State<SettingsPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
               ),
             ),
             onPressed: () async {
@@ -369,7 +372,7 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(
             color: isDark ? AppColors.textHint : Colors.black12,
           ),
@@ -392,7 +395,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         border: Border.all(color: isDark ? AppColors.textHint : Colors.black12),
       ),
       child: Row(
@@ -526,7 +529,7 @@ class _SettingsPageState extends State<SettingsPage> {
             padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
               border: Border.all(
                 color: isDark
                     ? AppColors.textHint
@@ -587,12 +590,12 @@ class _SettingsPageState extends State<SettingsPage> {
     return ListTile(
       leading: Icon(
         icon,
-        color: isSelected ? AppColors.primary : (AppColors.textSecondary),
+        color: isSelected ? AppColors.accentInk : (AppColors.textSecondary),
       ),
       title: Text(
         title,
         style: GoogleFonts.poppins(
-          color: isSelected ? AppColors.primary : (AppColors.textPrimary),
+          color: isSelected ? AppColors.accentInk : (AppColors.textPrimary),
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),

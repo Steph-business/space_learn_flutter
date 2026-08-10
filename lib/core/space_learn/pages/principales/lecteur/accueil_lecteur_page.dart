@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
@@ -494,7 +495,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               height: 48,
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                 border: Border.all(
                   color: AppColors.textPrimary.withOpacity(0.05),
                 ),
@@ -536,17 +537,17 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               width: 48,
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                 border: Border.all(
                   color: _selectedSection != "Tout"
-                      ? AppColors.secondary
+                      ? AppColors.accentInk
                       : AppColors.textHint,
                 ),
               ),
               child: Icon(
                 Icons.tune,
                 color: _selectedSection != "Tout"
-                    ? AppColors.secondary
+                    ? AppColors.accentInk
                     : AppColors.textSecondary,
                 size: 20,
               ),
@@ -554,7 +555,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             offset: Offset(0, 52),
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
             ),
             onSelected: (value) {
               setState(() {
@@ -580,7 +581,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         item['icon'],
                         size: 16,
                         color: isSelected
-                            ? AppColors.secondary
+                            ? AppColors.accentInk
                             : AppColors.textHint,
                       ),
                       SizedBox(width: 12),
@@ -889,9 +890,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 color: isSelected
                     ? AppColors.secondary
                     : AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                 border: Border.all(
-                  color: isSelected ? AppColors.secondary : AppColors.textHint,
+                  color: isSelected ? AppColors.accentInk : AppColors.textHint,
                 ),
               ),
               alignment: Alignment.center,
@@ -1061,7 +1062,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                             )
                             ? AppColors.textHint
                             : AppColors.secondary, // Blue pill
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusCard,
+                        ),
                         border:
                             _followingIds.contains(
                               _featuredAuthors.isNotEmpty
@@ -1243,7 +1246,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         ),
         child: Row(
           children: [
@@ -1252,7 +1255,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               height: 52,
               decoration: BoxDecoration(
                 color: club["color"] as Color,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
               ),
               child: Icon(
                 club["icon"] as IconData,
@@ -1296,7 +1299,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.joinBadgeBg,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 ),
                 child: Text(
                   "Rejoindre",
@@ -1415,7 +1418,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -1523,7 +1526,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
         ),
         child: Row(
@@ -1674,7 +1677,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
         ),
         child: Row(
@@ -1683,14 +1686,16 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               width: 50,
               height: 70,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                 color: AppColors.textHint,
               ),
               child:
                   book.imageCouverture != null &&
                       book.imageCouverture!.isNotEmpty
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusSmall,
+                      ),
                       child: Image.network(
                         book.imageCouverture!,
                         fit: BoxFit.cover,

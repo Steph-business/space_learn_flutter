@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import '../principales/lecteur/accueil_lecteur_page.dart';
@@ -111,7 +112,7 @@ class CinetpayResultPage extends StatelessWidget {
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.textPrimary.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                   border: Border.all(
                     color: AppColors.textPrimary.withValues(alpha: 0.08),
                   ),
@@ -170,7 +171,9 @@ class CinetpayResultPage extends StatelessWidget {
                         ? AppColors.primary
                         : AppColors.textHint,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusInner,
+                      ),
                     ),
                   ),
                   child: Text(

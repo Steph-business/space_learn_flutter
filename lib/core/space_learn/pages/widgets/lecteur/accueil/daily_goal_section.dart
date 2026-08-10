@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../data/model/goalModel.dart';
 
@@ -30,7 +31,7 @@ class DailyGoalSection extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +47,9 @@ class DailyGoalSection extends StatelessWidget {
                       gradient: LinearGradient(
                         colors: [AppColors.indigo, AppColors.violet],
                       ),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusInner,
+                      ),
                     ),
                     child: Icon(
                       Icons.flag_rounded,
@@ -86,7 +89,7 @@ class DailyGoalSection extends StatelessWidget {
                   color: isCompleted
                       ? AppColors.success.withOpacity(0.1)
                       : AppColors.indigo.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 ),
                 child: Text(
                   '${(progress * 100).round()}%',
@@ -106,7 +109,9 @@ class DailyGoalSection extends StatelessWidget {
                 height: 10,
                 decoration: BoxDecoration(
                   color: AppColors.scaffoldBackground,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                 ),
               ),
               AnimatedFractionallySizedBox(
@@ -120,7 +125,9 @@ class DailyGoalSection extends StatelessWidget {
                           ? [AppColors.success, AppColors.success]
                           : [AppColors.indigo, AppColors.violet],
                     ),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusSmall,
+                    ),
                   ),
                 ),
               ),

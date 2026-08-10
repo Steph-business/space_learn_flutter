@@ -4,6 +4,7 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' hide Image;
@@ -358,14 +359,16 @@ class _ReadingPageState extends State<ReadingPage> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        ),
         title: Row(
           children: [
             const Icon(Icons.lock, color: Colors.amber, size: 28),
             const SizedBox(width: 10),
             Text(
               "Fin de l'extrait",
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.poppins(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -401,7 +404,7 @@ class _ReadingPageState extends State<ReadingPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryLight,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
               ),
             ),
             child: Text(
@@ -563,7 +566,7 @@ class _ReadingPageState extends State<ReadingPage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: panelBg,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -586,7 +589,7 @@ class _ReadingPageState extends State<ReadingPage> {
                             : "Synthèse vocale prête",
                         style: GoogleFonts.poppins(
                           color: _ttsService.isPlaying
-                              ? AppColors.primary
+                              ? AppColors.accentInk
                               : itemColor.withOpacity(0.7),
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
@@ -617,7 +620,7 @@ class _ReadingPageState extends State<ReadingPage> {
                             ? Icons.autorenew
                             : Icons.play_disabled,
                         color: _autoplayNextPage
-                            ? AppColors.primary
+                            ? AppColors.accentInk
                             : itemColor.withOpacity(0.4),
                         size: 20,
                       ),
@@ -901,7 +904,7 @@ class _ReadingPageState extends State<ReadingPage> {
               ),
               SizedBox(height: 24),
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                 child: LinearProgressIndicator(
                   value: _downloadProgress > 0 ? _downloadProgress : null,
                   backgroundColor: AppColors.primary.withOpacity(0.1),
@@ -1106,7 +1109,7 @@ class _ReadingPageState extends State<ReadingPage> {
               icon: Icon(
                 _showTtsPanel ? Icons.headphones : Icons.headphones_outlined,
                 color: _showTtsPanel
-                    ? AppColors.primary
+                    ? AppColors.accentInk
                     : textColor.withOpacity(0.7),
               ),
               onPressed: () {
@@ -1147,7 +1150,7 @@ class _ReadingPageState extends State<ReadingPage> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: _backgroundColor.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
             child: Text(
               "PAGE $_currentPage SUR $_totalPages",
@@ -1165,7 +1168,7 @@ class _ReadingPageState extends State<ReadingPage> {
             height: 56,
             decoration: BoxDecoration(
               color: AppColors.cardBackground, // Premium dark theme
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1221,7 +1224,7 @@ class _ReadingPageState extends State<ReadingPage> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
         child: Padding(
           padding: EdgeInsets.all(12.0),
           child: Icon(
@@ -1409,7 +1412,7 @@ class _ReadingPageState extends State<ReadingPage> {
               width: double.infinity,
               decoration: BoxDecoration(
                 color: bg,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 border: Border.all(
                   color: isSelected ? Colors.black : Colors.transparent,
                   width: 2,
@@ -1463,7 +1466,7 @@ class _ReadingPageState extends State<ReadingPage> {
                 height: 4,
                 decoration: BoxDecoration(
                   color: AppColors.textSecondary,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                 ),
               ),
               TabBar(
@@ -1528,13 +1531,13 @@ class _ReadingPageState extends State<ReadingPage> {
         return ListTile(
           leading: Icon(
             Icons.segment,
-            color: isCurrent ? AppColors.primaryLight : AppColors.textSecondary,
+            color: isCurrent ? AppColors.accentInk : AppColors.textSecondary,
           ),
           title: Text(
             bookmark.title,
             style: GoogleFonts.poppins(
               fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-              color: isCurrent ? AppColors.primaryLight : Colors.black,
+              color: isCurrent ? AppColors.accentInk : Colors.black,
             ),
           ),
           trailing: page != null
@@ -1796,7 +1799,9 @@ class _ReadingPageState extends State<ReadingPage> {
                   vertical: 16,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                 ),
               ),
               child: Text("Retour"),
@@ -1817,7 +1822,7 @@ class _ReadingPageState extends State<ReadingPage> {
         padding: EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: AppColors.textPrimary,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
         ),
         child: Row(
           children: [
@@ -1943,7 +1948,7 @@ class _TtsAudioWaveformState extends State<_TtsAudioWaveform>
               height: height.clamp(4.0, 24.0),
               decoration: BoxDecoration(
                 color: widget.color,
-                borderRadius: BorderRadius.circular(2.0),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
               ),
             );
           }),

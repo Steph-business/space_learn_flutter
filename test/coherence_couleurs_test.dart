@@ -180,4 +180,50 @@ void main() {
     expect(fautes, isEmpty,
         reason: 'Bandeau(x) hors AppNotifications :\n${fautes.join('\n')}');
   });
+
+  // ── Règle 4 ────────────────────────────────────────────────────────────
+  // Deux familles, deux rôles : Poppins porte l'interface, Lora le texte des
+  // livres. Le code en comptait quatre — Hanken Grotesk n'existait que dans
+  // AppTextStyles et Outfit n'apparaissait que par accident, sept fois.
+  test('deux familles de police, et seulement deux', () {
+    const autorisees = {'poppins', 'lora'};
+    final usage = RegExp(r'GoogleFonts\.(\w+)');
+    final fautes = <String>[];
+
+    for (final fichier in _fichiersDart()) {
+      final lignes = fichier.readAsLinesSync();
+      for (var i = 0; i < lignes.length; i++) {
+        for (final m in usage.allMatches(lignes[i])) {
+          final famille = m.group(1)!;
+          if (!autorisees.contains(famille)) {
+            fautes.add('${fichier.path}:${i + 1} — GoogleFonts.$famille');
+          }
+        }
+      }
+    }
+
+    expect(fautes, isEmpty,
+        reason: 'Police(s) hors système :\n${fautes.join('\n')}');
+  });
+
+  // ── Règle 5 ────────────────────────────────────────────────────────────
+  // Quatorze rayons distincts circulaient (2, 3, 4, 6, 8, 10, 12, 14, 15, 16,
+  // 20, 24, 28, 30) : deux cartes voisines n'avaient pas le même arrondi.
+  // L'échelle vit dans AppDimensions.
+  test('aucun rayon écrit en dur', () {
+    final rayonLitteral = RegExp(r'BorderRadius\.circular\(\s*\d');
+    final fautes = <String>[];
+
+    for (final fichier in _fichiersDart()) {
+      final lignes = fichier.readAsLinesSync();
+      for (var i = 0; i < lignes.length; i++) {
+        if (rayonLitteral.hasMatch(lignes[i])) {
+          fautes.add('${fichier.path}:${i + 1} — ${lignes[i].trim()}');
+        }
+      }
+    }
+
+    expect(fautes, isEmpty,
+        reason: 'Rayon(s) hors AppDimensions :\n${fautes.join('\n')}');
+  });
 }

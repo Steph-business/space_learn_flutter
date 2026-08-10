@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
@@ -197,7 +198,9 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                 foregroundColor: AppColors.textPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                   side: _isFollowing
                       ? BorderSide(color: AppColors.textHint)
                       : BorderSide.none,
@@ -279,7 +282,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
             child: Container(
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

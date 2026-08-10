@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -273,7 +274,9 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusCard,
+                    ),
                     border: Border.all(
                       color: AppColors.textPrimary.withOpacity(0.05),
                     ),
@@ -355,7 +358,9 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusInner,
+                            ),
                             side: isFollowing
                                 ? BorderSide(
                                     color: AppColors.textPrimary.withOpacity(

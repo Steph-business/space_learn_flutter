@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
@@ -105,7 +106,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
       ),
       child: Column(
         children: [
@@ -116,7 +117,9 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
                 width: 60,
                 height: 80,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                   image:
                       (book.imageCouverture != null &&
                           book.imageCouverture!.isNotEmpty)
@@ -179,7 +182,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
       ),
       child: Center(
         child: Text(

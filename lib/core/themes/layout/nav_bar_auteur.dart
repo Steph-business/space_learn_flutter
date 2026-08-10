@@ -1,5 +1,6 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -89,7 +90,9 @@ class NavBarAuteur extends StatelessWidget {
           decoration: isActive && !isSpecial
               ? BoxDecoration(
                   color: AppColors.secondaryVariant.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                 )
               : null,
           child: Column(
@@ -104,7 +107,9 @@ class NavBarAuteur extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
                   ),
                   child: Icon(
                     isActive ? activeIcon : icon,

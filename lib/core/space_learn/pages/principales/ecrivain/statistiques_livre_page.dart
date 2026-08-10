@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 
@@ -48,14 +49,18 @@ class StatistiquesLivrePage extends StatelessWidget {
                   width: 80,
                   height: 120,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
                   ),
                   child:
                       book.imageCouverture != null &&
                           book.imageCouverture!.isNotEmpty &&
                           !book.imageCouverture!.contains('example.com')
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusInner,
+                          ),
                           child: Image.network(
                             book.imageCouverture!,
                             fit: BoxFit.cover,
@@ -64,7 +69,9 @@ class StatistiquesLivrePage extends StatelessWidget {
                       : Container(
                           decoration: BoxDecoration(
                             color: AppColors.textHint,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusInner,
+                            ),
                           ),
                           child: Icon(
                             Icons.book,
@@ -96,7 +103,9 @@ class StatistiquesLivrePage extends StatelessWidget {
                           color: book.statut == 'publie'
                               ? Colors.green.withOpacity(0.2)
                               : Colors.orange.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusCard,
+                          ),
                         ),
                         child: Text(
                           book.statut == 'publie' ? "En ligne" : book.statut,
@@ -166,7 +175,7 @@ class StatistiquesLivrePage extends StatelessWidget {
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               ),
               child: _buildChart(),
             ),
@@ -186,7 +195,7 @@ class StatistiquesLivrePage extends StatelessWidget {
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
       ),
       child: Column(

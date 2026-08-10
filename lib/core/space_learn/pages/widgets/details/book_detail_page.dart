@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
@@ -251,7 +252,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                   ),
                 ),
               ),
@@ -500,11 +501,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         width: 168,
                         decoration: BoxDecoration(
                           color: AppColors.lightSurface,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusCard,
+                          ),
                         ),
                         alignment: Alignment.center,
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusCard,
+                          ),
                           child:
                               book.imageCouverture != null &&
                                   book.imageCouverture!.isNotEmpty &&
@@ -758,7 +763,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       Center(
                         child: InkWell(
                           onTap: () => _showAllChaptersModal(context),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -856,7 +863,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           width: double.infinity,
                           height: 54,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusCard,
+                            ),
                             border: Border.all(
                               color: AppColors.accentInk.withOpacity(0.3),
                               width: 1.5,
@@ -871,7 +880,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusCard,
+                              ),
                               onTap: () => _showReviewDialog(context),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -983,7 +994,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       width: 50,
                                       decoration: BoxDecoration(
                                         color: AppColors.surfaceVariant,
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(
+                                          AppDimensions.radiusInner,
+                                        ),
                                         border: Border.all(
                                           color: AppColors.textPrimary
                                               .withOpacity(0.1),
@@ -1024,12 +1037,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                             );
                                           },
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppColors.secondary,
+                                            backgroundColor:
+                                                AppColors.secondary,
                                             foregroundColor: AppColors.onAccent,
                                             elevation: 0,
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  BorderRadius.circular(
+                                                    AppDimensions.radiusInner,
+                                                  ),
                                             ),
                                           ),
                                           child: Row(
@@ -1083,7 +1099,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                             .withOpacity(0.2),
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(
+                                          AppDimensions.radiusInner,
+                                        ),
                                       ),
                                     ),
                                     child: Row(
@@ -1146,7 +1164,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   ),
                                   SizedBox(height: 6),
                                   ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(
+                                      AppDimensions.radiusXs,
+                                    ),
                                     child: LinearProgressIndicator(
                                       value:
                                           _readingProgress!.pourcentage / 100,
@@ -1184,7 +1204,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 foregroundColor: AppColors.onAccent,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
                                 ),
                               ),
                               child: Row(
@@ -1264,10 +1286,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
               height: 200,
               width: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 child:
                     book.imageCouverture != null &&
                         book.imageCouverture!.isNotEmpty &&
@@ -1395,7 +1417,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
       ),
       child: Column(
@@ -1476,7 +1498,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
             return AlertDialog(
               backgroundColor: AppColors.surfaceVariant,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               ),
               title: Text("Laisser un avis", style: AppTextStyles.sectionTitle),
               content: Column(
@@ -1514,7 +1536,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       filled: true,
                       fillColor: AppColors.surfaceVariant,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
                         borderSide: BorderSide.none,
                       ),
                     ),
@@ -1533,7 +1557,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusSmall,
+                      ),
                     ),
                   ),
                   onPressed: () async {
@@ -1597,7 +1623,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           border: Border.all(
             color: isLocked
                 ? AppColors.textPrimary.withOpacity(0.04)
@@ -1611,7 +1637,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isLocked ? AppColors.textSecondary : AppColors.primary,
+                color: isLocked ? AppColors.textSecondary : AppColors.accentInk,
               ),
             ),
             SizedBox(width: 14),
@@ -1645,7 +1671,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
             SizedBox(width: 8),
             Icon(
               isLocked ? Icons.lock_outline : Icons.play_circle_outline,
-              color: isLocked ? AppColors.textSecondary : AppColors.primary,
+              color: isLocked ? AppColors.textSecondary : AppColors.accentInk,
               size: 22,
             ),
           ],

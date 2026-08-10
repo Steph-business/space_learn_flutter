@@ -263,7 +263,9 @@ class AppTheme {
         ),
         checkColor: WidgetStateProperty.all(AppColors.onAccent),
         side: BorderSide(color: traitVisible, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+        ),
       ),
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith(

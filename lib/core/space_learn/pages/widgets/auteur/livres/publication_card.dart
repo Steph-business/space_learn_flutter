@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
@@ -64,7 +65,7 @@ class PublicationCard extends StatelessWidget {
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.04)),
         ),
         child: Row(
@@ -77,14 +78,18 @@ class PublicationCard extends StatelessWidget {
                 width: 72,
                 height: 100,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                 ),
                 child:
                     book.imageCouverture != null &&
                         book.imageCouverture!.isNotEmpty &&
                         !book.imageCouverture!.contains('example.com')
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
                         child: Image.network(
                           book.imageCouverture!,
                           fit: BoxFit.cover,
@@ -139,7 +144,9 @@ class PublicationCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                         ),
                         child: Text(
                           statusText,
@@ -162,7 +169,9 @@ class PublicationCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.secondary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                         ),
                         child: Text(
                           "${book.prix} FCFA",
@@ -216,7 +225,7 @@ class PublicationCard extends StatelessWidget {
               padding: EdgeInsets.zero,
               constraints: BoxConstraints(maxWidth: 140),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                 side: BorderSide(
                   color: AppColors.textPrimary.withOpacity(0.06),
                 ),
@@ -384,7 +393,7 @@ class PublicationCard extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
         border: Border.all(color: AppColors.secondaryVariant.withOpacity(0.15)),
       ),
       child: Center(
@@ -443,7 +452,9 @@ class PublicationCard extends StatelessWidget {
       context: context,
       builder: (context) => Dialog(
         backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -489,7 +500,9 @@ class PublicationCard extends StatelessWidget {
                         padding: EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: AppColors.textPrimary.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusInner,
+                          ),
                         ),
                         child: Center(
                           child: Text(
@@ -537,7 +550,9 @@ class PublicationCard extends StatelessWidget {
                         padding: EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: AppColors.error.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusInner,
+                          ),
                           border: Border.all(
                             color: AppColors.error.withOpacity(0.3),
                           ),

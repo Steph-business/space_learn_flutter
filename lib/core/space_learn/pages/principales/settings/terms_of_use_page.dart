@@ -22,7 +22,7 @@ class TermsOfUsePage extends StatelessWidget {
         title: Text(
           "Conditions d'utilisation",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: isDark ? Colors.white : AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),

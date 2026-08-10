@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
@@ -23,7 +24,7 @@ class HelpFaqPage extends StatelessWidget {
         title: Text(
           "Aide & FAQ",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: isDark ? Colors.white : AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -74,7 +75,7 @@ class HelpFaqPage extends StatelessWidget {
           Card(
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
             child: ListTile(
               leading: Icon(
@@ -113,7 +114,9 @@ class HelpFaqPage extends StatelessWidget {
     return Card(
       color: AppColors.cardBackground,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+      ),
       child: ExpansionTile(
         title: Text(
           question,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -101,7 +102,7 @@ class BaseSettingsLayout extends StatelessWidget {
           backgroundColor: AppColors.error.withOpacity(0.85),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
             side: BorderSide(
               color: AppColors.error.withOpacity(0.3),
               width: 1.5,
@@ -122,7 +123,7 @@ class BaseSettingsLayout extends StatelessWidget {
             padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
               border: Border.all(
                 color: AppColors.textPrimary.withOpacity(0.08),
               ),
@@ -178,7 +179,9 @@ class BaseSettingsLayout extends StatelessWidget {
                           style: TextButton.styleFrom(
                             foregroundColor: AppColors.textHint,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
                             ),
                           ),
                           child: Text(
@@ -216,7 +219,9 @@ class BaseSettingsLayout extends StatelessWidget {
                             foregroundColor: AppColors.textPrimary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
                             ),
                           ),
                           child: Text(
@@ -260,7 +265,9 @@ class SettingItemTile extends StatelessWidget {
     return Card(
       color: AppColors.cardBackground,
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+      ),
       borderOnForeground: false,
       elevation: 0,
       child: ListTile(
@@ -268,7 +275,7 @@ class SettingItemTile extends StatelessWidget {
           padding: EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: AppColors.textPrimary.withOpacity(0.04),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
           ),
           child: Icon(
             icon,

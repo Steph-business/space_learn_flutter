@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
@@ -54,14 +55,23 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Cette page décide seule de sa luminosité : elle prévisualise le confort
+    // de lecture, qui a son propre mode nuit, indépendant du thème de
+    // l'application. Ce choix est légitime — la palette qui l'accompagnait ne
+    // l'était pas : elle redéfinissait localement fond, carte, texte, texte
+    // secondaire et bordure, soit un troisième thème invisible depuis
+    // AppColors. Seule la *sélection* reste locale ; les valeurs viennent des
+    // constantes absolues de la palette.
     final isDark = _isEffectiveDark;
-    final bgColor = isDark ? const Color(0xFF000000) : const Color(0xFFF5F5F7);
-    final cardBgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1D1D1F);
+    final bgColor = isDark ? AppColors.scaffoldDark : AppColors.scaffoldLight;
+    final cardBgColor = isDark ? AppColors.cardDark : AppColors.cardLight;
+    final textColor = isDark ? AppColors.textOnDark : AppColors.textOnLight;
     final secondaryTextColor = isDark
-        ? AppColors.textSecondary
-        : const Color(0xFF6B7280);
-    final borderColor = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondaryLight;
+    final borderColor = isDark
+        ? AppColors.borderDark
+        : AppColors.borderLightMode;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -75,7 +85,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
         title: Text(
           "Préférences de lecture",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: isDark ? Colors.white : AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -150,7 +160,9 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                             backgroundColor: AppColors.primary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
                             ),
                           ),
                           child: Text(
@@ -171,19 +183,21 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                             side: BorderSide(
                               color: isDark
                                   ? Colors.white24
-                                  : AppColors.primary,
+                                  : AppColors.accentInk,
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
                             ),
                           ),
                           child: Text(
                             "Par défaut",
                             style: GoogleFonts.poppins(
                               color: isDark
-                                  ? Colors.white70
-                                  : AppColors.primary,
+                                  ? AppColors.textOnDark
+                                  : AppColors.amberDark,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -209,13 +223,13 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         border: Border.all(color: borderColor),
         boxShadow: isDark
             ? []
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -229,7 +243,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppColors.primary,
+              color: isDark ? Colors.white : AppColors.accentInk,
             ),
           ),
           const SizedBox(height: 16),
@@ -271,7 +285,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
         border: Border.all(color: borderColor),
       ),
       child: DropdownButtonHideUnderline(
@@ -368,15 +382,17 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
         return ChoiceChip(
           label: Text(theme),
           selected: isSelected,
-          selectedColor: AppColors.primary.withOpacity(0.2),
+          selectedColor: AppColors.primary.withValues(alpha: 0.2),
           checkmarkColor: AppColors.primary,
           backgroundColor: isDark
-              ? const Color(0xFF1C1C1E)
-              : const Color(0xFFE5E7EB),
+              ? AppColors.cardDark
+              : AppColors.surfaceVariantLight,
           labelStyle: GoogleFonts.poppins(
             color: isSelected
-                ? AppColors.primary
-                : (isDark ? Colors.white70 : const Color(0xFF374151)),
+                ? (isDark ? AppColors.accentInk : AppColors.amberDark)
+                : (isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
           onSelected: (selected) {
@@ -402,7 +418,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
     return Container(
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
         border: Border.all(color: borderColor),
       ),
       child: SwitchListTile(

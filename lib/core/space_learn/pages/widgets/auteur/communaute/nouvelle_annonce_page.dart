@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -94,7 +95,7 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                 border: Border.all(
                   color: AppColors.textPrimary.withOpacity(0.1),
                 ),
@@ -148,7 +149,9 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.secondaryVariant,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusCard,
+                    ),
                   ),
                 ),
                 child: _isPublishing
@@ -252,19 +255,19 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
         filled: true,
         fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: AppColors.textPrimary.withValues(alpha: 0.1),
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: AppColors.textPrimary.withValues(alpha: 0.1),
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(color: AppColors.secondaryVariant),
         ),
         contentPadding: const EdgeInsets.symmetric(

@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
@@ -241,7 +242,9 @@ class _TeamsPageState extends State<TeamsPage> {
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusCard,
+                          ),
                           border: Border.all(
                             color: AppColors.textPrimary.withOpacity(0.05),
                           ),
@@ -330,7 +333,9 @@ class _TeamsPageState extends State<TeamsPage> {
                                 padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
                                   color: AppColors.cardBackground,
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusCard,
+                                  ),
                                   border: Border.all(
                                     color: AppColors.textPrimary.withOpacity(
                                       0.05,
@@ -425,7 +430,7 @@ class _TeamsPageState extends State<TeamsPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(
             color: AppColors.secondaryVariant.withOpacity(0.3),
             width: 1.5,
@@ -504,7 +509,7 @@ class _TeamsPageState extends State<TeamsPage> {
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
         ),
         child: Row(
@@ -515,14 +520,18 @@ class _TeamsPageState extends State<TeamsPage> {
                 width: 50,
                 height: 70,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                   color: AppColors.textPrimary.withOpacity(0.05),
                 ),
                 child:
                     book.imageCouverture != null &&
                         !book.imageCouverture!.contains('example.com')
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusSmall,
+                        ),
                         child: Image.network(
                           book.imageCouverture!,
                           fit: BoxFit.cover,
@@ -570,7 +579,9 @@ class _TeamsPageState extends State<TeamsPage> {
                         ),
                         decoration: BoxDecoration(
                           color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                         ),
                         child: Text(
                           activityScore,
@@ -611,7 +622,7 @@ class _TeamsPageState extends State<TeamsPage> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Row(
@@ -663,7 +674,7 @@ class _TeamsPageState extends State<TeamsPage> {
               margin: EdgeInsets.only(right: 16, bottom: 10),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 border: Border.all(color: colorType.withOpacity(0.3)),
               ),
               padding: const EdgeInsets.all(16),
@@ -676,7 +687,9 @@ class _TeamsPageState extends State<TeamsPage> {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: colorType.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                         ),
                         child: Icon(iconType, color: colorType, size: 16),
                       ),
@@ -747,10 +760,10 @@ class _TeamsPageState extends State<TeamsPage> {
           color: isSelected
               ? AppColors.primary.withOpacity(0.15)
               : AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary
+                ? AppColors.accentInk
                 : AppColors.textPrimary.withOpacity(0.08),
             width: 1.2,
           ),
@@ -758,7 +771,7 @@ class _TeamsPageState extends State<TeamsPage> {
         child: Text(
           label,
           style: GoogleFonts.poppins(
-            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            color: isSelected ? AppColors.accentInk : AppColors.textSecondary,
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),

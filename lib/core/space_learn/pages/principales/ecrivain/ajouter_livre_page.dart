@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
@@ -423,7 +424,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       barrierDismissible: false,
       builder: (context) => Dialog(
         backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -444,7 +447,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               const SizedBox(height: 24),
               Text(
                 "Félicitations !",
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.poppins(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -481,7 +484,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.secondaryVariant,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusInner,
+                      ),
                     ),
                     elevation: 0,
                   ),
@@ -709,7 +714,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                         color: atteinte
                             ? AppColors.secondaryVariant
                             : AppColors.textSecondary.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusXs,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -753,7 +760,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           backgroundColor: AppColors.secondaryVariant,
           padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           ),
           elevation: 4,
           shadowColor: AppColors.secondaryVariant.withValues(alpha: 0.4),
@@ -793,7 +800,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusCard,
+                    ),
                   ),
                   side: BorderSide(
                     color: _isUploading
@@ -823,7 +832,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   backgroundColor: AppColors.secondaryVariant,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusCard,
+                    ),
                   ),
                   elevation: 4,
                   shadowColor: AppColors.secondaryVariant.withValues(
@@ -969,7 +980,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         ),
         child: Row(
           children: [
@@ -995,7 +1006,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.red[50],
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(color: Colors.red[200]!),
         ),
         child: Row(
@@ -1022,7 +1033,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         Container(
           decoration: BoxDecoration(
             color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           ),
           child: DropdownButtonFormField<String>(
             dropdownColor: AppColors.cardBackground,
@@ -1042,15 +1053,15 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               filled: true,
               fillColor: AppColors.cardBackground,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 borderSide: BorderSide(color: AppColors.secondaryVariant),
               ),
               contentPadding: const EdgeInsets.symmetric(
@@ -1135,7 +1146,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
         border: Border.all(color: AppColors.accentInk.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -1197,15 +1208,15 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         filled: true,
         fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           borderSide: BorderSide(color: AppColors.secondaryVariant),
         ),
         contentPadding: const EdgeInsets.symmetric(
@@ -1240,7 +1251,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           color: isSelected
               ? AppColors.secondaryVariant.withValues(alpha: 0.1)
               : AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(
             color: isSelected
                 ? AppColors.secondaryVariant.withOpacity(0.5)
@@ -1253,7 +1264,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
             // Preview / Icon
             if (isImage && (localPath != null || currentUrl != null))
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                 child: SizedBox(
                   width: 44,
                   height: 60,

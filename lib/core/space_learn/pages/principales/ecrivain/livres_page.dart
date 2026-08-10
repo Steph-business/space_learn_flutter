@@ -1,5 +1,6 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -162,7 +163,9 @@ class _LivresPageState extends State<LivresPage> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.secondaryVariant.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                   border: Border.all(
                     color: AppColors.secondaryVariant.withOpacity(0.3),
                   ),
@@ -233,7 +236,9 @@ class _LivresPageState extends State<LivresPage> {
                     height: 52,
                     decoration: BoxDecoration(
                       color: AppColors.textPrimary.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusCard,
+                      ),
                       border: Border.all(
                         color: AppColors.textPrimary.withOpacity(0.06),
                       ),
@@ -364,7 +369,9 @@ class _LivresPageState extends State<LivresPage> {
                                 color: AppColors.secondaryVariant.withOpacity(
                                   0.15,
                                 ),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusSmall,
+                                ),
                               ),
                               child: Text(
                                 "Réessayer",
@@ -420,7 +427,9 @@ class _LivresPageState extends State<LivresPage> {
                                   color: AppColors.secondaryVariant.withOpacity(
                                     0.15,
                                   ),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
                                   border: Border.all(
                                     color: AppColors.secondaryVariant
                                         .withOpacity(0.3),
@@ -482,7 +491,7 @@ class _LivresPageState extends State<LivresPage> {
         padding: EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: AppColors.textPrimary.withOpacity(0.03),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
         ),
         child: Column(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -116,7 +117,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: Text(
           "Informations personnelles",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: isDark ? Colors.white : AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -253,13 +254,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: AppColors.accentInk,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                   borderSide: BorderSide(
                     color: isDark ? AppColors.textHint : Colors.grey,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                   borderSide: BorderSide(
                     color: isDark ? AppColors.textHint : Colors.grey,
                   ),
@@ -295,13 +300,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: AppColors.accentInk,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                   borderSide: BorderSide(
                     color: isDark ? AppColors.textHint : Colors.grey,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                   borderSide: BorderSide(
                     color: isDark ? AppColors.textHint : Colors.grey,
                   ),
@@ -339,7 +348,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
                       ),
                     ),
                     child: Text(
@@ -360,11 +371,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
-                        color: isDark ? AppColors.textHint : AppColors.primary,
+                        color: isDark
+                            ? AppColors.textHint
+                            : AppColors.accentInk,
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
                       ),
                     ),
                     child: Text(
@@ -372,7 +387,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       style: GoogleFonts.poppins(
                         color: isDark
                             ? AppColors.textSecondary
-                            : AppColors.primary,
+                            : AppColors.accentInk,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -423,7 +438,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         height: 6,
                         decoration: BoxDecoration(
                           color: AppColors.textHint,
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusXs,
+                          ),
                         ),
                       ),
                       AnimatedContainer(
@@ -435,7 +452,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         height: 6,
                         decoration: BoxDecoration(
                           color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusXs,
+                          ),
                         ),
                       ),
                     ],
@@ -475,7 +494,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
                                 ),
                               ),
                               child: Text(
@@ -501,7 +522,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               backgroundColor: AppColors.primary,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusInner,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -612,7 +635,7 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.textPrimary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 border: Border.all(
                   color: AppColors.textPrimary.withOpacity(0.1),
                 ),
@@ -663,7 +686,7 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.textPrimary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 border: Border.all(
                   color: AppColors.textPrimary.withOpacity(0.1),
                 ),
@@ -796,11 +819,11 @@ class _ProfilePageState extends State<ProfilePage> {
         filled: true,
         fillColor: AppColors.textHint,
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           borderSide: BorderSide(color: AppColors.textPrimary.withOpacity(0.1)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           borderSide: BorderSide(color: AppColors.accentInk, width: 1.8),
         ),
         contentPadding: const EdgeInsets.symmetric(
@@ -893,19 +916,19 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         prefixIcon: Icon(icon, color: AppColors.accentInk),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: isDark ? AppColors.textHint : Colors.grey,
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: isDark ? AppColors.textHint : Colors.grey,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(color: AppColors.accentInk, width: 2),
         ),
         filled: true,
@@ -933,19 +956,19 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         prefixIcon: Icon(icon, color: AppColors.accentInk),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: isDark ? AppColors.textHint : AppColors.textSecondary,
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: isDark ? AppColors.textHint : AppColors.textSecondary,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: isDark ? AppColors.textHint : AppColors.textSecondary,
           ),
@@ -964,7 +987,7 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

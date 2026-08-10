@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
@@ -63,7 +64,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         title: Text(
           "Notifications",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: isDark ? Colors.white : AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -95,7 +96,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             Card(
               color: AppColors.cardBackground,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               ),
               child: Column(
                 children: [
@@ -167,7 +168,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             Card(
               color: AppColors.cardBackground,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               ),
               child: Column(
                 children: [
@@ -239,7 +240,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           Card(
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
             child: SwitchListTile(
               title: Text(

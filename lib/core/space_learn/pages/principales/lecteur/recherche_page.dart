@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
@@ -125,7 +126,7 @@ class _RecherchePageState extends State<RecherchePage> {
           height: 40,
           decoration: BoxDecoration(
             color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
           ),
           child: TextField(
             controller: _searchController,
@@ -209,7 +210,7 @@ class _RecherchePageState extends State<RecherchePage> {
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
         ),
         child: Row(
@@ -218,7 +219,7 @@ class _RecherchePageState extends State<RecherchePage> {
               width: 60,
               height: 90,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                 image:
                     (book.imageCouverture != null &&
                         book.imageCouverture!.isNotEmpty)

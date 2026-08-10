@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -186,7 +187,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                 height: 200,
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                   image: DecorationImage(
                     image: NetworkImage(_evenement.imageUrl!),
                     fit: BoxFit.cover,
@@ -199,7 +200,9 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: colorType.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
                   ),
                   child: Icon(iconType, color: colorType, size: 24),
                 ),

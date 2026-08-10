@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -30,12 +31,12 @@ class LivreCard extends StatelessWidget {
       margin: EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
 
         border: Border.all(color: Colors.transparent, width: 0),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
         child: Material(
           color: Colors.transparent,
           child: Padding(
@@ -47,10 +48,10 @@ class LivreCard extends StatelessWidget {
                   width: 85,
                   height: 120,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                     child:
                         imageUrl != null &&
                             imageUrl!.isNotEmpty &&
@@ -101,7 +102,9 @@ class LivreCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.scaffoldBackground,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusSmall,
+                            ),
                           ),
                           child: Text(
                             categorie!,
@@ -173,7 +176,9 @@ class LivreCard extends StatelessWidget {
                                       width: double.infinity,
                                       decoration: BoxDecoration(
                                         color: AppColors.scaffoldBackground,
-                                        borderRadius: BorderRadius.circular(3),
+                                        borderRadius: BorderRadius.circular(
+                                          AppDimensions.radiusXs,
+                                        ),
                                       ),
                                     ),
                                     FractionallySizedBox(
@@ -264,10 +269,10 @@ class LivreGridCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

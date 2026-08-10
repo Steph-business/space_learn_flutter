@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
@@ -70,7 +71,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
         title: Text(
           "Publication",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: isDark ? Colors.white : AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -100,7 +101,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
           Card(
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
             child: Column(
               children: [
@@ -203,7 +204,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
               filled: true,
               fillColor: AppColors.cardBackground,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
               ),
             ),
           ),
@@ -227,7 +228,9 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                 ),
               ),
               child: Text(

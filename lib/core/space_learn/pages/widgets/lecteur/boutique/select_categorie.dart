@@ -1,5 +1,6 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 
@@ -36,7 +37,7 @@ class SelectCategorie extends StatelessWidget {
                 color: isSelected
                     ? AppColors.primary
                     : AppColors.cardBackground.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                 boxShadow: isSelected ? [] : [],
               ),
               child: Center(

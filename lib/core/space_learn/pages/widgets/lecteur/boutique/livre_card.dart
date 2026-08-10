@@ -1,5 +1,6 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
@@ -25,7 +26,7 @@ class LivreCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.cardBackground, // Dark card background
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 
@@ -48,7 +49,7 @@ class AppNotifications {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(color: borderCol, width: 1.5),
         ),
         child: Row(
@@ -120,7 +121,7 @@ class AppNotifications {
             padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
               border: Border.all(
                 color: AppColors.textPrimary.withValues(alpha: 0.08),
               ),
@@ -181,7 +182,9 @@ class AppNotifications {
                             style: TextButton.styleFrom(
                               foregroundColor: AppColors.textHint,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusInner,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -209,7 +212,9 @@ class AppNotifications {
                             foregroundColor: AppColors.onAccent,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
                             ),
                           ),
                           child: Text(

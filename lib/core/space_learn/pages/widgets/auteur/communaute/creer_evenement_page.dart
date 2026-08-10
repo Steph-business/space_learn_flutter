@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
@@ -142,7 +143,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                 border: Border.all(
                   color: AppColors.textPrimary.withValues(alpha: 0.1),
                 ),
@@ -205,7 +206,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.cardBackground,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusInner,
+                            ),
                             border: Border.all(
                               color: AppColors.textPrimary.withValues(
                                 alpha: 0.1,
@@ -254,7 +257,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.cardBackground,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusInner,
+                            ),
                             border: Border.all(
                               color: AppColors.textPrimary.withValues(
                                 alpha: 0.1,
@@ -308,7 +313,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusCard,
+                    ),
                   ),
                 ),
                 child: _isCreating
@@ -426,19 +433,19 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         filled: true,
         fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: AppColors.textPrimary.withValues(alpha: 0.1),
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(
             color: AppColors.textPrimary.withValues(alpha: 0.1),
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           borderSide: BorderSide(color: AppColors.success),
         ),
         contentPadding: const EdgeInsets.symmetric(

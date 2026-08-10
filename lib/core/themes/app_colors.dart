@@ -42,8 +42,10 @@ class AppColors {
   static Color get cardBackground => isDark ? cardDark : cardLight;
 
   /// Fond alternatif, un cran en retrait de la carte.
+  static const Color surfaceVariantDark = Color(0xFF242424);
+  static const Color surfaceVariantLight = Color(0xFFEDF0F4);
   static Color get surfaceVariant =>
-      isDark ? const Color(0xFF242424) : const Color(0xFFEDF0F4);
+      isDark ? surfaceVariantDark : surfaceVariantLight;
 
   /// Fond en creux — le cran le plus enfoncé de la pile de surfaces.
   static Color get darkSurface =>
@@ -78,8 +80,7 @@ class AppColors {
   /// Pastille active d'un sélecteur segmenté. Elle doit ressortir de la piste,
   /// donc elle prend la couleur des cartes — pas celle du fond d'écran, qui est
   /// désormais teinté et se confondrait avec la piste.
-  static Color get segmentThumb =>
-      isDark ? const Color(0xFF2A2A2A) : cardLight;
+  static Color get segmentThumb => isDark ? const Color(0xFF2A2A2A) : cardLight;
 
   /// Libellé du segment actif — doit contraster avec [segmentThumb].
   static Color get segmentLabelActive => textPrimary;
@@ -147,29 +148,32 @@ class AppColors {
   static Color get textPrimary => isDark ? textOnDark : textOnLight;
 
   /// Texte secondaire
+  static const Color textSecondaryDark = Color(0xFFB4B4B8);
+  static const Color textSecondaryLight = Color(0xFF52525B);
   static Color get textSecondary =>
-      isDark ? const Color(0xFFB4B4B8) : const Color(0xFF52525B);
+      isDark ? textSecondaryDark : textSecondaryLight;
 
   /// Texte désactivé / placeholder.
   ///
   /// Réglé à l'origine pour un fond noir : #888888 ne tenait que 3,54:1 en
   /// mode clair.
-  static Color get textHint =>
-      isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
+  static const Color textHintDark = Color(0xFF8E8E93);
+  static const Color textHintLight = Color(0xFF6B7280);
+  static Color get textHint => isDark ? textHintDark : textHintLight;
 
   /// Texte de moindre importance — légendes, unités, mentions.
   ///
   /// Même cause : #94A3B8 tombait à 2,56:1 sur blanc.
-  static Color get textMuted =>
-      isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
+  static Color get textMuted => isDark ? textHintDark : textHintLight;
 
   // ───────────────────────── Bordures ────────────────────────────
   /// Bordure subtile. Décorative : elle souligne une carte, elle n'identifie
   /// pas un contrôle. Les traits qui, eux, identifient un champ ou un
   /// interrupteur passent par le thème (cf. `traitVisible` dans AppTheme), qui
   /// tient les 3:1 exigés par WCAG 1.4.11.
-  static Color get border =>
-      isDark ? const Color(0xFF3A3A3E) : const Color(0xFFDCE2EA);
+  static const Color borderDark = Color(0xFF3A3A3E);
+  static const Color borderLightMode = Color(0xFFDCE2EA);
+  static Color get border => isDark ? borderDark : borderLightMode;
 
   /// Bordure très subtile (blanc 5%)
   static Color get borderLight =>

@@ -158,7 +158,7 @@ class _PayoutInfoPageState extends State<PayoutInfoPage> {
                               : Icons.info_outline,
                           color: _dejaEnregistre
                               ? AppColors.success
-                              : AppColors.primary,
+                              : AppColors.accentInk,
                           size: 22,
                         ),
                         const SizedBox(width: AppDimensions.spaceMd),

@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
@@ -259,7 +260,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                   border: Border.all(
                     color: AppColors.textPrimary.withOpacity(0.05),
                   ),
@@ -271,7 +272,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       height: 80,
                       decoration: BoxDecoration(
                         color: AppColors.textPrimary.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusSmall,
+                        ),
                       ),
                       child:
                           widget.book?.imageCouverture != null &&
@@ -279,7 +282,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                                 'example.com',
                               )
                           ? ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusSmall,
+                              ),
                               child: Image.network(
                                 widget.book!.imageCouverture!,
                                 fit: BoxFit.cover,
@@ -319,7 +324,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             ),
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusSmall,
+                              ),
                             ),
                             child: Text(
                               "COMMUNAUTÉ ACTIVE",
@@ -361,7 +368,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                         color: isSelected
                             ? AppColors.secondaryVariant
                             : AppColors.cardBackground,
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusPill,
+                        ),
                       ),
                       child: Text(
                         cat,
@@ -492,7 +501,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
         onPressed: _showNewDiscussionDialog,
         backgroundColor: AppColors.secondaryVariant,
         elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        ),
         child: Icon(Iconsax.add, color: AppColors.onAccent, size: 28),
       ),
     );
@@ -522,7 +533,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
         border: Border.all(color: color.withOpacity(0.3), width: 0.5),
       ),
       child: Text(
@@ -574,7 +585,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             ),
                           )
                         : ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusCard,
+                            ),
                             child: Image.network(
                               "https://i.pravatar.cc/150?u=$username",
                               fit: BoxFit.cover,

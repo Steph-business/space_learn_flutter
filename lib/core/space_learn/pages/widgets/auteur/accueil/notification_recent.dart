@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
@@ -152,7 +153,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
             padding: const EdgeInsets.only(left: 4, bottom: 20),
             child: Text(
               widget.title!,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary.withOpacity(0.9),
@@ -202,13 +203,13 @@ class _NotificationCardFromModel extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Container(
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               border: Border.all(
                 color: isUnread
                     ? accentColor.withOpacity(0.3)
@@ -220,7 +221,7 @@ class _NotificationCardFromModel extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: onTap,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Row(
@@ -233,7 +234,9 @@ class _NotificationCardFromModel extends StatelessWidget {
                             height: 44,
                             decoration: BoxDecoration(
                               color: accentColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
                             ),
                             child: Icon(icon, color: accentColor, size: 20),
                           ),
@@ -266,7 +269,7 @@ class _NotificationCardFromModel extends StatelessWidget {
                               children: [
                                 Text(
                                   model.type.toUpperCase(),
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.poppins(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                     color: accentColor,

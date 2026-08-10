@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'dart:async' as java_timer;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -76,7 +77,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 Text(
                   "Cet ouvrage est gratuit !",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.poppins(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -132,7 +133,9 @@ class _PaymentPageState extends State<PaymentPage> {
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusCard,
+                        ),
                       ),
                     ),
                   ),
@@ -211,7 +214,9 @@ class _PaymentPageState extends State<PaymentPage> {
                   foregroundColor: AppColors.onAccent,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
                   ),
                 ),
                 child: Text(
@@ -244,9 +249,11 @@ class _PaymentPageState extends State<PaymentPage> {
         Container(
           width: 80,
           height: 80,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+          ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             child:
                 widget.book['image_couverture'] != null &&
                     widget.book['image_couverture'].toString().isNotEmpty &&
@@ -532,7 +539,9 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                     backgroundColor: AppColors.primaryLight,
                     foregroundColor: AppColors.onAccent,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusCard,
+                      ),
                     ),
                   ),
                   child: Text(

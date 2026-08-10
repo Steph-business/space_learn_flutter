@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
@@ -51,7 +52,7 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
         title: Text(
           "Langue",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.primary,
+            color: isDark ? Colors.white : AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -80,7 +81,7 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
           Card(
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
             child: Column(
               children: [
@@ -106,7 +107,7 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
         name,
         style: GoogleFonts.poppins(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? AppColors.primary : (AppColors.textPrimary),
+          color: isSelected ? AppColors.accentInk : (AppColors.textPrimary),
         ),
       ),
       trailing: isSelected

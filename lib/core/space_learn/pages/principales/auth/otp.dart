@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
@@ -170,18 +171,18 @@ class _OtpPageState extends State<OtpPage> {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         border: Border.all(color: AppColors.textPrimary.withOpacity(0.1)),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
       ),
     );
 
     final focusedPinTheme = defaultPinTheme.copyDecorationWith(
       border: Border.all(color: AppColors.accentInk, width: 2),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
     );
 
     final submittedPinTheme = defaultPinTheme.copyDecorationWith(
       border: Border.all(color: AppColors.accentInk.withOpacity(0.5)),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
     );
 
     return Scaffold(
@@ -289,7 +290,9 @@ class _OtpPageState extends State<OtpPage> {
                       elevation: 4,
                       shadowColor: AppColors.primary.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
                       ),
                     ),
                     child: _isLoading

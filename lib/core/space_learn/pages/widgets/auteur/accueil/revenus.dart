@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/widgets/app_card.dart';
 import 'package:space_learn_flutter/core/themes/widgets/app_segmented_control.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
@@ -129,7 +130,9 @@ class _RevenusState extends State<Revenus> {
                     onSelected: (String periodKey) =>
                         _handlePeriodChange(periodKey),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusInner,
+                      ),
                     ),
                     color: AppColors.cardBackground,
                     elevation: 6,
@@ -148,7 +151,7 @@ class _RevenusState extends State<Revenus> {
                                       ? FontWeight.bold
                                       : FontWeight.w400,
                                   color: isSelected
-                                      ? AppColors.primary
+                                      ? AppColors.accentInk
                                       : AppColors.textPrimary,
                                 ),
                               ),
@@ -172,7 +175,9 @@ class _RevenusState extends State<Revenus> {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.scaffoldBackground,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusCard,
+                        ),
                         border: Border.all(
                           color: AppColors.accentInk.withOpacity(0.3),
                           width: 1.2,

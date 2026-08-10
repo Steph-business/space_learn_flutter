@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../data/dataServices/badgeService.dart';
 import '../../../data/model/badgeModel.dart';
@@ -162,7 +163,7 @@ class _BadgesPageState extends State<BadgesPage> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
         border: Border.all(
           color: isUnlocked
               ? AppColors.indigo.withOpacity(0.5)
