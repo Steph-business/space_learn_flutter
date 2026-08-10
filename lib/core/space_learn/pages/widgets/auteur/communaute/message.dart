@@ -39,7 +39,10 @@ class Messages extends StatelessWidget {
                   Text(
                     "Vos conversations avec les lecteurs et d'autres auteurs apparaîtront ici.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),

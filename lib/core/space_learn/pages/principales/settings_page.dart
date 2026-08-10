@@ -51,7 +51,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (token != null) {
         final favService = FavoriteService();
         final libService = LibraryService();
-        
+
         final favs = await favService.getFavorites(token);
         List<LibraryModel> libBooks = [];
         try {
@@ -62,7 +62,7 @@ class _SettingsPageState extends State<SettingsPage> {
           setState(() {
             _favoritesCount = favs.length;
             _libraryCount = libBooks.length;
-            
+
             int inProgress = libBooks.where((b) {
               final progressions = b.livre?.progressions;
               if (progressions != null && progressions.isNotEmpty) {
@@ -96,7 +96,10 @@ class _SettingsPageState extends State<SettingsPage> {
       primaryAccentColor: AppColors.primary,
       children: [
         // Section Statistiques de lecture (Demandée par l'utilisateur)
-        SettingSectionHeader(title: "Vos Statistiques", accentColor: AppColors.primary),
+        SettingSectionHeader(
+          title: "Vos Statistiques",
+          accentColor: AppColors.primary,
+        ),
         _buildStatsCard(isDark),
         SizedBox(height: 10),
 
@@ -109,9 +112,7 @@ class _SettingsPageState extends State<SettingsPage> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const ProfilePage(),
-              ),
+              MaterialPageRoute(builder: (context) => const ProfilePage()),
             ).then((_) => _loadStats()); // Recharger après modification
           },
         ),
@@ -147,14 +148,18 @@ class _SettingsPageState extends State<SettingsPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const NotificationSettingsPage(isAuthorMode: false),
+                builder: (context) =>
+                    const NotificationSettingsPage(isAuthorMode: false),
               ),
             );
           },
         ),
 
         // Section Application
-        SettingSectionHeader(title: "Application", accentColor: AppColors.primary),
+        SettingSectionHeader(
+          title: "Application",
+          accentColor: AppColors.primary,
+        ),
         SettingItemTile(
           icon: Icons.language_outlined,
           title: "Langue",
@@ -236,9 +241,7 @@ class _SettingsPageState extends State<SettingsPage> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const HelpFaqPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const HelpFaqPage()),
             );
           },
         ),
@@ -249,9 +252,7 @@ class _SettingsPageState extends State<SettingsPage> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const HelpFaqPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const HelpFaqPage()),
             );
           },
         ),
@@ -266,7 +267,8 @@ class _SettingsPageState extends State<SettingsPage> {
             AppNotifications.showPremiumDialog(
               context,
               title: "Version de l'application",
-              message: "SpaceLearn Mobile\nVersion: 1.0.0\nConstruit avec amour par Steph-business.",
+              message:
+                  "SpaceLearn Mobile\nVersion: 1.0.0\nConstruit avec amour par Steph-business.",
               confirmText: "Fermer",
               isSuccess: true,
             );
@@ -279,9 +281,7 @@ class _SettingsPageState extends State<SettingsPage> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const TermsOfUsePage(),
-              ),
+              MaterialPageRoute(builder: (context) => const TermsOfUsePage()),
             );
           },
         ),
@@ -297,7 +297,11 @@ class _SettingsPageState extends State<SettingsPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.red,
+              size: 28,
+            ),
             const SizedBox(width: 10),
             Text(
               "Supprimer mon compte",
@@ -311,17 +315,25 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         content: Text(
           "Cette action est irréversible. Votre profil, vos préférences et l'accès à votre bibliothèque seront définitivement supprimés.",
-          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text("Annuler", style: GoogleFonts.poppins(color: AppColors.textHint)),
+            child: Text(
+              "Annuler",
+              style: GoogleFonts.poppins(color: AppColors.textHint),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -330,13 +342,20 @@ class _SettingsPageState extends State<SettingsPage> {
                 AppNotifications.showPremiumDialog(
                   context,
                   title: "Demande transmise",
-                  message: "Votre demande de suppression de compte a bien été transmise.",
+                  message:
+                      "Votre demande de suppression de compte a bien été transmise.",
                   confirmText: "Fermer",
                   isSuccess: true,
                 );
               }
             },
-            child: Text("Confirmer la suppression", style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              "Confirmer la suppression",
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -351,13 +370,18 @@ class _SettingsPageState extends State<SettingsPage> {
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? AppColors.textHint : Colors.black12),
+          border: Border.all(
+            color: isDark ? AppColors.textHint : Colors.black12,
+          ),
         ),
         child: Center(
           child: SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(color: AppColors.accentInk, strokeWidth: 2),
+            child: CircularProgressIndicator(
+              color: AppColors.accentInk,
+              strokeWidth: 2,
+            ),
           ),
         ),
       );
@@ -370,7 +394,6 @@ class _SettingsPageState extends State<SettingsPage> {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isDark ? AppColors.textHint : Colors.black12),
-        
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -416,13 +439,16 @@ class _SettingsPageState extends State<SettingsPage> {
       );
       if (image == null) return;
 
-      AppNotifications.showSnackBar(context, message: "Téléversement de l'image en cours...");
+      AppNotifications.showSnackBar(
+        context,
+        message: "Téléversement de l'image en cours...",
+      );
 
       String? photoUrl;
       try {
         final bytes = await image.readAsBytes();
         final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-        
+
         await Supabase.instance.client.storage
             .from('avatars')
             .uploadBinary(
@@ -433,7 +459,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 upsert: true,
               ),
             );
-            
+
         photoUrl = Supabase.instance.client.storage
             .from('avatars')
             .getPublicUrl(fileName);
@@ -444,7 +470,11 @@ class _SettingsPageState extends State<SettingsPage> {
           final extension = image.path.split('.').last;
           photoUrl = 'data:image/$extension;base64,$base64String';
         } catch (_) {
-          AppNotifications.showSnackBar(context, message: "Erreur lors du traitement de l'image.", isError: true);
+          AppNotifications.showSnackBar(
+            context,
+            message: "Erreur lors du traitement de l'image.",
+            isError: true,
+          );
           return;
         }
       }
@@ -460,15 +490,27 @@ class _SettingsPageState extends State<SettingsPage> {
               profilePhoto: photoUrl,
             );
             if (updatedUser != null) {
-              AppNotifications.showSnackBar(context, message: "Photo de profil mise à jour !", isSuccess: true);
+              AppNotifications.showSnackBar(
+                context,
+                message: "Photo de profil mise à jour !",
+                isSuccess: true,
+              );
             } else {
-              AppNotifications.showSnackBar(context, message: "Erreur lors de la mise à jour.", isError: true);
+              AppNotifications.showSnackBar(
+                context,
+                message: "Erreur lors de la mise à jour.",
+                isError: true,
+              );
             }
           }
         }
       }
     } catch (e) {
-      AppNotifications.showSnackBar(context, message: "Erreur lors du choix de l'image.", isError: true);
+      AppNotifications.showSnackBar(
+        context,
+        message: "Erreur lors du choix de l'image.",
+        isError: true,
+      );
     }
   }
 
@@ -485,8 +527,11 @@ class _SettingsPageState extends State<SettingsPage> {
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: isDark ? AppColors.textHint : Colors.black.withOpacity(0.05)),
-              
+              border: Border.all(
+                color: isDark
+                    ? AppColors.textHint
+                    : Colors.black.withOpacity(0.05),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -501,9 +546,27 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 SizedBox(height: 16),
-                _buildThemeOption(context, "Thème Clair", ThemeMode.light, Icons.light_mode_outlined, themeProvider),
-                _buildThemeOption(context, "Thème Sombre", ThemeMode.dark, Icons.dark_mode_outlined, themeProvider),
-                _buildThemeOption(context, "Thème Système", ThemeMode.system, Icons.phone_android_outlined, themeProvider),
+                _buildThemeOption(
+                  context,
+                  "Thème Clair",
+                  ThemeMode.light,
+                  Icons.light_mode_outlined,
+                  themeProvider,
+                ),
+                _buildThemeOption(
+                  context,
+                  "Thème Sombre",
+                  ThemeMode.dark,
+                  Icons.dark_mode_outlined,
+                  themeProvider,
+                ),
+                _buildThemeOption(
+                  context,
+                  "Thème Système",
+                  ThemeMode.system,
+                  Icons.phone_android_outlined,
+                  themeProvider,
+                ),
               ],
             ),
           ),
@@ -522,7 +585,10 @@ class _SettingsPageState extends State<SettingsPage> {
     final isSelected = themeProvider.themeMode == mode;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
-      leading: Icon(icon, color: isSelected ? AppColors.primary : (AppColors.textSecondary)),
+      leading: Icon(
+        icon,
+        color: isSelected ? AppColors.primary : (AppColors.textSecondary),
+      ),
       title: Text(
         title,
         style: GoogleFonts.poppins(
@@ -530,7 +596,9 @@ class _SettingsPageState extends State<SettingsPage> {
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.accentInk) : null,
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: AppColors.accentInk)
+          : null,
       onTap: () {
         themeProvider.setThemeMode(mode);
         Navigator.of(context).pop();

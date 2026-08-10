@@ -40,7 +40,6 @@ class BookService {
       body: jsonEncode(createData),
     );
 
-
     if (response.statusCode == 201 || response.statusCode == 200) {
       final Map<String, dynamic> data = jsonDecode(response.body);
       return BookModel.fromJson(data['data'] ?? data);
@@ -81,10 +80,8 @@ class BookService {
         // Fallback: if filtered query fails with 404, try getting all books
 
         return getAllBooks(authToken: authToken);
-      } else {
-      }
-    } catch (e) {
-    }
+      } else {}
+    } catch (e) {}
 
     return [];
   }
@@ -158,10 +155,8 @@ class BookService {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data'] ?? [];
         return data.map((json) => BookModel.fromJson(json)).toList();
-      } else {
-      }
-    } catch (e) {
-    }
+      } else {}
+    } catch (e) {}
 
     return [];
   }

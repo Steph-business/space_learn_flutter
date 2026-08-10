@@ -33,7 +33,10 @@ class SettingsPageAuteur extends StatelessWidget {
       primaryAccentColor: AppColors.secondaryVariant,
       children: [
         // Section Profil
-        SettingSectionHeader(title: "Profil", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(
+          title: "Profil",
+          accentColor: AppColors.secondaryVariant,
+        ),
         SettingItemTile(
           icon: Icons.person_outline_rounded,
           title: "Informations personnelles",
@@ -41,9 +44,7 @@ class SettingsPageAuteur extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const ProfilePage(),
-              ),
+              MaterialPageRoute(builder: (context) => const ProfilePage()),
             );
           },
         ),
@@ -56,10 +57,11 @@ class SettingsPageAuteur extends StatelessWidget {
           },
         ),
 
-
-
         // Section Publication
-        SettingSectionHeader(title: "Publication", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(
+          title: "Publication",
+          accentColor: AppColors.secondaryVariant,
+        ),
         SettingItemTile(
           icon: Icons.publish_outlined,
           title: "Paramètres de publication",
@@ -80,15 +82,16 @@ class SettingsPageAuteur extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const SalesReportPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const SalesReportPage()),
             );
           },
         ),
 
         // Section Application
-        SettingSectionHeader(title: "Application", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(
+          title: "Application",
+          accentColor: AppColors.secondaryVariant,
+        ),
         SettingItemTile(
           icon: Icons.language_outlined,
           title: "Langue",
@@ -112,7 +115,10 @@ class SettingsPageAuteur extends StatelessWidget {
         ),
 
         // Section Sécurité
-        SettingSectionHeader(title: "Sécurité", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(
+          title: "Sécurité",
+          accentColor: AppColors.secondaryVariant,
+        ),
         SettingItemTile(
           icon: Icons.lock_outline,
           title: "Mot de passe",
@@ -141,7 +147,10 @@ class SettingsPageAuteur extends StatelessWidget {
         ),
 
         // Section Support
-        SettingSectionHeader(title: "Support", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(
+          title: "Support",
+          accentColor: AppColors.secondaryVariant,
+        ),
         SettingItemTile(
           icon: Icons.help_outline,
           title: "Aide & FAQ",
@@ -149,9 +158,7 @@ class SettingsPageAuteur extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const HelpFaqPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const HelpFaqPage()),
             );
           },
         ),
@@ -162,15 +169,16 @@ class SettingsPageAuteur extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const HelpFaqPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const HelpFaqPage()),
             );
           },
         ),
 
         // Section À propos
-        SettingSectionHeader(title: "À propos", accentColor: AppColors.secondaryVariant),
+        SettingSectionHeader(
+          title: "À propos",
+          accentColor: AppColors.secondaryVariant,
+        ),
         SettingItemTile(
           icon: Icons.info_outline,
           title: "Version de l'application",
@@ -179,7 +187,8 @@ class SettingsPageAuteur extends StatelessWidget {
             AppNotifications.showPremiumDialog(
               context,
               title: "Version de l'application",
-              message: "SpaceLearn Mobile (Auteur)\nVersion: 1.0.0\nConstruit avec amour par Steph-business.",
+              message:
+                  "SpaceLearn Mobile (Auteur)\nVersion: 1.0.0\nConstruit avec amour par Steph-business.",
               confirmText: "Fermer",
               isSuccess: true,
             );
@@ -192,9 +201,7 @@ class SettingsPageAuteur extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const TermsOfUsePage(),
-              ),
+              MaterialPageRoute(builder: (context) => const TermsOfUsePage()),
             );
           },
         ),
@@ -211,13 +218,16 @@ class SettingsPageAuteur extends StatelessWidget {
       );
       if (image == null) return;
 
-      AppNotifications.showSnackBar(context, message: "Téléversement de l'image en cours...");
+      AppNotifications.showSnackBar(
+        context,
+        message: "Téléversement de l'image en cours...",
+      );
 
       String? photoUrl;
       try {
         final bytes = await image.readAsBytes();
         final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-        
+
         await Supabase.instance.client.storage
             .from('avatars')
             .uploadBinary(
@@ -228,7 +238,7 @@ class SettingsPageAuteur extends StatelessWidget {
                 upsert: true,
               ),
             );
-            
+
         photoUrl = Supabase.instance.client.storage
             .from('avatars')
             .getPublicUrl(fileName);
@@ -239,7 +249,11 @@ class SettingsPageAuteur extends StatelessWidget {
           final extension = image.path.split('.').last;
           photoUrl = 'data:image/$extension;base64,$base64String';
         } catch (_) {
-          AppNotifications.showSnackBar(context, message: "Erreur lors du traitement de l'image.", isError: true);
+          AppNotifications.showSnackBar(
+            context,
+            message: "Erreur lors du traitement de l'image.",
+            isError: true,
+          );
           return;
         }
       }
@@ -255,15 +269,27 @@ class SettingsPageAuteur extends StatelessWidget {
               profilePhoto: photoUrl,
             );
             if (updatedUser != null) {
-              AppNotifications.showSnackBar(context, message: "Photo de profil mise à jour !", isSuccess: true);
+              AppNotifications.showSnackBar(
+                context,
+                message: "Photo de profil mise à jour !",
+                isSuccess: true,
+              );
             } else {
-              AppNotifications.showSnackBar(context, message: "Erreur lors de la mise à jour.", isError: true);
+              AppNotifications.showSnackBar(
+                context,
+                message: "Erreur lors de la mise à jour.",
+                isError: true,
+              );
             }
           }
         }
       }
     } catch (e) {
-      AppNotifications.showSnackBar(context, message: "Erreur lors du choix de l'image.", isError: true);
+      AppNotifications.showSnackBar(
+        context,
+        message: "Erreur lors du choix de l'image.",
+        isError: true,
+      );
     }
   }
 
@@ -280,8 +306,11 @@ class SettingsPageAuteur extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: isDark ? AppColors.textHint : Colors.black.withOpacity(0.05)),
-              
+              border: Border.all(
+                color: isDark
+                    ? AppColors.textHint
+                    : Colors.black.withOpacity(0.05),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -296,9 +325,27 @@ class SettingsPageAuteur extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 16),
-                _buildThemeOption(context, "Thème Clair", ThemeMode.light, Icons.light_mode_outlined, themeProvider),
-                _buildThemeOption(context, "Thème Sombre", ThemeMode.dark, Icons.dark_mode_outlined, themeProvider),
-                _buildThemeOption(context, "Thème Système", ThemeMode.system, Icons.phone_android_outlined, themeProvider),
+                _buildThemeOption(
+                  context,
+                  "Thème Clair",
+                  ThemeMode.light,
+                  Icons.light_mode_outlined,
+                  themeProvider,
+                ),
+                _buildThemeOption(
+                  context,
+                  "Thème Sombre",
+                  ThemeMode.dark,
+                  Icons.dark_mode_outlined,
+                  themeProvider,
+                ),
+                _buildThemeOption(
+                  context,
+                  "Thème Système",
+                  ThemeMode.system,
+                  Icons.phone_android_outlined,
+                  themeProvider,
+                ),
               ],
             ),
           ),
@@ -317,7 +364,10 @@ class SettingsPageAuteur extends StatelessWidget {
     final isSelected = themeProvider.themeMode == mode;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
-      leading: Icon(icon, color: isSelected ? AppColors.primary : (AppColors.textSecondary)),
+      leading: Icon(
+        icon,
+        color: isSelected ? AppColors.primary : (AppColors.textSecondary),
+      ),
       title: Text(
         title,
         style: GoogleFonts.poppins(
@@ -325,7 +375,9 @@ class SettingsPageAuteur extends StatelessWidget {
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.accentInk) : null,
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: AppColors.accentInk)
+          : null,
       onTap: () {
         themeProvider.setThemeMode(mode);
         Navigator.of(context).pop();

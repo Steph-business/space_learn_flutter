@@ -29,14 +29,17 @@ class ChapitreModel {
       livreId: (json['livre_id'] ?? json['LivreID'] ?? '').toString(),
       numero: (json['numero'] ?? json['Numero'] ?? 0) is int
           ? json['numero'] ?? json['Numero'] ?? 0
-          : int.tryParse((json['numero'] ?? json['Numero'] ?? 0).toString()) ?? 0,
+          : int.tryParse((json['numero'] ?? json['Numero'] ?? 0).toString()) ??
+                0,
       titre: json['titre'] ?? json['Titre'] ?? '',
       description: json['description'] ?? json['Description'] ?? '',
       estGratuit: json['est_gratuit'] ?? json['EstGratuit'] ?? false,
       pageDepart: (json['page_depart'] ?? json['PageDepart'] ?? 0) is int
           ? json['page_depart'] ?? json['PageDepart'] ?? 0
           : int.tryParse((json['page_depart'] ?? 0).toString()) ?? 0,
-      creeLe: json['cree_le'] != null ? DateTime.tryParse(json['cree_le']) : null,
+      creeLe: json['cree_le'] != null
+          ? DateTime.tryParse(json['cree_le'])
+          : null,
     );
   }
 

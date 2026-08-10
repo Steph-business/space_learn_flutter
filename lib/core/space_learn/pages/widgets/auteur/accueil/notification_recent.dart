@@ -277,7 +277,9 @@ class _NotificationCardFromModel extends StatelessWidget {
                                   timeAgo,
                                   style: GoogleFonts.poppins(
                                     fontSize: 10,
-                                    color: AppColors.textPrimary.withOpacity(0.4),
+                                    color: AppColors.textPrimary.withOpacity(
+                                      0.4,
+                                    ),
                                   ),
                                 ),
                               ],

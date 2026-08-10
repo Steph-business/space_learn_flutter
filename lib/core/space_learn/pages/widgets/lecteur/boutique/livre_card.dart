@@ -26,7 +26,6 @@ class LivreCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardBackground, // Dark card background
           borderRadius: BorderRadius.circular(20),
-          
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

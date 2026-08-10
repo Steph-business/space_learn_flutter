@@ -60,15 +60,19 @@ class _BadgesPageState extends State<BadgesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.emoji_events_outlined, size: 80, color: AppColors.textHint),
-            SizedBox(height: 16),
-            Text(
-              "Aucun badge débloqué",
-              style: AppTextStyles.bodyFaded16,
+            Icon(
+              Icons.emoji_events_outlined,
+              size: 80,
+              color: AppColors.textHint,
             ),
+            SizedBox(height: 16),
+            Text("Aucun badge débloqué", style: AppTextStyles.bodyFaded16),
             Text(
               "Continuez à lire pour en obtenir !",
-              style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 12),
+              style: GoogleFonts.poppins(
+                color: AppColors.textHint,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -236,7 +240,11 @@ class _BadgesPageState extends State<BadgesPage> {
                   color: AppColors.success,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.check, size: 10, color: AppColors.textPrimary),
+                child: Icon(
+                  Icons.check,
+                  size: 10,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
         ],

@@ -118,7 +118,10 @@ class CinetpayResultPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildDetailRow('Livre', book['titre']?.toString() ?? 'Livre inconnu'),
+                    _buildDetailRow(
+                      'Livre',
+                      book['titre']?.toString() ?? 'Livre inconnu',
+                    ),
                     SizedBox(height: 8),
                     _buildDetailRow(
                       'Montant',

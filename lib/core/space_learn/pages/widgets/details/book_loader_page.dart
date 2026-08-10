@@ -39,8 +39,10 @@ class _BookLoaderPageState extends State<BookLoaderPage> {
   Future<void> _charger() async {
     try {
       final token = await TokenStorage.getToken();
-      final BookModel livre =
-          await _bookService.getBookById(widget.livreId, authToken: token);
+      final BookModel livre = await _bookService.getBookById(
+        widget.livreId,
+        authToken: token,
+      );
 
       // Savoir si le lecteur possède déjà le livre change ce que la fiche
       // propose : lire, ou acheter.
@@ -48,9 +50,11 @@ class _BookLoaderPageState extends State<BookLoaderPage> {
       if (token != null) {
         try {
           final bibliotheque = await _libraryService.getUserLibrary(token);
-          possede = bibliotheque.any((item) =>
-              item.livreId == livre.id ||
-              (item.livre != null && item.livre!.id == livre.id));
+          possede = bibliotheque.any(
+            (item) =>
+                item.livreId == livre.id ||
+                (item.livre != null && item.livre!.id == livre.id),
+          );
         } catch (_) {
           // Bibliothèque indisponible : on affiche la fiche en mode non possédé
           // plutôt que de bloquer l'ouverture du lien.
@@ -89,8 +93,11 @@ class _BookLoaderPageState extends State<BookLoaderPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.menu_book_outlined,
-                        size: 48, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.menu_book_outlined,
+                      size: 48,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(height: AppDimensions.spaceLg),
                     Text(
                       _erreur!,

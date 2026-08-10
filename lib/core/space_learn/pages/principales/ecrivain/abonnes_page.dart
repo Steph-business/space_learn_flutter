@@ -57,10 +57,7 @@ class _AbonnesPageState extends State<AbonnesPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(
-          "MES ABONNÉS",
-          style: AppTextStyles.subtitle,
-        ),
+        title: Text("MES ABONNÉS", style: AppTextStyles.subtitle),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new,
@@ -72,7 +69,9 @@ class _AbonnesPageState extends State<AbonnesPage> {
       ),
       body: _isLoading
           ? Center(
-              child: CircularProgressIndicator(color: AppColors.secondaryVariant),
+              child: CircularProgressIndicator(
+                color: AppColors.secondaryVariant,
+              ),
             )
           : _error != null
           ? Center(
@@ -109,7 +108,10 @@ class _AbonnesPageState extends State<AbonnesPage> {
           SizedBox(height: 16),
           Text(
             "Vous n'avez pas encore d'abonnés.",
-            style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 16),
+            style: GoogleFonts.poppins(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+            ),
           ),
           SizedBox(height: 8),
           Text(
@@ -147,7 +149,10 @@ class _AbonnesPageState extends State<AbonnesPage> {
                       height: 40,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return Icon(Icons.person, color: AppColors.secondaryVariant);
+                        return Icon(
+                          Icons.person,
+                          color: AppColors.secondaryVariant,
+                        );
                       },
                     ),
                   )

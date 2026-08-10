@@ -92,10 +92,7 @@ class MainNavBarState extends State<MainNavBar> {
       backgroundColor: AppColors.scaffoldBackground,
       body: _getPage(_selectedIndex),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          
-        ),
+        decoration: BoxDecoration(color: AppColors.cardBackground),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           currentIndex: _selectedIndex,

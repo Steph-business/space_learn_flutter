@@ -25,12 +25,7 @@ class ProfileImageHelper {
     BoxFit fit = BoxFit.cover,
   }) {
     if (url == null || url.isEmpty) {
-      return Center(
-        child: Text(
-          fallbackInitial,
-          style: textStyle,
-        ),
-      );
+      return Center(child: Text(fallbackInitial, style: textStyle));
     }
 
     if (url.startsWith('data:image')) {
@@ -42,20 +37,11 @@ class ProfileImageHelper {
           width: width,
           height: height,
           fit: fit,
-          errorBuilder: (context, error, stackTrace) => Center(
-            child: Text(
-              fallbackInitial,
-              style: textStyle,
-            ),
-          ),
+          errorBuilder: (context, error, stackTrace) =>
+              Center(child: Text(fallbackInitial, style: textStyle)),
         );
       } catch (_) {
-        return Center(
-          child: Text(
-            fallbackInitial,
-            style: textStyle,
-          ),
-        );
+        return Center(child: Text(fallbackInitial, style: textStyle));
       }
     }
 
@@ -64,12 +50,8 @@ class ProfileImageHelper {
       width: width,
       height: height,
       fit: fit,
-      errorBuilder: (context, error, stackTrace) => Center(
-        child: Text(
-          fallbackInitial,
-          style: textStyle,
-        ),
-      ),
+      errorBuilder: (context, error, stackTrace) =>
+          Center(child: Text(fallbackInitial, style: textStyle)),
     );
   }
 }

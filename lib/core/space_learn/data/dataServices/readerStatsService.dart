@@ -9,7 +9,8 @@ import '../model/bookReaderStatsModel.dart';
 class ReaderStatsService {
   final http.Client client;
 
-  ReaderStatsService({http.Client? client}) : client = client ?? ApiClient.instance;
+  ReaderStatsService({http.Client? client})
+    : client = client ?? ApiClient.instance;
 
   Future<ReaderStatsModel> getReaderStats(String userId) async {
     // ... existing global stats code ...

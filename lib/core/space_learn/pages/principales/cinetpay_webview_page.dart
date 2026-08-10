@@ -141,7 +141,10 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
             ),
             Text(
               widget.book['titre']?.toString() ?? 'Livre inconnu',
-              style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 11),
+              style: GoogleFonts.poppins(
+                color: AppColors.textHint,
+                fontSize: 11,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -208,7 +211,9 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
               decoration: BoxDecoration(
                 color: AppColors.scaffoldBackground.withValues(alpha: 0.95),
                 border: Border(
-                  top: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.08)),
+                  top: BorderSide(
+                    color: AppColors.textPrimary.withValues(alpha: 0.08),
+                  ),
                 ),
               ),
               child: Row(
@@ -259,7 +264,10 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
         ),
         content: Text(
           'Êtes-vous sûr de vouloir annuler ce paiement ? Votre progression de paiement sera perdue.',
-          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
         ),
         actions: [
           TextButton(

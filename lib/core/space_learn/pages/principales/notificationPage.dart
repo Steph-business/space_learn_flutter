@@ -55,7 +55,10 @@ class _NotificationPageState extends State<NotificationPage> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.chevron_left, color: AppColors.textPrimary),
+                    icon: Icon(
+                      Icons.chevron_left,
+                      color: AppColors.textPrimary,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
@@ -71,10 +74,7 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               actions: [
                 PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: AppColors.accentInk,
-                  ),
+                  icon: Icon(Icons.more_vert, color: AppColors.accentInk),
                   offset: Offset(0, 45),
                   color: AppColors.cardBackground,
                   shape: RoundedRectangleBorder(
@@ -82,7 +82,8 @@ class _NotificationPageState extends State<NotificationPage> {
                   ),
                   onSelected: (value) async {
                     if (value == 'mark_all') {
-                      final notifProvider = context.read<NotificationProvider>();
+                      final notifProvider = context
+                          .read<NotificationProvider>();
                       final token = await TokenStorage.getToken();
                       if (token != null) {
                         notifProvider.markAllAsRead(token);

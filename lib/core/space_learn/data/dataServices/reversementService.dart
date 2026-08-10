@@ -36,7 +36,7 @@ class ReversementService {
   final http.Client client;
 
   ReversementService({http.Client? client})
-      : client = client ?? ApiClient.instance;
+    : client = client ?? ApiClient.instance;
 
   // Déclarées ici plutôt que dans ApiRoutes pour ne pas toucher un fichier en
   // cours de modification ; à déplacer dans ApiRoutes à l'occasion.
@@ -46,9 +46,9 @@ class ReversementService {
   static String get _infosPaiement => '$_base/me/infos-paiement';
 
   Map<String, String> _headers(String token, {bool json = false}) => {
-        if (json) 'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
+    if (json) 'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
 
   Never _erreur(http.Response reponse, String defaut) {
     String message = defaut;
@@ -60,9 +60,13 @@ class ReversementService {
   }
 
   /// Solde, historique des ventes créditées et demandes de retrait.
-  Future<Portefeuille> getPortefeuille(String authToken, {int limit = 50}) async {
-    final uri = Uri.parse(_portefeuille)
-        .replace(queryParameters: {'limit': '$limit'});
+  Future<Portefeuille> getPortefeuille(
+    String authToken, {
+    int limit = 50,
+  }) async {
+    final uri = Uri.parse(
+      _portefeuille,
+    ).replace(queryParameters: {'limit': '$limit'});
 
     final reponse = await client.get(uri, headers: _headers(authToken));
     if (reponse.statusCode != 200) {
@@ -90,8 +94,9 @@ class ReversementService {
       _erreur(reponse, 'Échec de la demande de retrait');
     }
 
-    final data = (jsonDecode(reponse.body) as Map<String, dynamic>)['data']
-        as Map<String, dynamic>;
+    final data =
+        (jsonDecode(reponse.body) as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
     return (
       RetraitModel.fromJson(data['retrait'] as Map<String, dynamic>),
       SoldeAuteur.fromJson(data['solde'] as Map<String, dynamic>),
@@ -112,8 +117,9 @@ class ReversementService {
       _erreur(reponse, "Échec de l'annulation du retrait");
     }
 
-    final data = (jsonDecode(reponse.body) as Map<String, dynamic>)['data']
-        as Map<String, dynamic>;
+    final data =
+        (jsonDecode(reponse.body) as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
     return SoldeAuteur.fromJson(data['solde'] as Map<String, dynamic>);
   }
 
@@ -147,7 +153,8 @@ class ReversementService {
       body: jsonEncode({
         'prefix': prefix,
         'telephone': telephone,
-        if (nomComplet != null && nomComplet.isNotEmpty) 'nom_complet': nomComplet,
+        if (nomComplet != null && nomComplet.isNotEmpty)
+          'nom_complet': nomComplet,
         if (email != null && email.isNotEmpty) 'email': email,
       }),
     );
@@ -156,8 +163,9 @@ class ReversementService {
       _erreur(reponse, "Échec de l'enregistrement du numéro");
     }
 
-    final data = (jsonDecode(reponse.body) as Map<String, dynamic>)['data']
-        as Map<String, dynamic>;
+    final data =
+        (jsonDecode(reponse.body) as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
     return InfosPaiementModel.fromJson(data);
   }
 }

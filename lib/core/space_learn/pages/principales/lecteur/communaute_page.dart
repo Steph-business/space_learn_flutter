@@ -59,8 +59,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
       List<Evenement> evts = [];
       try {
         evts = await _evenementService.getGlobalEvenements(token);
-      } catch (e) {
-      }
+      } catch (e) {}
 
       int totalCafeMsgs = 0;
       try {
@@ -72,8 +71,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
               : d.messages.length;
           totalCafeMsgs += count;
         }
-      } catch (e) {
-      }
+      } catch (e) {}
 
       // Filtrer les entrées sans livre valide
       final validItems = libraryItems
@@ -284,7 +282,6 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
             color: AppColors.accentInk.withOpacity(0.3),
             width: 1.5,
           ),
-          
         ),
         child: Row(
           children: [
@@ -294,11 +291,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                 color: AppColors.primaryLight.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Iconsax.coffee,
-                color: AppColors.accentInk,
-                size: 30,
-              ),
+              child: Icon(Iconsax.coffee, color: AppColors.accentInk, size: 30),
             ),
             SizedBox(width: 16),
             Expanded(
@@ -422,12 +415,13 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                   SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Iconsax.message, size: 14, color: AppColors.textSecondary),
-                      SizedBox(width: 4),
-                      Text(
-                        "$msgCount messages",
-                        style: AppTextStyles.grey12,
+                      Icon(
+                        Iconsax.message,
+                        size: 14,
+                        color: AppColors.textSecondary,
                       ),
+                      SizedBox(width: 4),
+                      Text("$msgCount messages", style: AppTextStyles.grey12),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(

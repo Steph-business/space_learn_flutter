@@ -7,7 +7,8 @@ import '../model/bookmark_model.dart';
 class BookmarkService {
   final http.Client client;
 
-  BookmarkService({http.Client? client}) : client = client ?? ApiClient.instance;
+  BookmarkService({http.Client? client})
+    : client = client ?? ApiClient.instance;
 
   Future<BookmarkModel> createBookmark({
     required String livreId,

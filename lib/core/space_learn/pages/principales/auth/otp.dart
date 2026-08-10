@@ -14,8 +14,10 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart' as lecteurHome;
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart' as ecrivainHome;
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
+    as lecteurHome;
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
+    as ecrivainHome;
 
 class OtpPage extends StatefulWidget {
   final String email;
@@ -49,11 +51,15 @@ class _OtpPageState extends State<OtpPage> {
 
     try {
       if (widget.isFromRegistration) {
-        final tokenUser = await _authService.verifyRegistration(widget.email, otp);
+        final tokenUser = await _authService.verifyRegistration(
+          widget.email,
+          otp,
+        );
         if (tokenUser != null && mounted) {
           AppNotifications.showSnackBar(
             context,
-            message: "Inscription validée avec succès ! Connectez-vous pour compléter votre profil.",
+            message:
+                "Inscription validée avec succès ! Connectez-vous pour compléter votre profil.",
             isSuccess: true,
           );
 
@@ -237,10 +243,7 @@ class _OtpPageState extends State<OtpPage> {
                 SizedBox(height: 20),
 
                 // Title
-                Text(
-                  'Vérification',
-                  style: AppTextStyles.pageTitle,
-                ),
+                Text('Vérification', style: AppTextStyles.pageTitle),
                 SizedBox(height: 8),
 
                 Text(

@@ -15,7 +15,6 @@ class LibraryService {
     String acquisVia,
     String authToken,
   ) async {
-
     final uri = Uri.parse(ApiRoutes.library);
     try {
       final response = await client
@@ -36,7 +35,6 @@ class LibraryService {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return LibraryModel.fromJson(responseData['data'] ?? responseData);
       } else {
-
         throw Exception('Failed to add to library: ${response.statusCode}');
       }
     } catch (e) {

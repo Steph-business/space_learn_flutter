@@ -59,8 +59,15 @@ class RecommendationService {
     }
   }
 
-  Future<void> sendFeedback(String recommendationId, String action, String authToken) async {
-    final url = ApiRoutes.recommendationFeedback.replaceFirst(':id', recommendationId);
+  Future<void> sendFeedback(
+    String recommendationId,
+    String action,
+    String authToken,
+  ) async {
+    final url = ApiRoutes.recommendationFeedback.replaceFirst(
+      ':id',
+      recommendationId,
+    );
     final response = await client.post(
       Uri.parse(url),
       headers: {

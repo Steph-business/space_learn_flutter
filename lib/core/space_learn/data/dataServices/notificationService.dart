@@ -21,7 +21,8 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  NotificationService({http.Client? client}) : client = client ?? ApiClient.instance;
+  NotificationService({http.Client? client})
+    : client = client ?? ApiClient.instance;
 
   static void initializeLocalNotifications() {
     const initializationSettings = InitializationSettings(
@@ -37,8 +38,7 @@ class NotificationService {
             final Map<String, dynamic> data = jsonDecode(response.payload!);
             final notif = NotificationModel.fromJson(data);
             handleNotificationTap(notif);
-          } catch (e) {
-          }
+          } catch (e) {}
         }
       },
     );
@@ -313,8 +313,7 @@ class NotificationService {
                     final model = NotificationModel.fromJson(payload);
                     if (!controller.isClosed) controller.add(model);
                   }
-                } catch (e) {
-                }
+                } catch (e) {}
                 buffer.clear();
               }
             } else if (line.startsWith('data:')) {
@@ -324,8 +323,7 @@ class NotificationService {
             }
           }
         } catch (e) {
-          if (e is! SocketException && e is! HttpException) {
-          }
+          if (e is! SocketException && e is! HttpException) {}
         } finally {
           try {
             request?.abort();

@@ -10,7 +10,9 @@ class HelpFaqPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark
+          ? AppColors.scaffoldBackground
+          : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -71,14 +73,33 @@ class HelpFaqPage extends StatelessWidget {
           SizedBox(height: 12),
           Card(
             color: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: ListTile(
-              leading: Icon(Icons.mail_outline, color: AppColors.accentInk, size: 28),
-              title: Text("Contacter l'assistance", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-              subtitle: Text("Nous vous répondrons dans les plus brefs délais.", style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+              leading: Icon(
+                Icons.mail_outline,
+                color: AppColors.accentInk,
+                size: 28,
+              ),
+              title: Text(
+                "Contacter l'assistance",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              subtitle: Text(
+                "Nous vous répondrons dans les plus brefs délais.",
+                style: GoogleFonts.poppins(color: AppColors.textSecondary),
+              ),
               trailing: Icon(Icons.arrow_forward_ios, size: 14),
               onTap: () {
-                AppNotifications.showSnackBar(context, message: "Ouverture de votre application de messagerie...", isSuccess: true);
+                AppNotifications.showSnackBar(
+                  context,
+                  message: "Ouverture de votre application de messagerie...",
+                  isSuccess: true,
+                );
               },
             ),
           ),

@@ -39,9 +39,7 @@ class TopLivresSection extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Top Livres", style: AppTextStyles.subtitle),
-            ],
+            children: [Text("Top Livres", style: AppTextStyles.subtitle)],
           ),
           SizedBox(height: 16),
           if (isLoading)
@@ -79,7 +77,10 @@ class TopLivresSection extends StatelessWidget {
                 HomePageAuteur.navKey.currentState?.setIndex(1);
               },
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
               ),
               child: Text(
                 "Voir tous mes livres",
@@ -98,8 +99,7 @@ class TopLivresSection extends StatelessWidget {
 
   Widget _buildItem(BuildContext context, String rank, BookModel book) {
     final views = book.telechargements.toString();
-    final priceDisplay =
-        book.prix == 0 ? "Gratuit" : "${book.prix} FCFA";
+    final priceDisplay = book.prix == 0 ? "Gratuit" : "${book.prix} FCFA";
 
     return Row(
       children: [
@@ -114,7 +114,9 @@ class TopLivresSection extends StatelessWidget {
             width: 30,
             height: 38,
             color: AppColors.textPrimary.withOpacity(0.05),
-            child: book.imageCouverture != null && !book.imageCouverture!.contains('example.com')
+            child:
+                book.imageCouverture != null &&
+                    !book.imageCouverture!.contains('example.com')
                 ? Image.network(
                     book.imageCouverture!,
                     fit: BoxFit.cover,
@@ -142,7 +144,10 @@ class TopLivresSection extends StatelessWidget {
               ),
               Text(
                 "$views lectures",
-                style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 11),
+                style: GoogleFonts.poppins(
+                  color: AppColors.textHint,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
@@ -187,10 +192,12 @@ class CommentairesRecentsSection extends StatefulWidget {
   const CommentairesRecentsSection({super.key, required this.books});
 
   @override
-  State<CommentairesRecentsSection> createState() => _CommentairesRecentsSectionState();
+  State<CommentairesRecentsSection> createState() =>
+      _CommentairesRecentsSectionState();
 }
 
-class _CommentairesRecentsSectionState extends State<CommentairesRecentsSection> {
+class _CommentairesRecentsSectionState
+    extends State<CommentairesRecentsSection> {
   final ReviewService _reviewService = ReviewService();
   List<ReviewModel> _comments = [];
   bool _isLoading = true;
@@ -222,9 +229,11 @@ class _CommentairesRecentsSectionState extends State<CommentairesRecentsSection>
 
     try {
       final List<ReviewModel> allReviews = [];
-      final futures = widget.books.map((book) => _reviewService.getBookReviews(book.id));
+      final futures = widget.books.map(
+        (book) => _reviewService.getBookReviews(book.id),
+      );
       final results = await Future.wait(futures);
-      
+
       for (final list in results) {
         allReviews.addAll(list);
       }
@@ -268,7 +277,9 @@ class _CommentairesRecentsSectionState extends State<CommentairesRecentsSection>
                 padding: EdgeInsets.all(20),
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondaryVariant),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.secondaryVariant,
+                  ),
                 ),
               ),
             )
@@ -278,35 +289,47 @@ class _CommentairesRecentsSectionState extends State<CommentairesRecentsSection>
                 padding: EdgeInsets.all(20),
                 child: Text(
                   "Aucun commentaire récent",
-                  style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 13),
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textHint,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             )
           else
-            ...List.generate(
-              _comments.length > 5 ? 5 : _comments.length,
-              (index) {
-                final comment = _comments[index];
-                final book = widget.books.firstWhere(
-                  (b) => b.id == comment.livreId,
-                  orElse: () => BookModel(id: '', auteurId: '', titre: '', description: '', format: '', prix: 0, stock: 0, statut: ''),
-                );
-                return Column(
-                  children: [
-                    _buildComment(comment, book.titre),
-                    if (index < (_comments.length > 5 ? 5 : _comments.length) - 1)
-                      Divider(color: AppColors.textHint, height: 24),
-                  ],
-                );
-              },
-            ),
+            ...List.generate(_comments.length > 5 ? 5 : _comments.length, (
+              index,
+            ) {
+              final comment = _comments[index];
+              final book = widget.books.firstWhere(
+                (b) => b.id == comment.livreId,
+                orElse: () => BookModel(
+                  id: '',
+                  auteurId: '',
+                  titre: '',
+                  description: '',
+                  format: '',
+                  prix: 0,
+                  stock: 0,
+                  statut: '',
+                ),
+              );
+              return Column(
+                children: [
+                  _buildComment(comment, book.titre),
+                  if (index < (_comments.length > 5 ? 5 : _comments.length) - 1)
+                    Divider(color: AppColors.textHint, height: 24),
+                ],
+              );
+            }),
         ],
       ),
     );
   }
 
   Widget _buildComment(ReviewModel comment, String bookTitle) {
-    final author = comment.nomUtilisateur != null && comment.nomUtilisateur!.isNotEmpty
+    final author =
+        comment.nomUtilisateur != null && comment.nomUtilisateur!.isNotEmpty
         ? comment.nomUtilisateur!
         : "Lecteur";
     final text = comment.commentaire ?? "";
@@ -347,7 +370,10 @@ class _CommentairesRecentsSectionState extends State<CommentairesRecentsSection>
               SizedBox(height: 2),
               RichText(
                 text: TextSpan(
-                  style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 12),
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textHint,
+                    fontSize: 12,
+                  ),
                   children: [
                     TextSpan(text: author),
                     if (bookTitle.isNotEmpty) ...[
@@ -436,19 +462,16 @@ class DerniersAbonnesSection extends StatelessWidget {
               ),
             )
           else
-            ...List.generate(
-              recentFollowers.length,
-              (index) {
-                final follower = recentFollowers[index];
-                return Column(
-                  children: [
-                    _buildFollowerItem(follower),
-                    if (index < recentFollowers.length - 1)
-                      Divider(color: AppColors.textHint, height: 24),
-                  ],
-                );
-              },
-            ),
+            ...List.generate(recentFollowers.length, (index) {
+              final follower = recentFollowers[index];
+              return Column(
+                children: [
+                  _buildFollowerItem(follower),
+                  if (index < recentFollowers.length - 1)
+                    Divider(color: AppColors.textHint, height: 24),
+                ],
+              );
+            }),
         ],
       ),
     );
@@ -472,7 +495,11 @@ class DerniersAbonnesSection extends StatelessWidget {
                     height: 36,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return Icon(Icons.person, color: AppColors.textHint, size: 18);
+                      return Icon(
+                        Icons.person,
+                        color: AppColors.textHint,
+                        size: 18,
+                      );
                     },
                   ),
                 )
@@ -501,7 +528,11 @@ class DerniersAbonnesSection extends StatelessWidget {
             ],
           ),
         ),
-        Icon(Icons.person_add_alt_1, color: AppColors.secondaryVariant, size: 16),
+        Icon(
+          Icons.person_add_alt_1,
+          color: AppColors.secondaryVariant,
+          size: 16,
+        ),
       ],
     );
   }

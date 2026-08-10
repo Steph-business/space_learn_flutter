@@ -7,7 +7,8 @@ import '../model/categorie.dart';
 class CategorieService {
   final http.Client client;
 
-  CategorieService({http.Client? client}) : client = client ?? ApiClient.instance;
+  CategorieService({http.Client? client})
+    : client = client ?? ApiClient.instance;
 
   Future<List<Categorie>> getCategories() async {
     final response = await client.get(Uri.parse(ApiRoutes.categories));

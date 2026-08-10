@@ -7,7 +7,8 @@ import '../model/chapitre_model.dart';
 class ChapitreService {
   final http.Client client;
 
-  ChapitreService({http.Client? client}) : client = client ?? ApiClient.instance;
+  ChapitreService({http.Client? client})
+    : client = client ?? ApiClient.instance;
 
   /// Récupère les chapitres d'un livre depuis le backend.
   Future<List<ChapitreModel>> getChapitres(String livreId) async {

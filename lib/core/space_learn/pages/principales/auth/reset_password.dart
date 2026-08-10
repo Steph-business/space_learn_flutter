@@ -84,7 +84,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         AppNotifications.showPremiumDialog(
           context,
           title: "Mot de passe réinitialisé",
-          message: "Votre mot de passe a été modifié avec succès ! Vous pouvez maintenant vous connecter.",
+          message:
+              "Votre mot de passe a été modifié avec succès ! Vous pouvez maintenant vous connecter.",
           confirmText: "Se connecter",
           isSuccess: true,
           onConfirm: () {
@@ -183,10 +184,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 SizedBox(height: 20),
 
                 // Title
-                Text(
-                  'Nouveau mot de passe',
-                  style: AppTextStyles.pageTitle,
-                ),
+                Text('Nouveau mot de passe', style: AppTextStyles.pageTitle),
                 SizedBox(height: 8),
 
                 Text(
@@ -206,8 +204,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
-                    
+                    border: Border.all(
+                      color: AppColors.textPrimary.withOpacity(0.05),
+                    ),
                   ),
                   child: Column(
                     children: [

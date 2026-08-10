@@ -113,14 +113,19 @@ class _RegisterPageState extends State<RegisterPage> {
         AppNotifications.showPremiumDialog(
           context,
           title: "Inscription réussie !",
-          message: "Votre compte a été créé avec succès. Un code OTP a été envoyé à l'adresse $email pour valider votre compte.",
+          message:
+              "Votre compte a été créé avec succès. Un code OTP a été envoyé à l'adresse $email pour valider votre compte.",
           confirmText: "Saisir le code",
           isSuccess: true,
           onConfirm: () {
             if (mounted) {
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
-                  builder: (_) => OtpPage(email: email, password: password, isFromRegistration: true),
+                  builder: (_) => OtpPage(
+                    email: email,
+                    password: password,
+                    isFromRegistration: true,
+                  ),
                 ),
                 (route) => false,
               );
@@ -140,7 +145,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
       AppNotifications.showSnackBar(
         context,
-        message: "Erreur d'inscription: ${e.toString().replaceAll("Exception: ", "")}",
+        message:
+            "Erreur d'inscription: ${e.toString().replaceAll("Exception: ", "")}",
         isError: true,
       );
     } finally {
@@ -198,20 +204,20 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                  SizedBox(height: 12),
+                SizedBox(height: 12),
 
-                  // Brand Logo
-                  Image.asset(
-                    'asset/logo_space_learn.png',
-                    width: 110,
-                    height: 110,
-                    fit: BoxFit.contain,
-                  ),
+                // Brand Logo
+                Image.asset(
+                  'asset/logo_space_learn.png',
+                  width: 110,
+                  height: 110,
+                  fit: BoxFit.contain,
+                ),
 
-                  SizedBox(height: 12),
+                SizedBox(height: 12),
 
-                  // Title
-                  Text(
+                // Title
+                Text(
                   'Inscription',
                   style: GoogleFonts.poppins(
                     fontSize: 16,
@@ -263,8 +269,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
-                    
+                    border: Border.all(
+                      color: AppColors.textPrimary.withOpacity(0.05),
+                    ),
                   ),
                   child: Column(
                     children: [
@@ -426,10 +433,7 @@ class _RegisterPageState extends State<RegisterPage> {
         children: [
           SizedBox(
             width: 100,
-            child: Text(
-              label,
-              style: AppTextStyles.cardTitleSmallSemiBold,
-            ),
+            child: Text(label, style: AppTextStyles.cardTitleSmallSemiBold),
           ),
           Expanded(
             child: TextField(

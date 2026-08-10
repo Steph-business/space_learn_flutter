@@ -102,8 +102,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           });
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadCategories() async {
@@ -290,24 +289,29 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         }
       }
 
-      final int prixParsed = _isFree ? 0 : (int.tryParse(_prixController.text) ?? 0);
-      final format = _getFileFormat(_selectedFilePath ?? widget.book?.fichierUrl);
+      final int prixParsed = _isFree
+          ? 0
+          : (int.tryParse(_prixController.text) ?? 0);
+      final format = _getFileFormat(
+        _selectedFilePath ?? widget.book?.fichierUrl,
+      );
 
       // Le serveur remplace l'integralite des champs a chaque mise a jour :
       // un envoi partiel effacerait ceux qu'on omet. On compose donc toujours
       // la charge complete.
       Map<String, dynamic> champs(String statut) => {
-            'titre': _titreController.text.trim(),
-            'description': _descriptionController.text.trim(),
-            'argumentaire_partage': _argumentaireController.text.trim(),
-            'prix': prixParsed,
-            'categorie_id': categorieId,
-            'format': format,
-            'statut': statut,
-            'stock': widget.book?.stock ?? 999,
-          };
+        'titre': _titreController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'argumentaire_partage': _argumentaireController.text.trim(),
+        'prix': prixParsed,
+        'categorie_id': categorieId,
+        'format': format,
+        'statut': statut,
+        'stock': widget.book?.stock ?? 999,
+      };
 
-      final bool fichiersAEnvoyer = _selectedFilePath != null ||
+      final bool fichiersAEnvoyer =
+          _selectedFilePath != null ||
           _selectedFileBytes != null ||
           _selectedCoverPath != null ||
           _selectedCoverBytes != null;
@@ -315,7 +319,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       // Tant que les fichiers ne sont pas en place, le livre reste brouillon :
       // un livre publie sans manuscrit apparaitrait au catalogue et serait
       // achetable pour rien.
-      final statutInitial = (isDraft || fichiersAEnvoyer) ? 'brouillon' : 'publie';
+      final statutInitial = (isDraft || fichiersAEnvoyer)
+          ? 'brouillon'
+          : 'publie';
 
       String livreId;
       if (widget.book != null) {
@@ -384,7 +390,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       }
 
       if (mounted) {
-        _showSuccessDialog(isModification: widget.book != null, isDraft: isDraft);
+        _showSuccessDialog(
+          isModification: widget.book != null,
+          isDraft: isDraft,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -405,15 +414,16 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     }
   }
 
-  void _showSuccessDialog({required bool isModification, required bool isDraft}) {
+  void _showSuccessDialog({
+    required bool isModification,
+    required bool isDraft,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
         backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -443,8 +453,12 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               const SizedBox(height: 12),
               Text(
                 isModification
-                    ? (isDraft ? "Brouillon mis à jour avec succès." : "Votre œuvre a été modifiée avec succès.")
-                    : (isDraft ? "L'œuvre a été enregistrée en tant que brouillon." : "Votre œuvre a été publiée avec succès. Elle est maintenant disponible pour vos lecteurs."),
+                    ? (isDraft
+                          ? "Brouillon mis à jour avec succès."
+                          : "Votre œuvre a été modifiée avec succès.")
+                    : (isDraft
+                          ? "L'œuvre a été enregistrée en tant que brouillon."
+                          : "Votre œuvre a été publiée avec succès. Elle est maintenant disponible pour vos lecteurs."),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -756,7 +770,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward, size: 18, color: AppColors.onAccent),
+            const Icon(
+              Icons.arrow_forward,
+              size: 18,
+              color: AppColors.onAccent,
+            ),
           ],
         ),
       );
@@ -866,9 +884,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
             "Revenir à l'œuvre",
             style: GoogleFonts.poppins(fontSize: 13),
           ),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.textSecondary,
-          ),
+          style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
         ),
       ],
     );
@@ -1011,7 +1027,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           child: DropdownButtonFormField<String>(
             dropdownColor: AppColors.cardBackground,
             iconEnabledColor: AppColors.secondaryVariant,
-            style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 14),
+            style: GoogleFonts.poppins(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+            ),
             value: _selectedCategorieId,
             decoration: InputDecoration(
               labelText: "Catégorie",
@@ -1091,7 +1110,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     );
   }
 
-
   /// Aperçu du message que recevront les lecteurs.
   ///
   /// L'auteur doit voir ce qu'il écrit tel qu'il circulera : un argumentaire
@@ -1125,8 +1143,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         children: [
           Row(
             children: [
-              Icon(Icons.visibility_outlined,
-                  size: 15, color: AppColors.textSecondary),
+              Icon(
+                Icons.visibility_outlined,
+                size: 15,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(width: 6),
               Text("Aperçu du partage", style: AppTextStyles.greyMedium12),
             ],
@@ -1238,8 +1259,8 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   height: 60,
                   child: localPath != null
                       ? (kIsWeb
-                          ? Image.network(localPath, fit: BoxFit.cover)
-                          : Image.file(File(localPath), fit: BoxFit.cover))
+                            ? Image.network(localPath, fit: BoxFit.cover)
+                            : Image.file(File(localPath), fit: BoxFit.cover))
                       : Image.network(
                           currentUrl!,
                           fit: BoxFit.cover,
@@ -1276,7 +1297,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 ),
                 child: Icon(
                   isSelected ? Icons.check : icon,
-                  color: isSelected ? AppColors.onAccent : AppColors.textPrimary,
+                  color: isSelected
+                      ? AppColors.onAccent
+                      : AppColors.textPrimary,
                   size: 20,
                 ),
               ),

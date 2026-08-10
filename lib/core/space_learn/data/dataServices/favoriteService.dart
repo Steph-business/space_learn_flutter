@@ -7,7 +7,8 @@ import '../model/favoriteModel.dart';
 class FavoriteService {
   final http.Client client;
 
-  FavoriteService({http.Client? client}) : client = client ?? ApiClient.instance;
+  FavoriteService({http.Client? client})
+    : client = client ?? ApiClient.instance;
 
   Future<FavoriteModel> addFavorite(String livreId, String authToken) async {
     final response = await client.post(

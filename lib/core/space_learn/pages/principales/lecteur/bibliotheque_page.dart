@@ -63,8 +63,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
           });
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadLibrary() async {
@@ -124,8 +123,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
       List<ReadingActivityModel> allProgress = [];
       try {
         allProgress = await _progressService.getAllProgressions(token);
-      } catch (e) {
-      }
+      } catch (e) {}
 
       final Map<String, ReadingActivityModel> progressMap = {
         for (var p in allProgress) p.livreId: p,
@@ -334,7 +332,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
                           padding: EdgeInsets.all(60.0),
                           child: Text(
                             "Chargement...",
-                            style: GoogleFonts.poppins(color: AppColors.textSecondary),
+                            style: GoogleFonts.poppins(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
                       )
@@ -449,7 +449,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppColors.primaryLight : AppColors.textSecondary,
+                color: isSelected
+                    ? AppColors.primaryLight
+                    : AppColors.textSecondary,
               ),
             ),
           ),
@@ -495,7 +497,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
             Text(
               label,
               style: GoogleFonts.poppins(
-                color: isActive ? AppColors.primaryLight : AppColors.textPrimary,
+                color: isActive
+                    ? AppColors.primaryLight
+                    : AppColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -525,14 +529,18 @@ class _BibliothequePageState extends State<BibliothequePage> {
           children: [
             Icon(
               Icons.tune_rounded,
-              color: hasActiveGenre ? AppColors.primaryLight : AppColors.textPrimary,
+              color: hasActiveGenre
+                  ? AppColors.primaryLight
+                  : AppColors.textPrimary,
               size: 18,
             ),
             SizedBox(width: 8),
             Text(
               hasActiveGenre ? "Genre: $filtreActif" : "Genre",
               style: GoogleFonts.poppins(
-                color: hasActiveGenre ? AppColors.primaryLight : AppColors.textPrimary,
+                color: hasActiveGenre
+                    ? AppColors.primaryLight
+                    : AppColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -589,10 +597,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
                         ),
                       ),
                       trailing: isSelected
-                          ? Icon(
-                              Icons.check,
-                              color: AppColors.accentInk,
-                            )
+                          ? Icon(Icons.check, color: AppColors.accentInk)
                           : null,
                       onTap: () {
                         setState(() => filtreActif = cat);
@@ -685,7 +690,10 @@ class _BibliothequePageState extends State<BibliothequePage> {
               color: Colors.redAccent,
             ),
             SizedBox(height: 16),
-            Text(_error!, style: GoogleFonts.poppins(color: AppColors.textPrimary)),
+            Text(
+              _error!,
+              style: GoogleFonts.poppins(color: AppColors.textPrimary),
+            ),
             SizedBox(height: 16),
             TextButton.icon(
               onPressed: _loadLibrary,

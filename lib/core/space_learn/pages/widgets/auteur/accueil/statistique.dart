@@ -43,8 +43,7 @@ class _StatistiqueState extends State<Statistique> {
           _loadFollowers(user.id);
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadFollowers(String userId) async {
@@ -53,18 +52,15 @@ class _StatistiqueState extends State<Statistique> {
       if (mounted) {
         setState(() => _followersCount = followers.length);
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   @override
   Widget build(BuildContext context) {
     // Extract values from stats map
-    final double totalRevenue =
-        (widget.stats['total_revenue'] ?? 0).toDouble();
-    
-    final int readersCount =
-        widget.stats['total_followers'] ?? _followersCount;
+    final double totalRevenue = (widget.stats['total_revenue'] ?? 0).toDouble();
+
+    final int readersCount = widget.stats['total_followers'] ?? _followersCount;
 
     return Column(
       children: [
@@ -200,7 +196,8 @@ class _StatistiqueState extends State<Statistique> {
                 ),
               ],
             ),
-          ] else SizedBox(height: 18),
+          ] else
+            SizedBox(height: 18),
         ],
       ),
     );

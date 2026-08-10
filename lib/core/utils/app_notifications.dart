@@ -17,8 +17,10 @@ class AppNotifications {
     // la couleur sémantique. Les fonds sombres écrits en dur qui figuraient ici
     // ne suivaient pas le passage en mode clair : le message, peint en
     // textPrimary donc en noir, se retrouvait noir sur noir (1,23:1).
-    Color teinter(Color semantique) =>
-        Color.alphaBlend(semantique.withValues(alpha: 0.14), AppColors.cardBackground);
+    Color teinter(Color semantique) => Color.alphaBlend(
+      semantique.withValues(alpha: 0.14),
+      AppColors.cardBackground,
+    );
 
     Color bg = AppColors.cardBackground;
     Color borderCol = AppColors.textHint;
@@ -48,7 +50,6 @@ class AppNotifications {
           color: bg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: borderCol, width: 1.5),
-          
         ),
         child: Row(
           children: [
@@ -111,14 +112,18 @@ class AppNotifications {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           child: Container(
             padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.08)),
-              
+              border: Border.all(
+                color: AppColors.textPrimary.withValues(alpha: 0.08),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -135,11 +140,7 @@ class AppNotifications {
                       width: 1.5,
                     ),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 28,
-                    color: accentColor,
-                  ),
+                  child: Icon(icon, size: 28, color: accentColor),
                 ),
                 SizedBox(height: 20),
                 // Title

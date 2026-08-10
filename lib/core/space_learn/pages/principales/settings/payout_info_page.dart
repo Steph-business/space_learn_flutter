@@ -142,8 +142,7 @@ class _PayoutInfoPageState extends State<PayoutInfoPage> {
         ),
       ),
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(color: AppColors.accentInk))
+          ? Center(child: CircularProgressIndicator(color: AppColors.accentInk))
           : Form(
               key: _formKey,
               child: ListView(
@@ -198,10 +197,12 @@ class _PayoutInfoPageState extends State<PayoutInfoPage> {
                       fontSize: 14,
                     ),
                     items: _indicatifs
-                        .map((i) => DropdownMenuItem(
-                              value: i.$1,
-                              child: Text('${i.$2}  (+${i.$1})'),
-                            ))
+                        .map(
+                          (i) => DropdownMenuItem(
+                            value: i.$1,
+                            child: Text('${i.$2}  (+${i.$1})'),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) {
                       if (v != null) setState(() => _prefix = v);
@@ -227,8 +228,10 @@ class _PayoutInfoPageState extends State<PayoutInfoPage> {
                     ),
                     decoration: _decoration(hint: '07 00 00 00 00'),
                     validator: (v) {
-                      final chiffres =
-                          (v ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+                      final chiffres = (v ?? '').replaceAll(
+                        RegExp(r'[^0-9]'),
+                        '',
+                      );
                       if (chiffres.isEmpty) {
                         return 'Le numéro est obligatoire';
                       }
@@ -266,12 +269,14 @@ class _PayoutInfoPageState extends State<PayoutInfoPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.onAccent,
-                        disabledBackgroundColor:
-                            AppColors.primary.withValues(alpha: 0.5),
+                        disabledBackgroundColor: AppColors.primary.withValues(
+                          alpha: 0.5,
+                        ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusInner),
+                            AppDimensions.radiusInner,
+                          ),
                         ),
                       ),
                       child: _isSaving
@@ -300,9 +305,9 @@ class _PayoutInfoPageState extends State<PayoutInfoPage> {
 
   InputDecoration _decoration({String? hint}) {
     OutlineInputBorder bordure(Color couleur) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-          borderSide: BorderSide(color: couleur),
-        );
+      borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+      borderSide: BorderSide(color: couleur),
+    );
 
     return InputDecoration(
       hintText: hint,

@@ -48,7 +48,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         AppNotifications.showPremiumDialog(
           context,
           title: "Code de récupération envoyé",
-          message: "Un code de validation OTP à 6 chiffres a été envoyé à l'adresse $email.",
+          message:
+              "Un code de validation OTP à 6 chiffres a été envoyé à l'adresse $email.",
           confirmText: "Entrer le code",
           isSuccess: true,
           onConfirm: () {
@@ -142,10 +143,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 SizedBox(height: 20),
 
                 // Title
-                Text(
-                  'Mot de passe oublié',
-                  style: AppTextStyles.pageTitle,
-                ),
+                Text('Mot de passe oublié', style: AppTextStyles.pageTitle),
                 SizedBox(height: 8),
 
                 Text(
@@ -165,8 +163,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
-                    
+                    border: Border.all(
+                      color: AppColors.textPrimary.withOpacity(0.05),
+                    ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),

@@ -93,11 +93,7 @@ class AllReviewsPage extends StatelessWidget {
                     (photoUrl == null ||
                         photoUrl.isEmpty ||
                         photoUrl.contains('example.com'))
-                    ? Icon(
-                        Icons.person,
-                        color: AppColors.accentInk,
-                        size: 18,
-                      )
+                    ? Icon(Icons.person, color: AppColors.accentInk, size: 18)
                     : null,
               ),
               SizedBox(width: 12),
@@ -105,10 +101,7 @@ class AllReviewsPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      style: AppTextStyles.cardTitleSmall,
-                    ),
+                    Text(name, style: AppTextStyles.cardTitleSmall),
                     Text(
                       time,
                       style: GoogleFonts.poppins(

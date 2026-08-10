@@ -31,7 +31,7 @@ class LivreCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(2),
-        
+
         border: Border.all(color: Colors.transparent, width: 0),
       ),
       child: ClipRRect(
@@ -48,7 +48,6 @@ class LivreCard extends StatelessWidget {
                   height: 120,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
-                    
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(2),
@@ -266,7 +265,6 @@ class LivreGridCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),

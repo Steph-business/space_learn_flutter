@@ -62,20 +62,20 @@ class _ProfilPageState extends State<ProfilPage> {
     if (!mounted) return;
     AppNotifications.showSnackBar(
       context,
-      message: 'Profil "$profileName" sélectionné. Complétez votre inscription.',
+      message:
+          'Profil "$profileName" sélectionné. Complétez votre inscription.',
       isSuccess: true,
     );
 
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const RegisterPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const RegisterPage()));
 
     setState(() => isUpdating = false);
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: Container(
@@ -126,7 +126,6 @@ class _ProfilPageState extends State<ProfilPage> {
                     height: 120,
                     fit: BoxFit.contain,
                   ),
-
 
                   SizedBox(height: 24),
 
@@ -298,7 +297,6 @@ class _ProfilPageState extends State<ProfilPage> {
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
-          
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

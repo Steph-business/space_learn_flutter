@@ -165,10 +165,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
               ),
               SizedBox(width: 12),
               Expanded(
-                child: _buildButton(
-                  "STATS",
-                  AppColors.border.withOpacity(0.5),
-                ),
+                child: _buildButton("STATS", AppColors.border.withOpacity(0.5)),
               ),
             ],
           ),

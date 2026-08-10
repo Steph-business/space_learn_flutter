@@ -76,7 +76,11 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
       case 4:
         return SettingsPageAuteur();
       default:
-        return HomeContentAuteur(key: _homeKey, profileId: '', userName: 'Auteur');
+        return HomeContentAuteur(
+          key: _homeKey,
+          profileId: '',
+          userName: 'Auteur',
+        );
     }
   }
 

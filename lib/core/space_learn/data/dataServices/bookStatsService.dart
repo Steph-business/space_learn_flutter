@@ -7,7 +7,8 @@ import '../model/bookStatsModel.dart';
 class BookStatsService {
   final http.Client client;
 
-  BookStatsService({http.Client? client}) : client = client ?? ApiClient.instance;
+  BookStatsService({http.Client? client})
+    : client = client ?? ApiClient.instance;
 
   Future<BookStatsModel> createStatistics({
     required String livreId,

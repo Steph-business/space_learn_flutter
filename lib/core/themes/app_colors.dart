@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 /// Palette de couleurs centralisée pour SpaceLearn.
 /// Toutes les pages doivent référencer ces constantes au lieu de
 /// définir des couleurs en dur.
@@ -36,10 +35,12 @@ class AppColors {
   static Color get cardBackground => isDark ? cardDark : cardLight;
 
   /// Fond alternatif (plus clair que le scaffold)
-  static Color get surfaceVariant => isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF1F3F5);
+  static Color get surfaceVariant =>
+      isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF1F3F5);
 
   /// Fond alternatif très sombre
-  static Color get darkSurface => isDark ? const Color(0xFF0A0A0A) : const Color(0xFFE9ECEF);
+  static Color get darkSurface =>
+      isDark ? const Color(0xFF0A0A0A) : const Color(0xFFE9ECEF);
 
   // ───────────────────────── Accents / Primaires ─────────────────
   /// Couleur primaire d'accent (orange) — boutons, liens, icônes actives
@@ -64,10 +65,12 @@ class AppColors {
 
   // ───────────────────────── Sélecteurs segmentés ────────────────
   /// Piste d'un sélecteur segmenté (le rail derrière la pastille active).
-  static Color get segmentTrack => isDark ? surfaceVariant : const Color(0xFFE9ECEF);
+  static Color get segmentTrack =>
+      isDark ? surfaceVariant : const Color(0xFFE9ECEF);
 
   /// Pastille active d'un sélecteur segmenté.
-  static Color get segmentThumb => isDark ? const Color(0xFF2A2A2A) : scaffoldLight;
+  static Color get segmentThumb =>
+      isDark ? const Color(0xFF2A2A2A) : scaffoldLight;
 
   /// Libellé du segment actif — doit contraster avec [segmentThumb].
   static Color get segmentLabelActive => textPrimary;
@@ -135,20 +138,25 @@ class AppColors {
   static Color get textPrimary => isDark ? textOnDark : textOnLight;
 
   /// Texte secondaire
-  static Color get textSecondary => isDark ? const Color(0xFFAAAAAA) : const Color(0xFF555555);
+  static Color get textSecondary =>
+      isDark ? const Color(0xFFAAAAAA) : const Color(0xFF555555);
 
   /// Texte désactivé / placeholder
-  static Color get textHint => isDark ? const Color(0xFF777777) : const Color(0xFF888888);
+  static Color get textHint =>
+      isDark ? const Color(0xFF777777) : const Color(0xFF888888);
 
   /// Texte sur fond sombre - gris clair
-  static Color get textMuted => isDark ? const Color(0xFF909097) : const Color(0xFF94A3B8);
+  static Color get textMuted =>
+      isDark ? const Color(0xFF909097) : const Color(0xFF94A3B8);
 
   // ───────────────────────── Bordures ────────────────────────────
   /// Bordure subtile
-  static Color get border => isDark ? const Color(0xFF45464D) : const Color(0xFFE2E8F0);
+  static Color get border =>
+      isDark ? const Color(0xFF45464D) : const Color(0xFFE2E8F0);
 
   /// Bordure très subtile (blanc 5%)
-  static Color get borderLight => isDark ? const Color(0x0DFFFFFF) : const Color(0x0F000000);
+  static Color get borderLight =>
+      isDark ? const Color(0x0DFFFFFF) : const Color(0x0F000000);
 
   // ───────────────────────── Spécifiques ─────────────────────────
   /// Orange pour badge "Rejoindre" (fond)

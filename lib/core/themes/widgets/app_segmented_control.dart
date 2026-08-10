@@ -43,8 +43,12 @@ class AppSegmentedControl extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.segmentThumb : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  color: isSelected
+                      ? AppColors.segmentThumb
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                 ),
                 alignment: Alignment.center,
                 child: Text(

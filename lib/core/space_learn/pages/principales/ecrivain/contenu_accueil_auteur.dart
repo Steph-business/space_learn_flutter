@@ -33,7 +33,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
   final AuthorStatsService _authorStatsService = AuthorStatsService();
   final AuthService _authService = AuthService();
   final RelationService _relationService = RelationService();
-  
+
   String? _authorId;
   List<BookModel> _books = [];
   List<dynamic> _followers = [];
@@ -59,7 +59,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
       final books = await _bookService.getBooksByAuthorId(authorId);
       final stats = await _authorStatsService.getAuthorStats(authorId, "");
       final followers = await _relationService.getFollowers(authorId);
-      
+
       if (mounted) {
         setState(() {
           _authorId = authorId;
@@ -129,7 +129,11 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: TopLivresSection(books: _books, isLoading: _isLoading, onBookUpdated: _loadData),
+              child: TopLivresSection(
+                books: _books,
+                isLoading: _isLoading,
+                onBookUpdated: _loadData,
+              ),
             ),
 
             Padding(

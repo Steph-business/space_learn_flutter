@@ -9,7 +9,8 @@ class NotificationSettingsPage extends StatefulWidget {
   const NotificationSettingsPage({super.key, this.isAuthorMode = false});
 
   @override
-  State<NotificationSettingsPage> createState() => _NotificationSettingsPageState();
+  State<NotificationSettingsPage> createState() =>
+      _NotificationSettingsPageState();
 }
 
 class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
@@ -49,7 +50,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark
+          ? AppColors.scaffoldBackground
+          : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -86,35 +89,71 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             ),
           ),
           SizedBox(height: 28),
-          
+
           if (!widget.isAuthorMode) ...[
             _buildSectionHeader("Lecture"),
             Card(
               color: AppColors.cardBackground,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: Text("Rappels de lecture", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                    subtitle: Text("Notifications quotidiennes pour maintenir vos habitudes.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                    title: Text(
+                      "Rappels de lecture",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Notifications quotidiennes pour maintenir vos habitudes.",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                     value: _readingReminders,
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _readingReminders = val);
                       _savePreference('pref_readingReminders', val);
-                      AppNotifications.showSnackBar(context, message: "Préférences de rappels mises à jour.", isSuccess: true);
+                      AppNotifications.showSnackBar(
+                        context,
+                        message: "Préférences de rappels mises à jour.",
+                        isSuccess: true,
+                      );
                     },
                   ),
                   Divider(height: 1, indent: 16, endIndent: 16),
                   SwitchListTile(
-                    title: Text("Nouveaux chapitres", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                    subtitle: Text("Être alerté dès qu'un auteur publie une suite.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                    title: Text(
+                      "Nouveaux chapitres",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Être alerté dès qu'un auteur publie une suite.",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                     value: _newChapters,
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _newChapters = val);
                       _savePreference('pref_newChapters', val);
-                      AppNotifications.showSnackBar(context, message: "Préférences de nouveautés mises à jour.", isSuccess: true);
+                      AppNotifications.showSnackBar(
+                        context,
+                        message: "Préférences de nouveautés mises à jour.",
+                        isSuccess: true,
+                      );
                     },
                   ),
                 ],
@@ -127,30 +166,67 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             _buildSectionHeader("Ventes & Écriture"),
             Card(
               color: AppColors.cardBackground,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: Text("Notifications de ventes", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                    subtitle: Text("Recevoir une alerte lors de l'achat d'un de vos livres.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                    title: Text(
+                      "Notifications de ventes",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Recevoir une alerte lors de l'achat d'un de vos livres.",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                     value: _salesReminders,
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _salesReminders = val);
                       _savePreference('pref_salesReminders', val);
-                      AppNotifications.showSnackBar(context, message: "Préférences de notifications de ventes mises à jour.", isSuccess: true);
+                      AppNotifications.showSnackBar(
+                        context,
+                        message:
+                            "Préférences de notifications de ventes mises à jour.",
+                        isSuccess: true,
+                      );
                     },
                   ),
                   Divider(height: 1, indent: 16, endIndent: 16),
                   SwitchListTile(
-                    title: Text("Nouveaux commentaires", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                    subtitle: Text("Être notifié quand un lecteur laisse son avis.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                    title: Text(
+                      "Nouveaux commentaires",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Être notifié quand un lecteur laisse son avis.",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                     value: _newComments,
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _newComments = val);
                       _savePreference('pref_newComments', val);
-                      AppNotifications.showSnackBar(context, message: "Préférences de commentaires mises à jour.", isSuccess: true);
+                      AppNotifications.showSnackBar(
+                        context,
+                        message: "Préférences de commentaires mises à jour.",
+                        isSuccess: true,
+                      );
                     },
                   ),
                 ],
@@ -162,16 +238,35 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           _buildSectionHeader("Général"),
           Card(
             color: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: SwitchListTile(
-              title: Text("Offres & Nouveautés", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-              subtitle: Text("Alertes sur les promotions, événements et actus de la plateforme.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+              title: Text(
+                "Offres & Nouveautés",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
+              subtitle: Text(
+                "Alertes sur les promotions, événements et actus de la plateforme.",
+                style: GoogleFonts.poppins(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
               value: _marketingPush,
               activeColor: AppColors.primary,
               onChanged: (val) {
                 setState(() => _marketingPush = val);
                 _savePreference('pref_marketingPush', val);
-                AppNotifications.showSnackBar(context, message: "Préférences de promotions mises à jour.", isSuccess: true);
+                AppNotifications.showSnackBar(
+                  context,
+                  message: "Préférences de promotions mises à jour.",
+                  isSuccess: true,
+                );
               },
             ),
           ),

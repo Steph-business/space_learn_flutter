@@ -27,12 +27,12 @@ class SoldeAuteur {
   });
 
   factory SoldeAuteur.fromJson(Map<String, dynamic> json) => SoldeAuteur(
-        totalGagne: _double(json['total_gagne']),
-        totalRetire: _double(json['total_retire']),
-        enCours: _double(json['en_cours']),
-        disponible: _double(json['disponible']),
-        devise: json['devise']?.toString() ?? 'XOF',
-      );
+    totalGagne: _double(json['total_gagne']),
+    totalRetire: _double(json['total_retire']),
+    enCours: _double(json['en_cours']),
+    disponible: _double(json['disponible']),
+    devise: json['devise']?.toString() ?? 'XOF',
+  );
 
   static const SoldeAuteur vide = SoldeAuteur(
     totalGagne: 0,
@@ -103,14 +103,14 @@ class RetraitModel {
   });
 
   factory RetraitModel.fromJson(Map<String, dynamic> json) => RetraitModel(
-        id: json['id']?.toString() ?? '',
-        montant: _double(json['montant']),
-        devise: json['devise']?.toString() ?? 'XOF',
-        statut: json['statut']?.toString() ?? 'demandee',
-        derniereErreur: json['derniere_erreur']?.toString(),
-        demandeLe: _date(json['demande_le']),
-        traiteLe: _date(json['traite_le']),
-      );
+    id: json['id']?.toString() ?? '',
+    montant: _double(json['montant']),
+    devise: json['devise']?.toString() ?? 'XOF',
+    statut: json['statut']?.toString() ?? 'demandee',
+    derniereErreur: json['derniere_erreur']?.toString(),
+    demandeLe: _date(json['demande_le']),
+    traiteLe: _date(json['traite_le']),
+  );
 
   /// Seule une demande pas encore transmise à l'opérateur peut être annulée.
   bool get estAnnulable => statut == 'demandee';
@@ -154,14 +154,14 @@ class Portefeuille {
   });
 
   factory Portefeuille.fromJson(Map<String, dynamic> json) => Portefeuille(
-        solde: json['solde'] is Map<String, dynamic>
-            ? SoldeAuteur.fromJson(json['solde'] as Map<String, dynamic>)
-            : SoldeAuteur.vide,
-        tauxCommission: _double(json['taux_commission']),
-        minimumRetrait: _double(json['minimum_retrait']),
-        ventes: _liste(json['reversements'], ReversementModel.fromJson),
-        retraits: _liste(json['retraits'], RetraitModel.fromJson),
-      );
+    solde: json['solde'] is Map<String, dynamic>
+        ? SoldeAuteur.fromJson(json['solde'] as Map<String, dynamic>)
+        : SoldeAuteur.vide,
+    tauxCommission: _double(json['taux_commission']),
+    minimumRetrait: _double(json['minimum_retrait']),
+    ventes: _liste(json['reversements'], ReversementModel.fromJson),
+    retraits: _liste(json['retraits'], RetraitModel.fromJson),
+  );
 
   static const Portefeuille vide = Portefeuille(
     solde: SoldeAuteur.vide,
@@ -215,8 +215,5 @@ double _double(dynamic v) =>
 DateTime? _date(dynamic v) => v == null ? null : DateTime.tryParse('$v');
 
 List<T> _liste<T>(dynamic brut, T Function(Map<String, dynamic>) depuis) =>
-    (brut as List?)
-        ?.whereType<Map<String, dynamic>>()
-        .map(depuis)
-        .toList() ??
+    (brut as List?)?.whereType<Map<String, dynamic>>().map(depuis).toList() ??
     <T>[];

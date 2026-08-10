@@ -19,9 +19,11 @@ class NavBarAuteur extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.scaffoldBackground,
         border: Border(
-          top: BorderSide(color: AppColors.textPrimary.withOpacity(0.05), width: 1),
+          top: BorderSide(
+            color: AppColors.textPrimary.withOpacity(0.05),
+            width: 1,
+          ),
         ),
-        
       ),
       child: SafeArea(
         top: false,

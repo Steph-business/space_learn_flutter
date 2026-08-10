@@ -16,7 +16,7 @@ class AuthorStatsService {
   final http.Client client;
 
   AuthorStatsService({http.Client? client})
-      : client = client ?? ApiClient.instance;
+    : client = client ?? ApiClient.instance;
 
   Future<Map<String, dynamic>> getAuthorStats(
     String authorId,
@@ -52,15 +52,16 @@ class AuthorStatsService {
   ) async {
     final token = authToken ?? await TokenStorage.getToken();
 
-    final uri = Uri.parse(url).replace(
-      queryParameters: period.isEmpty ? null : {'period': period},
-    );
+    final uri = Uri.parse(
+      url,
+    ).replace(queryParameters: period.isEmpty ? null : {'period': period});
 
     try {
       final response = await client.get(
         uri,
         headers: {
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
         },
       );
 

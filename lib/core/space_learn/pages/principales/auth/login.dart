@@ -151,7 +151,8 @@ class _LoginPageState extends State<LoginPage> {
         if (mounted) {
           AppNotifications.showSnackBar(
             context,
-            message: "Bienvenue sur SpaceLearn ! Veuillez compléter votre profil pour accéder à l'application.",
+            message:
+                "Bienvenue sur SpaceLearn ! Veuillez compléter votre profil pour accéder à l'application.",
             isSuccess: true,
           );
           Navigator.pushAndRemoveUntil(
@@ -190,18 +191,21 @@ class _LoginPageState extends State<LoginPage> {
       developer.log("Erreur lors de la connexion : $e");
       if (!mounted) return;
       final errorStr = e.toString();
-      if (errorStr.contains("n'est pas encore vérifié") || errorStr.contains("403")) {
+      if (errorStr.contains("n'est pas encore vérifié") ||
+          errorStr.contains("403")) {
         AppNotifications.showPremiumDialog(
           context,
           title: "Vérification requise",
-          message: "Votre adresse e-mail n'a pas encore été validée. Un nouveau code OTP de validation vous a été envoyé.",
+          message:
+              "Votre adresse e-mail n'a pas encore été validée. Un nouveau code OTP de validation vous a été envoyé.",
           confirmText: "Vérifier maintenant",
           isSuccess: false,
           onConfirm: () {
             if (mounted) {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => OtpPage(email: email, isFromRegistration: true),
+                  builder: (context) =>
+                      OtpPage(email: email, isFromRegistration: true),
                 ),
               );
             }
@@ -210,7 +214,8 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur de connexion : ${e.toString().replaceAll("Exception: ", "")}",
+          message:
+              "Erreur de connexion : ${e.toString().replaceAll("Exception: ", "")}",
           isError: true,
         );
       }
@@ -348,8 +353,9 @@ class _LoginPageState extends State<LoginPage> {
                     decoration: BoxDecoration(
                       color: AppColors.cardBackground,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
-                      
+                      border: Border.all(
+                        color: AppColors.textPrimary.withOpacity(0.05),
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -514,14 +520,18 @@ class _LoginPageState extends State<LoginPage> {
                     width: double.infinity,
                     height: 52,
                     child: OutlinedButton(
-                      onPressed: _isLoading ? null : () => _handleOAuthSignIn(OAuthProvider.google),
+                      onPressed: _isLoading
+                          ? null
+                          : () => _handleOAuthSignIn(OAuthProvider.google),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.textPrimary,
                         backgroundColor: AppColors.cardBackground,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        side: BorderSide(color: AppColors.textPrimary.withOpacity(0.1)),
+                        side: BorderSide(
+                          color: AppColors.textPrimary.withOpacity(0.1),
+                        ),
                         elevation: 2,
                       ),
                       child: Row(
@@ -533,7 +543,14 @@ class _LoginPageState extends State<LoginPage> {
                               color: Colors.white,
                               shape: BoxShape.circle,
                             ),
-                            child: const Text('G', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 15)),
+                            child: const Text(
+                              'G',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Text(
@@ -555,7 +572,9 @@ class _LoginPageState extends State<LoginPage> {
                     width: double.infinity,
                     height: 52,
                     child: OutlinedButton.icon(
-                      onPressed: _isLoading ? null : () => _handleOAuthSignIn(OAuthProvider.apple),
+                      onPressed: _isLoading
+                          ? null
+                          : () => _handleOAuthSignIn(OAuthProvider.apple),
                       icon: const Icon(Icons.apple, size: 24),
                       label: Text(
                         'Continuer avec Apple',
@@ -570,7 +589,9 @@ class _LoginPageState extends State<LoginPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        side: BorderSide(color: AppColors.textPrimary.withOpacity(0.1)),
+                        side: BorderSide(
+                          color: AppColors.textPrimary.withOpacity(0.1),
+                        ),
                         elevation: 2,
                       ),
                     ),

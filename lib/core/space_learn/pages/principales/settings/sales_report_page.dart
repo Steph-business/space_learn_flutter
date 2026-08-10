@@ -99,9 +99,9 @@ class _SalesReportPageState extends State<SalesReportPage> {
   // ──────────────────────────── Actions ────────────────────────────
 
   Future<void> _ouvrirCompteVersement() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PayoutInfoPage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const PayoutInfoPage()));
     if (mounted) _charger();
   }
 
@@ -119,7 +119,8 @@ class _SalesReportPageState extends State<SalesReportPage> {
       if (!mounted) return;
       AppNotifications.showSnackBar(
         context,
-        message: 'Demande enregistrée. Le virement part vers votre Mobile Money.',
+        message:
+            'Demande enregistrée. Le virement part vers votre Mobile Money.',
         isSuccess: true,
       );
       await _charger();
@@ -133,7 +134,11 @@ class _SalesReportPageState extends State<SalesReportPage> {
         await _ouvrirCompteVersement();
         return;
       }
-      AppNotifications.showSnackBar(context, message: e.message, isSuccess: false);
+      AppNotifications.showSnackBar(
+        context,
+        message: e.message,
+        isSuccess: false,
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _retraitEnCours = false);
@@ -198,11 +203,15 @@ class _SalesReportPageState extends State<SalesReportPage> {
                 ),
                 decoration: InputDecoration(
                   suffixText: solde.devise,
-                  suffixStyle: GoogleFonts.poppins(color: AppColors.textSecondary),
+                  suffixStyle: GoogleFonts.poppins(
+                    color: AppColors.textSecondary,
+                  ),
                   filled: true,
                   fillColor: AppColors.scaffoldBackground,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
                   ),
                 ),
                 validator: (v) {
@@ -265,12 +274,18 @@ class _SalesReportPageState extends State<SalesReportPage> {
         ),
         content: Text(
           'Les ${_montant(retrait.montant, retrait.devise)} retourneront à votre solde disponible.',
-          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Non', style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+            child: Text(
+              'Non',
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -333,8 +348,10 @@ class _SalesReportPageState extends State<SalesReportPage> {
         actions: [
           IconButton(
             tooltip: 'Compte de versement',
-            icon: Icon(Icons.account_balance_wallet_outlined,
-                color: AppColors.textPrimary),
+            icon: Icon(
+              Icons.account_balance_wallet_outlined,
+              color: AppColors.textPrimary,
+            ),
             onPressed: _ouvrirCompteVersement,
           ),
         ],
@@ -381,13 +398,13 @@ class _SalesReportPageState extends State<SalesReportPage> {
   }
 
   Widget _titre(String texte) => Text(
-        texte,
-        style: GoogleFonts.poppins(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-      );
+    texte,
+    style: GoogleFonts.poppins(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      color: AppColors.textPrimary,
+    ),
+  );
 
   Widget _carteSolde() {
     final solde = _portefeuille.solde;
@@ -421,8 +438,12 @@ class _SalesReportPageState extends State<SalesReportPage> {
           const SizedBox(height: AppDimensions.spaceLg),
           Row(
             children: [
-              Expanded(child: _statistique('Total gagné', _montant(solde.totalGagne))),
-              Expanded(child: _statistique('Déjà retiré', _montant(solde.totalRetire))),
+              Expanded(
+                child: _statistique('Total gagné', _montant(solde.totalGagne)),
+              ),
+              Expanded(
+                child: _statistique('Déjà retiré', _montant(solde.totalRetire)),
+              ),
             ],
           ),
           if (solde.enCours > 0) ...[
@@ -447,16 +468,25 @@ class _SalesReportPageState extends State<SalesReportPage> {
                   : const Icon(Icons.south_west_rounded, size: 18),
               label: Text(
                 'Retirer',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 15),
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onAccent,
-                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.35),
-                disabledForegroundColor: AppColors.onAccent.withValues(alpha: 0.5),
+                disabledBackgroundColor: AppColors.primary.withValues(
+                  alpha: 0.35,
+                ),
+                disabledForegroundColor: AppColors.onAccent.withValues(
+                  alpha: 0.5,
+                ),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                 ),
               ),
             ),
@@ -466,7 +496,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
             _portefeuille.retraitPossible
                 ? 'Commission de la plateforme : $pourcentage % sur chaque vente.'
                 : 'Retrait possible à partir de ${_montant(_portefeuille.minimumRetrait)}. '
-                    'Commission de la plateforme : $pourcentage % sur chaque vente.',
+                      'Commission de la plateforme : $pourcentage % sur chaque vente.',
             style: GoogleFonts.poppins(
               color: AppColors.textHint,
               fontSize: 11.5,
@@ -479,28 +509,33 @@ class _SalesReportPageState extends State<SalesReportPage> {
   }
 
   Widget _statistique(String libelle, String valeur) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            libelle,
-            style: GoogleFonts.poppins(
-              color: AppColors.textSecondary,
-              fontSize: 11.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            valeur,
-            style: GoogleFonts.poppins(
-              color: AppColors.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        libelle,
+        style: GoogleFonts.poppins(
+          color: AppColors.textSecondary,
+          fontSize: 11.5,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        valeur,
+        style: GoogleFonts.poppins(
+          color: AppColors.textPrimary,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  );
 
-  Widget _bandeau(IconData icone, Color couleur, String texte, {VoidCallback? onTap}) {
+  Widget _bandeau(
+    IconData icone,
+    Color couleur,
+    String texte, {
+    VoidCallback? onTap,
+  }) {
     return AppCard(
       onTap: onTap,
       child: Row(
@@ -518,30 +553,38 @@ class _SalesReportPageState extends State<SalesReportPage> {
             ),
           ),
           if (onTap != null)
-            Icon(Icons.arrow_forward_ios_rounded, color: AppColors.textHint, size: 14),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: AppColors.textHint,
+              size: 14,
+            ),
         ],
       ),
     );
   }
 
   Widget _etatVide() => AppCard(
-        padding: const EdgeInsets.all(AppDimensions.spaceXl),
-        child: Column(
-          children: [
-            Icon(Icons.receipt_long_outlined, size: 44, color: AppColors.textSecondary),
-            const SizedBox(height: AppDimensions.spaceMd),
-            Text(
-              'Aucune vente pour le moment',
-              style: GoogleFonts.poppins(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+    padding: const EdgeInsets.all(AppDimensions.spaceXl),
+    child: Column(
+      children: [
+        Icon(
+          Icons.receipt_long_outlined,
+          size: 44,
+          color: AppColors.textSecondary,
         ),
-      );
+        const SizedBox(height: AppDimensions.spaceMd),
+        Text(
+          'Aucune vente pour le moment',
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ),
+  );
 
   Widget _ligneRetrait(RetraitModel retrait) {
     final (couleur, icone) = switch (retrait.statut) {
@@ -609,16 +652,18 @@ class _SalesReportPageState extends State<SalesReportPage> {
 
   String _sousTitre(RetraitModel retrait) {
     final date = retrait.traiteLe ?? retrait.demandeLe;
-    final quand =
-        date == null ? '' : ' • ${DateFormat('d MMM y', 'fr_FR').format(date.toLocal())}';
+    final quand = date == null
+        ? ''
+        : ' • ${DateFormat('d MMM y', 'fr_FR').format(date.toLocal())}';
     return '${retrait.libelleStatut}$quand';
   }
 
   Widget _ligneVente(ReversementModel vente) {
     final titre = _titresParLivre[vente.livreId] ?? 'Livre';
     final date = vente.creeLe;
-    final quand =
-        date == null ? '' : DateFormat('d MMM y', 'fr_FR').format(date.toLocal());
+    final quand = date == null
+        ? ''
+        : DateFormat('d MMM y', 'fr_FR').format(date.toLocal());
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimensions.spaceMd),

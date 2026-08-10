@@ -21,9 +21,7 @@ class SupabaseService {
       final response = await http
           .get(
             Uri.parse('https://uqmydsydlkwxcfcdtsbu.supabase.co/rest/v1/'),
-            headers: {
-              'apikey': apiKey,
-            },
+            headers: {'apikey': apiKey},
           )
           .timeout(const Duration(seconds: 10));
       return response.statusCode == 200;
@@ -45,9 +43,7 @@ class SupabaseService {
     } catch (e) {
       if (e.toString().contains('Failed host lookup') ||
           e.toString().contains('No address associated with hostname')) {
-
-      } else {
-      }
+      } else {}
       return false;
     }
   }
@@ -89,7 +85,6 @@ class SupabaseService {
       final errorStr = e.toString();
       // Better detection for missing bucket
       if (errorStr.contains('Bucket not found') || errorStr.contains('404')) {
-
         try {
           // Attempt to create it (will fail if exists, which is caught)
           await createBucket(bucket);
@@ -120,12 +115,19 @@ class SupabaseService {
       if (!isConnected) return null;
 
       try {
-        await client.storage.updateBucket(bucket, const BucketOptions(public: true));
+        await client.storage.updateBucket(
+          bucket,
+          const BucketOptions(public: true),
+        );
       } catch (_) {}
 
       await client.storage
           .from(bucket)
-          .uploadBinary(path, bytes, fileOptions: const FileOptions(upsert: true));
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
 
       return getPublicUrl(bucket, path);
     } catch (e) {
@@ -135,7 +137,11 @@ class SupabaseService {
           await createBucket(bucket);
           await client.storage
               .from(bucket)
-              .uploadBinary(path, bytes, fileOptions: const FileOptions(upsert: true));
+              .uploadBinary(
+                path,
+                bytes,
+                fileOptions: const FileOptions(upsert: true),
+              );
           return getPublicUrl(bucket, path);
         } catch (retryError) {
           throw Exception('Failed to create bucket and upload: $retryError');

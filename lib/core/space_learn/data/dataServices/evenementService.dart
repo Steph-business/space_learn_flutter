@@ -7,7 +7,8 @@ import '../model/evenementModel.dart';
 class EvenementService {
   final http.Client client;
 
-  EvenementService({http.Client? client}) : client = client ?? ApiClient.instance;
+  EvenementService({http.Client? client})
+    : client = client ?? ApiClient.instance;
 
   Future<Evenement> createEvenement({
     required String typePublication,

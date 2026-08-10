@@ -119,7 +119,11 @@ class _LivresPageState extends State<LivresPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Iconsax.arrow_left_2,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () {
             if (widget.onBackPressed != null) {
               widget.onBackPressed!();
@@ -230,7 +234,9 @@ class _LivresPageState extends State<LivresPage> {
                     decoration: BoxDecoration(
                       color: AppColors.textPrimary.withOpacity(0.03),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
+                      border: Border.all(
+                        color: AppColors.textPrimary.withOpacity(0.06),
+                      ),
                     ),
                     child: TextField(
                       style: GoogleFonts.poppins(
@@ -478,7 +484,6 @@ class _LivresPageState extends State<LivresPage> {
           color: AppColors.textPrimary.withOpacity(0.03),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
-          
         ),
         child: Column(
           children: [

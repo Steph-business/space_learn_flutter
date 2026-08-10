@@ -87,7 +87,8 @@ class UserModel {
       'IsProfileComplete': isProfileComplete,
       'Telephone': telephone,
       'Sexe': sexe,
-      if (dateNaissance != null) 'DateNaissance': dateNaissance!.toIso8601String(),
+      if (dateNaissance != null)
+        'DateNaissance': dateNaissance!.toIso8601String(),
       if (createdAt != null) 'CreatedAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'UpdatedAt': updatedAt!.toIso8601String(),
     };

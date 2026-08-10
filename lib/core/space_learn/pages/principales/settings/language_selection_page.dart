@@ -38,7 +38,9 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark
+          ? AppColors.scaffoldBackground
+          : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -77,7 +79,9 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
           SizedBox(height: 28),
           Card(
             color: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
               children: [
                 _buildLangTile("Français (French)", "fr", "🇫🇷"),
@@ -105,11 +109,17 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
           color: isSelected ? AppColors.primary : (AppColors.textPrimary),
         ),
       ),
-      trailing: isSelected ? Icon(Icons.check_circle, color: AppColors.accentInk) : null,
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: AppColors.accentInk)
+          : null,
       onTap: () {
         setState(() => _selectedLang = code);
         _setLang(code);
-        AppNotifications.showSnackBar(context, message: "Langue modifiée avec succès !", isSuccess: true);
+        AppNotifications.showSnackBar(
+          context,
+          message: "Langue modifiée avec succès !",
+          isSuccess: true,
+        );
       },
     );
   }

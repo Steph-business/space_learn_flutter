@@ -51,13 +51,17 @@ class UploadService {
     String? nomFichier,
     void Function(double progression)? onProgress,
   }) async {
-    assert(cheminFichier != null || octets != null,
-        'Fournir un chemin de fichier ou des octets');
+    assert(
+      cheminFichier != null || octets != null,
+      'Fournir un chemin de fichier ou des octets',
+    );
 
-    final donnees = octets ??
-        await File(cheminFichier!).readAsBytes();
-    final nom = nomFichier ??
-        (cheminFichier != null ? cheminFichier.split(RegExp(r'[/\\]')).last : 'fichier');
+    final donnees = octets ?? await File(cheminFichier!).readAsBytes();
+    final nom =
+        nomFichier ??
+        (cheminFichier != null
+            ? cheminFichier.split(RegExp(r'[/\\]')).last
+            : 'fichier');
 
     final requete = http.MultipartRequest('POST', Uri.parse(_urlUpload))
       ..headers['Authorization'] = 'Bearer $authToken'
@@ -67,7 +71,11 @@ class UploadService {
 
     // MultipartRequest n'expose pas de progression : on enveloppe son flux
     // pour compter les octets réellement transmis.
-    final flux = _fluxSuivi(requete.finalize(), requete.contentLength, onProgress);
+    final flux = _fluxSuivi(
+      requete.finalize(),
+      requete.contentLength,
+      onProgress,
+    );
     final envoi = http.StreamedRequest('POST', requete.url)
       ..headers.addAll(requete.headers)
       ..contentLength = requete.contentLength;

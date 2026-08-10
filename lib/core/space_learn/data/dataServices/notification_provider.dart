@@ -191,8 +191,7 @@ class NotificationProvider extends ChangeNotifier {
         );
         notifyListeners();
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> markAllAsRead(String token) async {
@@ -214,8 +213,7 @@ class NotificationProvider extends ChangeNotifier {
           )
           .toList();
       notifyListeners();
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   @override

@@ -98,7 +98,9 @@ class TtsService extends ChangeNotifier {
       await _flutterTts.setSpeechRate(_speechRate);
       await _flutterTts.setPitch(_pitch);
     } catch (e) {
-      debugPrint("Erreur lors de l'application des réglages TTS par défaut: $e");
+      debugPrint(
+        "Erreur lors de l'application des réglages TTS par défaut: $e",
+      );
     }
 
     try {

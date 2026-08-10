@@ -18,7 +18,9 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark
+          ? AppColors.scaffoldBackground
+          : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -57,28 +59,64 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
           SizedBox(height: 28),
           Card(
             color: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
               children: [
                 SwitchListTile(
-                  title: Text("Partager les statistiques d'utilisation", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                  subtitle: Text("Nous aide à améliorer l'application en collectant des données de crash anonymes.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                  title: Text(
+                    "Partager les statistiques d'utilisation",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Text(
+                    "Nous aide à améliorer l'application en collectant des données de crash anonymes.",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                   value: _shareAnalytics,
                   activeColor: AppColors.primary,
                   onChanged: (val) {
                     setState(() => _shareAnalytics = val);
-                    AppNotifications.showSnackBar(context, message: "Préférences d'analyse mises à jour.", isSuccess: true);
+                    AppNotifications.showSnackBar(
+                      context,
+                      message: "Préférences d'analyse mises à jour.",
+                      isSuccess: true,
+                    );
                   },
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16),
                 SwitchListTile(
-                  title: Text("Recommandations personnalisées", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                  subtitle: Text("Permet de vous proposer des livres adaptés à vos habitudes de lecture.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                  title: Text(
+                    "Recommandations personnalisées",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Text(
+                    "Permet de vous proposer des livres adaptés à vos habitudes de lecture.",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                   value: _personalizedAds,
                   activeColor: AppColors.primary,
                   onChanged: (val) {
                     setState(() => _personalizedAds = val);
-                    AppNotifications.showSnackBar(context, message: "Préférences de recommandation mises à jour.", isSuccess: true);
+                    AppNotifications.showSnackBar(
+                      context,
+                      message: "Préférences de recommandation mises à jour.",
+                      isSuccess: true,
+                    );
                   },
                 ),
               ],

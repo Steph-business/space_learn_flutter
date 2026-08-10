@@ -8,7 +8,8 @@ class PublicationSettingsPage extends StatefulWidget {
   const PublicationSettingsPage({super.key});
 
   @override
-  State<PublicationSettingsPage> createState() => _PublicationSettingsPageState();
+  State<PublicationSettingsPage> createState() =>
+      _PublicationSettingsPageState();
 }
 
 class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
@@ -37,8 +38,11 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
     if (mounted) {
       setState(() {
         _defaultPublic = prefs.getBool('pref_pub_default_public') ?? true;
-        _defaultLicense = prefs.getString('pref_pub_default_license') ?? "Tous droits réservés";
-        _defaultCurrency = prefs.getString('pref_pub_default_currency') ?? "FCFA";
+        _defaultLicense =
+            prefs.getString('pref_pub_default_license') ??
+            "Tous droits réservés";
+        _defaultCurrency =
+            prefs.getString('pref_pub_default_currency') ?? "FCFA";
       });
     }
   }
@@ -53,7 +57,9 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark
+          ? AppColors.scaffoldBackground
+          : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -90,38 +96,83 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
             ),
           ),
           SizedBox(height: 28),
-          
+
           Card(
             color: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
               children: [
                 SwitchListTile(
-                  title: Text("Visibilité publique par défaut", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                  subtitle: Text("Les livres créés sont directement visibles en boutique.", style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                  title: Text(
+                    "Visibilité publique par défaut",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Text(
+                    "Les livres créés sont directement visibles en boutique.",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                   value: _defaultPublic,
                   activeColor: AppColors.primary,
                   onChanged: (val) {
                     setState(() => _defaultPublic = val);
                     _savePubSetting('pref_pub_default_public', val);
-                    AppNotifications.showSnackBar(context, message: "Visibilité par défaut mise à jour.", isSuccess: true);
+                    AppNotifications.showSnackBar(
+                      context,
+                      message: "Visibilité par défaut mise à jour.",
+                      isSuccess: true,
+                    );
                   },
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16),
-                
+
                 // Licence
                 ListTile(
-                  title: Text("Licence par défaut", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                  subtitle: Text(_defaultLicense, style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                  title: Text(
+                    "Licence par défaut",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _defaultLicense,
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                   trailing: Icon(Icons.arrow_forward_ios, size: 14),
                   onTap: _showLicenseSelector,
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16),
-                
+
                 // Devise
                 ListTile(
-                  title: Text("Devise de vente", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14)),
-                  subtitle: Text(_defaultCurrency, style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 12)),
+                  title: Text(
+                    "Devise de vente",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _defaultCurrency,
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                   trailing: Icon(Icons.arrow_forward_ios, size: 14),
                   onTap: _showCurrencySelector,
                 ),
@@ -129,7 +180,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
             ),
           ),
           SizedBox(height: 24),
-          
+
           // Royalties / Prix
           Text(
             "Droits d'auteur & Rémunération",
@@ -146,14 +197,18 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
             style: GoogleFonts.poppins(color: AppColors.textPrimary),
             decoration: InputDecoration(
               labelText: "Part de l'auteur (%)",
-              labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
+              labelStyle: GoogleFonts.poppins(
+                color: isDark ? AppColors.textHint : Colors.black54,
+              ),
               filled: true,
               fillColor: AppColors.cardBackground,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           SizedBox(height: 32),
-          
+
           SizedBox(
             width: double.infinity,
             height: 52,
@@ -162,16 +217,26 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
                 _savePubSetting('pref_pub_default_public', _defaultPublic);
                 _savePubSetting('pref_pub_default_license', _defaultLicense);
                 _savePubSetting('pref_pub_default_currency', _defaultCurrency);
-                AppNotifications.showSnackBar(context, message: "Paramètres de publication enregistrés !", isSuccess: true);
+                AppNotifications.showSnackBar(
+                  context,
+                  message: "Paramètres de publication enregistrés !",
+                  isSuccess: true,
+                );
                 Navigator.of(context).pop();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: Text(
                 "Enregistrer les préférences",
-                style: GoogleFonts.poppins(color: AppColors.onAccent, fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.poppins(
+                  color: AppColors.onAccent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -191,8 +256,13 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
           padding: EdgeInsets.symmetric(vertical: 20),
           children: _licenses.map((license) {
             return ListTile(
-              title: Text(license, style: GoogleFonts.poppins(color: AppColors.textPrimary)),
-              trailing: _defaultLicense == license ? Icon(Icons.check, color: AppColors.accentInk) : null,
+              title: Text(
+                license,
+                style: GoogleFonts.poppins(color: AppColors.textPrimary),
+              ),
+              trailing: _defaultLicense == license
+                  ? Icon(Icons.check, color: AppColors.accentInk)
+                  : null,
               onTap: () {
                 setState(() => _defaultLicense = license);
                 _savePubSetting('pref_pub_default_license', license);
@@ -216,8 +286,13 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
           padding: EdgeInsets.symmetric(vertical: 20),
           children: _currencies.map((currency) {
             return ListTile(
-              title: Text(currency, style: GoogleFonts.poppins(color: AppColors.textPrimary)),
-              trailing: _defaultCurrency == currency ? Icon(Icons.check, color: AppColors.accentInk) : null,
+              title: Text(
+                currency,
+                style: GoogleFonts.poppins(color: AppColors.textPrimary),
+              ),
+              trailing: _defaultCurrency == currency
+                  ? Icon(Icons.check, color: AppColors.accentInk)
+                  : null,
               onTap: () {
                 setState(() => _defaultCurrency = currency);
                 _savePubSetting('pref_pub_default_currency', currency);

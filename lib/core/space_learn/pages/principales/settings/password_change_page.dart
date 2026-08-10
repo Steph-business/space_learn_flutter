@@ -22,7 +22,9 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark
+          ? AppColors.scaffoldBackground
+          : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -65,7 +67,8 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
               controller: _currentController,
               label: "Mot de passe actuel",
               obscureText: _obscureCurrent,
-              onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent),
+              onToggle: () =>
+                  setState(() => _obscureCurrent = !_obscureCurrent),
             ),
             SizedBox(height: 20),
             _buildPasswordField(
@@ -79,7 +82,8 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
               controller: _confirmController,
               label: "Confirmer le nouveau mot de passe",
               obscureText: _obscureConfirm,
-              onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
+              onToggle: () =>
+                  setState(() => _obscureConfirm = !_obscureConfirm),
             ),
             SizedBox(height: 40),
             SizedBox(
@@ -89,11 +93,17 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
                 onPressed: _handleSubmit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: Text(
                   "Mettre à jour le mot de passe",
-                  style: GoogleFonts.poppins(color: AppColors.onAccent, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(
+                    color: AppColors.onAccent,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -116,21 +126,32 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       style: GoogleFonts.poppins(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
+        labelStyle: GoogleFonts.poppins(
+          color: isDark ? AppColors.textHint : Colors.black54,
+        ),
         prefixIcon: Icon(Icons.lock_outline, color: AppColors.accentInk),
         suffixIcon: IconButton(
-          icon: Icon(obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppColors.accentInk),
+          icon: Icon(
+            obscureText
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+            color: AppColors.accentInk,
+          ),
           onPressed: onToggle,
         ),
         filled: true,
         fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.textHint : Colors.grey,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.textHint : Colors.grey,
+          ),
         ),
       ),
     );
@@ -142,19 +163,35 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     final confirm = _confirmController.text;
 
     if (current.isEmpty || newPass.isEmpty || confirm.isEmpty) {
-      AppNotifications.showSnackBar(context, message: "Veuillez remplir tous les champs.", isError: true);
+      AppNotifications.showSnackBar(
+        context,
+        message: "Veuillez remplir tous les champs.",
+        isError: true,
+      );
       return;
     }
     if (newPass != confirm) {
-      AppNotifications.showSnackBar(context, message: "Les mots de passe ne correspondent pas.", isError: true);
+      AppNotifications.showSnackBar(
+        context,
+        message: "Les mots de passe ne correspondent pas.",
+        isError: true,
+      );
       return;
     }
     if (newPass.length < 6) {
-      AppNotifications.showSnackBar(context, message: "Le mot de passe doit contenir au moins 6 caractères.", isError: true);
+      AppNotifications.showSnackBar(
+        context,
+        message: "Le mot de passe doit contenir au moins 6 caractères.",
+        isError: true,
+      );
       return;
     }
 
     Navigator.of(context).pop();
-    AppNotifications.showSnackBar(context, message: "Mot de passe modifié avec succès !", isSuccess: true);
+    AppNotifications.showSnackBar(
+      context,
+      message: "Mot de passe modifié avec succès !",
+      isSuccess: true,
+    );
   }
 }

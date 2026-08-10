@@ -37,9 +37,7 @@ class SelectCategorie extends StatelessWidget {
                     ? AppColors.primary
                     : AppColors.cardBackground.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: isSelected
-                    ? []
-                    : [],
+                boxShadow: isSelected ? [] : [],
               ),
               child: Center(
                 child: Text(

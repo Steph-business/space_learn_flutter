@@ -28,7 +28,11 @@ class StatistiquesLivrePage extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -45,7 +49,6 @@ class StatistiquesLivrePage extends StatelessWidget {
                   height: 120,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    
                   ),
                   child:
                       book.imageCouverture != null &&
@@ -224,7 +227,10 @@ class StatistiquesLivrePage extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (value) {
-            return FlLine(color: AppColors.textPrimary.withOpacity(0.1), strokeWidth: 1);
+            return FlLine(
+              color: AppColors.textPrimary.withOpacity(0.1),
+              strokeWidth: 1,
+            );
           },
         ),
         titlesData: FlTitlesData(

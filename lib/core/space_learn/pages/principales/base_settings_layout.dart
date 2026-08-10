@@ -84,7 +84,11 @@ class BaseSettingsLayout extends StatelessWidget {
       height: 52,
       child: ElevatedButton.icon(
         onPressed: () => showLogoutDialog(context),
-        icon: Icon(Icons.logout_rounded, color: AppColors.textPrimary, size: 20),
+        icon: Icon(
+          Icons.logout_rounded,
+          color: AppColors.textPrimary,
+          size: 20,
+        ),
         label: Text(
           "Se déconnecter",
           style: GoogleFonts.poppins(
@@ -98,7 +102,10 @@ class BaseSettingsLayout extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: AppColors.error.withOpacity(0.3), width: 1.5),
+            side: BorderSide(
+              color: AppColors.error.withOpacity(0.3),
+              width: 1.5,
+            ),
           ),
         ),
       ),
@@ -116,8 +123,9 @@ class BaseSettingsLayout extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.textPrimary.withOpacity(0.08)),
-              
+              border: Border.all(
+                color: AppColors.textPrimary.withOpacity(0.08),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -196,7 +204,9 @@ class BaseSettingsLayout extends StatelessWidget {
                             await ProfileStorage.clearSelectedProfileRole();
                             if (context.mounted) {
                               Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(builder: (_) => const LoginPage()),
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginPage(),
+                                ),
                                 (route) => false,
                               );
                             }
@@ -260,7 +270,11 @@ class SettingItemTile extends StatelessWidget {
             color: AppColors.textPrimary.withOpacity(0.04),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: AppColors.textPrimary.withOpacity(0.9), size: 22),
+          child: Icon(
+            icon,
+            color: AppColors.textPrimary.withOpacity(0.9),
+            size: 22,
+          ),
         ),
         title: Text(
           title,

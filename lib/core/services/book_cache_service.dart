@@ -68,7 +68,7 @@ class BookCacheService {
       final file = File(filePath);
       if (await file.exists()) {
         final fileBytes = await file.readAsBytes();
-        
+
         if (fileBytes.length < 4) {
           await file.delete();
           return null;
@@ -76,19 +76,24 @@ class BookCacheService {
 
         // Vérifier la signature du fichier (Magic Numbers)
         // PDF commence par '%PDF' (0x25, 0x50, 0x44, 0x46)
-        final bool isPdf = fileBytes[0] == 0x25 && fileBytes[1] == 0x50 && 
-                           fileBytes[2] == 0x44 && fileBytes[3] == 0x46;
+        final bool isPdf =
+            fileBytes[0] == 0x25 &&
+            fileBytes[1] == 0x50 &&
+            fileBytes[2] == 0x44 &&
+            fileBytes[3] == 0x46;
         // EPUB est un fichier ZIP, qui commence par 'PK' (0x50, 0x4B)
         final bool isZip = fileBytes[0] == 0x50 && fileBytes[1] == 0x4B;
 
         // Si ce n'est ni un PDF ni un EPUB valide (par exemple, un ancien fichier
         // chiffré par erreur, ou une page d'erreur HTML), on le supprime.
         if (!isPdf && !isZip) {
-          debugPrint('Fichier cache corrompu détecté, suppression pour forcer le retéléchargement...');
+          debugPrint(
+            'Fichier cache corrompu détecté, suppression pour forcer le retéléchargement...',
+          );
           await file.delete();
-          return null; 
+          return null;
         }
-        
+
         // Horodatage rafraichi a chaque lecture : l'eviction supprime alors
         // les livres les moins consultes, et non les plus anciennement
         // telecharges — un livre relu regulierement doit survivre.
@@ -143,7 +148,9 @@ class BookCacheService {
         // Sauvegarder en cache local (en clair)
         final file = File(filePath);
         await file.writeAsBytes(bytes);
-        debugPrint('Livre $bookId mis en cache : ${(bytes.length / 1024 / 1024).toStringAsFixed(2)} Mo');
+        debugPrint(
+          'Livre $bookId mis en cache : ${(bytes.length / 1024 / 1024).toStringAsFixed(2)} Mo',
+        );
         await _appliquerPlafond();
       }
 
@@ -197,8 +204,10 @@ class BookCacheService {
         try {
           await f.fichier.delete();
           total -= f.taille;
-          debugPrint('Cache : ${f.fichier.path.split('/').last} supprime '
-              '(${(f.taille / 1024 / 1024).toStringAsFixed(1)} Mo liberes)');
+          debugPrint(
+            'Cache : ${f.fichier.path.split('/').last} supprime '
+            '(${(f.taille / 1024 / 1024).toStringAsFixed(1)} Mo liberes)',
+          );
         } catch (e) {
           debugPrint('Cache : suppression impossible — $e');
         }

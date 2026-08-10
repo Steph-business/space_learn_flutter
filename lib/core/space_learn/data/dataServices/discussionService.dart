@@ -7,7 +7,8 @@ import '../../../utils/api_routes.dart';
 class DiscussionService {
   final http.Client client;
 
-  DiscussionService({http.Client? client}) : client = client ?? ApiClient.instance;
+  DiscussionService({http.Client? client})
+    : client = client ?? ApiClient.instance;
 
   Future<Discussion> createDiscussion({
     required String type,

@@ -37,8 +37,7 @@ class ReviewModel {
     if (dateStr != null) {
       try {
         creeLe = DateTime.parse(dateStr.toString());
-      } catch (e) {
-      }
+      } catch (e) {}
     }
 
     final livreData = json['Livre'] ?? json['livre'] ?? json['book'];

@@ -11,8 +11,14 @@ class ProfileService {
   /// ✅ Récupérer les profils disponibles (Lecteur, Auteur, etc.)
   Future<List<ProfilModel>> getProfils() async {
     final response = await http.get(Uri.parse(ApiRoutes.profils));
-    developer.log('ProfileService.getProfils: status ${response.statusCode}', name: 'ProfileService');
-    developer.log('ProfileService.getProfils: body ${response.body}', name: 'ProfileService');
+    developer.log(
+      'ProfileService.getProfils: status ${response.statusCode}',
+      name: 'ProfileService',
+    );
+    developer.log(
+      'ProfileService.getProfils: body ${response.body}',
+      name: 'ProfileService',
+    );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = jsonDecode(response.body);

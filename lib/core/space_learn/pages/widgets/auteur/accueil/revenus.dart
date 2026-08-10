@@ -48,9 +48,9 @@ class _RevenusState extends State<Revenus> {
   ];
 
   PeriodOption get _currentPeriod => _periods.firstWhere(
-        (p) => p.key == _selectedPeriodKey,
-        orElse: () => _periods[1],
-      );
+    (p) => p.key == _selectedPeriodKey,
+    orElse: () => _periods[1],
+  );
 
   Map<String, dynamic> get activeStats => _customPeriodStats ?? widget.stats;
 
@@ -314,8 +314,18 @@ class _RevenusState extends State<Revenus> {
       case '1y':
       default:
         final List<String> months = [
-          "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-          "Juil", "Août", "Sep", "Oct", "Nov", "Déc"
+          "Jan",
+          "Fév",
+          "Mar",
+          "Avr",
+          "Mai",
+          "Juin",
+          "Juil",
+          "Août",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Déc",
         ];
         return [
           _buildDateLabel(months[0]),
@@ -382,11 +392,11 @@ class _RevenusState extends State<Revenus> {
             show: true,
             getDotPainter: (spot, percent, barData, index) =>
                 FlDotCirclePainter(
-              radius: 4,
-              color: AppColors.accentInk,
-              strokeWidth: 2,
-              strokeColor: AppColors.cardBackground,
-            ),
+                  radius: 4,
+                  color: AppColors.accentInk,
+                  strokeWidth: 2,
+                  strokeColor: AppColors.cardBackground,
+                ),
           ),
           belowBarData: BarAreaData(
             show: true,

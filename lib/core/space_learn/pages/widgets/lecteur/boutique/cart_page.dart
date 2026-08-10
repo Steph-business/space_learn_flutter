@@ -92,7 +92,10 @@ class CartPage extends StatelessWidget {
                                   ),
                                   Text(
                                     book.authorName,
-                                    style: AppTextStyles.withColor(AppTextStyles.body12, AppColors.slateLight),
+                                    style: AppTextStyles.withColor(
+                                      AppTextStyles.body12,
+                                      AppColors.slateLight,
+                                    ),
                                   ),
                                   SizedBox(height: 8),
                                   Text(
@@ -154,7 +157,10 @@ class CartPage extends StatelessWidget {
           SizedBox(height: 8),
           Text(
             "Explorez la boutique pour y ajouter des livres",
-            style: AppTextStyles.withColor(AppTextStyles.body, AppColors.slateLight),
+            style: AppTextStyles.withColor(
+              AppTextStyles.body,
+              AppColors.slateLight,
+            ),
           ),
           SizedBox(height: 32),
           ElevatedButton(
@@ -180,7 +186,6 @@ class CartPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        
       ),
       child: SafeArea(
         child: Column(

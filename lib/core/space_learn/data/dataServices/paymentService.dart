@@ -132,7 +132,8 @@ class PaymentService {
       final dynamic data = responseData['data'] ?? responseData;
 
       if (data is Map<String, dynamic>) {
-        final status = (data['status'] ?? data['Status'] ?? 'UNKNOWN') as String;
+        final status =
+            (data['status'] ?? data['Status'] ?? 'UNKNOWN') as String;
         PaymentModel? paiement;
         if (data.containsKey('paiement')) {
           paiement = PaymentModel.fromJson(data['paiement']);
@@ -147,8 +148,7 @@ class PaymentService {
       }
       throw Exception('Format de statut CinetPay inattendu');
     } else {
-      throw Exception(
-          'Échec de la vérification CinetPay : ${response.body}');
+      throw Exception('Échec de la vérification CinetPay : ${response.body}');
     }
   }
 

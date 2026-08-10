@@ -26,7 +26,9 @@ class CustomSearchBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.cardBackground.withOpacity(0.8),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
+              border: Border.all(
+                color: AppColors.textPrimary.withOpacity(0.05),
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(

@@ -114,7 +114,11 @@ class _RecherchePageState extends State<RecherchePage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Iconsax.arrow_left_2,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Container(
@@ -261,7 +265,10 @@ class _RecherchePageState extends State<RecherchePage> {
                   SizedBox(height: 8),
                   Text(
                     "${book.prix} FCFA",
-                    style: AppTextStyles.withColor(AppTextStyles.cardTitle, AppColors.primary),
+                    style: AppTextStyles.withColor(
+                      AppTextStyles.cardTitle,
+                      AppColors.primary,
+                    ),
                   ),
                 ],
               ),

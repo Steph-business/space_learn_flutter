@@ -69,7 +69,9 @@ class DeepLinkService {
     final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
 
     // Schéma applicatif : l'hôte porte le nom de la ressource.
-    if (uri.scheme == 'spacelearn' && uri.host == 'book' && segments.isNotEmpty) {
+    if (uri.scheme == 'spacelearn' &&
+        uri.host == 'book' &&
+        segments.isNotEmpty) {
       return segments.first;
     }
 

@@ -13,9 +13,6 @@ class ProfilModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'libelle': libelle,
-    };
+    return {'id': id, 'libelle': libelle};
   }
 }

@@ -16,9 +16,7 @@ class MessagesPage extends StatelessWidget {
           left: 0,
           right: 0,
           height: MediaQuery.of(context).size.height * 0.45,
-          child: Container(
-            color: AppColors.scaffoldBackground,
-          ),
+          child: Container(color: AppColors.scaffoldBackground),
         ),
         Scaffold(
           backgroundColor: Colors.transparent,

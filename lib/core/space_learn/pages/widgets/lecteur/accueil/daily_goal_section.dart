@@ -31,7 +31,6 @@ class DailyGoalSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(24),
-        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +68,10 @@ class DailyGoalSection extends StatelessWidget {
                       ),
                       Text(
                         goal!.description,
-                        style: AppTextStyles.withColor(AppTextStyles.body11, AppColors.slateLight),
+                        style: AppTextStyles.withColor(
+                          AppTextStyles.body11,
+                          AppColors.slateLight,
+                        ),
                       ),
                     ],
                   ),
@@ -91,9 +93,7 @@ class DailyGoalSection extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: isCompleted
-                        ? AppColors.success
-                        : AppColors.indigo,
+                    color: isCompleted ? AppColors.success : AppColors.indigo,
                   ),
                 ),
               ),

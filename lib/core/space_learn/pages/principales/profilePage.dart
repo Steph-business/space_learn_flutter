@@ -17,8 +17,10 @@ import '../../../utils/token_storage.dart';
 import '../../../utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'lecteur/favorites_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart' as lecteurHome;
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart' as ecrivainHome;
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
+    as lecteurHome;
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
+    as ecrivainHome;
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -46,12 +48,18 @@ class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController _walletAddressController =
       TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  
+
   String? _selectedGender;
   String? _selectedAgeRange;
 
   final List<String> _genders = ["Homme", "Femme", "Autre", "Ne pas spécifier"];
-  final List<String> _ageRanges = ["Moins de 18 ans", "18 à 25 ans", "26 à 35 ans", "36 à 50 ans", "Plus de 50 ans"];
+  final List<String> _ageRanges = [
+    "Moins de 18 ans",
+    "18 à 25 ans",
+    "26 à 35 ans",
+    "36 à 50 ans",
+    "Plus de 50 ans",
+  ];
 
   @override
   void initState() {
@@ -95,7 +103,9 @@ class _ProfilePageState extends State<ProfilePage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.scaffoldBackground : Color.fromARGB(255, 250, 249, 246),
+      backgroundColor: isDark
+          ? AppColors.scaffoldBackground
+          : Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -235,15 +245,24 @@ class _ProfilePageState extends State<ProfilePage> {
               style: GoogleFonts.poppins(color: AppColors.textPrimary),
               decoration: InputDecoration(
                 labelText: "Genre",
-                labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
-                prefixIcon: Icon(Icons.person_outline, color: AppColors.accentInk),
+                labelStyle: GoogleFonts.poppins(
+                  color: isDark ? AppColors.textHint : Colors.black54,
+                ),
+                prefixIcon: Icon(
+                  Icons.person_outline,
+                  color: AppColors.accentInk,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
+                  borderSide: BorderSide(
+                    color: isDark ? AppColors.textHint : Colors.grey,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
+                  borderSide: BorderSide(
+                    color: isDark ? AppColors.textHint : Colors.grey,
+                  ),
                 ),
                 filled: true,
                 fillColor: AppColors.cardBackground,
@@ -268,15 +287,24 @@ class _ProfilePageState extends State<ProfilePage> {
               style: GoogleFonts.poppins(color: AppColors.textPrimary),
               decoration: InputDecoration(
                 labelText: "Tranche d'âge",
-                labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
-                prefixIcon: Icon(Icons.cake_outlined, color: AppColors.accentInk),
+                labelStyle: GoogleFonts.poppins(
+                  color: isDark ? AppColors.textHint : Colors.black54,
+                ),
+                prefixIcon: Icon(
+                  Icons.cake_outlined,
+                  color: AppColors.accentInk,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
+                  borderSide: BorderSide(
+                    color: isDark ? AppColors.textHint : Colors.grey,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
+                  borderSide: BorderSide(
+                    color: isDark ? AppColors.textHint : Colors.grey,
+                  ),
                 ),
                 filled: true,
                 fillColor: AppColors.cardBackground,
@@ -331,7 +359,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       _cancelChanges();
                     },
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: isDark ? AppColors.textHint : AppColors.primary),
+                      side: BorderSide(
+                        color: isDark ? AppColors.textHint : AppColors.primary,
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -340,7 +370,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Text(
                       "Annuler",
                       style: GoogleFonts.poppins(
-                        color: isDark ? AppColors.textSecondary : AppColors.primary,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -396,13 +428,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
-                        width: MediaQuery.of(context).size.width *
-                            ((_currentStep + 1) / stepsCount) - 48,
+                        width:
+                            MediaQuery.of(context).size.width *
+                                ((_currentStep + 1) / stepsCount) -
+                            48,
                         height: 6,
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(3),
-                          
                         ),
                       ),
                     ],
@@ -415,9 +448,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       physics: const BouncingScrollPhysics(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildStepContent(),
-                        ],
+                        children: [_buildStepContent()],
                       ),
                     ),
                   ),
@@ -439,7 +470,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               },
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(
-                                  color: AppColors.textPrimary.withOpacity(0.15),
+                                  color: AppColors.textPrimary.withOpacity(
+                                    0.15,
+                                  ),
                                 ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
@@ -499,7 +532,8 @@ class _ProfilePageState extends State<ProfilePage> {
     String role = '';
     if (_user != null && _profilesCache.isNotEmpty) {
       final userProfile = _profilesCache.firstWhere(
-        (p) => p.id.trim().toLowerCase() == _user!.profilId.trim().toLowerCase(),
+        (p) =>
+            p.id.trim().toLowerCase() == _user!.profilId.trim().toLowerCase(),
         orElse: () => ProfilModel(id: '', libelle: ''),
       );
       role = userProfile.libelle.toLowerCase();
@@ -556,7 +590,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             SizedBox(height: 36),
-            
+
             _buildOnboardingTextField(
               controller: _phoneController,
               label: "Numéro de téléphone",
@@ -564,7 +598,7 @@ class _ProfilePageState extends State<ProfilePage> {
               keyboardType: TextInputType.phone,
             ),
             SizedBox(height: 24),
-            
+
             Text(
               "Genre",
               style: GoogleFonts.poppins(
@@ -579,19 +613,27 @@ class _ProfilePageState extends State<ProfilePage> {
               decoration: BoxDecoration(
                 color: AppColors.textPrimary.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.textPrimary.withOpacity(0.1)),
+                border: Border.all(
+                  color: AppColors.textPrimary.withOpacity(0.1),
+                ),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedGender,
                   hint: Text(
                     "Sélectionnez votre genre",
-                    style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textHint,
+                      fontSize: 14,
+                    ),
                   ),
                   dropdownColor: AppColors.scaffoldBackground,
                   icon: Icon(Icons.arrow_drop_down, color: AppColors.accentInk),
                   isExpanded: true,
-                  style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                  ),
                   items: _genders.map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -607,7 +649,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             SizedBox(height: 24),
-            
+
             Text(
               "Tranche d'âge",
               style: GoogleFonts.poppins(
@@ -622,19 +664,27 @@ class _ProfilePageState extends State<ProfilePage> {
               decoration: BoxDecoration(
                 color: AppColors.textPrimary.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.textPrimary.withOpacity(0.1)),
+                border: Border.all(
+                  color: AppColors.textPrimary.withOpacity(0.1),
+                ),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedAgeRange,
                   hint: Text(
                     "Sélectionnez votre tranche d'âge",
-                    style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textHint,
+                      fontSize: 14,
+                    ),
                   ),
                   dropdownColor: AppColors.scaffoldBackground,
                   icon: Icon(Icons.arrow_drop_down, color: AppColors.accentInk),
                   isExpanded: true,
-                  style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                  ),
                   items: _ageRanges.map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -656,7 +706,9 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isLecteur ? "Racontez-nous votre histoire (Optionnel)" : "Racontez-nous votre histoire",
+              isLecteur
+                  ? "Racontez-nous votre histoire (Optionnel)"
+                  : "Racontez-nous votre histoire",
               style: GoogleFonts.poppins(
                 color: AppColors.textPrimary,
                 fontSize: 24,
@@ -665,7 +717,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             SizedBox(height: 8),
             Text(
-              isLecteur 
+              isLecteur
                   ? "Décrivez brièvement qui vous êtes (facultatif pour les lecteurs). Vous pouvez passer à l'étape suivante."
                   : "Décrivez qui vous êtes. Vos lecteurs pourront en apprendre plus sur vous à travers cette biographie d'auteur.",
               style: GoogleFonts.poppins(
@@ -687,7 +739,9 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isLecteur ? "Vos réseaux sociaux (Optionnel)" : "Vos réseaux sociaux",
+              isLecteur
+                  ? "Vos réseaux sociaux (Optionnel)"
+                  : "Vos réseaux sociaux",
               style: GoogleFonts.poppins(
                 color: AppColors.textPrimary,
                 fontSize: 24,
@@ -707,7 +761,9 @@ class _ProfilePageState extends State<ProfilePage> {
             SizedBox(height: 36),
             _buildOnboardingTextField(
               controller: _socialLinksController,
-              label: isLecteur ? "Liens sociaux (Optionnel)" : "Liens sociaux (URL)",
+              label: isLecteur
+                  ? "Liens sociaux (Optionnel)"
+                  : "Liens sociaux (URL)",
               icon: Icons.link_rounded,
               keyboardType: TextInputType.url,
             ),
@@ -732,7 +788,10 @@ class _ProfilePageState extends State<ProfilePage> {
       style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
+        labelStyle: GoogleFonts.poppins(
+          color: AppColors.textHint,
+          fontSize: 14,
+        ),
         prefixIcon: Icon(icon, color: AppColors.accentInk, size: 20),
         filled: true,
         fillColor: AppColors.textHint,
@@ -744,7 +803,10 @@ class _ProfilePageState extends State<ProfilePage> {
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: AppColors.accentInk, width: 1.8),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
     );
   }
@@ -753,7 +815,8 @@ class _ProfilePageState extends State<ProfilePage> {
     String role = '';
     if (_user != null && _profilesCache.isNotEmpty) {
       final userProfile = _profilesCache.firstWhere(
-        (p) => p.id.trim().toLowerCase() == _user!.profilId.trim().toLowerCase(),
+        (p) =>
+            p.id.trim().toLowerCase() == _user!.profilId.trim().toLowerCase(),
         orElse: () => ProfilModel(id: '', libelle: ''),
       );
       role = userProfile.libelle.toLowerCase();
@@ -770,10 +833,13 @@ class _ProfilePageState extends State<ProfilePage> {
         return;
       }
     } else if (_currentStep == 1) {
-      if (_phoneController.text.trim().isEmpty || _selectedGender == null || _selectedAgeRange == null) {
+      if (_phoneController.text.trim().isEmpty ||
+          _selectedGender == null ||
+          _selectedAgeRange == null) {
         AppNotifications.showSnackBar(
           context,
-          message: "Veuillez renseigner toutes vos informations personnelles (Téléphone, Genre, Tranche d'âge).",
+          message:
+              "Veuillez renseigner toutes vos informations personnelles (Téléphone, Genre, Tranche d'âge).",
           isError: true,
         );
         return;
@@ -822,15 +888,21 @@ class _ProfilePageState extends State<ProfilePage> {
       style: GoogleFonts.poppins(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
+        labelStyle: GoogleFonts.poppins(
+          color: isDark ? AppColors.textHint : Colors.black54,
+        ),
         prefixIcon: Icon(icon, color: AppColors.accentInk),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.textHint : Colors.grey,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? AppColors.textHint : Colors.grey),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.textHint : Colors.grey,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -851,25 +923,37 @@ class _ProfilePageState extends State<ProfilePage> {
     return TextFormField(
       initialValue: value,
       readOnly: true,
-      style: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black54),
+      style: GoogleFonts.poppins(
+        color: isDark ? AppColors.textHint : Colors.black54,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: isDark ? AppColors.textHint : Colors.black38),
+        labelStyle: GoogleFonts.poppins(
+          color: isDark ? AppColors.textHint : Colors.black38,
+        ),
         prefixIcon: Icon(icon, color: AppColors.accentInk),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? AppColors.textHint : AppColors.textSecondary),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.textHint : AppColors.textSecondary,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? AppColors.textHint : AppColors.textSecondary),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.textHint : AppColors.textSecondary,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? AppColors.textHint : AppColors.textSecondary),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.textHint : AppColors.textSecondary,
+          ),
         ),
         filled: true,
-        fillColor: isDark ? AppColors.cardBackground.withOpacity(0.5) : Colors.grey[100],
+        fillColor: isDark
+            ? AppColors.cardBackground.withOpacity(0.5)
+            : Colors.grey[100],
       ),
     );
   }
@@ -881,7 +965,6 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -909,9 +992,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     MaterialPageRoute(
                       builder: (context) => const FavoritesPage(),
                     ),
-                  ).then(
-                    (_) => _loadUserProfile(),
-                  );
+                  ).then((_) => _loadUserProfile());
                 },
               ),
             ],
@@ -938,7 +1019,10 @@ class _ProfilePageState extends State<ProfilePage> {
           SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: isDark ? AppColors.textHint : Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? AppColors.textHint : Colors.grey[600],
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -962,8 +1046,9 @@ class _ProfilePageState extends State<ProfilePage> {
       String? photoUrl;
       try {
         final bytes = await image.readAsBytes();
-        final fileName = '${_user?.id ?? DateTime.now().millisecondsSinceEpoch}.jpg';
-        
+        final fileName =
+            '${_user?.id ?? DateTime.now().millisecondsSinceEpoch}.jpg';
+
         await Supabase.instance.client.storage
             .from('avatars')
             .uploadBinary(
@@ -974,7 +1059,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 upsert: true,
               ),
             );
-            
+
         photoUrl = Supabase.instance.client.storage
             .from('avatars')
             .getPublicUrl(fileName);
@@ -985,7 +1070,11 @@ class _ProfilePageState extends State<ProfilePage> {
           final extension = image.path.split('.').last;
           photoUrl = 'data:image/$extension;base64,$base64String';
         } catch (_) {
-          AppNotifications.showSnackBar(context, message: "Erreur lors du traitement de l'image.", isError: true);
+          AppNotifications.showSnackBar(
+            context,
+            message: "Erreur lors du traitement de l'image.",
+            isError: true,
+          );
           setState(() {
             _isLoading = false;
           });
@@ -1002,15 +1091,27 @@ class _ProfilePageState extends State<ProfilePage> {
             profilePhoto: photoUrl,
           );
           if (updatedUser != null) {
-            AppNotifications.showSnackBar(context, message: "Photo de profil mise à jour !", isSuccess: true);
+            AppNotifications.showSnackBar(
+              context,
+              message: "Photo de profil mise à jour !",
+              isSuccess: true,
+            );
             await _loadUserProfile();
           } else {
-            AppNotifications.showSnackBar(context, message: "Impossible de mettre à jour le profil sur le serveur.", isError: true);
+            AppNotifications.showSnackBar(
+              context,
+              message: "Impossible de mettre à jour le profil sur le serveur.",
+              isError: true,
+            );
           }
         }
       }
     } catch (e) {
-      AppNotifications.showSnackBar(context, message: "Une erreur est survenue.", isError: true);
+      AppNotifications.showSnackBar(
+        context,
+        message: "Une erreur est survenue.",
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -1041,7 +1142,8 @@ class _ProfilePageState extends State<ProfilePage> {
     if (phone.isEmpty || gender == null || ageRange == null) {
       AppNotifications.showSnackBar(
         context,
-        message: "Veuillez renseigner toutes vos informations personnelles (Téléphone, Genre, Tranche d'âge).",
+        message:
+            "Veuillez renseigner toutes vos informations personnelles (Téléphone, Genre, Tranche d'âge).",
         isError: true,
       );
       return;
@@ -1051,7 +1153,8 @@ class _ProfilePageState extends State<ProfilePage> {
       String role = '';
       if (_profilesCache.isNotEmpty && _user != null) {
         final userProfile = _profilesCache.firstWhere(
-          (p) => p.id.trim().toLowerCase() == _user!.profilId.trim().toLowerCase(),
+          (p) =>
+              p.id.trim().toLowerCase() == _user!.profilId.trim().toLowerCase(),
           orElse: () => ProfilModel(id: '', libelle: ''),
         );
         role = userProfile.libelle.toLowerCase();
@@ -1062,7 +1165,8 @@ class _ProfilePageState extends State<ProfilePage> {
         if (bio.isEmpty || social.isEmpty) {
           AppNotifications.showSnackBar(
             context,
-            message: "Veuillez renseigner toutes vos informations (Biographie et Réseaux sociaux).",
+            message:
+                "Veuillez renseigner toutes vos informations (Biographie et Réseaux sociaux).",
             isError: true,
           );
           return;
@@ -1180,7 +1284,7 @@ class _ProfilePageState extends State<ProfilePage> {
         try {
           libBooks = await libraryService.getUserLibrary(token);
         } catch (_) {}
-        
+
         // Charger les profils en cache
         List<ProfilModel> profils = [];
         try {
@@ -1198,7 +1302,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _walletAddressController.text = user.walletAddress ?? '';
             _phoneController.text = user.telephone ?? '';
             _selectedGender = user.sexe;
-            
+
             if (user.dateNaissance != null) {
               final age = DateTime.now().year - user.dateNaissance!.year;
               if (age < 18) {
@@ -1215,10 +1319,10 @@ class _ProfilePageState extends State<ProfilePage> {
             } else {
               _selectedAgeRange = null;
             }
-            
+
             _favoritesCount = favs.length;
             _libraryCount = libBooks.length;
-            
+
             int inProgress = libBooks.where((b) {
               final progressions = b.livre?.progressions;
               if (progressions != null && progressions.isNotEmpty) {
@@ -1231,7 +1335,7 @@ class _ProfilePageState extends State<ProfilePage> {
               inProgress = 1;
             }
             _inProgressCount = inProgress;
-            
+
             _isLoading = false;
           });
         }
@@ -1254,7 +1358,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _walletAddressController.text = _user!.walletAddress ?? '';
       _phoneController.text = _user!.telephone ?? '';
       _selectedGender = _user!.sexe;
-      
+
       if (_user!.dateNaissance != null) {
         final age = DateTime.now().year - _user!.dateNaissance!.year;
         if (age < 18) {

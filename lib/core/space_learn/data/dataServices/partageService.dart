@@ -51,7 +51,8 @@ class PartageService {
 
     // Repli si le serveur est injoignable : mieux vaut un partage sans lien
     // qu'un bouton qui ne fait rien.
-    final texte = donnees?.texteDePartage ??
+    final texte =
+        donnees?.texteDePartage ??
         "Je te recommande « $titreDeSecours » sur Space Learn.";
     final sujet = donnees?.titre ?? titreDeSecours;
 
@@ -90,11 +91,11 @@ class DonneesPartage {
   });
 
   factory DonneesPartage.fromJson(Map<String, dynamic> json) => DonneesPartage(
-        titre: json['title']?.toString() ?? '',
-        auteur: json['author']?.toString() ?? '',
-        description: json['description']?.toString() ?? '',
-        image: json['image']?.toString() ?? '',
-        texteDePartage: json['share_text']?.toString() ?? '',
-        lien: json['share_url']?.toString() ?? '',
-      );
+    titre: json['title']?.toString() ?? '',
+    auteur: json['author']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+    image: json['image']?.toString() ?? '',
+    texteDePartage: json['share_text']?.toString() ?? '',
+    lien: json['share_url']?.toString() ?? '',
+  );
 }
