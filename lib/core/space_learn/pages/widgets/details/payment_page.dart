@@ -7,12 +7,10 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServi
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/paymentService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/paymentModel.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_result_page.dart';
 
 class PaymentPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -24,20 +22,10 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-  String _selectedMethod = 'MTN MoMo';
-  final _formKey = GlobalKey<FormState>();
 
-  final _nameController = TextEditingController();
-  final _cardNumberController = TextEditingController();
-  final _expiryController = TextEditingController();
-  final _cvvController = TextEditingController();
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _cardNumberController.dispose();
-    _expiryController.dispose();
-    _cvvController.dispose();
     super.dispose();
   }
 
@@ -166,97 +154,25 @@ class _PaymentPageState extends State<PaymentPage> {
             Divider(color: AppColors.textPrimary.withOpacity(0.05), thickness: 1),
             SizedBox(height: 30),
 
-            // Method Selector
-            _buildMethodSelector(),
-
-            SizedBox(height: 30),
-
-            // Details Section
-            if (_selectedMethod == 'Carte Visa') ...[
-              Text(
-                'Détails de la carte',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+            // Le choix de l'opérateur se fait sur la page CinetPay, qui
+            // présente toutes les méthodes actives du pays — Orange Money,
+            // MTN, Moov, Wave, cartes. Les rappeler ici imposerait de
+            // maintenir cette liste à jour, et de saisir des coordonnées
+            // bancaires que nous ne devons de toute façon jamais manipuler.
+            Text(
+              'Moyens de paiement',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
-              SizedBox(height: 20),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    _buildInputField(
-                      label: 'Nom sur la carte',
-                      hint: 'Jean Dupont',
-                      controller: _nameController,
-                    ),
-                    SizedBox(height: 20),
-                    _buildInputField(
-                      label: 'Numéro de carte',
-                      hint: '•••• •••• •••• 4242',
-                      controller: _cardNumberController,
-                      suffixIcon: Icons.credit_card,
-                      keyboardType: TextInputType.number,
-                    ),
-                    SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildInputField(
-                            label: 'Date d\'expiration',
-                            hint: 'MM/AA',
-                            controller: _expiryController,
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: _buildInputField(
-                            label: 'CVV',
-                            hint: '123',
-                            controller: _cvvController,
-                            suffixIcon: Icons.lock,
-                            keyboardType: TextInputType.number,
-                            obscureText: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              // Mobile Money UI (Orange / Wave)
-              Text(
-                'Paiement via $_selectedMethod',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              SizedBox(height: 20),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    _buildInputField(
-                      label: 'Numéro de téléphone',
-                      hint: '07 •• •• •• ••',
-                      controller: _cardNumberController,
-                      prefixText: '+225 ',
-                      suffixIcon: Icons.phone_android,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      'Vous recevrez une demande de confirmation sur votre téléphone.',
-                      style: AppTextStyles.greyMedium12,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Vous choisirez votre opérateur — Orange Money, MTN, Moov, Wave '
+              'ou carte bancaire — sur la page de paiement sécurisée.',
+              style: AppTextStyles.greyMedium12,
+            ),
 
             SizedBox(height: 48),
 
@@ -287,11 +203,7 @@ class _PaymentPageState extends State<PaymentPage> {
             SizedBox(height: 16),
             Center(
               child: Text(
-                _selectedMethod == 'MTN MoMo'
-                    ? 'Paiement sécurisé par MTN MoMo'
-                    : _selectedMethod == 'Orange Money'
-                        ? 'Paiement sécurisé par Orange Money'
-                        : 'Paiement sécurisé par Stripe',
+                'Paiement sécurisé par CinetPay',
                 style: AppTextStyles.greyMedium12,
               ),
             ),
@@ -366,114 +278,9 @@ class _PaymentPageState extends State<PaymentPage> {
     );
   }
 
-  Widget _buildMethodSelector() {
-    return Container(
-      padding: EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          _buildMethodButton('MTN MoMo'),
-          _buildMethodButton('Carte Visa'),
-          _buildMethodButton('Orange Money'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMethodButton(String method) {
-    final bool isSelected = _selectedMethod == method;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedMethod = method),
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primaryLight : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(
-            method,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.white : AppColors.textPrimary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputField({
-    required String label,
-    required String hint,
-    required TextEditingController controller,
-    String? prefixText,
-    IconData? suffixIcon,
-    bool obscureText = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.button14,
-        ),
-        SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          style: AppTextStyles.body15,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.poppins(color: Colors.grey[600]),
-            prefixText: prefixText,
-            prefixStyle: AppTextStyles.body15,
-            filled: true,
-            fillColor: AppColors.surfaceVariant,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: AppColors.textPrimary.withOpacity(0.05)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: AppColors.textPrimary.withOpacity(0.05)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                color: AppColors.primaryLight,
-                width: 1.5,
-              ),
-            ),
-            suffixIcon: suffixIcon != null
-                ? Icon(suffixIcon, color: Colors.grey[600], size: 20)
-                : null,
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) return 'Requis';
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
   void _processPayment() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+    // Plus rien à valider ici : les coordonnées de paiement sont saisies sur
+    // la page CinetPay, pas dans l'application.
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -512,121 +319,16 @@ class _PaymentPageState extends State<PaymentPage> {
       final double amount =
           double.tryParse(widget.book['prix']?.toString() ?? '0') ?? 0.0;
 
-      // ── MTN MoMo : processus asynchrone avec validation USSD ──
-      if (_selectedMethod == 'MTN MoMo') {
-        final paymentService = PaymentService();
-        final phone = _cardNumberController.text.trim();
-        final fullPhone = phone.startsWith('+') ? phone : '+225$phone';
-
-        final payment = PaymentModel(
-          id: "",
-          utilisateurId: user.id,
-          livreId: widget.book['id']?.toString() ?? "",
-          methodePaiement: "mtn_money",
-          transactionId: fullPhone,
-          phoneNumber: fullPhone,
-          referenceId: "",
-          montant: amount,
-          creeLe: DateTime.now(),
-        );
-
-        final createdPayment = await paymentService.createPayment(payment, token);
-        final refId = createdPayment.referenceId;
-
-        if (!mounted) return;
-        Navigator.of(context).pop(); // Fermer le chargement initial
-
-        bool paymentSuccessful = false;
-        bool isPolling = true;
-
-        // Afficher l'alerte d'attente de validation USSD
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogCtx) => WillPopScope(
-            onWillPop: () async => false,
-            child: AlertDialog(
-              backgroundColor: AppColors.surfaceVariant,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(color: AppColors.primaryLight),
-                  SizedBox(height: 24),
-                  Text(
-                    "Attente de validation...",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Veuillez valider la transaction de ${amount.toStringAsFixed(0)} FCFA sur votre téléphone ($fullPhone).",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-
-        // Boucle de polling du statut MoMo
-        int attempts = 0;
-        const maxAttempts = 20; // 60 secondes max (20 * 3s)
-        while (isPolling && attempts < maxAttempts && !paymentSuccessful) {
-          await Future.delayed(const Duration(seconds: 3));
-          attempts++;
-          try {
-            final statusMap = await paymentService.getMomoStatus(refId, token);
-            final status = statusMap['status']?.toString().toUpperCase() ?? '';
-            if (status == 'SUCCESSFUL') {
-              paymentSuccessful = true;
-              isPolling = false;
-            } else if (status == 'FAILED' || status == 'REJECTED') {
-              isPolling = false;
-            }
-          } catch (e) {
-            debugPrint("Erreur lors de la vérification du statut MoMo: $e");
-          }
-        }
-
-        // Fermer la boîte de dialogue d'attente
-        if (!mounted) return;
-        Navigator.of(context).pop();
-
-        // Naviguer vers la page de résultat de paiement
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CinetpayResultPage(
-              status: paymentSuccessful ? 'ACCEPTED' : 'REFUSED',
-              book: widget.book,
-              montant: amount,
-              paymentMethod: 'MTN MoMo',
-              transactionId: refId,
-            ),
-          ),
-        );
-        return;
-      }
-
-      // ── Autres méthodes (Carte Visa, Orange Money…) : traitement via CinetPay ──
+      // Tout paiement passe par CinetPay : le lecteur y choisit son
+      // opérateur parmi ceux actifs dans son pays.
       final paymentService = PaymentService();
       if (amount > 0) {
-        final methode = _selectedMethod == 'Orange Money' ? 'orange_money' : 'carte_visa';
-        // On initie le paiement CinetPay
         final result = await paymentService.initiateCinetpayPayment(
           livreId: widget.book['id']?.toString() ?? "",
           montant: amount,
           authToken: token,
-          customerName: _nameController.text.trim(),
+          customerName: user.nomComplet,
+          customerEmail: user.email,
         );
 
         if (!mounted) return;
