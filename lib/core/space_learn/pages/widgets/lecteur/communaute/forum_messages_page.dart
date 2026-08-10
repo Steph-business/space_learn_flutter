@@ -207,7 +207,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                     ),
                     child: Icon(
                       Iconsax.send_1,
-                      color: AppColors.textPrimary,
+                      color: AppColors.onAccent,
                       size: 20,
                     ),
                   ),

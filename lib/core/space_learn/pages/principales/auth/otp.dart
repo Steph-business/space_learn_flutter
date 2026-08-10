@@ -282,7 +282,7 @@ class _OtpPageState extends State<OtpPage> {
                     onPressed: _isLoading ? null : _handleVerifyCode,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.textPrimary,
+                      foregroundColor: AppColors.onAccent,
                       elevation: 4,
                       shadowColor: AppColors.primary.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
@@ -294,7 +294,7 @@ class _OtpPageState extends State<OtpPage> {
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                              color: AppColors.textPrimary,
+                              color: AppColors.onAccent,
                               strokeWidth: 2.5,
                             ),
                           )

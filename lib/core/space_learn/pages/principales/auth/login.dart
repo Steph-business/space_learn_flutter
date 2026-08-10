@@ -470,7 +470,7 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.textPrimary,
+                        foregroundColor: AppColors.onAccent,
                         elevation: 4,
                         shadowColor: AppColors.primary.withOpacity(0.4),
                         shape: RoundedRectangleBorder(
@@ -482,7 +482,7 @@ class _LoginPageState extends State<LoginPage> {
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
-                                color: AppColors.textPrimary,
+                                color: AppColors.onAccent,
                                 strokeWidth: 2.5,
                               ),
                             )

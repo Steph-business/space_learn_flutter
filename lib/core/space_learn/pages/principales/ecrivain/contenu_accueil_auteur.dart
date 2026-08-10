@@ -109,7 +109,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
                   },
                   icon: Icon(
                     Icons.add_circle,
-                    color: AppColors.textPrimary,
+                    color: AppColors.onAccent,
                     size: 24,
                   ),
                   label: Text(

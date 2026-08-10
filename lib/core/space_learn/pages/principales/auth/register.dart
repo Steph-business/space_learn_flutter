@@ -343,7 +343,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     onPressed: _isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.textPrimary,
+                      foregroundColor: AppColors.onAccent,
                       elevation: 4,
                       shadowColor: AppColors.primary.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
@@ -355,7 +355,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                              color: AppColors.textPrimary,
+                              color: AppColors.onAccent,
                               strokeWidth: 2.5,
                             ),
                           )

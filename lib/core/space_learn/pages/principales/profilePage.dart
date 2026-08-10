@@ -156,7 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     child: Icon(
                       Icons.camera_alt,
-                      color: AppColors.textPrimary,
+                      color: AppColors.onAccent,
                       size: 20,
                     ),
                   ),
@@ -317,7 +317,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Text(
                       "Sauvegarder",
                       style: GoogleFonts.poppins(
-                        color: AppColors.textPrimary,
+                        color: AppColors.onAccent,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -476,7 +476,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ? "Terminer"
                                   : "Suivant",
                               style: GoogleFonts.poppins(
-                                color: AppColors.textPrimary,
+                                color: AppColors.onAccent,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

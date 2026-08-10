@@ -171,7 +171,7 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
               ),
               child: Text(
                 "Enregistrer les préférences",
-                style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.poppins(color: AppColors.onAccent, fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),

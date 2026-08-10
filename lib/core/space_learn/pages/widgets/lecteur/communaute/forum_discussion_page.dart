@@ -482,7 +482,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
         backgroundColor: AppColors.secondaryVariant,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Icon(Iconsax.add, color: AppColors.textPrimary, size: 28),
+        child: Icon(Iconsax.add, color: AppColors.onAccent, size: 28),
       ),
     );
   }

@@ -149,7 +149,7 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                          color: AppColors.textPrimary,
+                          color: AppColors.onAccent,
                           strokeWidth: 2,
                         ),
                       )

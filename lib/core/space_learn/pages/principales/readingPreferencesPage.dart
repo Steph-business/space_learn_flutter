@@ -137,7 +137,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
                           child: Text(
                             "Sauvegarder",
                             style: GoogleFonts.poppins(
-                              color: AppColors.textPrimary,
+                              color: AppColors.onAccent,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),

@@ -1190,7 +1190,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.textPrimary,
+                                foregroundColor: AppColors.onAccent,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -1605,7 +1605,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   },
                   child: Text(
                     "Envoyer",
-                    style: GoogleFonts.poppins(color: AppColors.textPrimary),
+                    style: GoogleFonts.poppins(color: AppColors.onAccent),
                   ),
                 ),
               ],

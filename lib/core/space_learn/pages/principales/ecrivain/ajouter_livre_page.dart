@@ -475,7 +475,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                     "Continuer",
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: AppColors.onAccent,
                     ),
                   ),
                 ),
@@ -752,11 +752,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: AppColors.onAccent,
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward, size: 18, color: Colors.white),
+            const Icon(Icons.arrow_forward, size: 18, color: AppColors.onAccent),
           ],
         ),
       );
@@ -827,7 +827,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                               value: _progressionUpload > 0
                                   ? _progressionUpload
                                   : null,
-                              color: AppColors.textPrimary,
+                              color: AppColors.onAccent,
                               strokeWidth: 2,
                             ),
                           ),
@@ -840,7 +840,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                color: AppColors.onAccent,
                               ),
                             ),
                           ],
@@ -851,7 +851,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.onAccent,
                         ),
                       ),
               ),

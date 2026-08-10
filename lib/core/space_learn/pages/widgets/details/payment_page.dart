@@ -184,7 +184,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 onPressed: _processPayment,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
-                  foregroundColor: AppColors.textPrimary,
+                  foregroundColor: AppColors.onAccent,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -508,7 +508,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
                   onPressed: _navigateToLibrary,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryLight,
-                    foregroundColor: AppColors.textPrimary,
+                    foregroundColor: AppColors.onAccent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

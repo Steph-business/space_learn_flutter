@@ -655,7 +655,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textPrimary,
+                foregroundColor: AppColors.onAccent,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

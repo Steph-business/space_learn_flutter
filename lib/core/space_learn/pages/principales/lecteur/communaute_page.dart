@@ -165,7 +165,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                     ),
                     child: Text(
                       "Réessayer",
-                      style: TextStyle(color: AppColors.textPrimary),
+                      style: TextStyle(color: AppColors.onAccent),
                     ),
                   ),
                 ],

@@ -215,7 +215,7 @@ class NavBarAll extends StatelessWidget {
                             child: Text(
                               '${cart.itemCount}',
                               style: TextStyle(
-                                color: AppColors.textPrimary,
+                                color: AppColors.onAccent,
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
                               ),

@@ -395,7 +395,7 @@ class _ReadingPageState extends State<ReadingPage> {
             ),
             child: Text(
               "Acheter l'œuvre",
-              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(color: AppColors.onAccent, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -691,14 +691,14 @@ class _ReadingPageState extends State<ReadingPage> {
                               height: 24,
                               width: 24,
                               child: CircularProgressIndicator(
-                                color: AppColors.textPrimary,
+                                color: AppColors.onAccent,
                                 strokeWidth: 2.5,
                               ),
                             ),
                           )
                         : Icon(
                             _ttsService.isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: AppColors.textPrimary,
+                            color: AppColors.onAccent,
                             size: 32,
                           ),
                   ),

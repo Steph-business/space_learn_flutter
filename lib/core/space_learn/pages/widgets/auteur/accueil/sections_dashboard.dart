@@ -367,7 +367,7 @@ class _CommentairesRecentsSectionState extends State<CommentairesRecentsSection>
           onPressed: () {},
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.secondaryVariant,
-            foregroundColor: AppColors.textPrimary,
+            foregroundColor: AppColors.onAccent,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape: RoundedRectangleBorder(
