@@ -8,6 +8,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
@@ -324,7 +325,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              await TokenStorage.clearToken();
+              await SessionService.terminer();
               if (context.mounted) {
                 AppNotifications.showPremiumDialog(
                   context,

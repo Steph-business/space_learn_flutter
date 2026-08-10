@@ -6,6 +6,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/tokenUser.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
 
 class AuthService {
   /// ✅ Inscription
@@ -89,8 +90,9 @@ class AuthService {
         // Gérer l'erreur de déconnexion côté serveur, mais continuer la déconnexion locale
       }
     }
-    // ✅ On supprime le token localement dans tous les cas
-    await TokenStorage.clearToken();
+    // La session locale est effacee dans tous les cas, y compris si l'appel
+    // serveur a echoue : jeton, profil et livres telecharges.
+    await SessionService.terminer();
   }
 
   /// ✅ Envoyer OTP (ex: email/sms)

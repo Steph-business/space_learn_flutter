@@ -9,6 +9,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_prov
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
 import 'package:space_learn_flutter/core/services/api_client.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/services/deep_link_service.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_loader_page.dart';
 import 'package:space_learn_flutter/core/themes/theme_provider.dart';
@@ -91,9 +92,7 @@ void _ouvrirLivreDepuisLien(String livreId) {
 }
 
 Future<void> _handleSessionExpired() async {
-  await TokenStorage.clearToken();
-  await ProfileStorage.clearSelectedProfile();
-  await ProfileStorage.clearSelectedProfileRole();
+  await SessionService.terminer();
 
   final navigator = navigatorKey.currentState;
   if (navigator == null) return;

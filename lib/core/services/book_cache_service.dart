@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +13,13 @@ class BookCacheService {
   BookCacheService._internal();
 
   static const String _booksDirName = 'cached_books';
+
+  /// Plafond du cache local.
+  ///
+  /// Sans limite, la bibliotheque telechargee grossit indefiniment jusqu'a
+  /// saturer l'appareil, et l'utilisateur n'a aucun moyen de s'en apercevoir
+  /// avant d'y etre confronte.
+  static const int tailleMaxCacheOctets = 500 * 1024 * 1024; // 500 Mo
 
   /// Retourne le répertoire de cache des livres.
   Future<Directory> _getBooksDir() async {
@@ -83,6 +89,13 @@ class BookCacheService {
           return null; 
         }
         
+        // Horodatage rafraichi a chaque lecture : l'eviction supprime alors
+        // les livres les moins consultes, et non les plus anciennement
+        // telecharges — un livre relu regulierement doit survivre.
+        try {
+          await file.setLastModified(DateTime.now());
+        } catch (_) {}
+
         return fileBytes;
       }
       return null;
@@ -130,7 +143,8 @@ class BookCacheService {
         // Sauvegarder en cache local (en clair)
         final file = File(filePath);
         await file.writeAsBytes(bytes);
-        debugPrint('Livre $bookId mis en cache (sans DRM): ${(bytes.length / 1024 / 1024).toStringAsFixed(2)} Mo');
+        debugPrint('Livre $bookId mis en cache : ${(bytes.length / 1024 / 1024).toStringAsFixed(2)} Mo');
+        await _appliquerPlafond();
       }
 
       return bytes;
@@ -152,6 +166,45 @@ class BookCacheService {
       }
     } catch (e) {
       debugPrint('Erreur suppression cache: $e');
+    }
+  }
+
+  /// Supprime les livres les moins recemment lus jusqu'a repasser sous le
+  /// plafond.
+  Future<void> _appliquerPlafond() async {
+    if (kIsWeb) return;
+    try {
+      final booksDir = await _getBooksDir();
+      if (!await booksDir.exists()) return;
+
+      final fichiers = <({File fichier, int taille, DateTime vu})>[];
+      var total = 0;
+
+      await for (final entite in booksDir.list()) {
+        if (entite is! File) continue;
+        final stat = await entite.stat();
+        total += stat.size;
+        fichiers.add((fichier: entite, taille: stat.size, vu: stat.modified));
+      }
+
+      if (total <= tailleMaxCacheOctets) return;
+
+      // Du moins recemment lu au plus recent.
+      fichiers.sort((a, b) => a.vu.compareTo(b.vu));
+
+      for (final f in fichiers) {
+        if (total <= tailleMaxCacheOctets) break;
+        try {
+          await f.fichier.delete();
+          total -= f.taille;
+          debugPrint('Cache : ${f.fichier.path.split('/').last} supprime '
+              '(${(f.taille / 1024 / 1024).toStringAsFixed(1)} Mo liberes)');
+        } catch (e) {
+          debugPrint('Cache : suppression impossible — $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('Erreur application du plafond de cache: $e');
     }
   }
 
