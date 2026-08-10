@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'dart:async' as java_timer;
@@ -22,8 +23,6 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-
-
   @override
   void dispose() {
     super.dispose();
@@ -32,7 +31,11 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   Widget build(BuildContext context) {
     final rawPrix = widget.book['prix'];
-    final bool isFree = rawPrix == 0 || rawPrix == '0' || rawPrix == null || rawPrix == 'Gratuit';
+    final bool isFree =
+        rawPrix == 0 ||
+        rawPrix == '0' ||
+        rawPrix == null ||
+        rawPrix == 'Gratuit';
 
     if (isFree) {
       return Scaffold(
@@ -41,7 +44,11 @@ class _PaymentPageState extends State<PaymentPage> {
           backgroundColor: AppColors.darkSurface,
           elevation: 0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: AppColors.textPrimary,
+              size: 20,
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text('Ouvrage Gratuit', style: AppTextStyles.subtitle),
@@ -59,7 +66,11 @@ class _PaymentPageState extends State<PaymentPage> {
                     color: Colors.green.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.card_giftcard, color: Colors.green, size: 64),
+                  child: const Icon(
+                    Icons.card_giftcard,
+                    color: Colors.green,
+                    size: 64,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -89,31 +100,40 @@ class _PaymentPageState extends State<PaymentPage> {
                     onPressed: () async {
                       try {
                         final token = await TokenStorage.getToken();
-                        final profileId = await ProfileStorage.getSelectedProfile() ?? '';
+                        final profileId =
+                            await ProfileStorage.getSelectedProfile() ?? '';
                         if (token != null) {
                           final bookId = widget.book['id']?.toString() ?? '';
                           if (bookId.isNotEmpty) {
-                            await LibraryService().addToLibrary(bookId, profileId, 'GRATUIT', token);
+                            await LibraryService().addToLibrary(
+                              bookId,
+                              profileId,
+                              'GRATUIT',
+                              token,
+                            );
                           }
                         }
                       } catch (_) {}
                       if (context.mounted) {
                         Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (_) => const MainNavBar(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const MainNavBar()),
                         );
                       }
                     },
                     icon: const Icon(Icons.auto_stories),
                     label: Text(
                       "Ajouter & Lire gratuitement",
-                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
                 ),
@@ -134,13 +154,14 @@ class _PaymentPageState extends State<PaymentPage> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          'Paiement Sécurisé',
-          style: AppTextStyles.subtitle,
-        ),
+        title: Text('Paiement Sécurisé', style: AppTextStyles.subtitle),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -151,7 +172,10 @@ class _PaymentPageState extends State<PaymentPage> {
             _buildBookSummary(price, currency),
 
             SizedBox(height: 30),
-            Divider(color: AppColors.textPrimary.withOpacity(0.05), thickness: 1),
+            Divider(
+              color: AppColors.textPrimary.withOpacity(0.05),
+              thickness: 1,
+            ),
             SizedBox(height: 30),
 
             // Le choix de l'opérateur se fait sur la page CinetPay, qui
@@ -220,10 +244,7 @@ class _PaymentPageState extends State<PaymentPage> {
         Container(
           width: 80,
           height: 80,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child:
@@ -284,9 +305,8 @@ class _PaymentPageState extends State<PaymentPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Center(
-        child: CircularProgressIndicator(color: AppColors.accentInk),
-      ),
+      builder: (context) =>
+          Center(child: CircularProgressIndicator(color: AppColors.accentInk)),
     );
 
     try {
@@ -377,8 +397,10 @@ class _PaymentPageState extends State<PaymentPage> {
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur : $e"), backgroundColor: Colors.red),
+      AppNotifications.showSnackBar(
+        context,
+        message: "Erreur : $e",
+        isError: true,
       );
     }
   }

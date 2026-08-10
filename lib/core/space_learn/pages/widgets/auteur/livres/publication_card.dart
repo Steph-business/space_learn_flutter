@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -65,7 +66,6 @@ class PublicationCard extends StatelessWidget {
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.textPrimary.withOpacity(0.04)),
-          
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,7 +78,6 @@ class PublicationCard extends StatelessWidget {
                 height: 100,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  
                 ),
                 child:
                     book.imageCouverture != null &&
@@ -218,7 +217,9 @@ class PublicationCard extends StatelessWidget {
               constraints: BoxConstraints(maxWidth: 140),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: AppColors.textPrimary.withOpacity(0.06)),
+                side: BorderSide(
+                  color: AppColors.textPrimary.withOpacity(0.06),
+                ),
               ),
               position: PopupMenuPosition.under,
               offset: const Offset(0, 4),
@@ -261,11 +262,7 @@ class PublicationCard extends StatelessWidget {
                     height: 32,
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.publish,
-                          color: AppColors.success,
-                          size: 14,
-                        ),
+                        Icon(Icons.publish, color: AppColors.success, size: 14),
                         SizedBox(width: 8),
                         Text(
                           "Publier",
@@ -401,22 +398,23 @@ class PublicationCard extends StatelessWidget {
       final token = await TokenStorage.getToken();
       if (token == null) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Session expirée")),
+          AppNotifications.showSnackBar(
+            context,
+            message: "Session expirée",
+            isError: true,
           );
         }
         return;
       }
-      
+
       final BookService bookService = BookService();
       await bookService.updateBook(book.id, {'statut': 'publie'}, token);
-      
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Livre publié avec succès !"),
-            backgroundColor: AppColors.success,
-          ),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Livre publié avec succès !",
+          isSuccess: true,
         );
         if (onBookUpdated != null) {
           onBookUpdated!();
@@ -424,27 +422,19 @@ class PublicationCard extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Erreur: Impossible de publier le livre"),
-            backgroundColor: AppColors.error,
-          ),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur: Impossible de publier le livre",
+          isError: true,
         );
       }
     }
   }
 
   void _handleArchive(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "Fonction d'archivage en cours de développement.",
-          style: GoogleFonts.poppins(fontSize: 13),
-        ),
-        backgroundColor: AppColors.cardBackground,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+    AppNotifications.showSnackBar(
+      context,
+      message: "Fonction d'archivage en cours de développement.",
     );
   }
 
@@ -523,18 +513,10 @@ class PublicationCard extends StatelessWidget {
                           if (token != null) {
                             await BookService().deleteBook(book.id, token);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    "Livre supprimé avec succès",
-                                    style: GoogleFonts.poppins(fontSize: 13),
-                                  ),
-                                  backgroundColor: AppColors.success,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
+                              AppNotifications.showSnackBar(
+                                context,
+                                message: "Livre supprimé avec succès",
+                                isSuccess: true,
                               );
                             }
                             if (onBookUpdated != null) {
@@ -543,18 +525,10 @@ class PublicationCard extends StatelessWidget {
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  "Erreur lors de la suppression : $e",
-                                  style: GoogleFonts.poppins(fontSize: 13),
-                                ),
-                                backgroundColor: AppColors.error,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                            AppNotifications.showSnackBar(
+                              context,
+                              message: "Erreur lors de la suppression : $e",
+                              isError: true,
                             );
                           }
                         }

@@ -14,6 +14,7 @@ import 'package:space_learn_flutter/core/services/deep_link_service.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_loader_page.dart';
 import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -101,10 +102,10 @@ Future<void> _handleSessionExpired() async {
 
   final messengerContext = navigatorKey.currentContext;
   if (messengerContext != null && messengerContext.mounted) {
-    ScaffoldMessenger.of(messengerContext).showSnackBar(
-      const SnackBar(
-        content: Text('Votre session a expiré. Veuillez vous reconnecter.'),
-      ),
+    AppNotifications.showSnackBar(
+      messengerContext,
+      message: 'Votre session a expiré. Veuillez vous reconnecter.',
+      isError: true,
     );
   }
 }

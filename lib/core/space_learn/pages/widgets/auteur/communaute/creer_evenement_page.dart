@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -104,7 +105,11 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Iconsax.arrow_left_2,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -138,7 +143,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.1)),
+                border: Border.all(
+                  color: AppColors.textPrimary.withValues(alpha: 0.1),
+                ),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -200,7 +207,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                             color: AppColors.cardBackground,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppColors.textPrimary.withValues(alpha: 0.1),
+                              color: AppColors.textPrimary.withValues(
+                                alpha: 0.1,
+                              ),
                             ),
                           ),
                           child: Row(
@@ -247,7 +256,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                             color: AppColors.cardBackground,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppColors.textPrimary.withValues(alpha: 0.1),
+                              color: AppColors.textPrimary.withValues(
+                                alpha: 0.1,
+                              ),
                             ),
                           ),
                           child: Row(
@@ -331,8 +342,10 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         desc.isEmpty ||
         _selectedDate == null ||
         _selectedTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez remplir tous les champs.")),
+      AppNotifications.showSnackBar(
+        context,
+        message: "Veuillez remplir tous les champs.",
+        isError: true,
       );
       return;
     }
@@ -372,22 +385,22 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.initialEvenement != null
-                  ? "Événement mis à jour !"
-                  : "Événement créé avec succès !",
-            ),
-          ),
+        AppNotifications.showSnackBar(
+          context,
+          message: widget.initialEvenement != null
+              ? "Événement mis à jour !"
+              : "Événement créé avec succès !",
+          isSuccess: true,
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        AppNotifications.showSnackBar(
           context,
-        ).showSnackBar(SnackBar(content: Text("Erreur : ${e.toString()}")));
+          message: "Erreur : ${e.toString()}",
+          isError: true,
+        );
       }
     } finally {
       if (mounted) setState(() => _isCreating = false);
@@ -414,11 +427,15 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.1)),
+          borderSide: BorderSide(
+            color: AppColors.textPrimary.withValues(alpha: 0.1),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.1)),
+          borderSide: BorderSide(
+            color: AppColors.textPrimary.withValues(alpha: 0.1),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

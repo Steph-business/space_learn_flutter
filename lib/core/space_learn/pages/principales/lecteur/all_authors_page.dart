@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
@@ -207,9 +208,11 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
             _followingIds.remove(author.id);
           }
         });
-        ScaffoldMessenger.of(
+        AppNotifications.showSnackBar(
           context,
-        ).showSnackBar(SnackBar(content: Text("Erreur : ${e.toString()}")));
+          message: "Erreur : ${e.toString()}",
+          isError: true,
+        );
       }
     }
   }
@@ -222,25 +225,27 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Iconsax.arrow_left_2,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          "Tous les auteurs",
-          style: AppTextStyles.sectionTitle,
-        ),
+        title: Text("Tous les auteurs", style: AppTextStyles.sectionTitle),
         centerTitle: true,
       ),
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(color: AppColors.accentInk),
-            )
+          ? Center(child: CircularProgressIndicator(color: AppColors.accentInk))
           : _error != null
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(_error!, style: TextStyle(color: AppColors.textSecondary)),
+                  Text(
+                    _error!,
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
                   SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _loadData,
@@ -269,7 +274,9 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
+                    border: Border.all(
+                      color: AppColors.textPrimary.withOpacity(0.05),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -291,7 +298,9 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                           child: ClipOval(
                             child: ProfileImageHelper.buildProfileImage(
                               author.profilePhoto,
-                              fallbackInitial: author.nomComplet.substring(0, 1).toUpperCase(),
+                              fallbackInitial: author.nomComplet
+                                  .substring(0, 1)
+                                  .toUpperCase(),
                               textStyle: TextStyle(
                                 color: AppColors.accentInk,
                                 fontWeight: FontWeight.bold,
@@ -349,7 +358,9 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
                             borderRadius: BorderRadius.circular(12),
                             side: isFollowing
                                 ? BorderSide(
-                                    color: AppColors.textPrimary.withOpacity(0.1),
+                                    color: AppColors.textPrimary.withOpacity(
+                                      0.1,
+                                    ),
                                   )
                                 : BorderSide.none,
                           ),

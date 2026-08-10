@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -123,9 +124,11 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      AppNotifications.showSnackBar(
         context,
-      ).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+        message: 'Erreur : $e',
+        isError: true,
+      );
     }
   }
 
@@ -152,10 +155,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                "Annuler",
-                style: TextStyle(color: Colors.grey),
-              ),
+              child: Text("Annuler", style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -182,7 +182,11 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
         backgroundColor: AppColors.darkSurface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Iconsax.arrow_left_2,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () {
             MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
             Navigator.of(context).pop();
@@ -256,7 +260,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
+                  border: Border.all(
+                    color: AppColors.textPrimary.withOpacity(0.05),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -356,12 +362,13 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             ? AppColors.secondaryVariant
                             : AppColors.cardBackground,
                         borderRadius: BorderRadius.circular(30),
-                        
                       ),
                       child: Text(
                         cat,
                         style: GoogleFonts.poppins(
-                          color: isSelected ? Colors.white : AppColors.textPrimary,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textPrimary,
                           fontSize: 14,
                           fontWeight: isSelected
                               ? FontWeight.w600
@@ -379,7 +386,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             // Posts List
             if (_isLoading)
               Center(
-                child: CircularProgressIndicator(color: AppColors.secondaryVariant),
+                child: CircularProgressIndicator(
+                  color: AppColors.secondaryVariant,
+                ),
               )
             else if (_discussions.isEmpty)
               Padding(
@@ -425,7 +434,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       child: Text(
                         "Aucun sujet ne correspond à cette catégorie.",
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(color: AppColors.textSecondary),
+                        style: GoogleFonts.poppins(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     );
                   }
@@ -567,8 +578,10 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             child: Image.network(
                               "https://i.pravatar.cc/150?u=$username",
                               fit: BoxFit.cover,
-                              errorBuilder: (c, e, s) =>
-                                  Icon(Icons.person, color: AppColors.textPrimary),
+                              errorBuilder: (c, e, s) => Icon(
+                                Icons.person,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                           ),
                   ),
@@ -660,7 +673,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                         Text(
                           likes.toString(),
                           style: GoogleFonts.poppins(
-                            color: likes > 0 ? Colors.white : AppColors.textSecondary,
+                            color: likes > 0
+                                ? Colors.white
+                                : AppColors.textSecondary,
                             fontSize: 13,
                           ),
                         ),

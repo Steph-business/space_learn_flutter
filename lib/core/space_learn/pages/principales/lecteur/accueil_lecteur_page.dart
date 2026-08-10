@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -214,8 +215,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         context
             .read<NotificationProvider>()
             .loadNotifications(token)
-            .catchError((e) {
-            });
+            .catchError((e) {});
         setState(() {
           // 1. Get stats from API
           ReaderStatsModel apiStats = results[0] as ReaderStatsModel;
@@ -463,7 +463,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   ? Center(
                       child: Text(
                         "Chargement...",
-                        style: GoogleFonts.poppins(color: AppColors.textSecondary),
+                        style: GoogleFonts.poppins(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     )
                   : RefreshIndicator(
@@ -493,7 +495,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
+                border: Border.all(
+                  color: AppColors.textPrimary.withOpacity(0.05),
+                ),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -519,11 +523,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   if (_searchQuery.isNotEmpty)
                     GestureDetector(
                       onTap: _clearSearch,
-                      child: Icon(
-                        Icons.close,
-                        color: Colors.grey,
-                        size: 18,
-                      ),
+                      child: Icon(Icons.close, color: Colors.grey, size: 18),
                     ),
                 ],
               ),
@@ -806,8 +806,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
   // Helpers UI du nouveau design
 
-
-
   Widget _buildFeaturedHorizontalList() {
     List<BookModel> displayBooks = [];
     if (_featuredBooks.isNotEmpty) {
@@ -842,8 +840,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       ),
     );
   }
-
-
 
   Widget _buildCategoryPills() {
     final List<BookModel> pool = _recommendations.isNotEmpty
@@ -895,16 +891,16 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     : AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isSelected
-                      ? AppColors.secondary
-                      : AppColors.textHint,
+                  color: isSelected ? AppColors.secondary : AppColors.textHint,
                 ),
               ),
               alignment: Alignment.center,
               child: Text(
                 catName,
                 style: GoogleFonts.poppins(
-                  color: isSelected ? AppColors.onAccent : AppColors.textPrimary,
+                  color: isSelected
+                      ? AppColors.onAccent
+                      : AppColors.textPrimary,
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
@@ -962,8 +958,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     );
   }
 
-
-
   Widget _buildAuthorsList() {
     final hardcodedAuthors = [
       {"name": "Marie Dubois", "img": null},
@@ -1000,13 +994,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   ),
                 );
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Profil de $authorName en cours de développement',
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
+                AppNotifications.showSnackBar(
+                  context,
+                  message: 'Profil de $authorName en cours de développement',
                 );
               }
             },
@@ -1050,12 +1040,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                           _followAuthor(authorId, authorName);
                         }
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
+                        AppNotifications.showSnackBar(
+                          context,
+                          message:
                               'Fonctionnalité indisponible pour les auteurs de démonstration',
-                            ),
-                          ),
                         );
                       }
                     },
@@ -1124,11 +1112,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       // Anti-self following
       if (authorId == _currentUserId) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Vous ne pouvez pas vous suivre vous-même"),
-              backgroundColor: Colors.orange,
-            ),
+          AppNotifications.showSnackBar(
+            context,
+            message: "Vous ne pouvez pas vous suivre vous-même",
+            isError: true,
           );
         }
         return;
@@ -1139,9 +1126,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         setState(() {
           _followingIds.add(authorId);
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$authorName suivi !')));
+        AppNotifications.showSnackBar(context, message: '$authorName suivi !');
       }
     } catch (e) {
       final errorStr = e.toString();
@@ -1155,11 +1140,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorStr.replaceFirst('Exception: ', '')),
-              backgroundColor: Colors.red,
-            ),
+          AppNotifications.showSnackBar(
+            context,
+            message: errorStr.replaceFirst('Exception: ', ''),
+            isError: true,
           );
         }
       }
@@ -1171,7 +1155,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
-        title: Text("Déjà suivi", style: TextStyle(color: AppColors.textPrimary)),
+        title: Text(
+          "Déjà suivi",
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
         content: Text(
           "Vous suivez déjà $authorName. Vous recevrez des notifications pour ses prochaines publications.",
           style: TextStyle(color: AppColors.textSecondary),
@@ -1179,10 +1166,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              "OK",
-              style: TextStyle(color: AppColors.accentInk),
-            ),
+            child: Text("OK", style: TextStyle(color: AppColors.accentInk)),
           ),
         ],
       ),
@@ -1260,7 +1244,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          
         ),
         child: Row(
           children: [
@@ -1377,10 +1360,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           "note": r.note,
         };
       }).toList();
-      
+
       quotes.addAll(reviewQuotes);
-    } 
-    
+    }
+
     if (quotes.isEmpty) {
       quotes = [
         {
@@ -1635,10 +1618,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               style: GoogleFonts.poppins(color: AppColors.textPrimary),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loadData,
-              child: Text("Réessayer"),
-            ),
+            ElevatedButton(onPressed: _loadData, child: Text("Réessayer")),
           ],
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -53,7 +54,10 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
-        title: Text("Supprimer", style: TextStyle(color: AppColors.textPrimary)),
+        title: Text(
+          "Supprimer",
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
         content: Text(
           "Voulez-vous vraiment supprimer cette publication ?",
           style: TextStyle(color: AppColors.textSecondary),
@@ -61,17 +65,11 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              "Annuler",
-              style: TextStyle(color: AppColors.textHint),
-            ),
+            child: Text("Annuler", style: TextStyle(color: AppColors.textHint)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              "Supprimer",
-              style: TextStyle(color: Colors.redAccent),
-            ),
+            child: Text("Supprimer", style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -83,16 +81,20 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
         if (token != null) {
           await _evenementService.deleteEvenement(_evenement.id, token);
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Supprimé avec succès")),
+            AppNotifications.showSnackBar(
+              context,
+              message: "Supprimé avec succès",
+              isSuccess: true,
             );
             Navigator.pop(context, true);
           }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Erreur lors de la suppression: $e")),
+          AppNotifications.showSnackBar(
+            context,
+            message: "Erreur lors de la suppression: $e",
+            isError: true,
           );
         }
       }
@@ -125,8 +127,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
             });
           }
         }
-      } catch (e) {
-      }
+      } catch (e) {}
     }
   }
 
@@ -160,15 +161,15 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
         actions: _isAuthor
             ? [
                 IconButton(
-                  icon: Icon(Iconsax.edit, color: AppColors.textPrimary, size: 20),
+                  icon: Icon(
+                    Iconsax.edit,
+                    color: AppColors.textPrimary,
+                    size: 20,
+                  ),
                   onPressed: _editEvenement,
                 ),
                 IconButton(
-                  icon: Icon(
-                    Iconsax.trash,
-                    color: Colors.redAccent,
-                    size: 20,
-                  ),
+                  icon: Icon(Iconsax.trash, color: Colors.redAccent, size: 20),
                   onPressed: _confirmDelete,
                 ),
               ]

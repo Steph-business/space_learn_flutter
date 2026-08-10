@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -86,9 +87,11 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
           _isFollowing = originalFollowing;
           _followerCount = originalCount;
         });
-        ScaffoldMessenger.of(
+        AppNotifications.showSnackBar(
           context,
-        ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+          message: 'Erreur: $e',
+          isError: true,
+        );
       }
     }
   }
@@ -104,10 +107,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
           SliverPadding(
             padding: const EdgeInsets.all(20),
             sliver: SliverToBoxAdapter(
-              child: Text(
-                "Ses livres",
-                style: AppTextStyles.sectionTitle,
-              ),
+              child: Text("Ses livres", style: AppTextStyles.sectionTitle),
             ),
           ),
           _buildBooksGrid(),
@@ -143,7 +143,9 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                   CircleAvatar(
                     radius: 45,
                     backgroundColor: AppColors.cardBackground,
-                    backgroundImage: ProfileImageHelper.getProfileImageProvider(widget.author.profilePhoto),
+                    backgroundImage: ProfileImageHelper.getProfileImageProvider(
+                      widget.author.profilePhoto,
+                    ),
                     child: widget.author.profilePhoto == null
                         ? Text(
                             widget.author.nomComplet
@@ -168,10 +170,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
       child: Column(
         children: [
           SizedBox(height: 16),
-          Text(
-            widget.author.nomComplet,
-            style: AppTextStyles.pageTitle,
-          ),
+          Text(widget.author.nomComplet, style: AppTextStyles.pageTitle),
           Text(
             widget.author.biography ?? "Écrivain passionné sur SpaceLearn",
             textAlign: TextAlign.center,
@@ -226,10 +225,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text(
-          label,
-          style: AppTextStyles.greyMedium12,
-        ),
+        Text(label, style: AppTextStyles.greyMedium12),
       ],
     );
   }
@@ -284,7 +280,6 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
-                
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,7 +298,10 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                           : Container(
                               color: Colors.blueGrey,
                               child: Center(
-                                child: Icon(Icons.book, color: AppColors.textPrimary),
+                                child: Icon(
+                                  Icons.book,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
                             ),
                     ),

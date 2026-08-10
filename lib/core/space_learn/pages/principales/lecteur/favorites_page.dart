@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -53,13 +54,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
           _favorites.removeWhere((f) => f.livreId == livreId);
         });
         if (mounted) {
-          ScaffoldMessenger.of(
+          AppNotifications.showSnackBar(
             context,
-          ).showSnackBar(const SnackBar(content: Text("Retiré de ma favorie")));
+            message: "Retiré de ma favorie",
+          );
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   @override
@@ -90,11 +91,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.favorite_border,
-                    size: 80,
-                    color: Colors.grey,
-                  ),
+                  Icon(Icons.favorite_border, size: 80, color: Colors.grey),
                   SizedBox(height: 16),
                   Text(
                     "Aucune favorie pour le moment.",
@@ -154,10 +151,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  book.titre,
-                                  style: AppTextStyles.subtitle,
-                                ),
+                                Text(book.titre, style: AppTextStyles.subtitle),
                                 SizedBox(height: 4),
                                 Text(
                                   book.authorName,

@@ -155,4 +155,29 @@ void main() {
     expect(fautes, isEmpty,
         reason: 'Fond(s) hors palette :\n${fautes.join('\n')}');
   });
+
+  // ── Règle 3 ────────────────────────────────────────────────────────────
+  // Les bandeaux passent tous par AppNotifications. Les appels directs à
+  // ScaffoldMessenger portaient 12 fonds différents pour deux états, et
+  // 16 d'entre eux n'en fixaient aucun : Flutter retombait alors sur
+  // inverseSurface, un brun #372F27 étranger à la palette du produit.
+  test('les bandeaux passent tous par AppNotifications', () {
+    final appelDirect = RegExp(r'(?<!AppNotifications)\.\s*showSnackBar\s*\(');
+    final fautes = <String>[];
+
+    for (final fichier in _fichiersDart()) {
+      final chemin = fichier.path.replaceAll(r'\', '/');
+      if (chemin.endsWith('core/utils/app_notifications.dart')) continue;
+
+      final lignes = fichier.readAsLinesSync();
+      for (var i = 0; i < lignes.length; i++) {
+        if (appelDirect.hasMatch(lignes[i])) {
+          fautes.add('${fichier.path}:${i + 1} — ${lignes[i].trim()}');
+        }
+      }
+    }
+
+    expect(fautes, isEmpty,
+        reason: 'Bandeau(x) hors AppNotifications :\n${fautes.join('\n')}');
+  });
 }

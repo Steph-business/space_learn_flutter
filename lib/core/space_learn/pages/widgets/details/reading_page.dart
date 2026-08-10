@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -99,14 +100,15 @@ class _ReadingPageState extends State<ReadingPage> {
     _loadSettings();
     _loadBookmarks();
     _startHeartbeat();
-    
+
     // Initialisation TTS
     _ttsService.onCompletion = _onTtsCompletion;
     _ttsService.addListener(_onTtsStateChanged);
   }
 
   Future<void> _loadBookFile() async {
-    final String? pdfUrl = widget.book['fichier_url'] ?? widget.book['fichierUrl'];
+    final String? pdfUrl =
+        widget.book['fichier_url'] ?? widget.book['fichierUrl'];
     final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
 
     if (pdfUrl == null || pdfUrl.isEmpty || bookId.isEmpty) {
@@ -116,13 +118,19 @@ class _ReadingPageState extends State<ReadingPage> {
       return;
     }
 
-    final String format = (widget.book['format'] ?? '').toString().toLowerCase();
-    final bool isEpub = format == 'epub' || pdfUrl.toLowerCase().endsWith('.epub');
+    final String format = (widget.book['format'] ?? '')
+        .toString()
+        .toLowerCase();
+    final bool isEpub =
+        format == 'epub' || pdfUrl.toLowerCase().endsWith('.epub');
 
     try {
       final isCached = await _bookCacheService.isBookCached(bookId, pdfUrl);
       if (isCached) {
-        final bytes = await _bookCacheService.getCachedBookBytes(bookId, pdfUrl);
+        final bytes = await _bookCacheService.getCachedBookBytes(
+          bookId,
+          pdfUrl,
+        );
         if (bytes != null) {
           setState(() {
             _cachedBookBytes = bytes;
@@ -193,8 +201,8 @@ class _ReadingPageState extends State<ReadingPage> {
             _backgroundColor = Color(backendSettings.readingBgColor);
             _brightness = backendSettings.brightness;
             // Sécurité : ne jamais avoir un zoom de 0 ou négatif
-            _zoomLevel = backendSettings.zoomLevel > 0 
-                ? backendSettings.zoomLevel 
+            _zoomLevel = backendSettings.zoomLevel > 0
+                ? backendSettings.zoomLevel
                 : 1.0;
             _isHorizontal = backendSettings.isHorizontal;
           });
@@ -202,8 +210,7 @@ class _ReadingPageState extends State<ReadingPage> {
           _saveToLocal(prefs);
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   void _applyPrefs(SharedPreferences prefs) {
@@ -244,8 +251,7 @@ class _ReadingPageState extends State<ReadingPage> {
           token,
         );
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   void _saveSettingsDebounced() {
@@ -267,8 +273,7 @@ class _ReadingPageState extends State<ReadingPage> {
           });
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadProgress() async {
@@ -298,8 +303,7 @@ class _ReadingPageState extends State<ReadingPage> {
           }
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _saveProgress(int page) async {
@@ -314,8 +318,7 @@ class _ReadingPageState extends State<ReadingPage> {
           authToken: token,
         );
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   void _startHeartbeat() {
@@ -372,12 +375,18 @@ class _ReadingPageState extends State<ReadingPage> {
         ),
         content: Text(
           "Vous avez atteint la limite de l'extrait gratuit (2 pages maximum par défaut). Achetez l'œuvre complète pour accéder à l'intégralité du livre !",
-          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Fermer", style: GoogleFonts.poppins(color: AppColors.textHint)),
+            child: Text(
+              "Fermer",
+              style: GoogleFonts.poppins(color: AppColors.textHint),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -391,11 +400,16 @@ class _ReadingPageState extends State<ReadingPage> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryLight,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: Text(
               "Acheter l'œuvre",
-              style: GoogleFonts.poppins(color: AppColors.onAccent, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                color: AppColors.onAccent,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -416,17 +430,14 @@ class _ReadingPageState extends State<ReadingPage> {
           authToken: token,
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Marque-page ajouté à la page $_currentPage'),
-              backgroundColor: AppColors.primaryLight,
-              behavior: SnackBarBehavior.floating,
-            ),
+          AppNotifications.showSnackBar(
+            context,
+            message: 'Marque-page ajouté à la page $_currentPage',
+            isSuccess: true,
           );
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   @override
@@ -504,8 +515,15 @@ class _ReadingPageState extends State<ReadingPage> {
         final value = _epubController!.currentValue;
         if (value != null && value.chapter != null) {
           final htmlContent = value.chapter!.HtmlContent ?? '';
-          final regExp = RegExp(r'<[^>]*>', multiLine: true, caseSensitive: true);
-          textToRead = htmlContent.replaceAll(regExp, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+          final regExp = RegExp(
+            r'<[^>]*>',
+            multiLine: true,
+            caseSensitive: true,
+          );
+          textToRead = htmlContent
+              .replaceAll(regExp, ' ')
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .trim();
         }
       } catch (e) {
         debugPrint("Erreur lors de l'extraction de texte EPUB: $e");
@@ -520,12 +538,10 @@ class _ReadingPageState extends State<ReadingPage> {
 
     if (textToRead.trim().isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Aucun texte lisible trouvé sur cette page."),
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
+        AppNotifications.showSnackBar(
+          context,
+          message: "Aucun texte lisible trouvé sur cette page.",
+          isError: true,
         );
       }
       return;
@@ -548,7 +564,6 @@ class _ReadingPageState extends State<ReadingPage> {
         decoration: BoxDecoration(
           color: panelBg,
           borderRadius: BorderRadius.circular(20),
-          
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -563,22 +578,24 @@ class _ReadingPageState extends State<ReadingPage> {
                     children: [
                       Text(
                         _ttsService.isPlaying
-                            ? (_isPdf 
-                                ? "Lecture en cours - Page $_currentPage" 
-                                : "Lecture en cours - $_currentChapterTitle")
+                            ? (_isPdf
+                                  ? "Lecture en cours - Page $_currentPage"
+                                  : "Lecture en cours - $_currentChapterTitle")
                             : _ttsService.isPaused
-                                ? "Lecture en pause"
-                                : "Synthèse vocale prête",
+                            ? "Lecture en pause"
+                            : "Synthèse vocale prête",
                         style: GoogleFonts.poppins(
-                          color: _ttsService.isPlaying ? AppColors.primary : itemColor.withOpacity(0.7),
+                          color: _ttsService.isPlaying
+                              ? AppColors.primary
+                              : itemColor.withOpacity(0.7),
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
                       ),
                       SizedBox(height: 2),
                       Text(
-                        _isExtractingText 
-                            ? "Extraction du texte..." 
+                        _isExtractingText
+                            ? "Extraction du texte..."
                             : widget.book['titre'] ?? "Livre",
                         style: GoogleFonts.lora(
                           color: itemColor,
@@ -596,8 +613,12 @@ class _ReadingPageState extends State<ReadingPage> {
                   children: [
                     IconButton(
                       icon: Icon(
-                        _autoplayNextPage ? Icons.autorenew : Icons.play_disabled,
-                        color: _autoplayNextPage ? AppColors.primary : itemColor.withOpacity(0.4),
+                        _autoplayNextPage
+                            ? Icons.autorenew
+                            : Icons.play_disabled,
+                        color: _autoplayNextPage
+                            ? AppColors.primary
+                            : itemColor.withOpacity(0.4),
                         size: 20,
                       ),
                       tooltip: "Lecture automatique",
@@ -609,7 +630,10 @@ class _ReadingPageState extends State<ReadingPage> {
                     ),
                     TextButton(
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -659,8 +683,11 @@ class _ReadingPageState extends State<ReadingPage> {
                       }
                     } else if (_epubController != null) {
                       final toc = _epubController!.tableOfContents();
-                      final currentChapterIdx = (_epubController!.currentValue?.chapterNumber ?? 1) - 1;
-                      if (currentChapterIdx - 1 >= 0 && currentChapterIdx - 1 < toc.length) {
+                      final currentChapterIdx =
+                          (_epubController!.currentValue?.chapterNumber ?? 1) -
+                          1;
+                      if (currentChapterIdx - 1 >= 0 &&
+                          currentChapterIdx - 1 < toc.length) {
                         final prevChapter = toc[currentChapterIdx - 1];
                         _epubController!.jumpTo(index: prevChapter.startIndex);
                       }
@@ -683,9 +710,8 @@ class _ReadingPageState extends State<ReadingPage> {
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
-                      
                     ),
-                    child: _isExtractingText 
+                    child: _isExtractingText
                         ? Center(
                             child: SizedBox(
                               height: 24,
@@ -697,7 +723,9 @@ class _ReadingPageState extends State<ReadingPage> {
                             ),
                           )
                         : Icon(
-                            _ttsService.isPlaying ? Icons.pause : Icons.play_arrow,
+                            _ttsService.isPlaying
+                                ? Icons.pause
+                                : Icons.play_arrow,
                             color: AppColors.onAccent,
                             size: 32,
                           ),
@@ -705,12 +733,14 @@ class _ReadingPageState extends State<ReadingPage> {
                 ),
                 IconButton(
                   icon: Icon(
-                    Icons.stop, 
-                    color: _ttsService.isStopped ? itemColor.withOpacity(0.4) : itemColor, 
-                    size: 28
+                    Icons.stop,
+                    color: _ttsService.isStopped
+                        ? itemColor.withOpacity(0.4)
+                        : itemColor,
+                    size: 28,
                   ),
-                  onPressed: _ttsService.isStopped 
-                      ? null 
+                  onPressed: _ttsService.isStopped
+                      ? null
                       : () {
                           _ttsService.stop();
                         },
@@ -724,7 +754,9 @@ class _ReadingPageState extends State<ReadingPage> {
                       }
                     } else if (_epubController != null) {
                       final toc = _epubController!.tableOfContents();
-                      final currentChapterIdx = (_epubController!.currentValue?.chapterNumber ?? 1) - 1;
+                      final currentChapterIdx =
+                          (_epubController!.currentValue?.chapterNumber ?? 1) -
+                          1;
                       if (currentChapterIdx + 1 < toc.length) {
                         final nextChapter = toc[currentChapterIdx + 1];
                         _epubController!.jumpTo(index: nextChapter.startIndex);
@@ -788,11 +820,17 @@ class _ReadingPageState extends State<ReadingPage> {
           if (_isSearching) _buildSearchBar(),
 
           // Footer Layer (Solid)
-          if (!_showCover && _showControls && _isDocumentLoaded && !_showTtsPanel)
+          if (!_showCover &&
+              _showControls &&
+              _isDocumentLoaded &&
+              !_showTtsPanel)
             _buildBottomControls(),
 
           // Panneau de contrôle Audio (TTS)
-          if (!_showCover && _showControls && _isDocumentLoaded && _showTtsPanel)
+          if (!_showCover &&
+              _showControls &&
+              _isDocumentLoaded &&
+              _showTtsPanel)
             _buildTtsPlayerPanel(),
 
           // Close button if no cover
@@ -888,8 +926,12 @@ class _ReadingPageState extends State<ReadingPage> {
       );
     }
 
-    final String format = (widget.book['format'] ?? '').toString().toLowerCase();
-    final bool isEpub = format == 'epub' || (pdfUrl != null && pdfUrl.toLowerCase().endsWith('.epub'));
+    final String format = (widget.book['format'] ?? '')
+        .toString()
+        .toLowerCase();
+    final bool isEpub =
+        format == 'epub' ||
+        (pdfUrl != null && pdfUrl.toLowerCase().endsWith('.epub'));
 
     if (!isPdf && !isEpub) {
       // For demonstration of the UI if not a PDF, we show dummy text that looks like the mockup
@@ -1106,7 +1148,6 @@ class _ReadingPageState extends State<ReadingPage> {
             decoration: BoxDecoration(
               color: _backgroundColor.withOpacity(0.95),
               borderRadius: BorderRadius.circular(20),
-              
             ),
             child: Text(
               "PAGE $_currentPage SUR $_totalPages",
@@ -1125,7 +1166,6 @@ class _ReadingPageState extends State<ReadingPage> {
             decoration: BoxDecoration(
               color: AppColors.cardBackground, // Premium dark theme
               borderRadius: BorderRadius.circular(16),
-              
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1155,10 +1195,10 @@ class _ReadingPageState extends State<ReadingPage> {
                 _buildFloatingBarIcon(
                   icon: Icons.share_outlined,
                   onTap: () => PartageService().partagerLivre(
-                    livreId:
-                        (widget.book['id'] ?? widget.book['ID'] ?? '').toString(),
-                    titreDeSecours:
-                        (widget.book['titre'] ?? 'ce livre').toString(),
+                    livreId: (widget.book['id'] ?? widget.book['ID'] ?? '')
+                        .toString(),
+                    titreDeSecours: (widget.book['titre'] ?? 'ce livre')
+                        .toString(),
                   ),
                 ),
                 _buildFloatingBarIcon(
@@ -1184,7 +1224,11 @@ class _ReadingPageState extends State<ReadingPage> {
         borderRadius: BorderRadius.circular(28),
         child: Padding(
           padding: EdgeInsets.all(12.0),
-          child: Icon(icon, color: AppColors.textPrimary.withOpacity(0.8), size: 24),
+          child: Icon(
+            icon,
+            color: AppColors.textPrimary.withOpacity(0.8),
+            size: 24,
+          ),
         ),
       ),
     );
@@ -1232,11 +1276,7 @@ class _ReadingPageState extends State<ReadingPage> {
                         color: Colors.black.withOpacity(0.05),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        Icons.close,
-                        size: 20,
-                        color: Colors.black54,
-                      ),
+                      child: Icon(Icons.close, size: 20, color: Colors.black54),
                     ),
                   ),
                 ],
@@ -1374,7 +1414,6 @@ class _ReadingPageState extends State<ReadingPage> {
                   color: isSelected ? Colors.black : Colors.transparent,
                   width: 2,
                 ),
-                
               ),
               child: Center(
                 child: Text(
@@ -1567,15 +1606,13 @@ class _ReadingPageState extends State<ReadingPage> {
                 if (token != null) {
                   await _bookmarkService.deleteBookmark(bk.id, token);
                   await _loadBookmarks();
-                  scaffoldMessenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Marque-page supprimé'),
-                      duration: Duration(seconds: 2),
-                    ),
+                  AppNotifications.showSnackBar(
+                    context,
+                    message: 'Marque-page supprimé',
+                    isSuccess: true,
                   );
                 }
-              } catch (e) {
-              }
+              } catch (e) {}
             },
           ),
           onTap: () {
@@ -1781,7 +1818,6 @@ class _ReadingPageState extends State<ReadingPage> {
         decoration: BoxDecoration(
           color: AppColors.textPrimary,
           borderRadius: BorderRadius.circular(15),
-          
         ),
         child: Row(
           children: [
@@ -1824,10 +1860,7 @@ class _ReadingPageState extends State<ReadingPage> {
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: Icon(
-                  Icons.keyboard_arrow_up,
-                  color: AppColors.accentInk,
-                ),
+                icon: Icon(Icons.keyboard_arrow_up, color: AppColors.accentInk),
                 onPressed: () {
                   _searchResult!.previousInstance();
                   setState(() {});
@@ -1871,7 +1904,8 @@ class _TtsAudioWaveform extends StatefulWidget {
   State<_TtsAudioWaveform> createState() => _TtsAudioWaveformState();
 }
 
-class _TtsAudioWaveformState extends State<_TtsAudioWaveform> with SingleTickerProviderStateMixin {
+class _TtsAudioWaveformState extends State<_TtsAudioWaveform>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<double> _baseHeights = [0.2, 0.5, 0.8, 0.4, 0.7, 0.3, 0.6];
 

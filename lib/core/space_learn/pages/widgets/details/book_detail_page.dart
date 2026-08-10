@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
@@ -90,8 +91,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
           _fullBook = fullBook;
         });
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _checkOwnershipStatus() async {
@@ -138,8 +138,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
           });
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadChapitres() async {
@@ -184,12 +183,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
       final token = await TokenStorage.getToken();
       if (token == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                "Veuillez vous connecter pour ajouter à ma favorie",
-              ),
-            ),
+          AppNotifications.showSnackBar(
+            context,
+            message: "Veuillez vous connecter pour ajouter à ma favorie",
+            isError: true,
           );
         }
         return;
@@ -299,8 +296,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             description: ch.description.isNotEmpty
                                 ? ch.description
                                 : (isLocked
-                                    ? "Contenu verrouillé - Achetez le livre pour lire la suite."
-                                    : "Découvrez cet extrait gratuit."),
+                                      ? "Contenu verrouillé - Achetez le livre pour lire la suite."
+                                      : "Découvrez cet extrait gratuit."),
                             isLocked: isLocked,
                             onTap: isLocked
                                 ? null
@@ -352,9 +349,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => ReadingPage(
-                                          book: book.toJson(),
-                                        ),
+                                        builder: (context) =>
+                                            ReadingPage(book: book.toJson()),
                                       ),
                                     );
                                   }
@@ -373,9 +369,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => ReadingPage(
-                                          book: book.toJson(),
-                                        ),
+                                        builder: (context) =>
+                                            ReadingPage(book: book.toJson()),
                                       ),
                                     );
                                   }
@@ -464,7 +459,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       padding: EdgeInsets.all(4),
                       child: Text(
                         "...",
-                        style: TextStyle(color: AppColors.textPrimary, fontSize: 10),
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 10,
+                        ),
                       ),
                     ),
                   )
@@ -503,7 +501,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         decoration: BoxDecoration(
                           color: AppColors.lightSurface,
                           borderRadius: BorderRadius.circular(16),
-                          
                         ),
                         alignment: Alignment.center,
                         child: ClipRRect(
@@ -543,7 +540,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       SizedBox(height: 8),
                       Text(
                         book.authorName,
-                        style: AppTextStyles.withColor(AppTextStyles.subtitle, AppColors.primary),
+                        style: AppTextStyles.withColor(
+                          AppTextStyles.subtitle,
+                          AppColors.primary,
+                        ),
                       ),
                       SizedBox(height: 12),
                       Row(
@@ -610,10 +610,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Description',
-                        style: AppTextStyles.sectionTitle,
-                      ),
+                      Text('Description', style: AppTextStyles.sectionTitle),
                       SizedBox(height: 12),
                       Text(
                         book.description.isEmpty
@@ -644,10 +641,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(
-                            'Sommaire',
-                            style: AppTextStyles.sectionTitle,
-                          ),
+                          Text('Sommaire', style: AppTextStyles.sectionTitle),
                           Text(
                             _chapitres.isNotEmpty
                                 ? "${_chapitres.length} CHAPITRES"
@@ -677,8 +671,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               description: ch.description.isNotEmpty
                                   ? ch.description
                                   : (isLocked
-                                      ? "Contenu verrouillé - Achetez le livre pour lire la suite."
-                                      : "Découvrez cet extrait gratuit."),
+                                        ? "Contenu verrouillé - Achetez le livre pour lire la suite."
+                                        : "Découvrez cet extrait gratuit."),
                               isLocked: isLocked,
                               onTap: isLocked
                                   ? null
@@ -732,9 +726,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => ReadingPage(
-                                        book: book.toJson(),
-                                      ),
+                                      builder: (context) =>
+                                          ReadingPage(book: book.toJson()),
                                     ),
                                   );
                                 }
@@ -752,9 +745,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => ReadingPage(
-                                        book: book.toJson(),
-                                      ),
+                                      builder: (context) =>
+                                          ReadingPage(book: book.toJson()),
                                     ),
                                   );
                                 }
@@ -796,8 +788,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       ),
 
                       SizedBox(height: 40),
-
-
 
                       // Avis de la communauté
                       Row(
@@ -894,7 +884,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   SizedBox(width: 8),
                                   Text(
                                     "Laisser un avis",
-                                    style: AppTextStyles.withColor(AppTextStyles.button14, AppColors.primary),
+                                    style: AppTextStyles.withColor(
+                                      AppTextStyles.button14,
+                                      AppColors.primary,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -960,159 +953,158 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     : !isOwned
                     ? widget.showCart
                           ? Column(
-                                  mainAxisSize: MainAxisSize.min,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
                                   children: [
-                                    Row(
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              "PRIX EBOOK",
-                                              style: GoogleFonts.poppins(
-                                                color: AppColors.textSecondary,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
-                                            Text(
-                                              "${book.prix} FCFA",
-                                              style: AppTextStyles.heroTitle22,
-                                            ),
-                                          ],
-                                        ),
-                                        SizedBox(width: 32),
-                                        Container(
-                                          height: 50,
-                                          width: 50,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.surfaceVariant,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: AppColors.textPrimary.withOpacity(0.1),
-                                            ),
-                                          ),
-                                          child: IconButton(
-                                            onPressed: () {
-                                              context.read<CartProvider>().addItem(
-                                                book,
-                                              );
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    "${book.titre} ajouté au panier",
-                                                  ),
-                                                  backgroundColor: const Color(
-                                                    0xFFFFB156,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            icon: Icon(
-                                              Icons.shopping_cart_outlined,
-                                              color: AppColors.textPrimary,
-                                            ),
+                                        Text(
+                                          "PRIX EBOOK",
+                                          style: GoogleFonts.poppins(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.5,
                                           ),
                                         ),
-                                        SizedBox(width: 12),
-                                        Expanded(
-                                          child: SizedBox(
-                                            height: 50,
-                                            child: ElevatedButton(
-                                              onPressed: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) => PaymentPage(
-                                                      book: book.toJson(),
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Color(
-                                                  0xFFFFC37D,
-                                                ),
-                                                foregroundColor: AppColors.textPrimary,
-                                                elevation: 0,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(
-                                                    12,
-                                                  ),
-                                                ),
-                                              ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.shopping_bag,
-                                                    size: 18,
-                                                  ),
-                                                  SizedBox(width: 4),
-                                                  Flexible(
-                                                    child: Text(
-                                                      'Acheter',
-                                                      overflow: TextOverflow.ellipsis,
-                                                      style: GoogleFonts.poppins(
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
+                                        Text(
+                                          "${book.prix} FCFA",
+                                          style: AppTextStyles.heroTitle22,
                                         ),
                                       ],
                                     ),
-                                    SizedBox(height: 12),
-                                    SizedBox(
-                                      width: double.infinity,
+                                    SizedBox(width: 32),
+                                    Container(
                                       height: 50,
-                                      child: OutlinedButton(
+                                      width: 50,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surfaceVariant,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: AppColors.textPrimary
+                                              .withOpacity(0.1),
+                                        ),
+                                      ),
+                                      child: IconButton(
                                         onPressed: () {
-                                          Navigator.push(
+                                          context.read<CartProvider>().addItem(
+                                            book,
+                                          );
+                                          AppNotifications.showSnackBar(
                                             context,
-                                            MaterialPageRoute(
-                                              builder: (context) => ReadingPage(
-                                                book: book.toJson(),
-                                                isExtrait: true,
-                                              ),
-                                            ),
+                                            message:
+                                                "${book.titre} ajouté au panier",
+                                            isSuccess: true,
                                           );
                                         },
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: AppColors.textPrimary,
-                                          side: BorderSide(color: AppColors.textPrimary.withOpacity(0.2)),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
+                                        icon: Icon(
+                                          Icons.shopping_cart_outlined,
+                                          color: AppColors.textPrimary,
                                         ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.menu_book, size: 18),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              "Lire un extrait",
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 50,
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    PaymentPage(
+                                                      book: book.toJson(),
+                                                    ),
                                               ),
+                                            );
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.secondary,
+                                            foregroundColor: AppColors.onAccent,
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
-                                          ],
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.shopping_bag,
+                                                size: 18,
+                                              ),
+                                              SizedBox(width: 4),
+                                              Flexible(
+                                                child: Text(
+                                                  'Acheter',
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ],
-                                )
+                                ),
+                                SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: OutlinedButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ReadingPage(
+                                            book: book.toJson(),
+                                            isExtrait: true,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.textPrimary,
+                                      side: BorderSide(
+                                        color: AppColors.textPrimary
+                                            .withOpacity(0.2),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.menu_book, size: 18),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          "Lire un extrait",
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
                           : Center(
                               child: Text(
                                 "Consultation Auteur",
@@ -1161,10 +1153,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       backgroundColor: Colors.white.withOpacity(
                                         0.05,
                                       ),
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(
-                                            AppColors.primary,
-                                          ),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppColors.primary,
+                                      ),
                                       minHeight: 6,
                                     ),
                                   ),
@@ -1230,10 +1221,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(height: 32),
-        Text(
-          title,
-          style: AppTextStyles.sectionTitle,
-        ),
+        Text(title, style: AppTextStyles.sectionTitle),
         SizedBox(height: 20),
         SizedBox(
           height: 280,
@@ -1277,7 +1265,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
               width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
@@ -1306,7 +1293,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
             // Author
             Text(
               book.authorName,
-              style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondary),
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1386,17 +1376,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
         if (index < fullStars) {
           return Icon(Icons.star, color: AppColors.warning, size: 18);
         } else if (index == fullStars && hasHalfStar) {
-          return Icon(
-            Icons.star_half,
-            color: AppColors.warning,
-            size: 18,
-          );
+          return Icon(Icons.star_half, color: AppColors.warning, size: 18);
         } else {
-          return Icon(
-            Icons.star_border,
-            color: AppColors.warning,
-            size: 18,
-          );
+          return Icon(Icons.star_border, color: AppColors.warning, size: 18);
         }
       }),
     );
@@ -1415,7 +1397,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
         color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.textPrimary.withOpacity(0.05)),
-        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1435,11 +1416,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     (photoUrl == null ||
                         photoUrl.isEmpty ||
                         photoUrl.contains('example.com'))
-                    ? Icon(
-                        Icons.person,
-                        color: AppColors.accentInk,
-                        size: 18,
-                      )
+                    ? Icon(Icons.person, color: AppColors.accentInk, size: 18)
                     : null,
               ),
               SizedBox(width: 12),
@@ -1447,10 +1424,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      style: AppTextStyles.cardTitleSmall,
-                    ),
+                    Text(name, style: AppTextStyles.cardTitleSmall),
                     Text(
                       time,
                       style: GoogleFonts.poppins(
@@ -1504,10 +1478,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              title: Text(
-                "Laisser un avis",
-                style: AppTextStyles.sectionTitle,
-              ),
+              title: Text("Laisser un avis", style: AppTextStyles.sectionTitle),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1570,12 +1541,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     Navigator.pop(context);
                     final token = await TokenStorage.getToken();
                     if (token == null) {
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
+                      AppNotifications.showSnackBar(
+                        context,
+                        message:
                             "Veuillez vous connecter pour laisser un avis.",
-                          ),
-                        ),
+                        isError: true,
                       );
                       return;
                     }
@@ -1588,18 +1558,16 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         authToken: token,
                       );
                       _loadReviews(); // Reload the reviews
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text("Avis ajouté avec succès !"),
-                          backgroundColor: Colors.green,
-                        ),
+                      AppNotifications.showSnackBar(
+                        context,
+                        message: "Avis ajouté avec succès !",
+                        isSuccess: true,
                       );
                     } catch (e) {
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text("Erreur lors de l'ajout de l'avis."),
-                          backgroundColor: Colors.red,
-                        ),
+                      AppNotifications.showSnackBar(
+                        context,
+                        message: "Erreur lors de l'ajout de l'avis.",
+                        isError: true,
                       );
                     }
                   },
@@ -1615,8 +1583,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
       },
     );
   }
-
-
 
   Widget _buildChapterTile({
     required String number,

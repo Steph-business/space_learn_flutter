@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -71,8 +72,7 @@ class _TeamsPageState extends State<TeamsPage> {
       List<Evenement> evts = [];
       try {
         evts = await _evenementService.getEvenementsByAuthor(user.id, token);
-      } catch (e) {
-      }
+      } catch (e) {}
 
       if (mounted) {
         setState(() {
@@ -270,14 +270,21 @@ class _TeamsPageState extends State<TeamsPage> {
                   // Forums par Livre
                   Builder(
                     builder: (context) {
-                      final activeBooks = _books.where((b) => b.nombreMessages > 0).toList();
-                      final displayBooks = _filterActiveOnly ? activeBooks : _books;
+                      final activeBooks = _books
+                          .where((b) => b.nombreMessages > 0)
+                          .toList();
+                      final displayBooks = _filterActiveOnly
+                          ? activeBooks
+                          : _books;
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20.0,
+                              vertical: 10.0,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -291,15 +298,21 @@ class _TeamsPageState extends State<TeamsPage> {
                                   child: Row(
                                     children: [
                                       _buildFilterChip(
-                                        label: "Discussions actives (${activeBooks.length})",
+                                        label:
+                                            "Discussions actives (${activeBooks.length})",
                                         isSelected: _filterActiveOnly,
-                                        onTap: () => setState(() => _filterActiveOnly = true),
+                                        onTap: () => setState(
+                                          () => _filterActiveOnly = true,
+                                        ),
                                       ),
                                       const SizedBox(width: 10),
                                       _buildFilterChip(
-                                        label: "Toutes mes œuvres (${_books.length})",
+                                        label:
+                                            "Toutes mes œuvres (${_books.length})",
                                         isSelected: !_filterActiveOnly,
-                                        onTap: () => setState(() => _filterActiveOnly = false),
+                                        onTap: () => setState(
+                                          () => _filterActiveOnly = false,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -310,14 +323,18 @@ class _TeamsPageState extends State<TeamsPage> {
 
                           if (displayBooks.isEmpty)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20.0,
+                              ),
                               child: Container(
                                 padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
                                   color: AppColors.cardBackground,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: AppColors.textPrimary.withOpacity(0.05),
+                                    color: AppColors.textPrimary.withOpacity(
+                                      0.05,
+                                    ),
                                   ),
                                 ),
                                 child: Center(
@@ -339,10 +356,13 @@ class _TeamsPageState extends State<TeamsPage> {
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
-                                      if (_filterActiveOnly && _books.isNotEmpty) ...[
+                                      if (_filterActiveOnly &&
+                                          _books.isNotEmpty) ...[
                                         const SizedBox(height: 12),
                                         GestureDetector(
-                                          onTap: () => setState(() => _filterActiveOnly = false),
+                                          onTap: () => setState(
+                                            () => _filterActiveOnly = false,
+                                          ),
                                           child: Text(
                                             "Voir toutes mes œuvres (${_books.length})",
                                             style: GoogleFonts.poppins(
@@ -362,7 +382,9 @@ class _TeamsPageState extends State<TeamsPage> {
                             ListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
                               itemCount: displayBooks.length,
                               itemBuilder: (context, index) {
                                 final book = displayBooks[index];
@@ -408,7 +430,6 @@ class _TeamsPageState extends State<TeamsPage> {
             color: AppColors.secondaryVariant.withOpacity(0.3),
             width: 1.5,
           ),
-          
         ),
         child: Row(
           children: [
@@ -528,7 +549,11 @@ class _TeamsPageState extends State<TeamsPage> {
                   SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Iconsax.message, size: 14, color: AppColors.textSecondary),
+                      Icon(
+                        Iconsax.message,
+                        size: 14,
+                        color: AppColors.textSecondary,
+                      ),
                       SizedBox(width: 4),
                       Text(
                         "$msgCount messages",
@@ -577,8 +602,9 @@ class _TeamsPageState extends State<TeamsPage> {
       onTap:
           onTap ??
           () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("$label en cours de développement.")),
+            AppNotifications.showSnackBar(
+              context,
+              message: "$label en cours de développement.",
             );
           },
       child: Container(

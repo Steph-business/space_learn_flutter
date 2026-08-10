@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -120,9 +121,11 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      AppNotifications.showSnackBar(
         context,
-      ).showSnackBar(SnackBar(content: Text("Erreur lors de l'envoi : $e")));
+        message: "Erreur lors de l'envoi : $e",
+        isError: true,
+      );
     }
   }
 
@@ -134,7 +137,11 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left_2, color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Iconsax.arrow_left_2,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () {
             MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
             Navigator.of(context).pop();
@@ -320,15 +327,15 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
               Spacer(),
               Text(
                 _timeAgo(msg.creeLe),
-                style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 10),
+                style: GoogleFonts.poppins(
+                  color: AppColors.textHint,
+                  fontSize: 10,
+                ),
               ),
             ],
           ),
           SizedBox(height: 8),
-          Text(
-            msg.contenu,
-            style: AppTextStyles.body,
-          ),
+          Text(msg.contenu, style: AppTextStyles.body),
         ],
       ),
     );
