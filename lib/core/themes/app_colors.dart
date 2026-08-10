@@ -21,10 +21,17 @@ class AppColors {
   /// Valeurs absolues des fonds, indépendantes de [isDark]. Elles servent à
   /// construire les deux ThemeData de MaterialApp, qui doivent chacun décrire
   /// leur propre palette et non celle du mode actif.
-  static const Color scaffoldLight = Color(0xFFFFFFFF);
+  ///
+  /// En mode clair, le fond est **légèrement teinté** et les cartes sont
+  /// blanches, et non l'inverse. Avec un fond blanc pur, une carte plus sombre
+  /// que lui coûte du contraste à tout ce qu'elle porte : à 1,05:1 d'écart elle
+  /// ne se détachait pas, et le texte discret posé dessus tombait sous le
+  /// seuil. La relation inversée sépare mieux (1,07:1) *et* rend au texte le
+  /// contraste du blanc.
+  static const Color scaffoldLight = Color(0xFFF5F7F9);
   static const Color scaffoldDark = Color(0xFF000000);
-  static const Color cardLight = Color(0xFFF8F9FA);
-  static const Color cardDark = Color(0xFF121212);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardDark = Color(0xFF1A1A1A);
   static const Color textOnLight = Color(0xFF000000);
   static const Color textOnDark = Color(0xFFFFFFFF);
 
@@ -34,13 +41,13 @@ class AppColors {
   /// Fond des cartes, conteneurs, champs de saisie
   static Color get cardBackground => isDark ? cardDark : cardLight;
 
-  /// Fond alternatif (plus clair que le scaffold)
+  /// Fond alternatif, un cran en retrait de la carte.
   static Color get surfaceVariant =>
-      isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF1F3F5);
+      isDark ? const Color(0xFF242424) : const Color(0xFFEDF0F4);
 
-  /// Fond alternatif très sombre
+  /// Fond en creux — le cran le plus enfoncé de la pile de surfaces.
   static Color get darkSurface =>
-      isDark ? const Color(0xFF0A0A0A) : const Color(0xFFE9ECEF);
+      isDark ? const Color(0xFF0A0A0A) : const Color(0xFFE4E9EF);
 
   // ───────────────────────── Accents / Primaires ─────────────────
   /// Couleur primaire d'accent (orange) — boutons, liens, icônes actives
@@ -68,9 +75,11 @@ class AppColors {
   static Color get segmentTrack =>
       isDark ? surfaceVariant : const Color(0xFFE9ECEF);
 
-  /// Pastille active d'un sélecteur segmenté.
+  /// Pastille active d'un sélecteur segmenté. Elle doit ressortir de la piste,
+  /// donc elle prend la couleur des cartes — pas celle du fond d'écran, qui est
+  /// désormais teinté et se confondrait avec la piste.
   static Color get segmentThumb =>
-      isDark ? const Color(0xFF2A2A2A) : scaffoldLight;
+      isDark ? const Color(0xFF2A2A2A) : cardLight;
 
   /// Libellé du segment actif — doit contraster avec [segmentThumb].
   static Color get segmentLabelActive => textPrimary;
@@ -139,20 +148,28 @@ class AppColors {
 
   /// Texte secondaire
   static Color get textSecondary =>
-      isDark ? const Color(0xFFAAAAAA) : const Color(0xFF555555);
+      isDark ? const Color(0xFFB4B4B8) : const Color(0xFF52525B);
 
-  /// Texte désactivé / placeholder
+  /// Texte désactivé / placeholder.
+  ///
+  /// Réglé à l'origine pour un fond noir : #888888 ne tenait que 3,54:1 en
+  /// mode clair.
   static Color get textHint =>
-      isDark ? const Color(0xFF777777) : const Color(0xFF888888);
+      isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
 
-  /// Texte sur fond sombre - gris clair
+  /// Texte de moindre importance — légendes, unités, mentions.
+  ///
+  /// Même cause : #94A3B8 tombait à 2,56:1 sur blanc.
   static Color get textMuted =>
-      isDark ? const Color(0xFF909097) : const Color(0xFF94A3B8);
+      isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
 
   // ───────────────────────── Bordures ────────────────────────────
-  /// Bordure subtile
+  /// Bordure subtile. Décorative : elle souligne une carte, elle n'identifie
+  /// pas un contrôle. Les traits qui, eux, identifient un champ ou un
+  /// interrupteur passent par le thème (cf. `traitVisible` dans AppTheme), qui
+  /// tient les 3:1 exigés par WCAG 1.4.11.
   static Color get border =>
-      isDark ? const Color(0xFF45464D) : const Color(0xFFE2E8F0);
+      isDark ? const Color(0xFF3A3A3E) : const Color(0xFFDCE2EA);
 
   /// Bordure très subtile (blanc 5%)
   static Color get borderLight =>

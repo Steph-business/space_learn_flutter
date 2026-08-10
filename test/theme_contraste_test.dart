@@ -9,6 +9,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_theme.dart';
 
 /// Seuil WCAG AA pour du texte de taille courante.
@@ -141,6 +142,54 @@ void main() {
       });
     });
   }
+
+  // ── L'échelle de gris d'AppColors ─────────────────────────────────────
+  //
+  // Ces valeurs avaient été réglées pour un fond noir et jamais revues au
+  // passage en clair : textMuted tenait 2,56:1 sur blanc, textHint 3,54:1.
+  // Le test les mesure dans les deux thèmes, sur le fond d'écran comme sur la
+  // carte — un texte n'est pas toujours posé sur la même surface.
+  group('échelle de gris', () {
+    late bool sombreInitial;
+
+    setUp(() => sombreInitial = AppColors.isDark);
+    tearDown(() => AppColors.isDark = sombreInitial);
+
+    void mesurer(String mode, bool sombre) {
+      test('textes discrets lisibles en mode $mode', () {
+        AppColors.isDark = sombre;
+        final fond = AppColors.scaffoldBackground;
+        final carte = AppColors.cardBackground;
+
+        for (final e in {
+          'textPrimary': AppColors.textPrimary,
+          'textSecondary': AppColors.textSecondary,
+          'textHint': AppColors.textHint,
+          'textMuted': AppColors.textMuted,
+        }.entries) {
+          for (final surface in {'fond': fond, 'carte': carte}.entries) {
+            final r = contraste(e.value, surface.value);
+            expect(r, greaterThanOrEqualTo(seuilTexte),
+                reason: '${e.key} sur ${surface.key} : ${_hex(e.value)} sur '
+                    '${_hex(surface.value)} = ${r.toStringAsFixed(2)}:1');
+          }
+        }
+      });
+
+      test('la carte se distingue du fond en mode $mode', () {
+        AppColors.isDark = sombre;
+        final r = contraste(AppColors.cardBackground, AppColors.scaffoldBackground);
+        // Une carte n'est pas un texte : le seuil n'est pas celui de WCAG, mais
+        // une carte à 1,05:1 est simplement invisible.
+        expect(r, greaterThanOrEqualTo(1.06),
+            reason: 'carte ${_hex(AppColors.cardBackground)} sur fond '
+                '${_hex(AppColors.scaffoldBackground)} = ${r.toStringAsFixed(3)}:1');
+      });
+    }
+
+    mesurer('clair', false);
+    mesurer('sombre', true);
+  });
 
   // Les deux thèmes doivent décrire des palettes distinctes : c'est le défaut
   // qui laissait le mode clair avec un fond noir.
