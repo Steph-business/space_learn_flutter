@@ -689,6 +689,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                           builder: (context) => ReadingPage(
                                             book: book.toJson(),
                                             isExtrait: !isOwned,
+                                            // Ouvre directement au chapitre.
+                                            // Sans page connue, le lecteur
+                                            // reprend ou il en etait.
+                                            initialPage: ch.pageDepart > 0
+                                                ? ch.pageDepart
+                                                : null,
                                           ),
                                         ),
                                       );
