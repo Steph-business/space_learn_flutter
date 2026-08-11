@@ -73,6 +73,44 @@ class AuthService {
     }
   }
 
+  /// Connexion par jeton d'identité Google.
+  ///
+  /// Le jeton n'est pas décodé ici : l'application se contente de le
+  /// transmettre. C'est le serveur qui vérifie sa signature, son émetteur et
+  /// son destinataire — un contrôle fait dans l'application ne prouverait
+  /// rien, puisqu'une application peut être modifiée.
+  ///
+  /// [profil] n'a d'effet qu'à la toute première connexion, quand le compte
+  /// est créé. On ne change pas le profil de quelqu'un parce qu'il revient.
+  Future<TokenUser> connexionGoogle(String idToken, {String? profil}) async {
+    final response = await http.post(
+      Uri.parse(ApiRoutes.google),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "id_token": idToken,
+        if (profil != null && profil.isNotEmpty) "profil": profil,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
+      await TokenStorage.saveToken(tokenUser.token);
+      await TokenStorage.saveUserName(tokenUser.user.nomComplet);
+      return tokenUser;
+    }
+
+    if (response.statusCode == 501) {
+      throw Exception("La connexion Google n'est pas activée sur le serveur.");
+    }
+
+    String message = "La connexion Google a échoué.";
+    try {
+      final data = jsonDecode(response.body);
+      message = data['error'] ?? message;
+    } catch (_) {}
+    throw Exception(message);
+  }
+
   /// ✅ Déconnexion
   Future<void> logout() async {
     final token = await TokenStorage.getToken();

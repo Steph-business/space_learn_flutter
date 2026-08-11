@@ -22,6 +22,10 @@ class ApiRoutes {
   static const String profils = "$baseUrl/auth/profils";
   static const String register = "$baseUrl/auth/register";
   static const String login = "$baseUrl/auth/login";
+
+  /// Connexion **et** inscription par Google : une seule route, car on
+  /// appuie sur « Continuer avec Google » sans savoir si un compte existe.
+  static const String google = "$baseUrl/auth/google";
   static const String logout = "$baseUrl/auth/logout";
   static const String sendOtp = "$baseUrl/auth/send-otp";
   static const String verifyOtp = "$baseUrl/auth/verify-otp";

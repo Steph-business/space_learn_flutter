@@ -1,13 +1,13 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/services/google_auth_service.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/tokenUser.dart';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/widgets/en_tete_auth.dart';
-import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 
@@ -72,18 +72,121 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _handleOAuthSignIn(OAuthProvider provider) async {
-    try {
-      setState(() => _isLoading = true);
-      await Supabase.instance.client.auth.signInWithOAuth(
-        provider,
-        redirectTo: kIsWeb ? null : 'io.supabase.spacelearn://login-callback',
+  Future<void> _acheminerApresConnexion(
+    TokenUser tokenUser, {
+    String? emailAMemoriser,
+  }) async {
+    final profilId = tokenUser.user.profilId;
+    if (profilId.isEmpty) {
+      throw Exception("Profil ID non reçu du backend.");
+    }
+
+    await _profileService.saveSelectedProfile(profilId);
+    final allProfiles = await _profileService.getProfils();
+
+    final userProfile = allProfiles.firstWhere(
+      (p) => p.id.trim().toLowerCase() == profilId.trim().toLowerCase(),
+      orElse: () => ProfilModel(id: '', libelle: ''),
+    );
+
+    if (!mounted) return;
+
+    if (userProfile.id.isEmpty) {
+      AppNotifications.showSnackBar(
+        context,
+        message: "Aucun profil correspondant trouvé pour l'ID : $profilId",
+        isError: true,
       );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final role = userProfile.libelle.toLowerCase();
+    await ProfileStorage.saveSelectedProfileRole(role);
+    await ProfileStorage.saveIsRegisteredUser(true);
+    if (emailAMemoriser != null && emailAMemoriser.isNotEmpty) {
+      await ProfileStorage.saveSavedEmail(emailAMemoriser);
+    }
+
+    if (!mounted) return;
+
+    if (widget.isFirstTimeRegistration && !tokenUser.user.isProfileComplete) {
+      AppNotifications.showSnackBar(
+        context,
+        message:
+            "Bienvenue sur SpaceLearn ! Veuillez compléter votre profil pour accéder à l'application.",
+        isSuccess: true,
+      );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ProfilePage(forceComplete: true),
+        ),
+        (route) => false,
+      );
+      return;
+    }
+
+    Widget destination;
+    if (role.contains("lecteur")) {
+      destination = lecteurHome.HomePageLecteur(
+        profileId: profilId,
+        userName: tokenUser.user.nomComplet,
+      );
+    } else if (role.contains("auteur") ||
+        role.contains("administrateur") ||
+        role.contains("éditeur")) {
+      destination = ecrivainHome.HomePageAuteur(
+        key: ecrivainHome.HomePageAuteur.navKey,
+        profileId: profilId,
+        userName: tokenUser.user.nomComplet,
+      );
+    } else {
+      destination = const ProfilPage();
+    }
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => destination),
+      (route) => false,
+    );
+  }
+
+  /// Connexion par compte Google.
+  ///
+  /// Remplace un appel à Supabase.signInWithOAuth, qui ne pouvait pas aboutir
+  /// ici : il authentifiait auprès de Supabase, alors que les sessions de
+  /// l'application sont émises par space_learn_auth. Une session Supabase ne
+  /// donne aucun jeton utilisable sur nos routes métier — et le schéma de
+  /// retour io.supabase.spacelearn:// n'était même pas déclaré au manifeste,
+  /// donc le navigateur ne revenait jamais à l'application.
+  Future<void> _connexionGoogle() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    try {
+      // Le compte précédent est oublié avant d'ouvrir le sélecteur : sinon
+      // Google reconnecte silencieusement le même, et on ne peut plus en
+      // changer sur un appareil partagé.
+      await GoogleAuthService.oublierLeCompte();
+      final jeton = await GoogleAuthService.obtenirJetonIdentite();
+      final tokenUser = await _authService.connexionGoogle(jeton);
+      await _acheminerApresConnexion(tokenUser);
+    } on ErreurGoogle catch (e) {
+      // Fermer le sélecteur n'est pas un échec : rien à signaler.
+      if (!e.annulee && mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: e.message,
+          isError: true,
+        );
+      }
     } catch (e) {
+      developer.log('Connexion Google : $e');
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur de connexion ${provider.name} : $e",
+          message: e.toString().replaceAll('Exception: ', ''),
           isError: true,
         );
       }
@@ -111,84 +214,7 @@ class _LoginPageState extends State<LoginPage> {
       developer.log('Tentative de connexion avec $email');
       final tokenUser = await _authService.login(email, password);
 
-      final profilId = tokenUser.user.profilId;
-      if (profilId.isEmpty) {
-        throw Exception("Profil ID non reçu du backend.");
-      }
-
-      await _profileService.saveSelectedProfile(profilId);
-
-      final allProfiles = await _profileService.getProfils();
-
-      developer.log("Profil ID reçu : $profilId");
-      for (final p in allProfiles) {
-        developer.log("Profil en base : ${p.id} | ${p.libelle}");
-      }
-
-      final userProfile = allProfiles.firstWhere(
-        (p) => p.id.trim().toLowerCase() == profilId.trim().toLowerCase(),
-        orElse: () => ProfilModel(id: '', libelle: ''),
-      );
-
-      if (!mounted) return;
-
-      if (userProfile.id.isEmpty) {
-        AppNotifications.showSnackBar(
-          context,
-          message: "Aucun profil correspondant trouvé pour l'ID : $profilId",
-          isError: true,
-        );
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final role = userProfile.libelle.toLowerCase();
-      await ProfileStorage.saveSelectedProfileRole(role);
-      await ProfileStorage.saveIsRegisteredUser(true);
-      await ProfileStorage.saveSavedEmail(email);
-      Widget destination;
-
-      if (widget.isFirstTimeRegistration && !tokenUser.user.isProfileComplete) {
-        destination = const ProfilePage(forceComplete: true);
-        if (mounted) {
-          AppNotifications.showSnackBar(
-            context,
-            message:
-                "Bienvenue sur SpaceLearn ! Veuillez compléter votre profil pour accéder à l'application.",
-            isSuccess: true,
-          );
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => destination),
-            (route) => false,
-          );
-        }
-      } else {
-        if (role.contains("lecteur")) {
-          destination = lecteurHome.HomePageLecteur(
-            profileId: profilId,
-            userName: tokenUser.user.nomComplet,
-          );
-        } else if (role.contains("auteur") ||
-            role.contains("administrateur") ||
-            role.contains("éditeur")) {
-          destination = ecrivainHome.HomePageAuteur(
-            key: ecrivainHome.HomePageAuteur.navKey,
-            profileId: profilId,
-            userName: tokenUser.user.nomComplet,
-          );
-        } else {
-          destination = const ProfilPage();
-        }
-
-        if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => destination),
-            (route) => false,
-          );
-        }
-      }
+      await _acheminerApresConnexion(tokenUser, emailAMemoriser: email);
     } catch (e) {
       developer.log("Erreur lors de la connexion : $e");
       if (!mounted) return;
@@ -429,100 +455,67 @@ class _LoginPageState extends State<LoginPage> {
 
                   SizedBox(height: 18),
 
-                  // Continue with Google button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: OutlinedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => _handleOAuthSignIn(OAuthProvider.google),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                        backgroundColor: AppColors.cardBackground,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusInner,
-                          ),
-                        ),
-                        side: BorderSide(
-                          color: AppColors.textPrimary.withOpacity(0.1),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
+                  // Bouton Google, seulement si ce build est configuré
+                  // pour Google : afficher une promesse que
+                  // l'application ne peut pas tenir est pire que ne
+                  // rien proposer.
+                  if (GoogleAuthService.estDisponible) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: _isLoading ? null : _connexionGoogle,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary,
+                          backgroundColor: AppColors.cardBackground,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusInner,
                             ),
-                            child: const Text(
-                              'G',
-                              style: TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                          ),
+                          side: BorderSide(
+                            color: AppColors.textPrimary.withOpacity(0.1),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Text(
+                                'G',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          // Flexible, sinon le libellé impose sa largeur
-                          // naturelle au bouton et déborde sur les écrans
-                          // étroits — 16 px de trop sur un 390.
-                          Flexible(
-                            child: Text(
-                              'Continuer avec Google',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                            const SizedBox(width: 10),
+                            // Flexible, sinon le libellé impose sa largeur
+                            // naturelle au bouton et déborde sur les écrans
+                            // étroits — 16 px de trop sur un 390.
+                            Flexible(
+                              child: Text(
+                                'Continuer avec Google',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-
-                  SizedBox(height: 12),
-
-                  // Continue with Apple button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: OutlinedButton.icon(
-                      onPressed: _isLoading
-                          ? null
-                          : () => _handleOAuthSignIn(OAuthProvider.apple),
-                      icon: const Icon(Icons.apple, size: 24),
-                      label: Text(
-                        'Continuer avec Apple',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                        backgroundColor: AppColors.cardBackground,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusInner,
-                          ),
-                        ),
-                        side: BorderSide(
-                          color: AppColors.textPrimary.withOpacity(0.1),
-                        ),
-                        elevation: 2,
-                      ),
-                    ),
-                  ),
+                  ],
 
                   SizedBox(height: 24),
 
