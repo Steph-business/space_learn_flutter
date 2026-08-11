@@ -17,7 +17,6 @@ import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/forgot_password.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/otp.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/register.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
 
@@ -273,304 +272,330 @@ class _LoginPageState extends State<LoginPage> {
           height: double.infinity,
           color: AppColors.scaffoldBackground,
           child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Column(
-                children: [
-                  SizedBox(height: 12),
-
-                  // Close button (X) top-left
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      onTap: () {
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
-                        } else {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (_) => const ProfilPage(),
-                            ),
-                          );
-                        }
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.textPrimary.withOpacity(0.15),
-                          border: Border.all(
-                            color: AppColors.textPrimary.withOpacity(0.3),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.arrow_back_ios_new,
-                          color: AppColors.textPrimary,
-                          size: 20,
-                        ),
-                      ),
+            child: LayoutBuilder(
+              builder: (context, contraintes) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(28, 12, 28, 12),
+                  // Le contenu était collé en haut de l'écran, avec le vide
+                  // en dessous. Les deux Spacer le recentrent quand la place
+                  // le permet, et s'effacent quand il faut défiler.
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: contraintes.maxHeight - 24,
                     ),
-                  ),
-
-                  SizedBox(height: 16),
-
-                  const EnTeteAuth(
-                    accroche: 'Votre bibliothèque numérique intelligente',
-                  ),
-
-                  const SizedBox(height: AppDimensions.spaceXl),
-
-                  // Même disposition qu'à l'inscription : libellé au-dessus,
-                  // champ sur toute la largeur. La colonne de libellé fixe de
-                  // 110 px ne laissait pas la place d'afficher une invite
-                  // complète.
-                  Container(
-                    padding: const EdgeInsets.all(AppDimensions.cardPadding),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusCard,
-                      ),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'E-mail',
-                          style: AppTextStyles.cardTitleSmallSemiBold,
-                        ),
-                        const SizedBox(height: AppDimensions.spaceSm),
-                        TextField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          style: AppTextStyles.bodySecondary,
-                          decoration: InputDecoration(
-                            hintText: 'exemple@email.com',
-                            hintStyle: GoogleFonts.poppins(
-                              color: AppColors.textHint,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: AppDimensions.spaceLg),
-
-                        Text(
-                          'Mot de passe',
-                          style: AppTextStyles.cardTitleSmallSemiBold,
-                        ),
-                        const SizedBox(height: AppDimensions.spaceSm),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          style: AppTextStyles.bodySecondary,
-                          decoration: InputDecoration(
-                            hintText: 'votre mot de passe',
-                            hintStyle: GoogleFonts.poppins(
-                              color: AppColors.textHint,
-                              fontSize: 13,
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                color: AppColors.textHint,
-                                size: 18,
-                              ),
-                              onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: 14),
-
-                  // Subtitle under form
-                  Text(
-                    'Accédez à vos livres et contenus favoris',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppColors.textPrimary.withOpacity(0.55),
-                      height: 1.5,
-                    ),
-                  ),
-
-                  SizedBox(height: 24),
-
-                  // Login button (golden)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.onAccent,
-                        elevation: 4,
-                        shadowColor: AppColors.primary.withOpacity(0.4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusInner,
-                          ),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                color: AppColors.onAccent,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : Text(
-                              'Se connecter',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                    ),
-                  ),
-
-                  SizedBox(height: 18),
-
-                  // "ou" separator
-                  Text(
-                    'ou',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: AppColors.textPrimary.withOpacity(0.5),
-                    ),
-                  ),
-
-                  SizedBox(height: 18),
-
-                  // Bouton Google, seulement si ce build est configuré
-                  // pour Google : afficher une promesse que
-                  // l'application ne peut pas tenir est pire que ne
-                  // rien proposer.
-                  if (GoogleAuthService.estDisponible) ...[
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: OutlinedButton(
-                        onPressed: _isLoading ? null : _connexionGoogle,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textPrimary,
-                          backgroundColor: AppColors.cardBackground,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusInner,
-                            ),
-                          ),
-                          side: BorderSide(
-                            color: AppColors.textPrimary.withOpacity(0.1),
-                          ),
-                          elevation: 2,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Text(
-                                'G',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          // Close button (X) top-left
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: GestureDetector(
+                              onTap: () {
+                                if (Navigator.of(context).canPop()) {
+                                  Navigator.of(context).pop();
+                                } else {
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (_) => const ProfilPage(),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.textPrimary.withOpacity(
+                                    0.15,
+                                  ),
+                                  border: Border.all(
+                                    color: AppColors.textPrimary.withOpacity(
+                                      0.3,
+                                    ),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.arrow_back_ios_new,
+                                  color: AppColors.textPrimary,
+                                  size: 20,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            // Flexible, sinon le libellé impose sa largeur
-                            // naturelle au bouton et déborde sur les écrans
-                            // étroits — 16 px de trop sur un 390.
-                            Flexible(
-                              child: Text(
-                                'Continuer avec Google',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
+                          ),
+
+                          const Spacer(flex: 2),
+
+                          const EnTeteAuth(
+                            accroche:
+                                'Votre bibliothèque numérique intelligente',
+                          ),
+
+                          const SizedBox(height: AppDimensions.spaceXl),
+
+                          // Même disposition qu'à l'inscription : libellé au-dessus,
+                          // champ sur toute la largeur. La colonne de libellé fixe de
+                          // 110 px ne laissait pas la place d'afficher une invite
+                          // complète.
+                          Container(
+                            padding: const EdgeInsets.all(
+                              AppDimensions.cardPadding,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardBackground,
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusCard,
+                              ),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'E-mail',
+                                  style: AppTextStyles.cardTitleSmallSemiBold,
+                                ),
+                                const SizedBox(height: AppDimensions.spaceSm),
+                                TextField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  style: AppTextStyles.bodySecondary,
+                                  decoration: InputDecoration(
+                                    hintText: 'exemple@email.com',
+                                    hintStyle: GoogleFonts.poppins(
+                                      color: AppColors.textHint,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: AppDimensions.spaceLg),
+
+                                Text(
+                                  'Mot de passe',
+                                  style: AppTextStyles.cardTitleSmallSemiBold,
+                                ),
+                                const SizedBox(height: AppDimensions.spaceSm),
+                                TextField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  style: AppTextStyles.bodySecondary,
+                                  decoration: InputDecoration(
+                                    hintText: 'votre mot de passe',
+                                    hintStyle: GoogleFonts.poppins(
+                                      color: AppColors.textHint,
+                                      fontSize: 13,
+                                    ),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                        color: AppColors.textHint,
+                                        size: 18,
+                                      ),
+                                      onPressed: () => setState(
+                                        () => _obscurePassword =
+                                            !_obscurePassword,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(height: 14),
+
+                          // Subtitle under form
+                          Text(
+                            'Accédez à vos livres et contenus favoris',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: AppColors.textPrimary.withOpacity(0.55),
+                              height: 1.5,
+                            ),
+                          ),
+
+                          SizedBox(height: 24),
+
+                          // Login button (golden)
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.onAccent,
+                                elevation: 4,
+                                shadowColor: AppColors.primary.withOpacity(0.4),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.onAccent,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Se connecter',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                            ),
+                          ),
+
+                          SizedBox(height: 18),
+
+                          // "ou" separator
+                          Text(
+                            'ou',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: AppColors.textPrimary.withOpacity(0.5),
+                            ),
+                          ),
+
+                          SizedBox(height: 18),
+
+                          // Bouton Google, seulement si ce build est configuré
+                          // pour Google : afficher une promesse que
+                          // l'application ne peut pas tenir est pire que ne
+                          // rien proposer.
+                          if (GoogleAuthService.estDisponible) ...[
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: OutlinedButton(
+                                onPressed: _isLoading ? null : _connexionGoogle,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textPrimary,
+                                  backgroundColor: AppColors.cardBackground,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppDimensions.radiusInner,
+                                    ),
+                                  ),
+                                  side: BorderSide(
+                                    color: AppColors.textPrimary.withOpacity(
+                                      0.1,
+                                    ),
+                                  ),
+                                  elevation: 2,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Text(
+                                        'G',
+                                        style: TextStyle(
+                                          color: Colors.blue,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    // Flexible, sinon le libellé impose sa largeur
+                                    // naturelle au bouton et déborde sur les écrans
+                                    // étroits — 16 px de trop sur un 390.
+                                    Flexible(
+                                      child: Text(
+                                        'Continuer avec Google',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                    ),
-                  ],
 
-                  SizedBox(height: 24),
+                          SizedBox(height: 24),
 
-                  // Forgot password
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ForgotPasswordPage(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'Mot de passe oublié ?',
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textPrimary.withOpacity(0.7),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 8),
-
-                  // Register link
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const RegisterPage()),
-                    ),
-                    child: RichText(
-                      text: TextSpan(
-                        text: "Pas encore de compte ? ",
-                        style: GoogleFonts.poppins(
-                          color: AppColors.textHint,
-                          fontSize: 13,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: "S'inscrire",
-                            style: GoogleFonts.poppins(
-                              color: AppColors.accentInk,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                          // Forgot password
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ForgotPasswordPage(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Mot de passe oublié ?',
+                              style: GoogleFonts.poppins(
+                                color: AppColors.textPrimary.withOpacity(0.7),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
+
+                          const Spacer(flex: 3),
+
+                          // Même formulation et même destination que sur la page de
+                          // bienvenue : l'inscription commence par le choix du profil,
+                          // pas par le formulaire.
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ProfilPage(),
+                              ),
+                            ),
+                            child: Text.rich(
+                              TextSpan(
+                                text: "Vous n'avez pas de compte ? ",
+                                style: GoogleFonts.poppins(
+                                  color: AppColors.textHint,
+                                  fontSize: 13,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: 'Inscrivez-vous',
+                                    style: GoogleFonts.poppins(
+                                      color: AppColors.accentInk,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: AppDimensions.spaceLg),
                         ],
                       ),
                     ),
                   ),
-
-                  SizedBox(height: 32),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),

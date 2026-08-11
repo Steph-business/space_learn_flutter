@@ -44,8 +44,11 @@ void main() {
         tester,
       ) async {
         await _rendre(tester, ecran.value(), taille.value);
-        expect(tester.takeException(), isNull,
-            reason: 'débordement de mise en page sur ${taille.key}');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'débordement de mise en page sur ${taille.key}',
+        );
       });
     }
   }
@@ -53,7 +56,13 @@ void main() {
   testWidgets('la bienvenue propose les deux chemins', (tester) async {
     await _rendre(tester, const BienvenuePage(), const Size(390, 844));
     expect(find.text('Se connecter'), findsOneWidget);
-    expect(find.text('Créer un compte'), findsOneWidget);
+    expect(find.textContaining('Inscrivez-vous'), findsOneWidget);
+
+    // Un seul bouton plein. Deux actions de même poids obligeraient à choisir
+    // entre deux inconnues : celui qui a un compte cherche son bouton, celui
+    // qui n'en a pas cherche sa phrase.
+    expect(find.byType(ElevatedButton), findsOneWidget);
+    expect(find.byType(OutlinedButton), findsNothing);
     // Le choix du profil n'est plus la porte d'entrée : c'est la première
     // étape de la création de compte, pas un péage avant la connexion.
     expect(find.text('Qui êtes-vous ?'), findsNothing);
