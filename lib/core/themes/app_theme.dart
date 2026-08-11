@@ -151,10 +151,11 @@ class AppTheme {
           disabledBackgroundColor: onSurface.withValues(alpha: 0.10),
           disabledForegroundColor: onSurface.withValues(alpha: 0.38),
           elevation: 0,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spaceXl,
-            vertical: AppDimensions.spaceLg,
-          ),
+          // Rembourrage vertical seulement. Les boutons de l'application
+          // sont pleine largeur : un rembourrage horizontal ne les aère pas,
+          // il retire 48 px à leur libellé. « Continuer avec Google »
+          // débordait de 64 px sur un écran de 390.
+          padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceLg),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           ),
@@ -164,10 +165,11 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: accentInk,
           side: BorderSide(color: accentInk.withValues(alpha: 0.55)),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spaceXl,
-            vertical: AppDimensions.spaceLg,
-          ),
+          // Rembourrage vertical seulement. Les boutons de l'application
+          // sont pleine largeur : un rembourrage horizontal ne les aère pas,
+          // il retire 48 px à leur libellé. « Continuer avec Google »
+          // débordait de 64 px sur un écran de 390.
+          padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceLg),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
           ),

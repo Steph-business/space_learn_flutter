@@ -19,6 +19,7 @@ import 'package:space_learn_flutter/core/themes/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/bienvenue.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
@@ -126,7 +127,6 @@ class _MyAppState extends State<MyApp> {
   String? _selectedProfile;
   String? _selectedProfileRole;
   UserModel? _user;
-  bool _isRegistered = false;
   bool _isLoading = true;
 
   @override
@@ -138,7 +138,6 @@ class _MyAppState extends State<MyApp> {
   Future<void> _loadInitialData() async {
     try {
       final token = await TokenStorage.getToken();
-      final isRegistered = await ProfileStorage.getIsRegisteredUser();
 
       if (token != null && token.isNotEmpty) {
         final authService = AuthService();
@@ -151,7 +150,6 @@ class _MyAppState extends State<MyApp> {
               _user = user;
               _selectedProfile = profile;
               _selectedProfileRole = role;
-              _isRegistered = isRegistered;
               _isLoading = false;
             });
           }
@@ -163,7 +161,6 @@ class _MyAppState extends State<MyApp> {
           _selectedProfile = null;
           _selectedProfileRole = null;
           _user = null;
-          _isRegistered = isRegistered;
           _isLoading = false;
         });
       }
@@ -234,10 +231,19 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _getHomeWidget() {
+    // Personne connectée : on présente d'abord le produit.
+    //
+    // L'application ouvrait sur « Qui êtes-vous ? » — une question posée à
+    // quelqu'un qui n'avait encore rien vu, et que même un lecteur déjà
+    // inscrit devait traverser avant d'atteindre la connexion. La page de
+    // bienvenue mène aux deux chemins, et le choix du profil est redevenu ce
+    // qu'il est : la première étape de la création de compte.
     if (_user == null) {
-      return _isRegistered ? const LoginPage() : const ProfilPage();
+      return const BienvenuePage();
     }
 
+    // Connecté mais sans profil : ce cas subsiste pour les comptes créés avant
+    // que le choix soit intégré à l'inscription.
     if (_selectedProfile == null) {
       return const ProfilPage();
     }

@@ -14,7 +14,14 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/otp.
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  /// Profil retenu à l'écran précédent — « Lecteur », « Auteur »…
+  ///
+  /// Il s'affiche dans l'en-tête plutôt que dans un bandeau fugace : la
+  /// personne doit pouvoir vérifier, à n'importe quel moment du formulaire,
+  /// le type de compte qu'elle est en train de créer.
+  final String? profilChoisi;
+
+  const RegisterPage({super.key, this.profilChoisi});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -208,7 +215,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 SizedBox(height: 12),
 
-                const EnTeteAuth(accroche: 'Créez votre compte pour commencer'),
+                EnTeteAuth(
+                  accroche: widget.profilChoisi == null
+                      ? 'Créez votre compte pour commencer'
+                      : 'Vous créez un compte ${_articleProfil(widget.profilChoisi!)}',
+                ),
 
                 const SizedBox(height: AppDimensions.spaceXl),
 
@@ -369,6 +380,15 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
       ),
     );
+  }
+
+  /// Accorde l'article au profil : « d'Auteur », « de Lecteur ».
+  String _articleProfil(String profil) {
+    final p = profil.trim();
+    if (p.isEmpty) return '';
+    const voyelles = 'aeiouyàâäéèêëîïôöûü';
+    final article = voyelles.contains(p[0].toLowerCase()) ? "d'" : 'de ';
+    return '$article${p[0].toUpperCase()}${p.substring(1)}';
   }
 
   /// Libellé au-dessus, champ sur toute la largeur.

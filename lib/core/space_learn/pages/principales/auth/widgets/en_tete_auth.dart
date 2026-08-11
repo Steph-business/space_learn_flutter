@@ -41,28 +41,38 @@ class EnTeteAuth extends StatelessWidget {
               fit: BoxFit.contain,
             ),
             const SizedBox(width: AppDimensions.spaceMd),
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Space',
-                    style: GoogleFonts.poppins(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
-                      height: 1.1,
-                    ),
+            // Sur un écran de 320 px, la marque en 26 px ne tient pas à côté
+            // du logo : elle débordait de 54 px. FittedBox la réduit au lieu
+            // de la laisser dépasser, et ne fait rien tant que la place est
+            // suffisante.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'Space',
+                        style: GoogleFonts.poppins(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textPrimary,
+                          height: 1.1,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Learn',
+                        style: GoogleFonts.poppins(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.accentInk,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
                   ),
-                  TextSpan(
-                    text: 'Learn',
-                    style: GoogleFonts.poppins(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.accentInk,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],

@@ -469,11 +469,18 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Text(
-                            'Continuer avec Google',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                          // Flexible, sinon le libellé impose sa largeur
+                          // naturelle au bouton et déborde sur les écrans
+                          // étroits — 16 px de trop sur un 390.
+                          Flexible(
+                            child: Text(
+                              'Continuer avec Google',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -494,6 +501,8 @@ class _LoginPageState extends State<LoginPage> {
                       icon: const Icon(Icons.apple, size: 24),
                       label: Text(
                         'Continuer avec Apple',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,

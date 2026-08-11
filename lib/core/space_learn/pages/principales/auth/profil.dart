@@ -3,12 +3,12 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import '../../../data/dataServices/profileService.dart';
 import 'register.dart';
+import 'widgets/en_tete_auth.dart';
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
@@ -61,16 +61,17 @@ class _ProfilPageState extends State<ProfilPage> {
     await ProfileStorage.saveSelectedProfileRole(profileName);
 
     if (!mounted) return;
-    AppNotifications.showSnackBar(
-      context,
-      message:
-          'Profil "$profileName" sélectionné. Complétez votre inscription.',
-      isSuccess: true,
-    );
 
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const RegisterPage()));
+    // Aucun bandeau de confirmation ici. Il annonçait « Profil "X"
+    // sélectionné » au moment précis où l'écran suivant s'ouvrait : le message
+    // recouvrait la page vers laquelle il faisait avancer. Le profil retenu
+    // s'affiche désormais dans l'en-tête de l'inscription, où il reste visible
+    // pendant tout le remplissage du formulaire.
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => RegisterPage(profilChoisi: profileName),
+      ),
+    );
 
     setState(() => isUpdating = false);
   }
@@ -120,79 +121,14 @@ class _ProfilPageState extends State<ProfilPage> {
 
                   SizedBox(height: 24),
 
-                  // Brand Logo
-                  Image.asset(
-                    'asset/logo_space_learn.png',
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.contain,
+                  const EnTeteAuth(
+                    titre: 'Qui êtes-vous ?',
+                    accroche:
+                        'Première étape de votre inscription. Votre profil '
+                        'détermine ce que vous pourrez faire : lire, ou publier.',
                   ),
 
-                  SizedBox(height: 24),
-
-                  // Brand
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Space',
-                          style: GoogleFonts.poppins(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.textPrimary,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        TextSpan(
-                          text: 'Learn',
-                          style: GoogleFonts.poppins(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.accentInk,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: 8),
-
-                  // Subtitle
-                  Text(
-                    'Votre bibliothèque numérique intelligente',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: AppColors.textPrimary.withOpacity(0.65),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  SizedBox(height: 48),
-
-                  // Question
-                  Text(
-                    'Qui êtes-vous ?',
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-
-                  SizedBox(height: 8),
-
-                  Text(
-                    'Choisissez votre profil pour une\nexpérience personnalisée',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: AppColors.textPrimary.withOpacity(0.6),
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  SizedBox(height: 40),
+                  const SizedBox(height: AppDimensions.spaceXl),
 
                   if (isLoading || isUpdating)
                     CircularProgressIndicator(
