@@ -267,47 +267,47 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 // Dark form card
                 Container(
+                  padding: const EdgeInsets.all(AppDimensions.cardPadding),
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusCard,
                     ),
-                    border: Border.all(
-                      color: AppColors.textPrimary.withOpacity(0.05),
-                    ),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Name field
                       _buildFormField(
                         label: 'Nom complet',
                         controller: _nameController,
-                        hintText: 'entrez votre nom...',
+                        hintText: 'entrez votre nom complet',
                       ),
-                      _buildDivider(),
+                      const SizedBox(height: AppDimensions.spaceLg),
 
                       // Pseudo field
                       _buildFormField(
                         label: 'Pseudo',
                         controller: _pseudoController,
-                        hintText: 'choisissez un pseudo...',
+                        hintText: 'choisissez un pseudo',
                       ),
-                      _buildDivider(),
+                      const SizedBox(height: AppDimensions.spaceLg),
 
                       // Email field
                       _buildFormField(
                         label: 'E-mail',
                         controller: _emailController,
-                        hintText: 'entrez votre e-mail...',
+                        hintText: 'entrez votre adresse e-mail',
                         keyboardType: TextInputType.emailAddress,
                       ),
-                      _buildDivider(),
+                      const SizedBox(height: AppDimensions.spaceLg),
 
                       // Password field
                       _buildFormField(
                         label: 'Mot de passe',
                         controller: _passwordController,
-                        hintText: 'entrez le mot de pa...',
+                        hintText: 'entrez votre mot de passe',
                         obscureText: _obscurePassword,
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -320,13 +320,13 @@ class _RegisterPageState extends State<RegisterPage> {
                           onPressed: _togglePasswordVisibility,
                         ),
                       ),
-                      _buildDivider(),
+                      const SizedBox(height: AppDimensions.spaceLg),
 
                       // Confirm password field
                       _buildFormField(
                         label: 'Confirmer',
                         controller: _confirmPasswordController,
-                        hintText: 'confirmer le mot de...',
+                        hintText: 'confirmez votre mot de passe',
                         obscureText: _obscureConfirmPassword,
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -424,6 +424,14 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  /// Libellé au-dessus, champ sur toute la largeur.
+  ///
+  /// Le libellé occupait auparavant une colonne fixe de 100 px à gauche du
+  /// champ. Il ne restait pas la place d'afficher une invite complète : elles
+  /// avaient été tronquées à la main dans le code — « entrez le mot de pa... »,
+  /// « confirmer le mot de... ». Un formulaire d'inscription qui coupe ses
+  /// propres consignes n'inspire pas confiance au moment précis où on demande
+  /// un mot de passe.
   Widget _buildFormField({
     required String label,
     required TextEditingController controller,
@@ -432,44 +440,26 @@ class _RegisterPageState extends State<RegisterPage> {
     Widget? suffixIcon,
     TextInputType? keyboardType,
   }) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 4, suffixIcon != null ? 8 : 16, 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(label, style: AppTextStyles.cardTitleSmallSemiBold),
-          ),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              obscureText: obscureText,
-              keyboardType: keyboardType,
-              style: AppTextStyles.bodySecondary,
-              decoration: InputDecoration(
-                hintText: hintText,
-                hintStyle: GoogleFonts.poppins(
-                  color: AppColors.textHint,
-                  fontSize: 13,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                suffixIcon: suffixIcon,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyles.cardTitleSmallSemiBold),
+        const SizedBox(height: AppDimensions.spaceSm),
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          style: AppTextStyles.bodySecondary,
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: GoogleFonts.poppins(
+              color: AppColors.textHint,
+              fontSize: 13,
             ),
+            suffixIcon: suffixIcon,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Divider(
-      color: AppColors.textPrimary.withOpacity(0.08),
-      height: 1,
-      indent: 16,
-      endIndent: 16,
+        ),
+      ],
     );
   }
 }

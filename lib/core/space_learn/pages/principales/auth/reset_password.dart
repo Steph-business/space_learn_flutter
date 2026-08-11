@@ -202,112 +202,77 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
                 // Form Card
                 Container(
+                  padding: const EdgeInsets.all(AppDimensions.cardPadding),
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusCard,
                     ),
-                    border: Border.all(
-                      color: AppColors.textPrimary.withOpacity(0.05),
-                    ),
+                    border: Border.all(color: AppColors.border),
                   ),
+                  // Libellé au-dessus, champ sur toute la largeur — comme à
+                  // la connexion et à l'inscription. La colonne de libellé
+                  // fixe de 110 px ne laissait pas la place d'afficher une
+                  // invite complète : « confirmer le mot de... » était tronqué
+                  // à la main dans le code.
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Password field
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 110,
-                              child: Text(
-                                'Mot de passe',
-                                style: AppTextStyles.cardTitleSmallSemiBold,
-                              ),
+                      Text(
+                        'Mot de passe',
+                        style: AppTextStyles.cardTitleSmallSemiBold,
+                      ),
+                      const SizedBox(height: AppDimensions.spaceSm),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        style: AppTextStyles.bodySecondary,
+                        decoration: InputDecoration(
+                          hintText: 'nouveau mot de passe',
+                          hintStyle: GoogleFonts.poppins(
+                            color: AppColors.textHint,
+                            fontSize: 13,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: AppColors.textHint,
+                              size: 18,
                             ),
-                            Expanded(
-                              child: TextField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                style: AppTextStyles.bodySecondary,
-                                decoration: InputDecoration(
-                                  hintText: 'nouveau mot de passe...',
-                                  hintStyle: GoogleFonts.poppins(
-                                    color: AppColors.textHint,
-                                    fontSize: 13,
-                                  ),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
-                                      color: AppColors.textHint,
-                                      size: 18,
-                                    ),
-                                    onPressed: _togglePasswordVisibility,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                            onPressed: _togglePasswordVisibility,
+                          ),
                         ),
                       ),
 
-                      // Divider
-                      Divider(
-                        color: AppColors.textPrimary.withOpacity(0.08),
-                        height: 1,
-                        indent: 16,
-                        endIndent: 16,
-                      ),
+                      const SizedBox(height: AppDimensions.spaceLg),
 
-                      // Confirm Password field
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 110,
-                              child: Text(
-                                'Confirmer',
-                                style: AppTextStyles.cardTitleSmallSemiBold,
-                              ),
+                      Text(
+                        'Confirmer',
+                        style: AppTextStyles.cardTitleSmallSemiBold,
+                      ),
+                      const SizedBox(height: AppDimensions.spaceSm),
+                      TextField(
+                        controller: _confirmPasswordController,
+                        obscureText: _obscureConfirmPassword,
+                        style: AppTextStyles.bodySecondary,
+                        decoration: InputDecoration(
+                          hintText: 'confirmez le mot de passe',
+                          hintStyle: GoogleFonts.poppins(
+                            color: AppColors.textHint,
+                            fontSize: 13,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: AppColors.textHint,
+                              size: 18,
                             ),
-                            Expanded(
-                              child: TextField(
-                                controller: _confirmPasswordController,
-                                obscureText: _obscureConfirmPassword,
-                                style: AppTextStyles.bodySecondary,
-                                decoration: InputDecoration(
-                                  hintText: 'confirmer le mot de...',
-                                  hintStyle: GoogleFonts.poppins(
-                                    color: AppColors.textHint,
-                                    fontSize: 13,
-                                  ),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscureConfirmPassword
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
-                                      color: AppColors.textHint,
-                                      size: 18,
-                                    ),
-                                    onPressed: _toggleConfirmPasswordVisibility,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                            onPressed: _toggleConfirmPasswordVisibility,
+                          ),
                         ),
                       ),
                     ],

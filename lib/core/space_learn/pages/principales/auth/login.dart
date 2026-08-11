@@ -349,107 +349,69 @@ class _LoginPageState extends State<LoginPage> {
 
                   SizedBox(height: 36),
 
-                  // Dark form card
+                  // Même disposition qu'à l'inscription : libellé au-dessus,
+                  // champ sur toute la largeur. La colonne de libellé fixe de
+                  // 110 px ne laissait pas la place d'afficher une invite
+                  // complète.
                   Container(
+                    padding: const EdgeInsets.all(AppDimensions.cardPadding),
                     decoration: BoxDecoration(
                       color: AppColors.cardBackground,
                       borderRadius: BorderRadius.circular(
                         AppDimensions.radiusCard,
                       ),
-                      border: Border.all(
-                        color: AppColors.textPrimary.withOpacity(0.05),
-                      ),
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Email field
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 110,
-                                child: Text(
-                                  'E-mail',
-                                  style: AppTextStyles.cardTitleSmallSemiBold,
-                                ),
-                              ),
-                              Expanded(
-                                child: TextField(
-                                  controller: _emailController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  style: AppTextStyles.bodySecondary,
-                                  decoration: InputDecoration(
-                                    hintText: 'exemple@email.com',
-                                    hintStyle: GoogleFonts.poppins(
-                                      color: AppColors.textHint,
-                                      fontSize: 13,
-                                    ),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                        Text(
+                          'E-mail',
+                          style: AppTextStyles.cardTitleSmallSemiBold,
+                        ),
+                        const SizedBox(height: AppDimensions.spaceSm),
+                        TextField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          style: AppTextStyles.bodySecondary,
+                          decoration: InputDecoration(
+                            hintText: 'exemple@email.com',
+                            hintStyle: GoogleFonts.poppins(
+                              color: AppColors.textHint,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
 
-                        // Divider
-                        Divider(
-                          color: AppColors.textPrimary.withOpacity(0.08),
-                          height: 1,
-                          indent: 16,
-                          endIndent: 16,
-                        ),
+                        const SizedBox(height: AppDimensions.spaceLg),
 
-                        // Password field
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 110,
-                                child: Text(
-                                  'Mot de passe',
-                                  style: AppTextStyles.cardTitleSmallSemiBold,
-                                ),
+                        Text(
+                          'Mot de passe',
+                          style: AppTextStyles.cardTitleSmallSemiBold,
+                        ),
+                        const SizedBox(height: AppDimensions.spaceSm),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          style: AppTextStyles.bodySecondary,
+                          decoration: InputDecoration(
+                            hintText: 'votre mot de passe',
+                            hintStyle: GoogleFonts.poppins(
+                              color: AppColors.textHint,
+                              fontSize: 13,
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: AppColors.textHint,
+                                size: 18,
                               ),
-                              Expanded(
-                                child: TextField(
-                                  controller: _passwordController,
-                                  obscureText: _obscurePassword,
-                                  style: AppTextStyles.bodySecondary,
-                                  decoration: InputDecoration(
-                                    hintText: 'votre mot de passe',
-                                    hintStyle: GoogleFonts.poppins(
-                                      color: AppColors.textHint,
-                                      fontSize: 13,
-                                    ),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscurePassword
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                        color: AppColors.textHint,
-                                        size: 18,
-                                      ),
-                                      onPressed: () => setState(
-                                        () => _obscurePassword =
-                                            !_obscurePassword,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ],
