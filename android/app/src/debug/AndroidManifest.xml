@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- Requise par l'outillage Flutter en débogage : c'est par le réseau
+         qu'il pose les points d'arrêt et déclenche le rechargement à chaud. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <!--
       Superposition appliquée aux seuls builds de débogage.
 
