@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/widgets/en_tete_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
@@ -233,31 +234,12 @@ class _OtpPageState extends State<OtpPage> {
 
                 SizedBox(height: 32),
 
-                // Brand Logo
-                Image.asset(
-                  'asset/logo_space_learn.png',
-                  width: 110,
-                  height: 110,
-                  fit: BoxFit.contain,
+                EnTeteAuth(
+                  titre: 'Vérification',
+                  accroche: 'Entrez le code envoyé à ${widget.email}',
                 ),
 
-                SizedBox(height: 20),
-
-                // Title
-                Text('Vérification', style: AppTextStyles.pageTitle),
-                SizedBox(height: 8),
-
-                Text(
-                  'Entrez le code envoyé à\n${widget.email}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: AppColors.textPrimary.withOpacity(0.65),
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                SizedBox(height: 40),
+                const SizedBox(height: AppDimensions.spaceXl),
 
                 // Pinput (OTP field)
                 Pinput(

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Politique réseau des builds de DÉVELOPPEMENT uniquement.
+
+  Le trafic en clair y est autorisé sans restriction : on travaille contre un
+  backend local dont l'adresse change — 192.168.1.12 aujourd'hui, une autre IP
+  de réseau local demain, 10.0.2.2 sous l'émulateur. Lister ces adresses une à
+  une n'apporterait rien et arrêterait le travail à chaque changement de réseau.
+
+  Ce fichier n'entre PAS dans les builds de production : android/app/src/release
+  et android/app/src/main gardent la politique stricte, qui n'ouvre le clair que
+  pour le serveur du projet.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <!-- Accepte les certificats installés par l'utilisateur : sans quoi
+                 aucun proxy d'inspection HTTPS ne fonctionne en débogage. -->
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

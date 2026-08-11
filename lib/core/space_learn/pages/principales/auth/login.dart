@@ -5,6 +5,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/widgets/en_tete_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -289,65 +290,11 @@ class _LoginPageState extends State<LoginPage> {
 
                   SizedBox(height: 16),
 
-                  // Brand Logo
-                  Image.asset(
-                    'asset/logo_space_learn.png',
-                    width: 110,
-                    height: 110,
-                    fit: BoxFit.contain,
+                  const EnTeteAuth(
+                    accroche: 'Votre bibliothèque numérique intelligente',
                   ),
 
-                  SizedBox(height: 16),
-
-                  // Title
-                  Text(
-                    'Connexion',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary.withOpacity(0.8),
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-
-                  // Brand
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Space',
-                          style: GoogleFonts.poppins(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        TextSpan(
-                          text: 'Learn',
-                          style: GoogleFonts.poppins(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.accentInk,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 8),
-
-                  // Subtitle
-                  Text(
-                    'Votre bibliothèque numérique\nintelligente',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      color: AppColors.textPrimary.withOpacity(0.75),
-                      height: 1.4,
-                    ),
-                  ),
-
-                  SizedBox(height: 36),
+                  const SizedBox(height: AppDimensions.spaceXl),
 
                   // Même disposition qu'à l'inscription : libellé au-dessus,
                   // champ sur toute la largeur. La colonne de libellé fixe de

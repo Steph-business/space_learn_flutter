@@ -4,6 +4,7 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/widgets/en_tete_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -207,65 +208,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 SizedBox(height: 12),
 
-                // Brand Logo
-                Image.asset(
-                  'asset/logo_space_learn.png',
-                  width: 110,
-                  height: 110,
-                  fit: BoxFit.contain,
-                ),
+                const EnTeteAuth(accroche: 'Créez votre compte pour commencer'),
 
-                SizedBox(height: 12),
+                const SizedBox(height: AppDimensions.spaceXl),
 
-                // Title
-                Text(
-                  'Inscription',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary.withOpacity(0.8),
-                    letterSpacing: 1,
-                  ),
-                ),
-                SizedBox(height: 8),
-
-                // Brand
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'Space',
-                        style: GoogleFonts.poppins(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'Learn',
-                        style: GoogleFonts.poppins(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.accentInk,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 6),
-
-                Text(
-                  'Créez votre compte pour commencer',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: AppColors.textPrimary.withOpacity(0.65),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                SizedBox(height: 28),
-
-                // Dark form card
+                // Formulaire
                 Container(
                   padding: const EdgeInsets.all(AppDimensions.cardPadding),
                   decoration: BoxDecoration(
@@ -284,7 +231,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         controller: _nameController,
                         hintText: 'entrez votre nom complet',
                       ),
-                      const SizedBox(height: AppDimensions.spaceLg),
+                      const SizedBox(height: AppDimensions.spaceMd),
 
                       // Pseudo field
                       _buildFormField(
@@ -292,7 +239,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         controller: _pseudoController,
                         hintText: 'choisissez un pseudo',
                       ),
-                      const SizedBox(height: AppDimensions.spaceLg),
+                      const SizedBox(height: AppDimensions.spaceMd),
 
                       // Email field
                       _buildFormField(
@@ -301,7 +248,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         hintText: 'entrez votre adresse e-mail',
                         keyboardType: TextInputType.emailAddress,
                       ),
-                      const SizedBox(height: AppDimensions.spaceLg),
+                      const SizedBox(height: AppDimensions.spaceMd),
 
                       // Password field
                       _buildFormField(
@@ -320,7 +267,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           onPressed: _togglePasswordVisibility,
                         ),
                       ),
-                      const SizedBox(height: AppDimensions.spaceLg),
+                      const SizedBox(height: AppDimensions.spaceMd),
 
                       // Confirm password field
                       _buildFormField(
@@ -444,7 +391,7 @@ class _RegisterPageState extends State<RegisterPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: AppTextStyles.cardTitleSmallSemiBold),
-        const SizedBox(height: AppDimensions.spaceSm),
+        const SizedBox(height: 6),
         TextField(
           controller: controller,
           obscureText: obscureText,

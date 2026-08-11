@@ -1,15 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <!-- The INTERNET permission is required for development. Specifically,
-         the Flutter tool needs it to communicate with the running application
-         to allow setting breakpoints, to provide hot reload, etc.
-    -->
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <!--
+      Superposition appliquée aux seuls builds de débogage.
 
-    <!-- Le HTTP en clair est autorisé uniquement en debug, pour joindre le
-         backend Go sur le réseau local (http://<ip>:8084). Le manifeste
-         principal le refuse, ce qui protège les builds release. -->
+      Elle remplace la politique réseau stricte du manifeste principal par une
+      politique permissive, le temps du développement contre un backend local.
+      `tools:replace` est indispensable : sans lui, la fusion des manifestes
+      échoue sur l'attribut déclaré des deux côtés.
+
+      Les builds de production ne voient jamais ce fichier.
+    -->
     <application
-        android:usesCleartextTraffic="true"
-        tools:replace="android:usesCleartextTraffic" />
+        android:networkSecurityConfig="@xml/network_security_config_debug"
+        tools:replace="android:networkSecurityConfig" />
 </manifest>
