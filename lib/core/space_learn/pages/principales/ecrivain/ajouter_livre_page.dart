@@ -48,6 +48,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   String _etapeUpload = '';
   bool _isFree = false;
 
+  /// Un manuscrit est déjà déposé côté serveur, et sera conservé tant que
+  /// l'auteur n'en choisit pas un autre.
+  bool _manuscritDejaEnPlace = false;
+
   // Le formulaire est decoupe en deux temps : decrire l'œuvre, puis rediger
   // l'argumentaire de recommandation. L'auteur ne voit ainsi qu'une intention
   // a la fois, et l'argumentaire arrive une fois le livre deja renseigne.
@@ -85,7 +89,12 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       _prixController.text = widget.book!.prix.toString();
       _isFree = widget.book!.prix == 0;
       _selectedCategorieId = widget.book!.categorieId;
-      _selectedFileName = widget.book!.fichierUrl?.split('/').last;
+      // Le nom se déduisait de fichierUrl. Le serveur masque cette URL pour
+      // tout le monde, l'auteur compris : le formulaire concluait qu'aucun
+      // manuscrit n'était en place et proposait d'en choisir un, sur un livre
+      // qui en avait déjà un. Le drapeau a_un_fichier répond à la seule
+      // question utile.
+      _manuscritDejaEnPlace = widget.book!.aUnFichier;
       _selectedCoverName = widget.book!.imageCouverture?.split('/').last;
     }
     _loadCategories();
@@ -643,9 +652,13 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       const SizedBox(height: 12),
       _buildUploadCard(
         title: "Fichier (PDF/EPUB)",
-        subtitle: _selectedFileName ?? "Sélectionner un fichier",
+        subtitle:
+            _selectedFileName ??
+            (_manuscritDejaEnPlace
+                ? "Manuscrit déjà en place — appuyez pour le remplacer"
+                : "Sélectionner un fichier"),
         icon: Icons.upload_file,
-        isSelected: _selectedFileName != null,
+        isSelected: _selectedFileName != null || _manuscritDejaEnPlace,
         onTap: _pickFile,
         currentUrl: _selectedFilePath == null ? widget.book?.fichierUrl : null,
       ),

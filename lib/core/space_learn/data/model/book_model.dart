@@ -15,6 +15,14 @@ class BookModel {
   final String argumentairePartage;
   final String? imageCouverture;
   final String? fichierUrl;
+
+  /// Vrai quand un manuscrit est déjà déposé.
+  ///
+  /// [fichierUrl] est masquée par le serveur pour tout le monde, y compris
+  /// pour l'auteur consultant sa propre liste : elle ne permet pas de savoir
+  /// si un fichier existe. Ce drapeau répond à cette seule question, sans rien
+  /// révéler du chemin de stockage.
+  final bool aUnFichier;
   final String format; // PDF | EPUB | MOBI
   final int prix;
   final int stock;
@@ -48,6 +56,7 @@ class BookModel {
     this.argumentairePartage = '',
     this.imageCouverture,
     this.fichierUrl,
+    this.aUnFichier = false,
     required this.format,
     required this.prix,
     required this.stock,
@@ -152,6 +161,11 @@ class BookModel {
         useGin: true,
       ),
       fichierUrl: _sanitizeImageUrl(json['fichier_url'], useGin: true),
+      aUnFichier:
+          json['a_un_fichier'] == true ||
+          // Repli pour un serveur antérieur au drapeau : si l'URL est là,
+          // le fichier l'est aussi.
+          (json['fichier_url']?.toString().isNotEmpty ?? false),
       format: json['format'] ?? '',
       prix: (json['prix'] ?? json['price'] ?? 0) is num
           ? (json['prix'] ?? json['price'] ?? 0).toInt()
@@ -249,6 +263,7 @@ class BookModel {
     String? description,
     String? imageCouverture,
     String? fichierUrl,
+    bool? aUnFichier,
     String? format,
     int? prix,
     int? stock,
@@ -273,6 +288,7 @@ class BookModel {
       description: description ?? this.description,
       imageCouverture: imageCouverture ?? this.imageCouverture,
       fichierUrl: fichierUrl ?? this.fichierUrl,
+      aUnFichier: aUnFichier ?? this.aUnFichier,
       format: format ?? this.format,
       prix: prix ?? this.prix,
       stock: stock ?? this.stock,
