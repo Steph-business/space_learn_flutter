@@ -680,6 +680,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         label: "Argumentaire de recommandation (facultatif)",
         icon: Icons.campaign_outlined,
         maxLines: 6,
+        obligatoire: false,
         onChanged: (_) => setState(() {}),
       ),
       const SizedBox(height: 16),
@@ -921,7 +922,16 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   /// par la publication, pour qu'il n'existe qu'une seule definition de ce
   /// qu'est un livre valide.
   bool _verifierEtapeOeuvre() {
-    if (!_formKey.currentState!.validate()) return false;
+    if (!_formKey.currentState!.validate()) {
+      // Sans ce message, un champ invalide hors de l'écran donne un bouton
+      // qui ne réagit pas — l'utilisateur n'a aucun moyen de savoir pourquoi.
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Certains champs sont incomplets. Vérifiez le formulaire.',
+        isError: true,
+      );
+      return false;
+    }
 
     if (widget.book == null &&
         (_selectedFileName == null || _selectedCoverName == null)) {
@@ -987,11 +997,18 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           children: [
             Icon(Icons.category, color: AppColors.secondaryVariant),
             SizedBox(width: 16),
-            Text(
-              "Chargement des catégories...",
-              style: GoogleFonts.poppins(color: AppColors.textHint),
+            // Sans Expanded, ce libellé impose sa largeur naturelle au Row et
+            // déborde dès que la place manque — écran étroit, corps de texte
+            // agrandi par les réglages système, ou traduction plus longue.
+            Expanded(
+              child: Text(
+                "Chargement des catégories...",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(color: AppColors.textHint),
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             SizedBox(
               width: 20,
               height: 20,
@@ -1192,6 +1209,12 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     TextInputType? keyboardType,
     bool enabled = true,
     ValueChanged<String>? onChanged,
+    // Tous les champs portaient le même validateur « Ce champ est requis »,
+    // y compris l'argumentaire, pourtant annoncé facultatif. Comme les deux
+    // étapes restent montées, valider le formulaire échouait sur ce champ vide
+    // — et son message s'affichait sur une étape masquée. « Continuer » ne
+    // faisait donc rien, sans rien dire.
+    bool obligatoire = true,
   }) {
     return TextFormField(
       controller: controller,
@@ -1225,12 +1248,14 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           vertical: 16,
         ),
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Ce champ est requis';
-        }
-        return null;
-      },
+      validator: obligatoire
+          ? (value) {
+              if (value == null || value.isEmpty) {
+                return 'Ce champ est requis';
+              }
+              return null;
+            }
+          : null,
     );
   }
 
