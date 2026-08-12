@@ -15,6 +15,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/commun
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/evenement_detail_page.dart';
 
@@ -32,6 +33,7 @@ class _TeamsPageState extends State<TeamsPage> {
   final AuthService _authService = AuthService();
   final EvenementService _evenementService = EvenementService();
   final RelationService _relationService = RelationService();
+  final DiscussionService _discussionService = DiscussionService();
 
   List<BookModel> _books = [];
   List<Evenement> _evenements = [];
@@ -41,6 +43,13 @@ class _TeamsPageState extends State<TeamsPage> {
   /// convenu à n'importe qui.
   String _prenom = '';
   int _nombreAbonnes = 0;
+
+  /// Ce qui se passe dans le salon officiel.
+  ///
+  /// La carte annonçait « Avis, FAQ, et annonces globales » — une description
+  /// du lieu, jamais de son activité. Rien ne disait s'il s'y passait quoi que
+  /// ce soit, donc rien n'invitait à l'ouvrir.
+  int _discussionsSalon = 0;
   bool _isLoading = true;
   bool _filterActiveOnly = true;
   String? _error;
@@ -85,6 +94,12 @@ class _TeamsPageState extends State<TeamsPage> {
         abonnes = (await _relationService.getFollowers(user.id)).length;
       } catch (_) {}
 
+      int discussionsSalon = 0;
+      try {
+        discussionsSalon =
+            (await _discussionService.getGlobalDiscussions()).length;
+      } catch (_) {}
+
       List<Evenement> evts = [];
       try {
         evts = await _evenementService.getEvenementsByAuthor(user.id, token);
@@ -96,6 +111,11 @@ class _TeamsPageState extends State<TeamsPage> {
           _evenements = evts;
           _prenom = user.nomComplet.trim().split(' ').first;
           _nombreAbonnes = abonnes;
+          _discussionsSalon = discussionsSalon;
+          // L'onglet par defaut suit ce qu'il y a a montrer : avec zero
+          // discussion active, « Discussions actives » s'ouvrait vide alors
+          // que « Toutes mes œuvres » en contenait quatre.
+          _filterActiveOnly = books.any((b) => b.nombreMessages > 0);
           _isLoading = false;
         });
       }
@@ -408,13 +428,22 @@ class _TeamsPageState extends State<TeamsPage> {
                                         color: AppColors.textHint,
                                       ),
                                       const SizedBox(height: 12),
+                                      // Un vide doit dire quoi faire. Le
+                                      // premier message annoncait « aucune
+                                      // discussion active » a un auteur qui
+                                      // avait quatre œuvres, sans lui indiquer
+                                      // que l'autre onglet les montrait.
                                       Text(
                                         _filterActiveOnly
-                                            ? "Aucune discussion active sur vos œuvres pour le moment."
+                                            ? (_books.isEmpty
+                                                  ? "Publiez une œuvre : chacune ouvre son propre forum."
+                                                  : "Aucun lecteur n'a encore écrit sur vos œuvres.\n"
+                                                        "Elles sont dans « Toutes mes œuvres ».")
                                             : "Publiez un livre pour créer un forum qui lui est dédié.",
                                         style: GoogleFonts.poppins(
-                                          color: AppColors.textHint,
+                                          color: AppColors.textSecondary,
                                           fontSize: 13,
+                                          height: 1.45,
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
@@ -522,7 +551,11 @@ class _TeamsPageState extends State<TeamsPage> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    "Avis, FAQ, et annonces globales",
+                    _discussionsSalon == 0
+                        ? "Aucune discussion pour l'instant — ouvrez-en une"
+                        : _discussionsSalon == 1
+                        ? "1 discussion en cours"
+                        : "$_discussionsSalon discussions en cours",
                     style: GoogleFonts.poppins(
                       color: AppColors.textSecondary,
                       fontSize: 12,
