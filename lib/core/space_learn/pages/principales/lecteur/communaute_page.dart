@@ -12,6 +12,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.d
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
 import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'recherche_page.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
@@ -27,6 +28,10 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
   final EvenementService _evenementService = EvenementService();
   final DiscussionService _discussionService = DiscussionService();
 
+  /// Le prénom du lecteur, pour que la page s'adresse à lui.
+  /// Elle s'ouvrait sur « Vos espaces d'échange » — un intitulé qui aurait
+  /// convenu à n'importe qui, sur n'importe quelle application.
+  String _prenom = '';
   List<LibraryModel> _library = [];
   List<Evenement> _evenements = [];
   int _cafeMsgCount = 0;
@@ -57,6 +62,14 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
 
       final libraryItems = await _libraryService.getUserLibrary(token);
 
+      // Le prénom n'est qu'un ornement : son absence ne doit pas priver le
+      // lecteur de sa page.
+      String prenom = '';
+      try {
+        final user = await AuthService().getUser(token);
+        if (user != null) prenom = user.nomComplet.trim().split(' ').first;
+      } catch (_) {}
+
       List<Evenement> evts = [];
       try {
         evts = await _evenementService.getGlobalEvenements(token);
@@ -83,6 +96,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         setState(() {
           _library = validItems;
           _evenements = evts;
+          _prenom = prenom;
           _cafeMsgCount = totalCafeMsgs;
           _isLoading = false;
         });
@@ -95,6 +109,29 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         });
       }
     }
+  }
+
+  /// Une ligne qui dit au lecteur ou il en est.
+  ///
+  /// Un ecran vide sans explication se lit comme une panne. Quand la
+  /// bibliotheque est vide, la phrase indique quoi faire ; sinon elle compte
+  /// ce qui est deja la.
+  String _phraseBibliotheque() {
+    final livres = _library.length;
+    if (livres == 0) {
+      return "Votre bibliothèque est vide : chaque livre acheté ouvre son "
+          "club de lecture, où vous retrouvez les autres lecteurs.";
+    }
+    final texteLivres = livres == 1
+        ? "1 club de lecture"
+        : "$livres clubs de lecture";
+    if (_evenements.isEmpty) {
+      return "$texteLivres · le café des lecteurs vous attend";
+    }
+    final texteActu = _evenements.length == 1
+        ? "1 actualité de vos auteurs"
+        : "${_evenements.length} actualités de vos auteurs";
+    return "$texteLivres · $texteActu";
   }
 
   @override
@@ -156,7 +193,11 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(_error!, style: TextStyle(color: Colors.red)),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.error),
+                  ),
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: _loadData,
@@ -175,15 +216,30 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // En-tête Global
+                  // En-tete : ce que le lecteur a devant lui, pas un intitule
+                  // qui conviendrait a n'importe qui.
                   Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
                     child: Text(
-                      "Vos espaces d'échange",
+                      _prenom.isEmpty
+                          ? "Vos espaces d'échange"
+                          : "Vos lectures, $_prenom",
                       style: GoogleFonts.poppins(
                         color: AppColors.textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    child: Text(
+                      _phraseBibliotheque(),
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontSize: 13.5,
+                        height: 1.45,
                       ),
                     ),
                   ),
@@ -354,11 +410,14 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         ? "Actif"
         : "Nouveau";
     final msgCount = book.nombreMessages;
+    // greenAccent et grey n'appartiennent a aucune palette de l'application :
+    // le premier jurait avec l'orange de la marque, le second ne suivait pas
+    // le theme et restait clair en mode sombre.
     final color = book.nombreMessages > 20
-        ? Colors.greenAccent
+        ? AppColors.success
         : book.nombreMessages > 0
-        ? AppColors.primary
-        : Colors.grey;
+        ? AppColors.accentInk
+        : AppColors.textHint;
 
     return GestureDetector(
       onTap: () {
@@ -462,26 +521,33 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
     );
   }
 
+  /// Annonces et evenements des auteurs suivis.
+  ///
+  /// C'etait une liste horizontale de cartes de 280 px sur 200 : avec une ou
+  /// deux publications, on voyait une carte s'arreter aux trois quarts de
+  /// l'ecran et un grand vide a droite, sans rien indiquant qu'il fallait
+  /// faire defiler. Une annonce se lit, elle ne se parcourt pas du regard.
   Widget _buildEvenementsSection() {
-    return SizedBox(
-      height: 200,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _evenements.length,
-        itemBuilder: (context, index) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: List.generate(_evenements.length, (index) {
           final evt = _evenements[index];
           final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
-          final colorType = isAnnonce
-              ? AppColors.secondaryVariant
-              : AppColors.success;
+          // AppColors.success est la couleur de confirmation. L'employer en
+          // decor lui retire son sens partout ailleurs : quand un vrai succes
+          // s'affiche, il ne se distingue plus de rien. L'icone suffit a
+          // separer une annonce d'un evenement.
+          final colorType = AppColors.accentInk;
           final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
 
           return Container(
-            width: 280,
-            margin: EdgeInsets.only(right: 16, bottom: 10),
+            width: double.infinity,
+            margin: EdgeInsets.only(
+              bottom: index == _evenements.length - 1 ? 0 : 12,
+            ),
             decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
+              color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               border: Border.all(color: colorType.withOpacity(0.3)),
             ),
@@ -504,17 +570,23 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        evt.typePublication.toUpperCase(),
+                        (evt.categorie?.trim().isNotEmpty ?? false)
+                            ? evt.categorie!.trim().toUpperCase()
+                            : evt.typePublication.toUpperCase(),
                         style: GoogleFonts.poppins(
                           color: colorType,
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
                         ),
                       ),
                     ),
                     if (evt.dateEvenement != null)
                       Text(
-                        DateFormat('dd/MM/yyyy').format(evt.dateEvenement!),
+                        DateFormat(
+                          'd MMM yyyy',
+                          'fr_FR',
+                        ).format(evt.dateEvenement!),
                         style: GoogleFonts.poppins(
                           color: AppColors.textHint,
                           fontSize: 10,
@@ -534,23 +606,25 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 6),
-                Expanded(
-                  child: Text(
-                    evt.contenu,
-                    style: AppTextStyles.grey12,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Text(
+                  evt.contenu,
+                  style: AppTextStyles.grey12,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 8),
+                SizedBox(height: 10),
                 Row(
                   children: [
-                    Icon(Icons.person, size: 12, color: Colors.grey),
+                    Icon(
+                      Icons.person,
+                      size: 12,
+                      color: AppColors.textSecondary,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       "Événement Communauté",
                       style: GoogleFonts.poppins(
-                        color: Colors.grey,
+                        color: AppColors.textSecondary,
                         fontSize: 11,
                       ),
                     ),
@@ -559,7 +633,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
               ],
             ),
           );
-        },
+        }),
       ),
     );
   }
