@@ -221,12 +221,21 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       letterSpacing: 1.2,
                     ),
                   ),
+                  // Le sous-titre etait coupe net — « Discussions generales
+                  // avec votre communa... » — faute de place dans l'en-tete.
+                  // Il tient maintenant sur deux lignes, et son orange passe
+                  // en accentInk : secondaryVariant tenait 2,40:1 sur un fond
+                  // clair, illisible a onze pixels.
                   Text(
                     widget.subtitle,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
+                      height: 1.3,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.secondaryVariant,
+                      color: AppColors.accentInk,
                     ),
                   ),
                 ],
@@ -324,7 +333,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
+                              color: AppColors.primary.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(
                                 AppDimensions.radiusSmall,
                               ),
@@ -332,7 +341,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             child: Text(
                               "COMMUNAUTÉ ACTIVE",
                               style: GoogleFonts.poppins(
-                                color: AppColors.secondaryVariant,
+                                color: AppColors.accentInk,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.5,
@@ -470,14 +479,26 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           });
                         },
                         child: _buildPostItem(
-                          username: (d.creePar?.isNotEmpty ?? false)
-                              ? d.creePar!.substring(0, 6)
+                          // Le nom de la personne, que le serveur renvoie
+                          // depuis toujours dans nom_utilisateur. On affichait
+                          // les six premiers caracteres de son identifiant :
+                          // « @70f2c9 ». Personne ne se reconnait la-dedans, et
+                          // deux participants pouvaient sembler etre le meme.
+                          username:
+                              (d.nomUtilisateur?.trim().isNotEmpty ?? false)
+                              ? d.nomUtilisateur!.trim()
                               : "Anonyme",
                           time: d.creeLe != null
                               ? _timeAgo(d.creeLe!)
                               : "inconnu",
                           title: d.titre,
-                          content: "Rejoindre la conversation...",
+                          // La description de la discussion. Un texte
+                          // identique sur chaque ligne — « Rejoindre la
+                          // conversation... » — n'aide pas a choisir laquelle
+                          // ouvrir, et donne l'impression que tout se ressemble.
+                          content: (d.description?.trim().isNotEmpty ?? false)
+                              ? d.description!.trim()
+                              : "Aucune description",
                           comments: d.messagesCount ?? d.messages.length,
                           likes: d.likesCount ?? 0,
                           hasNewNotification: (() {

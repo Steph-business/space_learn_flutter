@@ -4,6 +4,13 @@ import 'messageModel.dart';
 class Discussion {
   final String id;
   final String? creePar;
+
+  /// Nom de la personne qui a ouvert la discussion.
+  ///
+  /// Le serveur le renvoie depuis toujours dans `nom_utilisateur`, mais
+  /// l'application ne le lisait pas : elle affichait les six premiers
+  /// caractères de [creePar], c'est-à-dire un morceau d'identifiant — « @70f2c9 ».
+  final String? nomUtilisateur;
   final String? type;
   final String? description;
   final String? imageBanniere;
@@ -20,6 +27,7 @@ class Discussion {
   Discussion({
     required this.id,
     this.creePar,
+    this.nomUtilisateur,
     this.type,
     this.description,
     this.imageBanniere,
@@ -87,6 +95,7 @@ class Discussion {
     final d = Discussion(
       id: json['id'] ?? '',
       creePar: json['cree_par'],
+      nomUtilisateur: json['nom_utilisateur']?.toString(),
       type: json['type'],
       description: json['description'],
       imageBanniere: json['image_banniere'],
