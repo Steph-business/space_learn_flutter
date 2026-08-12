@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:space_learn_flutter/core/themes/widgets/app_segmented_control.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -88,6 +89,9 @@ class _ReadingPageState extends State<ReadingPage> {
   // Cache & Mode Hors-ligne
   final BookCacheService _bookCacheService = BookCacheService();
   Uint8List? _cachedBookBytes;
+
+  /// Evite de reproposer l'achat a chaque passage sur la derniere page.
+  bool _achatDejaPropose = false;
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
   EpubController? _epubController;
@@ -102,6 +106,17 @@ class _ReadingPageState extends State<ReadingPage> {
     _loadSettings();
     _loadBookmarks();
     _startHeartbeat();
+
+    // L'ecran ne doit pas s'eteindre pendant la lecture.
+    //
+    // Rien ne l'empechait : une page lue trente secondes sans toucher l'ecran
+    // suffisait a le voir s'assombrir puis se verrouiller. C'est la gene la
+    // plus frequente d'une application de lecture, et elle se produit a chaque
+    // seance.
+    //
+    // Le verrou est relache dans dispose : il ne doit pas survivre a la sortie
+    // du lecteur, sous peine de vider la batterie sur toutes les autres pages.
+    WakelockPlus.enable();
 
     // Initialisation TTS
     _ttsService.onCompletion = _onTtsCompletion;
@@ -334,16 +349,22 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   void _onPageChanged(int page) {
-    if (widget.isExtrait && page > 2) {
-      // Pour les extraits gratuits, on limite à 2 pages par défaut
-      _pdfViewerController.jumpToPage(2);
-      _showExtraitLimitDialog();
-      return;
-    }
+    // Aucune limite de pages n'est appliquee ici.
+    //
+    // Le serveur ne livre pas le manuscrit a qui n'a pas achete : il envoie le
+    // fichier d'extrait, qui ne contient deja que les pages offertes — dix par
+    // defaut, reglables par EXTRAIT_NB_PAGES. L'application posait par-dessus
+    // une seconde barriere a la page 2, ecrite en dur : huit des dix pages que
+    // l'auteur offre etaient inaccessibles, et changer EXTRAIT_NB_PAGES ne
+    // changeait rien.
+    //
+    // La proposition d'achat arrive maintenant a la derniere page de l'extrait,
+    // c'est-a-dire quand le lecteur a vraiment tout vu.
 
     setState(() {
       _currentPage = page;
     });
+    _proposerAchatSiFinDExtrait(page);
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(seconds: 2), () {
       _saveProgress(page);
@@ -352,6 +373,17 @@ class _ReadingPageState extends State<ReadingPage> {
     if (_ttsService.isPlaying) {
       _speakCurrentPage();
     }
+  }
+
+  /// Propose l'achat quand l'extrait est termine.
+  ///
+  /// Une seule fois par ouverture : reproposer a chaque changement de page
+  /// transformerait la fin de l'extrait en mur infranchissable.
+  void _proposerAchatSiFinDExtrait(int page) {
+    if (!widget.isExtrait || _achatDejaPropose) return;
+    if (_totalPages <= 0 || page < _totalPages) return;
+    _achatDejaPropose = true;
+    _showExtraitLimitDialog();
   }
 
   void _showExtraitLimitDialog() {
@@ -453,6 +485,8 @@ class _ReadingPageState extends State<ReadingPage> {
     _epubController?.dispose();
     _ttsService.removeListener(_onTtsStateChanged);
     _ttsService.stop();
+    // Rendre l'ecran a son comportement normal.
+    WakelockPlus.disable();
     super.dispose();
   }
 
@@ -809,15 +843,33 @@ class _ReadingPageState extends State<ReadingPage> {
       drawer: _buildDrawer(),
       body: Stack(
         children: [
-          // Content Layer (Dimmed)
-          Opacity(
-            opacity: 0.5 + (_brightness * 0.5), // Simulate brightness
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => setState(() => _showControls = !_showControls),
-              child: _buildBody(pdfUrl, imageUrl, isPdf),
-            ),
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => setState(() => _showControls = !_showControls),
+            child: _buildBody(pdfUrl, imageUrl, isPdf),
           ),
+
+          // Voile d'assombrissement, pour lire dans le noir.
+          //
+          // Le reglage existait deja — charge des preferences, envoye au
+          // serveur — mais aucune commande ne permettait de l'atteindre, et il
+          // s'appliquait en Opacity sur le contenu : le texte devenait
+          // translucide et se delavait sur le fond, au lieu de s'assombrir.
+          //
+          // Un voile noir par-dessus assombrit vraiment, sans toucher au
+          // contraste entre le texte et sa page. Il ne peut pas eclaircir
+          // au-dela du reglage systeme — c'est la limite de l'approche, mais
+          // elle ne demande aucune permission.
+          if (_brightness < 1.0)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.black.withValues(
+                    alpha: (1.0 - _brightness) * 0.72,
+                  ),
+                ),
+              ),
+            ),
 
           // Header Layer (Solid)
           if (!_showCover && _showControls) _buildHeader(),
@@ -988,9 +1040,7 @@ class _ReadingPageState extends State<ReadingPage> {
               }
             },
             onChapterChanged: (value) {
-              if (widget.isExtrait && _currentPage > 2) {
-                _showExtraitLimitDialog();
-              } else if (mounted && value != null && value.chapter != null) {
+              if (mounted && value != null && value.chapter != null) {
                 setState(() {
                   _currentChapterTitle = value.chapter!.Title ?? '';
                 });
@@ -1286,16 +1336,18 @@ class _ReadingPageState extends State<ReadingPage> {
                 ),
                 const SizedBox(height: AppDimensions.spaceXl),
 
-                _titreReglage("Taille du texte"),
+                // Le meme curseur ne fait pas la meme chose selon le format :
+                // sur un PDF la mise en page est figee, on ne peut qu'agrandir
+                // l'image ; un EPUB recompose son texte. L'intitule le dit,
+                // plutot que de laisser croire a un reglage qui n'existe pas.
+                _titreReglage(_isPdf ? "Agrandissement" : "Taille du texte"),
                 const SizedBox(height: AppDimensions.spaceXs),
                 Row(
                   children: [
-                    Text(
-                      "Aa",
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
+                    Icon(
+                      _isPdf ? Icons.zoom_out : Icons.text_decrease,
+                      size: 18,
+                      color: AppColors.textSecondary,
                     ),
                     Expanded(
                       child: Slider(
@@ -1315,13 +1367,10 @@ class _ReadingPageState extends State<ReadingPage> {
                         },
                       ),
                     ),
-                    Text(
-                      "Aa",
-                      style: GoogleFonts.poppins(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
+                    Icon(
+                      _isPdf ? Icons.zoom_in : Icons.text_increase,
+                      size: 22,
+                      color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: AppDimensions.spaceMd),
                     // La valeur, sinon on règle à l'aveugle.
@@ -1329,6 +1378,52 @@ class _ReadingPageState extends State<ReadingPage> {
                       width: 48,
                       child: Text(
                         "${(_zoomLevel * 100).round()} %",
+                        textAlign: TextAlign.end,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accentInk,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: AppDimensions.spaceXl),
+
+                _titreReglage("Luminosité"),
+                const SizedBox(height: AppDimensions.spaceXs),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.brightness_low,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
+                    Expanded(
+                      child: Slider(
+                        value: _brightness,
+                        min: 0.25,
+                        max: 1.0,
+                        divisions: 15,
+                        label: "${(_brightness * 100).round()} %",
+                        onChanged: (val) {
+                          setState(() => _brightness = val);
+                          setModalState(() {});
+                          _saveSettingsDebounced();
+                        },
+                      ),
+                    ),
+                    Icon(
+                      Icons.brightness_high,
+                      size: 20,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: AppDimensions.spaceMd),
+                    SizedBox(
+                      width: 48,
+                      child: Text(
+                        "${(_brightness * 100).round()} %",
                         textAlign: TextAlign.end,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
