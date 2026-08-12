@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/themes/widgets/app_segmented_control.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' hide Image;
@@ -1245,70 +1246,65 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
+  /// Feuille de réglages de lecture.
+  ///
+  /// Elle était peinte en noir et blanc écrits en dur : elle restait claire en
+  /// mode sombre, seule surface de l'application à ne pas suivre le thème. Le
+  /// curseur n'annonçait ni ce qu'il réglait ni sa valeur — deux loupes de
+  /// 16 px pour toute indication — et l'interrupteur s'intitulait « Défilement
+  /// vertical » quel que soit son état, alors qu'il bascule vers l'horizontal.
   void _showSettingsModal() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.cardBackground,
       isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: AppColors.iosSurface, // Light background like iOS
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Thèmes et réglages",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      color: Colors.black87,
-                    ),
+        builder: (context, setModalState) => SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppDimensions.spaceXl,
+              0,
+              AppDimensions.spaceXl,
+              AppDimensions.spaceXl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  "Confort de lecture",
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 19,
+                    color: AppColors.textPrimary,
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.05),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.close, size: 20, color: Colors.black54),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 24),
+                ),
+                const SizedBox(height: AppDimensions.spaceXl),
 
-              // Zoom Slider
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  Icon(Icons.zoom_out, size: 16, color: Colors.black45),
-                  Expanded(
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 4,
-                        activeTrackColor: Colors.black,
-                        inactiveTrackColor: Colors.black.withOpacity(0.1),
-                        thumbColor: Colors.white,
-                        overlayColor: Colors.transparent,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 10,
-                          elevation: 2,
-                        ),
+                _titreReglage("Taille du texte"),
+                const SizedBox(height: AppDimensions.spaceXs),
+                Row(
+                  children: [
+                    Text(
+                      "Aa",
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
                       ),
+                    ),
+                    Expanded(
                       child: Slider(
                         value: _zoomLevel,
                         min: 0.5,
                         max: 3.0,
+                        // Des crans : un zoom continu ne se retrouve jamais.
+                        divisions: 10,
+                        label: "${(_zoomLevel * 100).round()} %",
                         onChanged: (val) {
                           setState(() {
                             _zoomLevel = val;
@@ -1319,72 +1315,99 @@ class _ReadingPageState extends State<ReadingPage> {
                         },
                       ),
                     ),
-                  ),
-                  Icon(Icons.zoom_in, size: 18, color: Colors.black45),
-                ],
-              ),
-              Divider(height: 30),
+                    Text(
+                      "Aa",
+                      style: GoogleFonts.poppins(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spaceMd),
+                    // La valeur, sinon on règle à l'aveugle.
+                    SizedBox(
+                      width: 48,
+                      child: Text(
+                        "${(_zoomLevel * 100).round()} %",
+                        textAlign: TextAlign.end,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accentInk,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
 
-              // Orientation Toggle
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  _isHorizontal ? Icons.swap_vert : Icons.swap_horiz,
-                  color: Colors.black87,
-                ),
-                title: Text(
-                  "Défilement vertical",
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                trailing: Switch(
-                  value: _isHorizontal,
-                  onChanged: (val) {
-                    setState(() => _isHorizontal = val);
+                const SizedBox(height: AppDimensions.spaceXl),
+
+                _titreReglage("Sens de lecture"),
+                const SizedBox(height: AppDimensions.spaceSm),
+                // Deux choix nommés plutôt qu'un interrupteur : le libellé
+                // « Défilement vertical » restait écrit même une fois passé à
+                // l'horizontal, et rien ne disait vers quoi l'on basculait.
+                AppSegmentedControl(
+                  labels: const ["Vertical", "Horizontal"],
+                  selectedIndex: _isHorizontal ? 1 : 0,
+                  onChanged: (index) {
+                    setState(() => _isHorizontal = index == 1);
                     setModalState(() {});
                     _saveSettings();
                   },
-                  activeColor: Colors.black,
                 ),
-              ),
 
-              Divider(height: 30),
+                const SizedBox(height: AppDimensions.spaceXl),
 
-              // Themes Grid
-              GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: 3,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.2,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildThemeOption(
-                    "Original",
-                    Colors.white,
-                    Colors.black,
-                    setModalState,
-                  ),
-                  _buildThemeOption(
-                    "Nuit",
-                    AppColors.readingDark,
-                    Colors.white,
-                    setModalState,
-                  ),
-                  _buildThemeOption(
-                    "Sépia",
-                    AppColors.parchment,
-                    AppColors.readingBrownDark,
-                    setModalState,
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-            ],
+                _titreReglage("Fond de page"),
+                const SizedBox(height: AppDimensions.spaceSm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildThemeOption(
+                        "Original",
+                        AppColors.parchmentLight,
+                        AppColors.textOnLight,
+                        setModalState,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spaceMd),
+                    Expanded(
+                      child: _buildThemeOption(
+                        "Nuit",
+                        AppColors.readingDark,
+                        AppColors.textOnDark,
+                        setModalState,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spaceMd),
+                    Expanded(
+                      child: _buildThemeOption(
+                        "Sépia",
+                        AppColors.parchment,
+                        AppColors.readingBrownDark,
+                        setModalState,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Intitulé de section de la feuille de réglages.
+  Widget _titreReglage(String texte) {
+    return Text(
+      texte.toUpperCase(),
+      style: GoogleFonts.poppins(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+        color: AppColors.textSecondary,
       ),
     );
   }
@@ -1396,49 +1419,63 @@ class _ReadingPageState extends State<ReadingPage> {
     StateSetter setModalState, {
     bool applyBold = false,
   }) {
-    bool isSelected = _backgroundColor.value == bg.value;
+    final isSelected = _backgroundColor.toARGB32() == bg.toARGB32();
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _backgroundColor = bg;
-        });
+        setState(() => _backgroundColor = bg);
         setModalState(() {});
         _saveSettings();
       },
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-                border: Border.all(
-                  color: isSelected ? Colors.black : Colors.transparent,
-                  width: 2,
-                ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 76,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+              border: Border.all(
+                // Le choix retenu se signalait par une bordure noire de 2 px —
+                // invisible sur la vignette « Nuit », qui est noire.
+                color: isSelected ? AppColors.accentInk : AppColors.border,
+                width: isSelected ? 2.5 : 1,
               ),
-              child: Center(
-                child: Text(
-                  "Aa",
-                  style: TextStyle(
-                    color: text,
-                    fontSize: 24,
-                    fontWeight: applyBold ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              "Aa",
+              style: GoogleFonts.poppins(
+                color: text,
+                fontSize: 24,
+                fontWeight: applyBold ? FontWeight.bold : FontWeight.w500,
               ),
             ),
           ),
-          SizedBox(height: 6),
-          Text(
-            name,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Colors.black54,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
+          const SizedBox(height: AppDimensions.spaceSm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isSelected) ...[
+                Icon(Icons.check_circle, size: 13, color: AppColors.accentInk),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: isSelected
+                        ? AppColors.accentInk
+                        : AppColors.textSecondary,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
