@@ -14,6 +14,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/commun
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/communaute/creer_evenement_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
 import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/evenement_detail_page.dart';
 
@@ -30,9 +31,16 @@ class _TeamsPageState extends State<TeamsPage> {
   final BookService _bookService = BookService();
   final AuthService _authService = AuthService();
   final EvenementService _evenementService = EvenementService();
+  final RelationService _relationService = RelationService();
 
   List<BookModel> _books = [];
   List<Evenement> _evenements = [];
+
+  /// L'auteur et son audience, pour que la page lui parle de lui.
+  /// Elle s'ouvrait sur « Vos espaces d'échange » — un intitulé qui aurait
+  /// convenu à n'importe qui.
+  String _prenom = '';
+  int _nombreAbonnes = 0;
   bool _isLoading = true;
   bool _filterActiveOnly = true;
   String? _error;
@@ -70,6 +78,13 @@ class _TeamsPageState extends State<TeamsPage> {
 
       final books = await _bookService.getBooksByAuthorId(user.id);
 
+      // Le nombre d'abonnes ne doit pas empecher la page de s'afficher :
+      // c'est un ornement, pas une donnee vitale.
+      int abonnes = 0;
+      try {
+        abonnes = (await _relationService.getFollowers(user.id)).length;
+      } catch (_) {}
+
       List<Evenement> evts = [];
       try {
         evts = await _evenementService.getEvenementsByAuthor(user.id, token);
@@ -79,6 +94,8 @@ class _TeamsPageState extends State<TeamsPage> {
         setState(() {
           _books = books;
           _evenements = evts;
+          _prenom = user.nomComplet.trim().split(' ').first;
+          _nombreAbonnes = abonnes;
           _isLoading = false;
         });
       }
@@ -90,6 +107,25 @@ class _TeamsPageState extends State<TeamsPage> {
         });
       }
     }
+  }
+
+  /// Ce que l'auteur a réellement devant lui, en une phrase.
+  ///
+  /// Un intitulé générique ne dit rien ; un chiffre situe. Et quand il n'y a
+  /// encore personne, mieux vaut le dire franchement et donner la marche à
+  /// suivre que d'afficher « 0 abonné ».
+  String _phraseAudience() {
+    final oeuvres = _books.length;
+    if (_nombreAbonnes == 0) {
+      return oeuvres == 0
+          ? "Publiez une première œuvre : vos lecteurs pourront alors vous suivre et échanger ici."
+          : "Personne ne vous suit encore. Partagez vos œuvres pour faire venir vos premiers lecteurs.";
+    }
+    final abonnes = _nombreAbonnes == 1
+        ? "1 lecteur vous suit"
+        : "$_nombreAbonnes lecteurs vous suivent";
+    final oeuvresTexte = oeuvres <= 1 ? "$oeuvres œuvre" : "$oeuvres œuvres";
+    return "$abonnes · $oeuvresTexte publiée${oeuvres > 1 ? 's' : ''}";
   }
 
   @override
@@ -154,15 +190,30 @@ class _TeamsPageState extends State<TeamsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // En-tête Global
+                  // En-tête : ce que l'auteur a devant lui, pas un intitulé
+                  // qui conviendrait à n'importe qui.
                   Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
                     child: Text(
-                      "Vos espaces d'échange",
+                      _prenom.isEmpty
+                          ? "Votre communauté"
+                          : "La communauté de $_prenom",
                       style: GoogleFonts.poppins(
                         color: AppColors.textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    child: Text(
+                      _phraseAudience(),
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontSize: 13.5,
+                        height: 1.45,
                       ),
                     ),
                   ),
@@ -200,7 +251,12 @@ class _TeamsPageState extends State<TeamsPage> {
                           child: _buildQuickAction(
                             Iconsax.calendar,
                             "Événement",
-                            AppColors.success,
+                            // Le vert etait AppColors.success : l'employer en
+                            // decor pour un bouton lui retire son sens de
+                            // confirmation partout ailleurs. Deux actions de
+                            // meme rang portent le meme accent ; leurs icones
+                            // suffisent a les distinguer.
+                            AppColors.secondaryVariant,
                             onTap: () async {
                               final result = await Navigator.push(
                                 context,
@@ -645,104 +701,123 @@ class _TeamsPageState extends State<TeamsPage> {
     );
   }
 
+  /// Liste des annonces et événements de l'auteur.
+  ///
+  /// C'était une liste horizontale de cartes larges de 280 px, hautes de 200.
+  /// Avec une seule publication — le cas de tout auteur qui débute — on voyait
+  /// une carte s'arrêter aux trois quarts de l'écran et un grand vide à droite,
+  /// sans rien indiquant qu'il fallait faire défiler. Une annonce n'est pas non
+  /// plus un carrousel : on la lit, on ne la parcourt pas du regard.
+  ///
+  /// Verticale et pleine largeur : le texte respire, et la hauteur suit le
+  /// contenu au lieu d'être figée.
   Widget _buildEvenementsSection() {
-    return SizedBox(
-      height: 200,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _evenements.length,
-        itemBuilder: (context, index) {
-          final evt = _evenements[index];
-          final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
-          final colorType = isAnnonce
-              ? AppColors.secondaryVariant
-              : AppColors.success;
-          final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          for (final evt in _evenements) ...[
+            _cartePublication(evt),
+            if (evt != _evenements.last)
+              const SizedBox(height: AppDimensions.spaceMd),
+          ],
+        ],
+      ),
+    );
+  }
 
-          return GestureDetector(
-            onTap: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EvenementDetailPage(evenement: evt),
+  Widget _cartePublication(Evenement evt) {
+    final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
+    // L'annonce et l'événement se distinguent par leur icône et leur libellé.
+    // Le vert d'AppColors.success servait ici de décor, ce qui lui retirait son
+    // sens de confirmation partout ailleurs dans l'application.
+    final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
+
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EvenementDetailPage(evenement: evt),
+          ),
+        );
+        if (result == true) _loadData();
+      },
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+          border: Border.all(color: AppColors.border),
+        ),
+        padding: const EdgeInsets.all(AppDimensions.cardPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusSmall,
+                    ),
+                  ),
+                  child: Icon(iconType, color: AppColors.accentInk, size: 16),
                 ),
-              );
-              if (result == true) _loadData();
-            },
-            child: Container(
-              width: 280,
-              margin: EdgeInsets.only(right: 16, bottom: 10),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-                border: Border.all(color: colorType.withOpacity(0.3)),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colorType.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
-                          ),
-                        ),
-                        child: Icon(iconType, color: colorType, size: 16),
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          evt.typePublication.toUpperCase(),
-                          style: GoogleFonts.poppins(
-                            color: colorType,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      if (evt.dateEvenement != null)
-                        Text(
-                          DateFormat('dd/MM/yyyy').format(evt.dateEvenement!),
-                          style: GoogleFonts.poppins(
-                            color: AppColors.textHint,
-                            fontSize: 10,
-                          ),
-                        ),
-                    ],
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    evt.titre,
+                const SizedBox(width: AppDimensions.spaceMd),
+                Expanded(
+                  child: Text(
+                    evt.typePublication.toUpperCase(),
                     style: GoogleFonts.poppins(
-                      color: AppColors.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 6),
-                  Expanded(
-                    child: Text(
-                      evt.contenu,
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                      color: AppColors.accentInk,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
                     ),
                   ),
-                ],
-              ),
+                ),
+                if (evt.dateEvenement != null)
+                  Text(
+                    DateFormat(
+                      'd MMM yyyy',
+                      'fr_FR',
+                    ).format(evt.dateEvenement!),
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textHint,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
             ),
-          );
-        },
+            const SizedBox(height: AppDimensions.spaceMd),
+            Text(
+              evt.titre,
+              style: GoogleFonts.poppins(
+                color: AppColors.textPrimary,
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (evt.contenu.trim().isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                evt.contenu,
+                style: GoogleFonts.poppins(
+                  color: AppColors.textSecondary,
+                  fontSize: 12.5,
+                  height: 1.45,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
