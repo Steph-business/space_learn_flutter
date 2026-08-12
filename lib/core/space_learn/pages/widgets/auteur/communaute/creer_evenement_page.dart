@@ -33,7 +33,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
     if (widget.initialEvenement != null) {
       _titleController.text = widget.initialEvenement!.titre;
       _descController.text = widget.initialEvenement!.contenu;
-      _eventType = widget.initialEvenement!.typePublication;
+      // La categorie, pas le type : rouvrir un evenement affichait
+      // « EVENEMENT » dans un menu qui ne propose que des natures.
+      _eventType = widget.initialEvenement!.categorie ?? _eventType;
       _selectedDate = widget.initialEvenement!.dateEvenement;
       if (widget.initialEvenement!.dateEvenement != null) {
         _selectedTime = TimeOfDay.fromDateTime(
@@ -376,7 +378,11 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
       if (widget.initialEvenement != null) {
         await _evenementService.updateEvenement(
           id: widget.initialEvenement!.id,
-          typePublication: _eventType,
+          // Le menu choisit une *nature* d'evenement, pas un type de
+          // publication. Envoyee dans type_publication, elle butait sur la
+          // contrainte de la base, qui n'accepte que ANNONCE et EVENEMENT.
+          typePublication: "EVENEMENT",
+          categorie: _eventType,
           titre: title,
           contenu: desc,
           token: token,
@@ -384,7 +390,8 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         );
       } else {
         await _evenementService.createEvenement(
-          typePublication: "Evenement",
+          typePublication: "EVENEMENT",
+          categorie: _eventType,
           titre: title,
           contenu: desc,
           token: token,

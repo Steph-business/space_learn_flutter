@@ -1,6 +1,10 @@
 class Evenement {
   final String id;
-  final String typePublication; // ANNONCE ou EVENEMENT
+  final String typePublication;
+
+  /// Nature de l'événement — « Séance de Dédicace », « Live Q&A »…
+  /// Elle était envoyée dans typePublication, où la base la refusait.
+  final String? categorie; // ANNONCE ou EVENEMENT
   final String titre;
   final String contenu;
   final String? imageUrl;
@@ -11,6 +15,7 @@ class Evenement {
   Evenement({
     required this.id,
     required this.typePublication,
+    this.categorie,
     required this.titre,
     required this.contenu,
     this.imageUrl,
@@ -23,6 +28,7 @@ class Evenement {
     return Evenement(
       id: json['id'] ?? '',
       typePublication: json['type_publication'] ?? 'ANNONCE',
+      categorie: json['categorie']?.toString(),
       titre: json['titre'] ?? '',
       contenu: json['contenu'] ?? '',
       imageUrl: json['image_url'],

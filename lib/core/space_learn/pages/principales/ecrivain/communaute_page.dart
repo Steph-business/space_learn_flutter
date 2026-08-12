@@ -802,7 +802,11 @@ class _TeamsPageState extends State<TeamsPage> {
                 const SizedBox(width: AppDimensions.spaceMd),
                 Expanded(
                   child: Text(
-                    evt.typePublication.toUpperCase(),
+                    // La categorie dit ce qu'est reellement l'evenement —
+                    // « Seance de Dedicace » plutot que « EVENEMENT ».
+                    (evt.categorie?.trim().isNotEmpty ?? false)
+                        ? evt.categorie!.trim().toUpperCase()
+                        : evt.typePublication.toUpperCase(),
                     style: GoogleFonts.poppins(
                       color: AppColors.accentInk,
                       fontSize: 10,

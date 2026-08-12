@@ -200,14 +200,14 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
       if (widget.initialEvenement != null) {
         await _evenementService.updateEvenement(
           id: widget.initialEvenement!.id,
-          typePublication: "Annonce",
+          typePublication: "ANNONCE",
           titre: title,
           contenu: content,
           token: token,
         );
       } else {
         await _evenementService.createEvenement(
-          typePublication: "Annonce",
+          typePublication: "ANNONCE",
           titre: title,
           contenu: content,
           token: token,

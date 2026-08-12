@@ -17,12 +17,16 @@ class EvenementService {
     required String token,
     String? imageUrl,
     DateTime? dateEvenement,
+    String? categorie,
   }) async {
     final Map<String, dynamic> body = {
       'type_publication': typePublication,
       'titre': titre,
       'contenu': contenu,
     };
+    if (categorie != null && categorie.isNotEmpty) {
+      body['categorie'] = categorie;
+    }
     if (imageUrl != null) body['image_url'] = imageUrl;
     if (dateEvenement != null) {
       body['date_evenement'] = dateEvenement.toIso8601String();
@@ -90,6 +94,7 @@ class EvenementService {
     required String token,
     String? imageUrl,
     DateTime? dateEvenement,
+    String? categorie,
   }) async {
     final url = ApiRoutes.evenementById.replaceFirst(':id', id);
     final Map<String, dynamic> body = {
@@ -97,6 +102,9 @@ class EvenementService {
       'titre': titre,
       'contenu': contenu,
     };
+    if (categorie != null && categorie.isNotEmpty) {
+      body['categorie'] = categorie;
+    }
     if (imageUrl != null) body['image_url'] = imageUrl;
     if (dateEvenement != null) {
       body['date_evenement'] = dateEvenement.toIso8601String();
