@@ -57,6 +57,7 @@ class _StatistiqueState extends State<Statistique> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     // Extract values from stats map
     final double totalRevenue = (widget.stats['total_revenue'] ?? 0).toDouble();
 

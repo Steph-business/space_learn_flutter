@@ -178,6 +178,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CartProvider()),

@@ -28,6 +28,7 @@ class EnTeteAuth extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Column(
       children: [
         Row(

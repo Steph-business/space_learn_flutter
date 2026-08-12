@@ -123,6 +123,7 @@ class _PayoutInfoPageState extends State<PayoutInfoPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(

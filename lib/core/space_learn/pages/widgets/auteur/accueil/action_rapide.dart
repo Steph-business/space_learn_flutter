@@ -13,6 +13,7 @@ class AuteurActionsRapide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final actions = [
       {
         "icon": Icons.library_books,

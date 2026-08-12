@@ -253,6 +253,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {

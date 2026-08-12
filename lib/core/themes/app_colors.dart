@@ -17,6 +17,31 @@ class AppColors {
   /// des préférences) est déjà dans la bonne palette.
   static bool isDark = false;
 
+  /// Abonne le widget courant aux changements de thème.
+  ///
+  /// À appeler en première ligne du `build` de tout écran qui lit cette
+  /// palette.
+  ///
+  /// [isDark] est une variable globale. La lire ne crée aucune dépendance :
+  /// Flutter ne reconstruit un widget que s'il dépend d'un `InheritedWidget`
+  /// qui a changé. Une page déjà empilée gardait donc les couleurs qu'elle
+  /// avait au moment de sa construction — on obtenait un en-tête clair
+  /// au-dessus d'une page sombre, chacun figé sur le thème actif quand il a
+  /// été bâti.
+  ///
+  /// `Theme.of(context)` établit cette dépendance. La valeur renvoyée n'est pas
+  /// utilisée : c'est l'abonnement qui compte. Au changement de thème, le
+  /// widget se reconstruit et relit la palette, sans perdre la pile de
+  /// navigation.
+  ///
+  /// Ce n'est qu'un pont. La vraie correction serait de lire les couleurs dans
+  /// `Theme.of(context).colorScheme` plutôt que dans un global — mais elle
+  /// demande de reprendre les quelque sept cents endroits qui appellent
+  /// `AppColors`.
+  static void suivreLeTheme(BuildContext context) {
+    Theme.of(context);
+  }
+
   // ───────────────────────── Backgrounds ─────────────────────────
   /// Valeurs absolues des fonds, indépendantes de [isDark]. Elles servent à
   /// construire les deux ThemeData de MaterialApp, qui doivent chacun décrire

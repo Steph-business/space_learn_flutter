@@ -447,6 +447,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return MainNavBar(
       key: MainNavBar.mainNavBarKey,
       child: Scaffold(

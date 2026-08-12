@@ -24,6 +24,7 @@ class BaseSettingsLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Stack(
       children: [
         Container(color: AppColors.scaffoldBackground),
@@ -262,6 +263,7 @@ class SettingItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Card(
       color: AppColors.cardBackground,
       margin: const EdgeInsets.only(bottom: 8),
@@ -323,6 +325,7 @@ class SettingSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Padding(
       padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
       child: Text(

@@ -31,6 +31,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final rawPrix = widget.book['prix'];
     final bool isFree =
         rawPrix == 0 ||
@@ -483,6 +484,7 @@ class _PaymentConfirmationPageState extends State<PaymentConfirmationPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.darkSurface,
       body: SafeArea(

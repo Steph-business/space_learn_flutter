@@ -8,6 +8,7 @@ class MessagesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Stack(
       children: [
         Container(color: AppColors.scaffoldBackground),

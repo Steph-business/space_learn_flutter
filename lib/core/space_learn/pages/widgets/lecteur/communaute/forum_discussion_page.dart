@@ -177,6 +177,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.darkSurface,
       appBar: AppBar(

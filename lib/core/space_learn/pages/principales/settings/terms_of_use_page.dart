@@ -7,6 +7,7 @@ class TermsOfUsePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: isDark

@@ -99,6 +99,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: CustomScrollView(

@@ -66,6 +66,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.darkSurface,
       appBar: AppBar(

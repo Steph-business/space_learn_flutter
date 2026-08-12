@@ -12,6 +12,7 @@ class CartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final cart = context.watch<CartProvider>();
 
     return Scaffold(

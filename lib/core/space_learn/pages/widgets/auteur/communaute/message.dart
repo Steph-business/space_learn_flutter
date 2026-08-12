@@ -6,6 +6,7 @@ class Messages extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return RefreshIndicator(
       onRefresh: () async {
         await Future.delayed(const Duration(seconds: 1));

@@ -27,6 +27,7 @@ class CinetpayResultPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: SafeArea(

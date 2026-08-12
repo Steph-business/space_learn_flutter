@@ -786,6 +786,7 @@ class _ReadingPageState extends State<ReadingPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final String? pdfUrl =
         widget.book['fichier_url'] ?? widget.book['fichierUrl'];
     final String? imageUrl =
@@ -1931,6 +1932,7 @@ class _TtsAudioWaveformState extends State<_TtsAudioWaveform>
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {

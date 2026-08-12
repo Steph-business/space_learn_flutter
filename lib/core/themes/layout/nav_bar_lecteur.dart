@@ -88,6 +88,7 @@ class MainNavBarState extends State<MainNavBar> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: _getPage(_selectedIndex),

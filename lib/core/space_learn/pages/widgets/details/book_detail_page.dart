@@ -422,6 +422,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final book = _fullBook ?? widget.book;
     final isOwned = _isOwned;
 

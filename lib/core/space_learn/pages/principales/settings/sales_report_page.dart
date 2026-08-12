@@ -328,6 +328,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(

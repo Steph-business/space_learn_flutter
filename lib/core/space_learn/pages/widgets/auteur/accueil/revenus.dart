@@ -102,6 +102,7 @@ class _RevenusState extends State<Revenus> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

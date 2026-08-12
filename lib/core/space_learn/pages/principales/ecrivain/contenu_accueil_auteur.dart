@@ -77,6 +77,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return RefreshIndicator(
       onRefresh: _loadData,
       color: AppColors.secondaryVariant,

@@ -20,6 +20,7 @@ class DailyGoalSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     if (goal == null) return const SizedBox.shrink();
 
     final progress = goal!.progress;

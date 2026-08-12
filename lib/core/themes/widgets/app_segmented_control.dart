@@ -26,6 +26,7 @@ class AppSegmentedControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Container(
       height: height,
       padding: const EdgeInsets.all(AppDimensions.spaceXs),

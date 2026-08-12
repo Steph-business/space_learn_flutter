@@ -14,6 +14,7 @@ class LivreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return GestureDetector(
       onTap: () {
         Navigator.push(

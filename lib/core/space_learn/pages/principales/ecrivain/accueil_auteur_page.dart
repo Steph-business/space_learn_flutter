@@ -86,6 +86,7 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     // Pages that don't need NavBarAll (they have their own AppBars)
     final pagesWithoutNavBarAll = [AjouterLivrePage, LivresPage, TeamsPage];
 

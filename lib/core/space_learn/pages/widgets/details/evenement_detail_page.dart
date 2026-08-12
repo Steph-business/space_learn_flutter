@@ -134,6 +134,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final isAnnonce = _evenement.typePublication.toLowerCase() == "annonce";
     final colorType = isAnnonce
         ? AppColors.secondaryVariant

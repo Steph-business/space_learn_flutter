@@ -35,6 +35,7 @@ class PublicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     const mois = [
       "",
       "jan",

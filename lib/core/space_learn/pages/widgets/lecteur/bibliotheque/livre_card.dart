@@ -27,6 +27,7 @@ class LivreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Container(
       margin: EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -266,6 +267,7 @@ class LivreGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBackground,

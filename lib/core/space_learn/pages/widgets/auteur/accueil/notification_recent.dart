@@ -104,6 +104,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final notificationProvider = context.watch<NotificationProvider>();
     final notifications =
         widget.customNotifications ?? notificationProvider.notifications;
@@ -198,6 +199,7 @@ class _NotificationCardFromModel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final isUnread = !model.lu;
 
     return Container(

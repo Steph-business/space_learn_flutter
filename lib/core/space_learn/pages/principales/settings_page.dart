@@ -91,6 +91,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return BaseSettingsLayout(
       title: "Paramètres",

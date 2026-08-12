@@ -55,6 +55,7 @@ class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     // Cette page décide seule de sa luminosité : elle prévisualise le confort
     // de lecture, qui a son propre mode nuit, indépendant du thème de
     // l'application. Ce choix est légitime — la palette qui l'accompagnait ne

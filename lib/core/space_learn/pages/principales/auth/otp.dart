@@ -161,6 +161,7 @@ class _OtpPageState extends State<OtpPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final defaultPinTheme = PinTheme(
       width: 48,
       height: 52,

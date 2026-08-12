@@ -55,6 +55,7 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     if (_isLoading) {
       return Center(child: CircularProgressIndicator());
     }

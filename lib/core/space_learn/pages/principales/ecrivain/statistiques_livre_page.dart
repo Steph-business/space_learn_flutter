@@ -12,6 +12,7 @@ class StatistiquesLivrePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     // Calcul de données factices pour le graphique afin d'animer la page
     // Ou nous pouvons utiliser le nombre de téléchargements comme indicateur global
     final int estimatedRevenue = book.telechargements * book.prix;

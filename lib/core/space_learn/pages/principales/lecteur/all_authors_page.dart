@@ -220,6 +220,7 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(

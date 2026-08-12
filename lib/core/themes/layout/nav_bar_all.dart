@@ -43,6 +43,7 @@ class NavBarAll extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final String initial = userName.isNotEmpty
         ? userName[0].toUpperCase()
         : 'L';

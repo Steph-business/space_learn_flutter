@@ -132,6 +132,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(

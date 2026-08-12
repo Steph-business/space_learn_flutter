@@ -237,6 +237,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: Column(

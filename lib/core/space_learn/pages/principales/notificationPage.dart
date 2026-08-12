@@ -36,6 +36,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       extendBodyBehindAppBar: true,

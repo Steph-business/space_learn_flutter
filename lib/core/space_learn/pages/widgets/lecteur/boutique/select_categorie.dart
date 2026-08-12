@@ -18,6 +18,7 @@ class SelectCategorie extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return SizedBox(
       height: 38,
       child: ListView.builder(

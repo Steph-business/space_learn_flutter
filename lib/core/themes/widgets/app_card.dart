@@ -28,6 +28,7 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     final content = Container(
       padding: padding ?? const EdgeInsets.all(AppDimensions.cardPadding),
       decoration: BoxDecoration(

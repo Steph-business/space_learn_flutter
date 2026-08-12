@@ -21,6 +21,7 @@ class BienvenuePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: SafeArea(
@@ -175,6 +176,7 @@ class _MarqueAvecHalo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Column(
       children: [
         Container(
@@ -249,6 +251,7 @@ class _Promesse extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

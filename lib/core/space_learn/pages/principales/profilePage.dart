@@ -84,6 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.scaffoldBackground,

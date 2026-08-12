@@ -29,6 +29,7 @@ class SettingsPageAuteur extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return BaseSettingsLayout(
       title: "Paramètres Auteur",
       primaryAccentColor: AppColors.secondaryVariant,

@@ -24,6 +24,7 @@ class TopLivresSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     // Sort books by downloads (views) descending and take top 2 (original design had 2 items)
     final sortedBooks = List<BookModel>.from(books);
     sortedBooks.sort((a, b) => b.telechargements.compareTo(a.telechargements));
@@ -261,6 +262,7 @@ class _CommentairesRecentsSectionState
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -420,6 +422,7 @@ class DerniersAbonnesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
     // Sort followers by created date (newest first) if we had dates, or just take the last ones
     final recentFollowers = followers.reversed.take(5).toList();
 

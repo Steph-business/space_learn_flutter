@@ -45,7 +45,9 @@ const _objetsDeStyle = {
 List<File> _fichiersDart() {
   final dossier = Directory(_racine);
   if (!dossier.existsSync()) {
-    fail('Répertoire $_racine introuvable — le test doit tourner à la racine du projet.');
+    fail(
+      'Répertoire $_racine introuvable — le test doit tourner à la racine du projet.',
+    );
   }
   return dossier
       .listSync(recursive: true)
@@ -89,7 +91,8 @@ int _ferme(String texte, int ouvrante) {
   return texte.length;
 }
 
-int _ligneDe(String texte, int index) => '\n'.allMatches(texte.substring(0, index)).length + 1;
+int _ligneDe(String texte, int index) =>
+    '\n'.allMatches(texte.substring(0, index)).length + 1;
 
 void main() {
   // ── Règle 1 ────────────────────────────────────────────────────────────
@@ -97,43 +100,57 @@ void main() {
   // encre qui, elle, suit le thème donne un résultat qui s'inverse : lisible
   // dans un mode, illisible dans l'autre (1,80:1 pour du blanc sur #FFB156).
   // AppColors.onAccent tient de 7,2:1 à 11,1:1 sur toute la gamme d'accent.
-  test('aucune encre dépendante du thème ni de blanc sur un aplat d\'accent', () {
-    final fautes = <String>[];
+  test(
+    'aucune encre dépendante du thème ni de blanc sur un aplat d\'accent',
+    () {
+      final fautes = <String>[];
 
-    for (final fichier in _fichiersDart()) {
-      if (fichier.path.replaceAll(r'\', '/').endsWith('core/themes/app_colors.dart')) {
-        continue;
-      }
-      final texte = fichier.readAsStringSync();
-
-      for (final fond in _fondAccent.allMatches(texte)) {
-        final debutLigne = texte.lastIndexOf('\n', fond.start) + 1;
-        var finLigne = texte.indexOf('\n', fond.start);
-        if (finLigne < 0) finLigne = texte.length;
-        final ligne = texte.substring(debutLigne, finLigne);
-        // Un aplat translucide ne porte pas de texte à plein contraste.
-        if (ligne.contains('withValues') || ligne.contains('withOpacity')) continue;
-
-        var (ouv, ctor) = _ouvrePortee(texte, fond.start);
-        if (ouv == null) continue;
-        if (_objetsDeStyle.contains(ctor)) {
-          final (parent, _) = _ouvrePortee(texte, ouv);
-          if (parent != null) ouv = parent;
+      for (final fichier in _fichiersDart()) {
+        if (fichier.path
+            .replaceAll(r'\', '/')
+            .endsWith('core/themes/app_colors.dart')) {
+          continue;
         }
-        final fin = _ferme(texte, ouv);
+        final texte = fichier.readAsStringSync();
 
-        for (final e in _encresInterdites.allMatches(texte.substring(ouv, fin))) {
-          fautes.add('${fichier.path}:${_ligneDe(texte, ouv + e.start)} '
+        for (final fond in _fondAccent.allMatches(texte)) {
+          final debutLigne = texte.lastIndexOf('\n', fond.start) + 1;
+          var finLigne = texte.indexOf('\n', fond.start);
+          if (finLigne < 0) finLigne = texte.length;
+          final ligne = texte.substring(debutLigne, finLigne);
+          // Un aplat translucide ne porte pas de texte à plein contraste.
+          if (ligne.contains('withValues') || ligne.contains('withOpacity'))
+            continue;
+
+          var (ouv, ctor) = _ouvrePortee(texte, fond.start);
+          if (ouv == null) continue;
+          if (_objetsDeStyle.contains(ctor)) {
+            final (parent, _) = _ouvrePortee(texte, ouv);
+            if (parent != null) ouv = parent;
+          }
+          final fin = _ferme(texte, ouv);
+
+          for (final e in _encresInterdites.allMatches(
+            texte.substring(ouv, fin),
+          )) {
+            fautes.add(
+              '${fichier.path}:${_ligneDe(texte, ouv + e.start)} '
               '— ${e.group(2)} posé sur AppColors.${fond.group(2)} '
-              '(utiliser AppColors.onAccent)');
+              '(utiliser AppColors.onAccent)',
+            );
+          }
         }
       }
-    }
 
-    expect(fautes, isEmpty,
-        reason: '${fautes.length} encre(s) illisible(s) sur un aplat d\'accent :\n'
-            '${fautes.join('\n')}');
-  });
+      expect(
+        fautes,
+        isEmpty,
+        reason:
+            '${fautes.length} encre(s) illisible(s) sur un aplat d\'accent :\n'
+            '${fautes.join('\n')}',
+      );
+    },
+  );
 
   // ── Règle 2 ────────────────────────────────────────────────────────────
   // Un fond écrit en dur ne suit aucun thème. C'est ce qui rendait les
@@ -152,8 +169,11 @@ void main() {
       }
     }
 
-    expect(fautes, isEmpty,
-        reason: 'Fond(s) hors palette :\n${fautes.join('\n')}');
+    expect(
+      fautes,
+      isEmpty,
+      reason: 'Fond(s) hors palette :\n${fautes.join('\n')}',
+    );
   });
 
   // ── Règle 3 ────────────────────────────────────────────────────────────
@@ -177,8 +197,11 @@ void main() {
       }
     }
 
-    expect(fautes, isEmpty,
-        reason: 'Bandeau(x) hors AppNotifications :\n${fautes.join('\n')}');
+    expect(
+      fautes,
+      isEmpty,
+      reason: 'Bandeau(x) hors AppNotifications :\n${fautes.join('\n')}',
+    );
   });
 
   // ── Règle 4 ────────────────────────────────────────────────────────────
@@ -202,8 +225,11 @@ void main() {
       }
     }
 
-    expect(fautes, isEmpty,
-        reason: 'Police(s) hors système :\n${fautes.join('\n')}');
+    expect(
+      fautes,
+      isEmpty,
+      reason: 'Police(s) hors système :\n${fautes.join('\n')}',
+    );
   });
 
   // ── Règle 5 ────────────────────────────────────────────────────────────
@@ -223,7 +249,51 @@ void main() {
       }
     }
 
-    expect(fautes, isEmpty,
-        reason: 'Rayon(s) hors AppDimensions :\n${fautes.join('\n')}');
+    expect(
+      fautes,
+      isEmpty,
+      reason: 'Rayon(s) hors AppDimensions :\n${fautes.join('\n')}',
+    );
+  });
+
+  // ── Règle 6 ────────────────────────────────────────────────────────────
+  // Tout écran qui lit la palette doit s'abonner au thème.
+  //
+  // AppColors.isDark est une variable globale : la lire ne crée aucune
+  // dépendance, donc une page déjà à l'écran garde les couleurs qu'elle avait
+  // au moment de sa construction. On obtenait un en-tête clair au-dessus d'une
+  // page sombre, chacun figé sur le thème actif quand il a été bâti.
+  test('les écrans qui lisent la palette s\'abonnent au thème', () {
+    final debutBuild = RegExp(r'Widget build\(BuildContext (\w+)\) \{');
+    final fautes = <String>[];
+
+    for (final fichier in _fichiersDart()) {
+      final chemin = fichier.path.replaceAll(r'\', '/');
+      if (chemin.endsWith('core/themes/app_colors.dart')) continue;
+
+      final texte = fichier.readAsStringSync();
+      if (!texte.contains('AppColors.')) continue;
+
+      for (final m in debutBuild.allMatches(texte)) {
+        // L'abonnement doit être la première chose que fait le build.
+        final entete = texte.substring(
+          m.end,
+          (m.end + 200).clamp(0, texte.length),
+        );
+        if (!entete.contains('suivreLeTheme')) {
+          final ligne = '\n'.allMatches(texte.substring(0, m.start)).length + 1;
+          fautes.add('${fichier.path}:$ligne');
+        }
+      }
+    }
+
+    expect(
+      fautes,
+      isEmpty,
+      reason:
+          '${fautes.length} écran(s) lisant AppColors sans '
+          'AppColors.suivreLeTheme(context) en tête de build :\n'
+          '${fautes.join('\n')}',
+    );
   });
 }
