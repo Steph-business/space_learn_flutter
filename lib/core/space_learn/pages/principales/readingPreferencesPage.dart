@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:space_learn_flutter/core/services/preferences_lecture.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
+/// Réglages de confort de lecture, avant d'ouvrir un livre.
+///
+/// Cette page proposait une police, une taille de texte, un mode nuit et un
+/// thème — quatre réglages enregistrés sous des clés que **rien** dans
+/// l'application ne lisait. On choisissait, on appuyait sur « Sauvegarder », et
+/// aucun de ces choix n'atteignait le lecteur, qui lisait de son côté quatre
+/// autres clés. Deux écrans qui semblaient régler la même chose, dont un seul
+/// avait un effet.
+///
+/// Elle règle désormais exactement ce que le lecteur applique, par les mêmes
+/// clés (cf. [PreferencesLecture]). Ce qu'on choisit ici, on le retrouve en
+/// ouvrant un livre, et inversement.
+///
+/// La police disparaît : rien dans le lecteur ne sait l'appliquer. Proposer un
+/// choix sans effet est précisément le défaut qu'on corrige.
 class ReadingPreferencesPage extends StatefulWidget {
   const ReadingPreferencesPage({super.key});
 
@@ -13,462 +29,328 @@ class ReadingPreferencesPage extends StatefulWidget {
 }
 
 class _ReadingPreferencesPageState extends State<ReadingPreferencesPage> {
-  String _selectedFont = 'Roboto';
-  double _fontSize = 16.0;
-  bool _nightMode = false;
-  String _theme = 'Automatique';
-  bool _isLoading = true;
-
-  final List<String> _fonts = [
-    'Roboto',
-    'Open Sans',
-    'Lato',
-    'Poppins',
-    'Inter',
-  ];
-  final List<String> _themes = ['Clair', 'Sombre', 'Automatique'];
+  Reglages _reglages = Reglages.defaut;
+  bool _chargement = true;
 
   @override
   void initState() {
     super.initState();
-    _loadPreferences();
+    _charger();
   }
 
-  Future<void> _loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> _charger() async {
+    final r = await PreferencesLecture.charger();
     if (mounted) {
       setState(() {
-        _selectedFont = prefs.getString('pref_reading_font') ?? 'Roboto';
-        _fontSize = prefs.getDouble('pref_reading_font_size') ?? 16.0;
-        _nightMode = prefs.getBool('pref_reading_night_mode') ?? false;
-        _theme = prefs.getString('pref_reading_theme') ?? 'Automatique';
-        _isLoading = false;
+        _reglages = r;
+        _chargement = false;
       });
     }
   }
 
-  bool get _isEffectiveDark {
-    if (_nightMode || _theme == 'Sombre') return true;
-    if (_theme == 'Clair') return false;
-    return Theme.of(context).brightness == Brightness.dark;
+  /// Enregistre à chaque geste.
+  ///
+  /// L'ancienne page exigeait d'appuyer sur « Sauvegarder » : quitter l'écran
+  /// autrement perdait tout, sans avertissement.
+  Future<void> _appliquer(Reglages nouveau) async {
+    setState(() => _reglages = nouveau);
+    await PreferencesLecture.enregistrer(nouveau);
   }
 
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
-    // Cette page décide seule de sa luminosité : elle prévisualise le confort
-    // de lecture, qui a son propre mode nuit, indépendant du thème de
-    // l'application. Ce choix est légitime — la palette qui l'accompagnait ne
-    // l'était pas : elle redéfinissait localement fond, carte, texte, texte
-    // secondaire et bordure, soit un troisième thème invisible depuis
-    // AppColors. Seule la *sélection* reste locale ; les valeurs viennent des
-    // constantes absolues de la palette.
-    final isDark = _isEffectiveDark;
-    final bgColor = isDark ? AppColors.scaffoldDark : AppColors.scaffoldLight;
-    final cardBgColor = isDark ? AppColors.cardDark : AppColors.cardLight;
-    final textColor = isDark ? AppColors.textOnDark : AppColors.textOnLight;
-    final secondaryTextColor = isDark
-        ? AppColors.textSecondaryDark
-        : AppColors.textSecondaryLight;
-    final borderColor = isDark
-        ? AppColors.borderDark
-        : AppColors.borderLightMode;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: bgColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.accentInk),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         title: Text(
-          "Préférences de lecture",
+          'Confort de lecture',
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.accentInk,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
           ),
         ),
       ),
-      body: _isLoading
+      body: _chargement
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Titre principal
-                  Text(
-                    "Préférences de lecture",
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Aperçu du texte
-                  _buildTextPreview(
-                    isDark,
-                    cardBgColor,
-                    textColor,
-                    secondaryTextColor,
-                    borderColor,
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Section Police
-                  _buildSectionTitle("Police"),
-                  _buildFontSelector(
-                    isDark,
-                    cardBgColor,
-                    textColor,
-                    borderColor,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Section Taille du texte
-                  _buildSectionTitle("Taille du texte"),
-                  _buildFontSizeSlider(isDark, textColor, secondaryTextColor),
-                  const SizedBox(height: 20),
-
-                  // Section Thème
-                  _buildSectionTitle("Thème de lecture"),
-                  _buildThemeSelector(isDark),
-                  const SizedBox(height: 20),
-
-                  // Section Mode nuit
-                  _buildSectionTitle("Mode nuit"),
-                  _buildNightModeToggle(
-                    isDark,
-                    cardBgColor,
-                    textColor,
-                    secondaryTextColor,
-                    borderColor,
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Boutons d'action
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _savePreferences,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppDimensions.radiusInner,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            "Sauvegarder",
-                            style: GoogleFonts.poppins(
-                              color: AppColors.onAccent,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _resetToDefaults,
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: isDark
-                                  ? Colors.white24
-                                  : AppColors.accentInk,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppDimensions.radiusInner,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            "Par défaut",
-                            style: GoogleFonts.poppins(
-                              color: isDark
-                                  ? AppColors.textOnDark
-                                  : AppColors.amberDark,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
-
-  Widget _buildTextPreview(
-    bool isDark,
-    Color cardBg,
-    Color textColor,
-    Color subTextColor,
-    Color borderColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        border: Border.all(color: borderColor),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Aperçu du texte",
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppColors.accentInk,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "Ceci est un exemple de texte pour prévisualiser vos préférences de lecture. La police, la taille et le thème choisis s'appliqueront à tous vos livres.",
-            style: TextStyle(
-              fontFamily: _selectedFont,
-              fontSize: _fontSize,
-              color: subTextColor,
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: GoogleFonts.poppins(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: AppColors.accentInk,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFontSelector(
-    bool isDark,
-    Color cardBg,
-    Color textColor,
-    Color borderColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-        border: Border.all(color: borderColor),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedFont,
-          isExpanded: true,
-          dropdownColor: cardBg,
-          style: GoogleFonts.poppins(color: textColor, fontSize: 16),
-          icon: Icon(Icons.arrow_drop_down, color: AppColors.accentInk),
-          items: _fonts.map((font) {
-            return DropdownMenuItem(
-              value: font,
-              child: Text(
-                font,
-                style: TextStyle(fontFamily: font, color: textColor),
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                _selectedFont = value;
-              });
-            }
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFontSizeSlider(
-    bool isDark,
-    Color textColor,
-    Color subTextColor,
-  ) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "Taille: ${_fontSize.toInt()}",
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                color: textColor,
-              ),
-            ),
-            Row(
+          : ListView(
+              padding: const EdgeInsets.all(AppDimensions.screenPadding),
               children: [
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      if (_fontSize > 12) _fontSize -= 2;
-                    });
-                  },
-                  icon: const Icon(Icons.remove),
-                  color: AppColors.accentInk,
+                _Apercu(reglages: _reglages),
+                const SizedBox(height: AppDimensions.spaceXl),
+
+                _titre('Fond de page'),
+                const SizedBox(height: AppDimensions.spaceSm),
+                Row(
+                  children: [
+                    for (final fond in PreferencesLecture.fondsDePage) ...[
+                      Expanded(
+                        child: _VignetteFond(
+                          nom: fond.nom,
+                          fond: fond.fond,
+                          texte: fond.texte,
+                          choisi:
+                              _reglages.fondDePage.toARGB32() ==
+                              fond.fond.toARGB32(),
+                          onTap: () => _appliquer(
+                            _reglages.copier(fondDePage: fond.fond),
+                          ),
+                        ),
+                      ),
+                      if (fond != PreferencesLecture.fondsDePage.last)
+                        const SizedBox(width: AppDimensions.spaceMd),
+                    ],
+                  ],
                 ),
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      if (_fontSize < 24) _fontSize += 2;
-                    });
-                  },
-                  icon: const Icon(Icons.add),
-                  color: AppColors.accentInk,
+
+                const SizedBox(height: AppDimensions.spaceXl),
+
+                _titre('Luminosité'),
+                _curseur(
+                  valeur: _reglages.luminosite,
+                  min: 0.25,
+                  max: 1.0,
+                  iconeMin: Icons.brightness_low,
+                  iconeMax: Icons.brightness_high,
+                  onChanged: (v) => _appliquer(_reglages.copier(luminosite: v)),
+                ),
+
+                const SizedBox(height: AppDimensions.spaceXl),
+
+                _titre('Agrandissement'),
+                _curseur(
+                  valeur: _reglages.agrandissement,
+                  min: 0.5,
+                  max: 3.0,
+                  iconeMin: Icons.zoom_out,
+                  iconeMax: Icons.zoom_in,
+                  onChanged: (v) =>
+                      _appliquer(_reglages.copier(agrandissement: v)),
+                ),
+
+                const SizedBox(height: AppDimensions.spaceXl),
+
+                _titre('Sens de lecture'),
+                const SizedBox(height: AppDimensions.spaceSm),
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(
+                      value: false,
+                      label: Text('Vertical'),
+                      icon: Icon(Icons.swap_vert),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      label: Text('Horizontal'),
+                      icon: Icon(Icons.swap_horiz),
+                    ),
+                  ],
+                  selected: {_reglages.sensHorizontal},
+                  onSelectionChanged: (s) =>
+                      _appliquer(_reglages.copier(sensHorizontal: s.first)),
+                ),
+
+                const SizedBox(height: AppDimensions.spaceXl * 2),
+
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      await _appliquer(Reglages.defaut);
+                      if (mounted) {
+                        AppNotifications.showSnackBar(
+                          context,
+                          message: 'Réglages de lecture réinitialisés',
+                          isSuccess: true,
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.restart_alt, size: 18),
+                    label: const Text('Rétablir les valeurs par défaut'),
+                  ),
                 ),
               ],
             ),
-          ],
+    );
+  }
+
+  Widget _titre(String texte) {
+    return Text(
+      texte.toUpperCase(),
+      style: GoogleFonts.poppins(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+        color: AppColors.textSecondary,
+      ),
+    );
+  }
+
+  Widget _curseur({
+    required double valeur,
+    required double min,
+    required double max,
+    required IconData iconeMin,
+    required IconData iconeMax,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Row(
+      children: [
+        Icon(iconeMin, size: 18, color: AppColors.textSecondary),
+        Expanded(
+          child: Slider(
+            value: valeur,
+            min: min,
+            max: max,
+            divisions: 15,
+            label: '${(valeur * 100).round()} %',
+            onChanged: onChanged,
+          ),
         ),
-        Slider(
-          value: _fontSize,
-          min: 12,
-          max: 24,
-          divisions: 6,
-          activeColor: AppColors.primary,
-          inactiveColor: isDark ? Colors.white24 : Colors.black12,
-          onChanged: (value) {
-            setState(() {
-              _fontSize = value;
-            });
-          },
+        Icon(iconeMax, size: 22, color: AppColors.textSecondary),
+        const SizedBox(width: AppDimensions.spaceMd),
+        SizedBox(
+          width: 48,
+          child: Text(
+            '${(valeur * 100).round()} %',
+            textAlign: TextAlign.end,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.accentInk,
+            ),
+          ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildThemeSelector(bool isDark) {
-    return Wrap(
-      spacing: 8,
-      children: _themes.map((theme) {
-        final isSelected = _theme == theme;
-        return ChoiceChip(
-          label: Text(theme),
-          selected: isSelected,
-          selectedColor: AppColors.primary.withValues(alpha: 0.2),
-          checkmarkColor: AppColors.primary,
-          backgroundColor: isDark
-              ? AppColors.cardDark
-              : AppColors.surfaceVariantLight,
-          labelStyle: GoogleFonts.poppins(
-            color: isSelected
-                ? (isDark ? AppColors.accentInk : AppColors.amberDark)
-                : (isDark
-                      ? AppColors.textSecondaryDark
-                      : AppColors.textSecondaryLight),
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-          onSelected: (selected) {
-            if (selected) {
-              setState(() {
-                _theme = theme;
-                _nightMode = theme == 'Sombre';
-              });
-            }
-          },
-        );
-      }).toList(),
-    );
-  }
+/// Aperçu de ce que donneront les réglages, avec du vrai texte.
+///
+/// L'ancienne page en avait un, mais il montrait une police et une taille sans
+/// effet réel. Celui-ci applique le fond et la luminosité tels que le lecteur
+/// les appliquera.
+class _Apercu extends StatelessWidget {
+  final Reglages reglages;
 
-  Widget _buildNightModeToggle(
-    bool isDark,
-    Color cardBg,
-    Color textColor,
-    Color subTextColor,
-    Color borderColor,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-        border: Border.all(color: borderColor),
-      ),
-      child: SwitchListTile(
-        title: Text(
-          "Activer le mode nuit",
-          style: GoogleFonts.poppins(
-            color: textColor,
-            fontWeight: FontWeight.w600,
+  const _Apercu({required this.reglages});
+
+  @override
+  Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
+    final couleurTexte = PreferencesLecture.fondsDePage
+        .firstWhere(
+          (f) => f.fond.toARGB32() == reglages.fondDePage.toARGB32(),
+          orElse: () => PreferencesLecture.fondsDePage.first,
+        )
+        .texte;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            color: reglages.fondDePage,
+            padding: const EdgeInsets.all(AppDimensions.spaceXl),
+            child: Text(
+              "Le soleil se levait à peine sur la lagune lorsque Awa "
+              "referma le carnet de son grand-père. Il lui restait une "
+              "page, et toute une vie pour la comprendre.",
+              style: GoogleFonts.lora(
+                color: couleurTexte,
+                fontSize: 15 * reglages.agrandissement.clamp(0.7, 1.6),
+                height: 1.6,
+              ),
+            ),
           ),
-        ),
-        subtitle: Text(
-          "Texte blanc sur fond sombre",
-          style: GoogleFonts.poppins(color: subTextColor),
-        ),
-        value: _nightMode,
-        activeColor: AppColors.primary,
-        onChanged: (value) {
-          setState(() {
-            _nightMode = value;
-            _theme = value ? 'Sombre' : 'Clair';
-          });
-        },
+          if (reglages.luminosite < 1.0)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.black.withValues(
+                    alpha: (1.0 - reglages.luminosite) * 0.72,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
+}
 
-  Future<void> _savePreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('pref_reading_font', _selectedFont);
-    await prefs.setDouble('pref_reading_font_size', _fontSize);
-    await prefs.setBool('pref_reading_night_mode', _nightMode);
-    await prefs.setString('pref_reading_theme', _theme);
+class _VignetteFond extends StatelessWidget {
+  final String nom;
+  final Color fond;
+  final Color texte;
+  final bool choisi;
+  final VoidCallback onTap;
 
-    if (mounted) {
-      AppNotifications.showSnackBar(
-        context,
-        message: 'Préférences de lecture sauvegardées !',
-        isSuccess: true,
-      );
-    }
-  }
+  const _VignetteFond({
+    required this.nom,
+    required this.fond,
+    required this.texte,
+    required this.choisi,
+    required this.onTap,
+  });
 
-  void _resetToDefaults() {
-    setState(() {
-      _selectedFont = 'Roboto';
-      _fontSize = 16.0;
-      _nightMode = false;
-      _theme = 'Automatique';
-    });
-    _savePreferences();
+  @override
+  Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 76,
+            decoration: BoxDecoration(
+              color: fond,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+              border: Border.all(
+                color: choisi ? AppColors.accentInk : AppColors.border,
+                width: choisi ? 2.5 : 1,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              'Aa',
+              style: GoogleFonts.poppins(
+                color: texte,
+                fontSize: 24,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spaceSm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (choisi) ...[
+                Icon(Icons.check_circle, size: 13, color: AppColors.accentInk),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  nom,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: choisi
+                        ? AppColors.accentInk
+                        : AppColors.textSecondary,
+                    fontWeight: choisi ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
