@@ -3,7 +3,7 @@ class ApiRoutes {
   // Configurable dynamic host with fallback to local IP
   static const String host = String.fromEnvironment(
     'API_HOST',
-    defaultValue: '192.168.1.12',
+    defaultValue: '144.91.101.16',
   );
   static const String hosts = host;
 
