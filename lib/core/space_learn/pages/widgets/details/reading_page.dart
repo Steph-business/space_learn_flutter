@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' hide Image;
 import 'package:space_learn_flutter/core/services/tts_service.dart';
+import 'package:space_learn_flutter/core/services/preparation_texte.dart';
 import 'package:space_learn_flutter/core/services/book_cache_service.dart';
 import 'dart:typed_data';
 import 'package:google_fonts/google_fonts.dart';
@@ -535,7 +536,9 @@ class _ReadingPageState extends State<ReadingPage> {
           startPageIndex: _currentPage - 1,
           endPageIndex: _currentPage - 1,
         );
-        textToRead = text;
+        // Retire le numero de page et recolle les mots coupes en fin de
+        // ligne, qui se disaient jusqu'ici en deux morceaux.
+        textToRead = texteDepuisPdf(text);
       } catch (e) {
         debugPrint("Erreur lors de l'extraction de texte PDF: $e");
       } finally {
@@ -553,15 +556,10 @@ class _ReadingPageState extends State<ReadingPage> {
         final value = _epubController!.currentValue;
         if (value != null && value.chapter != null) {
           final htmlContent = value.chapter!.HtmlContent ?? '';
-          final regExp = RegExp(
-            r'<[^>]*>',
-            multiLine: true,
-            caseSensitive: true,
-          );
-          textToRead = htmlContent
-              .replaceAll(regExp, ' ')
-              .replaceAll(RegExp(r'\s+'), ' ')
-              .trim();
+          // Le nettoyage tenait en un retrait des balises : le contenu des
+          // <style> se lisait a voix haute, les entites se prononcaient, et
+          // les paragraphes disparaissaient — donc aucune respiration.
+          textToRead = texteDepuisHtml(htmlContent);
         }
       } catch (e) {
         debugPrint("Erreur lors de l'extraction de texte EPUB: $e");
@@ -675,21 +673,13 @@ class _ReadingPageState extends State<ReadingPage> {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      onPressed: () {
-                        double nextRate = 0.5;
-                        if (_ttsService.speechRate == 0.5) {
-                          nextRate = 0.6;
-                        } else if (_ttsService.speechRate == 0.6) {
-                          nextRate = 0.75;
-                        } else if (_ttsService.speechRate == 0.75) {
-                          nextRate = 1.0;
-                        } else if (_ttsService.speechRate == 1.0) {
-                          nextRate = 0.4;
-                        } else {
-                          nextRate = 0.5;
-                        }
-                        _ttsService.setRate(nextRate);
-                      },
+                      // Les paliers etaient compares par egalite de nombres a
+                      // virgule — fragile — et codes en dur jusqu'a 1.0, ce
+                      // qui vaut le double de la vitesse normale sur Android
+                      // mais le plafond dur d'iOS, bien plus rapide encore.
+                      // On avance par index, et on s'arrete au plafond que
+                      // l'appareil declare.
+                      onPressed: () => _ttsService.setRate(_vitesseSuivante()),
                       child: Text(
                         _getSpeedLabel(_ttsService.speechRate),
                         style: GoogleFonts.poppins(
@@ -734,10 +724,14 @@ class _ReadingPageState extends State<ReadingPage> {
                 ),
                 GestureDetector(
                   onTap: () {
+                    // La reprise appelait _speakCurrentPage(), qui relisait
+                    // la page depuis le haut : le stop() en tete de speak()
+                    // effacait la position memorisee. resume() reprend au
+                    // segment en cours.
                     if (_ttsService.isPlaying) {
                       _ttsService.pause();
                     } else if (_ttsService.isPaused) {
-                      _speakCurrentPage();
+                      _ttsService.resume();
                     } else {
                       _speakCurrentPage();
                     }
@@ -810,13 +804,40 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
+  /// Paliers de vitesse, en multiples de la vitesse normale.
+  ///
+  /// Ce sont bien des multiplicateurs : l'echelle de flutter_tts place la
+  /// vitesse normale a 0,5, et le service convertit. Le plafond depend de
+  /// l'appareil — Android accepte jusqu'a trois fois la vitesse normale, iOS
+  /// ecrete au double sans le signaler — d'ou le filtre sur ce que le service
+  /// a lu au demarrage.
+  static const List<double> _multiplicateurs = [0.8, 1.0, 1.2, 1.5, 2.0];
+
+  List<double> get _paliers => _multiplicateurs
+      .map((m) => m * TtsService.vitesseNormale)
+      .where((v) => v <= _ttsService.vitesseMax + 0.001)
+      .toList();
+
+  double _vitesseSuivante() {
+    final paliers = _paliers;
+    if (paliers.isEmpty) return TtsService.vitesseNormale;
+    // Comparaison par proximite : l'egalite entre nombres a virgule est
+    // fragile, et 0.75 ne se compare pas fiablement a lui-meme.
+    var index = 0;
+    var ecartMin = double.infinity;
+    for (var i = 0; i < paliers.length; i++) {
+      final ecart = (paliers[i] - _ttsService.speechRate).abs();
+      if (ecart < ecartMin) {
+        ecartMin = ecart;
+        index = i;
+      }
+    }
+    return paliers[(index + 1) % paliers.length];
+  }
+
   String _getSpeedLabel(double rate) {
-    if (rate == 0.5) return "1.0x";
-    if (rate == 0.6) return "1.2x";
-    if (rate == 0.75) return "1.5x";
-    if (rate == 1.0) return "2.0x";
-    if (rate == 0.4) return "0.8x";
-    return "${(rate / 0.5).toStringAsFixed(1)}x";
+    final multiplicateur = rate / TtsService.vitesseNormale;
+    return "${multiplicateur.toStringAsFixed(1)}x";
   }
 
   @override

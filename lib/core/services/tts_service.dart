@@ -1,9 +1,48 @@
 import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import 'preparation_texte.dart';
+
 enum TtsState { stopped, playing, paused }
 
+/// État de la voix française sur l'appareil.
+///
+/// Quand la langue demandée manque, `setLanguage` ne lève rien : il renvoie 0
+/// en silence, ne touche pas au moteur, et la lecture continue avec la voix
+/// par défaut — donc du français dit avec une voix anglaise. Il faut donc
+/// savoir, et pouvoir le dire au lecteur.
+enum EtatVoix {
+  /// Résolution pas encore terminée.
+  inconnu,
+
+  /// Une voix française est en place.
+  ok,
+
+  /// Le moteur fonctionne, mais aucune voix française n'est installée.
+  absente,
+
+  /// Aucun moteur de synthèse utilisable sur cet appareil.
+  moteurIndisponible,
+}
+
+/// Lecture d'un livre à voix haute.
+///
+/// Le service lisait une page ou un chapitre entier en un seul appel à
+/// `speak()`. Trois choses en découlaient, toutes silencieuses :
+///
+///   - au-delà de 4 000 caractères, Android **refuse** l'énoncé. Il ne le
+///     tronque pas : il ne dit rien du tout, et aucune erreur ne remonte côté
+///     Dart. Un chapitre d'EPUB dépasse couramment cette taille ;
+///   - `speak()` commençait par `stop()`, lequel efface la position mémorisée
+///     par le moteur. La reprise après pause repartait donc du début ;
+///   - `speak()` rappelait `setLanguage()` à chaque page, ce qui annule toute
+///     voix épinglée par `setVoice()`.
+///
+/// D'où le fonctionnement actuel : le texte est découpé en segments courts,
+/// le service tient lui-même l'index du segment en cours, et les enchaîne un
+/// par un en attendant la fin de chacun.
 class TtsService extends ChangeNotifier {
   static final TtsService _instance = TtsService._internal();
   factory TtsService() => _instance;
@@ -12,13 +51,43 @@ class TtsService extends ChangeNotifier {
     _initTts();
   }
 
+  /// Taille visée d'un segment.
+  ///
+  /// Bien en dessous des 4 000 caractères qu'Android refuse : la marge absorbe
+  /// les substitutions que le moteur opère sur le texte, et un segment court
+  /// veut aussi dire qu'une reprise mal placée coûte une phrase, pas une page.
+  static const int _tailleSegmentVisee = 2500;
+
+  /// L'échelle est celle de flutter_tts, où 0,5 vaut la vitesse normale.
+  ///
+  /// Ce n'est pas l'échelle native : le greffon multiplie par deux côté
+  /// Android pour aligner les deux plateformes. Porter cette valeur à 1,0 en
+  /// lisant la seule documentation Android donnerait le double de la vitesse
+  /// normale sur Android et le plafond absolu sur iOS.
+  static const double vitesseNormale = 0.5;
+
   late FlutterTts _flutterTts;
   TtsState _state = TtsState.stopped;
-  double _speechRate = 0.5; // Vitesse de lecture par défaut
+  double _speechRate = vitesseNormale;
   double _pitch = 1.0;
   String _language = 'fr-FR';
   List<String> _languages = [];
   bool _isInitialized = false;
+
+  EtatVoix _etatVoix = EtatVoix.inconnu;
+  String? _nomVoix;
+
+  /// Plafond réellement accepté, lu sur l'appareil.
+  ///
+  /// Android accepte jusqu'à 1,5 sur l'échelle du greffon ; iOS écrête tout
+  /// au-dessus de 1,0 sans le signaler. Coder les paliers en dur revient donc
+  /// à mentir sur l'une des deux plateformes.
+  double _vitesseMax = 1.0;
+
+  /// Segments du texte en cours, et position dans cette liste.
+  List<String> _segments = const [];
+  int _segmentCourant = 0;
+  bool _arretDemande = false;
 
   TtsState get state => _state;
   bool get isPlaying => _state == TtsState.playing;
@@ -30,6 +99,17 @@ class TtsService extends ChangeNotifier {
   List<String> get languages => _languages;
   bool get isInitialized => _isInitialized;
 
+  EtatVoix get etatVoix => _etatVoix;
+  String? get nomVoix => _nomVoix;
+  bool get voixFrancaiseDisponible => _etatVoix == EtatVoix.ok;
+  double get vitesseMax => _vitesseMax;
+
+  /// Avancement dans le texte en cours, de 0 à 1.
+  double get avancement {
+    if (_segments.isEmpty) return 0;
+    return (_segmentCourant + 1) / _segments.length;
+  }
+
   VoidCallback? onCompletion;
   VoidCallback? onStart;
   VoidCallback? onPause;
@@ -38,126 +118,271 @@ class TtsService extends ChangeNotifier {
   Future<void> _initTts() async {
     _flutterTts = FlutterTts();
 
-    try {
-      if (!kIsWeb && Platform.isIOS) {
-        await _flutterTts.setSharedInstance(true);
-        await _flutterTts.setIosAudioCategory(
-          IosTextToSpeechAudioCategory.playback,
-          [
-            IosTextToSpeechAudioCategoryOptions.allowBluetooth,
-            IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
-            IosTextToSpeechAudioCategoryOptions.mixWithOthers,
-            IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
-          ],
-          IosTextToSpeechAudioMode.defaultMode,
-        );
-      }
-    } catch (e) {
-      debugPrint("Erreur lors de la configuration de l'audio session iOS: $e");
-    }
+    await _configurerIOS();
 
     _flutterTts.setStartHandler(() {
       _state = TtsState.playing;
       notifyListeners();
-      if (onStart != null) onStart!();
+      onStart?.call();
     });
 
-    _flutterTts.setCompletionHandler(() {
-      _state = TtsState.stopped;
-      notifyListeners();
-      if (onCompletion != null) onCompletion!();
-    });
-
+    // La fin d'un segment n'est pas la fin de la lecture : la boucle de
+    // _dire() enchaîne. On ne prévient l'appelant qu'une fois le dernier
+    // segment passé, sans quoi la page suivante se déclencherait à chaque
+    // phrase.
     _flutterTts.setCancelHandler(() {
       _state = TtsState.stopped;
       notifyListeners();
-      if (onStop != null) onStop!();
+      onStop?.call();
     });
 
     _flutterTts.setErrorHandler((msg) {
+      // Sans ce gestionnaire, le refus d'un énoncé trop long est totalement
+      // muet côté Dart : le message n'existe que dans le journal Android.
+      debugPrint('Erreur TTS : $msg');
       _state = TtsState.stopped;
       notifyListeners();
-      debugPrint("Erreur TTS: $msg");
     });
 
     _flutterTts.setPauseHandler(() {
       _state = TtsState.paused;
       notifyListeners();
-      if (onPause != null) onPause!();
+      onPause?.call();
     });
 
     _flutterTts.setContinueHandler(() {
       _state = TtsState.playing;
       notifyListeners();
-      if (onStart != null) onStart!();
+      onStart?.call();
     });
 
-    // Configuration par défaut
+    // Indispensable : sans cela, `await speak()` rend la main aussitôt et la
+    // boucle enverrait tous les segments en une milliseconde, ce qui ferait
+    // perdre tout point de contrôle. Ne fonctionne qu'en mode QUEUE_FLUSH,
+    // qui est le mode par défaut — ne pas y toucher.
     try {
-      await _flutterTts.setLanguage(_language);
+      await _flutterTts.awaitSpeakCompletion(true);
+    } catch (e) {
+      debugPrint("awaitSpeakCompletion indisponible : $e");
+    }
+
+    await _lireLaPlageDeVitesse();
+    await _resoudreVoixFrancaise();
+
+    try {
       await _flutterTts.setSpeechRate(_speechRate);
       await _flutterTts.setPitch(_pitch);
     } catch (e) {
-      debugPrint(
-        "Erreur lors de l'application des réglages TTS par défaut: $e",
-      );
-    }
-
-    try {
-      final dynamic langs = await _flutterTts.getLanguages;
-      if (langs != null) {
-        _languages = List<String>.from(langs);
-      }
-    } catch (e) {
-      debugPrint("Erreur lors de la récupération des langues: $e");
+      debugPrint("Réglages TTS par défaut refusés : $e");
     }
 
     _isInitialized = true;
     notifyListeners();
   }
 
-  Future<void> speak(String text) async {
-    if (text.trim().isEmpty) return;
-
+  Future<void> _configurerIOS() async {
+    if (kIsWeb || !Platform.isIOS) return;
     try {
-      await _flutterTts.stop();
-      await _flutterTts.setLanguage(_language);
-      await _flutterTts.setSpeechRate(_speechRate);
-      await _flutterTts.setPitch(_pitch);
-      await _flutterTts.speak(text);
+      await _flutterTts.setSharedInstance(true);
+      // `defaultToSpeaker` est incompatible avec la catégorie `playback` et
+      // fait échouer toute la configuration de session — en silence, le
+      // greffon avalant l'exception. Le son ne survivait alors pas à
+      // l'arrière-plan sans que rien ne l'explique.
+      await _flutterTts.setIosAudioCategory(
+        IosTextToSpeechAudioCategory.playback,
+        [
+          IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+          IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+        ],
+        IosTextToSpeechAudioMode.defaultMode,
+      );
     } catch (e) {
-      debugPrint("Erreur lors de l'exécution de speak: $e");
-      _state = TtsState.stopped;
-      notifyListeners();
+      debugPrint("Configuration de la session audio iOS impossible : $e");
     }
   }
 
+  /// Lit sur l'appareil la plage de vitesse réellement acceptée.
+  Future<void> _lireLaPlageDeVitesse() async {
+    try {
+      final plage = await _flutterTts.getSpeechRateValidRange;
+      final max = plage.max;
+      if (max > 0) _vitesseMax = max;
+    } catch (e) {
+      debugPrint("Plage de vitesse indisponible, plafond à 1,0 : $e");
+    }
+  }
+
+  /// Choisit une voix française explicite, plutôt que d'espérer.
+  ///
+  /// `setLanguage('fr-FR')` ne suffit pas : il renvoie 0 sans rien dire quand
+  /// la langue manque, et `isLanguageAvailable` répond vrai dès qu'un français
+  /// d'un autre pays existe, voire quand la voix est déclarée sans que ses
+  /// données soient téléchargées.
+  Future<void> _resoudreVoixFrancaise() async {
+    try {
+      final brut = await _flutterTts.getVoices.timeout(
+        const Duration(seconds: 5),
+        // Un appareil sans moteur de synthèse ne répond jamais : sans ce
+        // délai, l'initialisation reste bloquée pour toujours.
+        onTimeout: () => null,
+      );
+
+      if (brut == null) {
+        _etatVoix = EtatVoix.moteurIndisponible;
+        return;
+      }
+
+      final voix = (brut as List)
+          .whereType<Map>()
+          .map((v) => v.map((k, val) => MapEntry('$k', '$val')))
+          .where(_estFrancaiseEtInstallee)
+          .toList();
+
+      if (voix.isEmpty) {
+        _etatVoix = EtatVoix.absente;
+        return;
+      }
+
+      voix.sort(_meilleureEnPremier);
+      final choisie = voix.first;
+
+      final retenu = await _flutterTts.setVoice({
+        'name': choisie['name'] ?? '',
+        'locale': choisie['locale'] ?? 'fr-FR',
+      });
+
+      if (retenu == 1) {
+        _nomVoix = choisie['name'];
+        _language = choisie['locale'] ?? 'fr-FR';
+        _etatVoix = EtatVoix.ok;
+      } else {
+        _etatVoix = EtatVoix.absente;
+      }
+    } catch (e) {
+      debugPrint("Résolution de la voix française impossible : $e");
+      _etatVoix = EtatVoix.moteurIndisponible;
+    }
+  }
+
+  bool _estFrancaiseEtInstallee(Map<String, String> v) {
+    final locale = (v['locale'] ?? '').toLowerCase();
+    if (!locale.startsWith('fr')) return false;
+    // Une voix qui exige le réseau ne sert pas un lecteur hors couverture.
+    if (v['network_required'] == '1') return false;
+    final traits = (v['features'] ?? '').split('\t');
+    if (traits.contains('notInstalled')) return false;
+    return true;
+  }
+
+  /// Meilleure qualité d'abord, puis le français de France.
+  int _meilleureEnPremier(Map<String, String> a, Map<String, String> b) {
+    const rangs = {
+      'very high': 0,
+      'high': 1,
+      'normal': 2,
+      'low': 3,
+      'very low': 4,
+    };
+    final qa = rangs[(a['quality'] ?? '').toLowerCase()] ?? 2;
+    final qb = rangs[(b['quality'] ?? '').toLowerCase()] ?? 2;
+    if (qa != qb) return qa.compareTo(qb);
+
+    final fa = (a['locale'] ?? '').toLowerCase().startsWith('fr-fr') ? 0 : 1;
+    final fb = (b['locale'] ?? '').toLowerCase().startsWith('fr-fr') ? 0 : 1;
+    return fa.compareTo(fb);
+  }
+
+  /// Lit un texte, du début.
+  ///
+  /// Le texte est découpé, puis dit segment par segment. Un `stop()` explicite
+  /// précède la lecture : c'est ce qui la distingue d'une reprise, laquelle
+  /// ne doit surtout pas arrêter le moteur.
+  Future<void> speak(String text) async {
+    if (text.trim().isEmpty) return;
+    if (_etatVoix == EtatVoix.moteurIndisponible) return;
+
+    await stop();
+    _segments = decouperPourLecture(text, maxCaracteres: _tailleSegmentVisee);
+    _segmentCourant = 0;
+    if (_segments.isEmpty) return;
+
+    await _dire();
+  }
+
+  /// Enchaîne les segments à partir de [_segmentCourant].
+  Future<void> _dire() async {
+    _arretDemande = false;
+    _state = TtsState.playing;
+    notifyListeners();
+
+    for (var i = _segmentCourant; i < _segments.length; i++) {
+      if (_arretDemande) return;
+      _segmentCourant = i;
+      try {
+        await _flutterTts.speak(_segments[i]);
+      } catch (e) {
+        debugPrint("Lecture du segment $i impossible : $e");
+        _state = TtsState.stopped;
+        notifyListeners();
+        return;
+      }
+      if (_arretDemande) return;
+    }
+
+    _state = TtsState.stopped;
+    _segments = const [];
+    _segmentCourant = 0;
+    notifyListeners();
+    onCompletion?.call();
+  }
+
+  /// Suspend la lecture sans perdre la position.
   Future<void> pause() async {
+    if (_state != TtsState.playing) return;
+    // Le drapeau évite que la boucle n'enchaîne le segment suivant dès que
+    // l'énoncé en cours rend la main.
+    _arretDemande = true;
     try {
       await _flutterTts.pause();
-      _state = TtsState.paused;
-      notifyListeners();
     } catch (e) {
-      debugPrint("Erreur lors de la mise en pause: $e");
+      debugPrint("Mise en pause impossible : $e");
     }
+    _state = TtsState.paused;
+    notifyListeners();
+  }
+
+  /// Reprend là où la lecture s'était arrêtée.
+  ///
+  /// Sans `stop()` préalable : c'est précisément lui qui effaçait la position
+  /// et faisait repartir du début. Au pire — Android antérieur à 8, ou iOS —
+  /// la reprise recommence le segment courant, soit une phrase ou deux, pas
+  /// une page entière.
+  Future<void> resume() async {
+    if (_state != TtsState.paused || _segments.isEmpty) return;
+    await _dire();
   }
 
   Future<void> stop() async {
+    _arretDemande = true;
     try {
       await _flutterTts.stop();
-      _state = TtsState.stopped;
-      notifyListeners();
     } catch (e) {
-      debugPrint("Erreur lors de l'arrêt: $e");
+      debugPrint("Arrêt impossible : $e");
     }
+    _segments = const [];
+    _segmentCourant = 0;
+    _state = TtsState.stopped;
+    notifyListeners();
   }
 
   Future<void> setRate(double rate) async {
-    _speechRate = rate;
+    // Écrêter ici plutôt que de laisser iOS le faire en silence : au-delà de
+    // son plafond, le réglage « fonctionne » sans que la vitesse ne change.
+    _speechRate = rate.clamp(0.1, _vitesseMax);
     try {
       await _flutterTts.setSpeechRate(_speechRate);
     } catch (e) {
-      debugPrint("Erreur lors du réglage de la vitesse: $e");
+      debugPrint("Réglage de la vitesse refusé : $e");
     }
     notifyListeners();
   }
@@ -167,17 +392,28 @@ class TtsService extends ChangeNotifier {
     try {
       await _flutterTts.setPitch(_pitch);
     } catch (e) {
-      debugPrint("Erreur lors du réglage de la tonalité: $e");
+      debugPrint("Réglage de la tonalité refusé : $e");
     }
     notifyListeners();
   }
 
+  /// Change de langue explicitement.
+  ///
+  /// À n'appeler que sur un choix du lecteur. `setLanguage` détruit la voix
+  /// épinglée par `setVoice` — côté iOS le greffon met `voice = nil`, côté
+  /// Android la langue réaffecte la voix par défaut du pays. C'est pourquoi
+  /// [speak] ne l'appelle plus : il le faisait à chaque page, ce qui annulait
+  /// la voix choisie au démarrage.
   Future<void> setLanguage(String lang) async {
     _language = lang;
     try {
-      await _flutterTts.setLanguage(_language);
+      final retenu = await _flutterTts.setLanguage(_language);
+      if (retenu != 1) {
+        debugPrint("Langue $lang non disponible (retour $retenu)");
+        _etatVoix = EtatVoix.absente;
+      }
     } catch (e) {
-      debugPrint("Erreur lors du réglage de la langue: $e");
+      debugPrint("Réglage de la langue refusé : $e");
     }
     notifyListeners();
   }
