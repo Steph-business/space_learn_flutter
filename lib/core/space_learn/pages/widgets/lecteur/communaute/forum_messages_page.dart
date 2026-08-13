@@ -9,7 +9,6 @@ import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.
 import 'package:space_learn_flutter/core/space_learn/data/model/messageModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/messageService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
-import '../../../../../themes/layout/nav_bar_lecteur.dart';
 
 class ForumMessagesPage extends StatefulWidget {
   final Discussion discussion;
@@ -25,6 +24,17 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
   final TextEditingController _msgController = TextEditingController();
   List<Message> _messages = [];
   bool _isLoading = true;
+
+  /// Ce qui a empeche le chargement, s'il a echoue.
+  ///
+  /// Jeton absent, la fonction sortait avant de toucher a _isLoading : la roue
+  /// tournait sans fin. Reseau coupe, la liste restait vide et le fil paraissait
+  /// n'avoir jamais rien contenu. Deux pannes muettes, indiscernables l'une de
+  /// l'autre et d'un salon reellement neuf.
+  String? _erreur;
+
+  /// Pour amener le fil sur le dernier message.
+  final ScrollController _defilement = ScrollController();
 
   String _timeAgo(DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
@@ -48,10 +58,28 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
     _loadMessages();
   }
 
+  @override
+  void dispose() {
+    _defilement.dispose();
+    _msgController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadMessages() async {
+    if (mounted) setState(() => _erreur = null);
     try {
       final token = await TokenStorage.getToken();
-      if (token == null) return;
+      if (token == null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _erreur =
+                "Votre session a expiré. Reconnectez-vous pour "
+                "revenir dans la discussion.";
+          });
+        }
+        return;
+      }
       final messages = await _messageService.getMessagesByDiscussion(
         widget.discussion.id,
         token,
@@ -66,9 +94,28 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _erreur =
+              "Les messages n'ont pas pu être chargés. "
+              "Vérifiez votre connexion.";
         });
       }
     }
+  }
+
+  /// Amene le fil sur le dernier message.
+  ///
+  /// Apres envoi, le message partait bien mais restait sous la ligne de
+  /// flottaison : on ecrivait sans voir ce qu'on venait de dire.
+  void _descendreEnBas() {
+    if (!_defilement.hasClients) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_defilement.hasClients) return;
+      _defilement.animateTo(
+        _defilement.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   Future<void> _sendMessage() async {
@@ -77,9 +124,19 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
 
     try {
       final token = await TokenStorage.getToken();
-      if (token == null) return;
+      if (token == null) {
+        if (!mounted) return;
+        AppNotifications.showSnackBar(
+          context,
+          message: "Votre session a expiré. Reconnectez-vous.",
+          isError: true,
+        );
+        return;
+      }
 
-      _msgController.clear();
+      // Le champ n'est vide qu'une fois le message parti. Il etait efface
+      // avant l'appel : un envoi qui echouait — reseau, session — emportait
+      // avec lui ce que la personne venait d'ecrire.
       final newMessage = await _messageService.createMessage(
         widget.discussion.id,
         text,
@@ -113,9 +170,11 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
           rangUtilisateur: rang ?? newMessage.rangUtilisateur,
         );
 
+        _msgController.clear();
         setState(() {
           _messages.add(msgToAdd);
         });
+        _descendreEnBas();
 
         // Recharge silencieusement les messages depuis le serveur pour être 100% à jour
         _loadMessages();
@@ -144,10 +203,15 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
             color: AppColors.textPrimary,
             size: 20,
           ),
-          onPressed: () {
-            MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
-            Navigator.of(context).pop();
-          },
+          // Un simple retour.
+          //
+          // Le bouton forcait l'onglet Communaute de la barre du lecteur avant
+          // de fermer la page. Ces deux pages sont partagees : pour un auteur,
+          // dont la barre est une autre, la cle etait nulle et l'appel ne
+          // faisait rien ; pour un lecteur venu d'ailleurs — de l'accueil,
+          // d'une notification — il le deposait sur un onglet qu'il n'avait pas
+          // demande. Fermer la page ramene deja la ou l'on etait.
+          onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           widget.discussion.titre,
@@ -160,7 +224,46 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
         children: [
           Expanded(
             child: _isLoading
-                ? Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  )
+                : _erreur != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Iconsax.warning_2,
+                            color: AppColors.textSecondary,
+                            size: 32,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _erreur!,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() => _isLoading = true);
+                              _loadMessages();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.onAccent,
+                            ),
+                            child: const Text("Réessayer"),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                 : _messages.isEmpty
                 ? Center(
                     child: Text(
@@ -170,6 +273,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                     ),
                   )
                 : ListView.builder(
+                    controller: _defilement,
                     padding: const EdgeInsets.all(16),
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
@@ -250,27 +354,19 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
           color = AppColors.primaryLight;
           break;
         case 'novice':
-          color = Colors.grey;
+          color = AppColors.textSecondary;
           break;
         default:
           color = AppColors.primary;
       }
     } else {
-      // Simulation fallback
-      final int hash = username.hashCode.abs() % 100;
-      if (hash > 80) {
-        rankTitle = "Maître";
-        color = AppColors.yellow;
-      } else if (hash > 50) {
-        rankTitle = "Érudit";
-        color = AppColors.violetLight;
-      } else if (hash > 20) {
-        rankTitle = "Explorateur";
-        color = AppColors.primaryLight;
-      } else {
-        rankTitle = "Novice";
-        color = Colors.grey;
-      }
+      // Pas de rang transmis, pas de rang affiché.
+      //
+      // Il était ici deviné sur `username.hashCode % 100` : un participant se
+      // voyait sacrer « Maître » ou « Érudit » selon l'orthographe de son nom,
+      // publiquement, dans un salon partagé. Une absence vaut mieux qu'une
+      // distinction inventée.
+      return const SizedBox.shrink();
     }
 
     return Container(

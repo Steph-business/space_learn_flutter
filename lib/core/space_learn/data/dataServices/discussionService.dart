@@ -18,8 +18,10 @@ class DiscussionService {
     String? imageBanniere,
     String? livreId,
     String? auteurId,
+    String? categorie,
   }) async {
     final Map<String, dynamic> body = {'type': type, 'titre': titre};
+    if (categorie != null) body['categorie'] = categorie;
     if (description != null) body['description'] = description;
     if (imageBanniere != null) body['image_banniere'] = imageBanniere;
     if (livreId != null) body['livre_id'] = livreId;

@@ -9,7 +9,6 @@ import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart'
 import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
-import '../../../../../themes/layout/nav_bar_lecteur.dart';
 import 'forum_messages_page.dart';
 import 'salon_noms.dart';
 
@@ -45,14 +44,30 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
   Map<String, DateTime?> _lastViewedDates = {};
   bool _isLoading = true;
 
-  String _selectedCategory = "Tout";
+  /// Ce qui a empeche le chargement, s'il a echoue.
+  ///
+  /// Sans lui, deux pannes se presentaient a l'identique : jeton absent, la
+  /// fonction sortait avant de toucher a _isLoading et la roue tournait sans
+  /// fin ; reseau coupe, la liste restait vide et la salle paraissait
+  /// simplement deserte. Dans les deux cas, rien a lire et rien a faire.
+  String? _erreur;
 
-  final List<String> _categories = [
-    "Tout",
+  /// L'onglet qui ne filtre rien.
+  static const String _categorieTout = "Tout";
+
+  String _selectedCategory = _categorieTout;
+
+  /// Categories proposees a l'ouverture d'un sujet, et onglets de filtrage.
+  ///
+  /// Les deux listes n'en font qu'une : un onglet qu'on ne peut pas choisir en
+  /// creant un sujet ne renverra jamais rien.
+  static const List<String> categoriesSujet = [
     "Théories",
     "Personnages",
     "Animations",
   ];
+
+  final List<String> _categories = [_categorieTout, ...categoriesSujet];
 
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
@@ -81,9 +96,20 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
   }
 
   Future<void> _loadDiscussions() async {
+    if (mounted) setState(() => _erreur = null);
     try {
       final token = await TokenStorage.getToken();
-      if (token == null) return;
+      if (token == null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _erreur =
+                "Votre session a expiré. Reconnectez-vous pour "
+                "retrouver les discussions.";
+          });
+        }
+        return;
+      }
 
       List<Discussion> dbDiscussions;
       if (widget.book != null) {
@@ -111,21 +137,33 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _erreur =
+              "Les discussions n'ont pas pu être chargées. "
+              "Vérifiez votre connexion.";
         });
       }
     }
   }
 
-  Future<void> _createNewDiscussion(String title) async {
+  Future<void> _createNewDiscussion(String title, String categorie) async {
     try {
       final token = await TokenStorage.getToken();
-      if (token == null) return;
+      if (token == null) {
+        if (!mounted) return;
+        AppNotifications.showSnackBar(
+          context,
+          message: "Votre session a expiré. Reconnectez-vous.",
+          isError: true,
+        );
+        return;
+      }
 
       final newDisc = await _discussionService.createDiscussion(
         type: widget.book != null ? "LIVRE" : "GLOBAL",
         titre: title,
         token: token,
         livreId: widget.book?.id,
+        categorie: categorie == _categorieTout ? null : categorie,
       );
 
       if (mounted) {
@@ -144,43 +182,121 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
     }
   }
 
+  /// Les initiales d'un nom, pour la pastille du participant.
+  String _initiales(String nom) {
+    final mots = nom
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((m) => m.isNotEmpty)
+        .toList();
+    if (mots.isEmpty) return "?";
+    if (mots.length == 1) return mots.first.characters.first.toUpperCase();
+    return (mots.first.characters.first + mots[1].characters.first)
+        .toUpperCase();
+  }
+
   void _showNewDiscussionDialog() {
     final TextEditingController titleController = TextEditingController();
+    // La categorie se choisit ici. Sans ce choix, la colonne restait vide et
+    // les onglets de filtrage ne pouvaient rien trouver.
+    String categorie = categoriesSujet.first;
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.cardBackground,
-          title: Text(
-            "Nouveau sujet",
-            style: GoogleFonts.poppins(color: AppColors.textPrimary),
-          ),
-          content: TextField(
-            controller: titleController,
-            style: TextStyle(color: AppColors.textPrimary),
-            decoration: InputDecoration(
-              hintText: "Titre de la discussion",
-              hintStyle: TextStyle(color: AppColors.textHint),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Annuler", style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController.text.isNotEmpty) {
-                  _createNewDiscussion(titleController.text);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondaryVariant,
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppColors.cardBackground,
+              title: Text(
+                "Nouveau sujet",
+                style: GoogleFonts.poppins(color: AppColors.textPrimary),
               ),
-              child: Text("Créer"),
-            ),
-          ],
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    autofocus: true,
+                    style: TextStyle(color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: "Titre de la discussion",
+                      hintStyle: TextStyle(color: AppColors.textHint),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    "Catégorie",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: categoriesSujet.map((c) {
+                      final choisie = c == categorie;
+                      return GestureDetector(
+                        onTap: () => setDialogState(() => categorie = c),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: choisie
+                                ? AppColors.primary
+                                : AppColors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusPill,
+                            ),
+                          ),
+                          child: Text(
+                            c,
+                            style: GoogleFonts.poppins(
+                              color: choisie
+                                  ? AppColors.onAccent
+                                  : AppColors.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    "Annuler",
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (titleController.text.trim().isNotEmpty) {
+                      _createNewDiscussion(
+                        titleController.text.trim(),
+                        categorie,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onAccent,
+                  ),
+                  child: Text("Créer"),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -200,10 +316,15 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             color: AppColors.textPrimary,
             size: 20,
           ),
-          onPressed: () {
-            MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
-            Navigator.of(context).pop();
-          },
+          // Un simple retour.
+          //
+          // Le bouton forcait l'onglet Communaute de la barre du lecteur avant
+          // de fermer la page. Ces deux pages sont partagees : pour un auteur,
+          // dont la barre est une autre, la cle etait nulle et l'appel ne
+          // faisait rien ; pour un lecteur venu d'ailleurs — de l'accueil,
+          // d'une notification — il le deposait sur un onglet qu'il n'avait pas
+          // demande. Fermer la page ramene deja la ou l'on etait.
+          onPressed: () => Navigator.of(context).pop(),
         ),
         title: _isSearching
             ? TextField(
@@ -334,7 +455,9 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            "Partagez vos théories avec la communauté.",
+                            widget.book == null
+                                ? "Lecteurs et auteurs échangent ici."
+                                : "Le salon des lecteurs de ce livre.",
                             style: AppTextStyles.grey12,
                           ),
                           SizedBox(height: 12),
@@ -349,8 +472,17 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                                 AppDimensions.radiusSmall,
                               ),
                             ),
+                            // La pastille annoncait « COMMUNAUTE ACTIVE »
+                            // meme au-dessus d'un « Aucun sujet de
+                            // discussion » : elle se contredisait a une ligne
+                            // d'intervalle. Elle compte maintenant ce qu'il y
+                            // a reellement.
                             child: Text(
-                              "COMMUNAUTÉ ACTIVE",
+                              _discussions.isEmpty
+                                  ? "SALON NEUF"
+                                  : _discussions.length == 1
+                                  ? "1 SUJET OUVERT"
+                                  : "${_discussions.length} SUJETS OUVERTS",
                               style: GoogleFonts.poppins(
                                 color: AppColors.accentInk,
                                 fontSize: 9,
@@ -397,7 +529,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                         cat,
                         style: GoogleFonts.poppins(
                           color: isSelected
-                              ? Colors.white
+                              ? AppColors.onAccent
                               : AppColors.textPrimary,
                           fontSize: 14,
                           fontWeight: isSelected
@@ -415,9 +547,42 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
 
             // Posts List
             if (_isLoading)
-              Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.secondaryVariant,
+              Center(child: CircularProgressIndicator(color: AppColors.primary))
+            else if (_erreur != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 40,
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Iconsax.warning_2,
+                      color: AppColors.textSecondary,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _erreur!,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() => _isLoading = true);
+                        _loadDiscussions();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onAccent,
+                      ),
+                      child: const Text("Réessayer"),
+                    ),
+                  ],
                 ),
               )
             else if (_discussions.isEmpty)
@@ -435,13 +600,18 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             else
               Builder(
                 builder: (context) {
-                  var filtered = _selectedCategory == "Tout"
+                  // Le filtre portait sur le TITRE du sujet : « Théories »
+                  // ne retenait que ceux dont le titre contenait ce mot, si
+                  // bien que trois onglets sur quatre renvoyaient toujours
+                  // « aucun sujet ». Il porte maintenant sur la catégorie,
+                  // choisie a l'ouverture du sujet.
+                  var filtered = _selectedCategory == _categorieTout
                       ? _discussions
                       : _discussions
                             .where(
-                              (d) => d.titre.toLowerCase().contains(
-                                _selectedCategory.toLowerCase(),
-                              ),
+                              (d) =>
+                                  (d.categorie ?? '').toLowerCase() ==
+                                  _selectedCategory.toLowerCase(),
                             )
                             .toList();
 
@@ -530,7 +700,10 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        heroTag: 'forum_discussion_fab_\${widget.book?.id ?? "global"}',
+        // L'interpolation etait echappee — « \$ » dans une chaine simple — et
+        // tous les forums partageaient donc la meme etiquette. Deux forums
+        // empiles dans la navigation levaient un conflit de Hero.
+        heroTag: 'forum_discussion_fab_${widget.book?.id ?? "global"}',
         onPressed: _showNewDiscussionDialog,
         backgroundColor: AppColors.secondaryVariant,
         elevation: 8,
@@ -542,40 +715,30 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
     );
   }
 
-  Widget _getUserRankBadge(String username) {
-    // Simulation d'un rang basé sur le nom pour la démo
-    final int hash = username.hashCode.abs() % 100;
-    String rank;
-    Color color;
-
-    if (hash > 80) {
-      rank = "Maître";
-      color = AppColors.yellow;
-    } else if (hash > 50) {
-      rank = "Érudit";
-      color = AppColors.violetLight;
-    } else if (hash > 20) {
-      rank = "Explorateur";
-      color = AppColors.primaryLight;
-    } else {
-      rank = "Novice";
-      color = Colors.grey;
-    }
+  /// Le rang d'un participant, tel que le serveur le donne.
+  ///
+  /// Il etait calcule sur `username.hashCode % 100`, et le commentaire du code
+  /// l'assumait : « Simulation d'un rang base sur le nom pour la demo ». Des
+  /// lecteurs portaient donc publiquement un titre de « Maitre » ou d'« Erudit »
+  /// tire de l'orthographe de leur nom, dans un salon ou tout le monde les
+  /// voyait. Faute de rang transmis, on n'affiche rien : mieux vaut une
+  /// absence qu'une distinction inventee.
+  Widget _getUserRankBadge(String? rang) {
+    final valeur = rang?.trim() ?? '';
+    if (valeur.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
-        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+        color: AppColors.accentInk.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
       ),
       child: Text(
-        rank,
+        valeur,
         style: GoogleFonts.poppins(
-          color: color,
-          fontSize: 8,
+          color: AppColors.accentInk,
+          fontSize: 9,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
         ),
       ),
     );
@@ -588,6 +751,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
     required String content,
     required int comments,
     required int likes,
+    String? rang,
     bool isAnonymous = false,
     bool hasNewNotification = false,
   }) {
@@ -600,36 +764,33 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             children: [
               Row(
                 children: [
+                  // Les initiales, et non un portrait.
+                  //
+                  // La pastille chargeait « i.pravatar.cc/150?u=<nom> » : un
+                  // service tiers qui renvoie la photo d'une personne reelle,
+                  // choisie au hasard. Chaque participant portait donc le
+                  // visage d'un inconnu, et le nom des lecteurs partait chez
+                  // un tiers a chaque affichage de la liste.
                   Container(
                     width: 40,
                     height: 40,
+                    alignment: Alignment.center,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isAnonymous ? AppColors.primary : Colors.grey[800],
+                      color: isAnonymous
+                          ? AppColors.primary
+                          : AppColors.accentInk.withValues(alpha: 0.18),
                     ),
-                    child: isAnonymous
-                        ? Center(
-                            child: Text(
-                              "A",
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusCard,
-                            ),
-                            child: Image.network(
-                              "https://i.pravatar.cc/150?u=$username",
-                              fit: BoxFit.cover,
-                              errorBuilder: (c, e, s) => Icon(
-                                Icons.person,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
+                    child: Text(
+                      _initiales(isAnonymous ? "Anonyme" : username),
+                      style: GoogleFonts.poppins(
+                        color: isAnonymous
+                            ? AppColors.onAccent
+                            : AppColors.accentInk,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -638,16 +799,24 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              "@$username",
-                              style: GoogleFonts.poppins(
-                                color: AppColors.secondaryVariant,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                            // Sans « @ » : ce que le serveur envoie est un
+                            // nom complet, pas un pseudonyme. Et en accentInk,
+                            // car secondaryVariant tenait 2,40:1 sur fond
+                            // clair — sous le minimum lisible.
+                            Flexible(
+                              child: Text(
+                                username,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  color: AppColors.accentInk,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                             SizedBox(width: 8),
-                            _getUserRankBadge(username),
+                            _getUserRankBadge(rang),
                             const Spacer(),
                             Text(
                               time,
@@ -699,7 +868,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           comments.toString(),
                           style: GoogleFonts.poppins(
                             color: comments > 0
-                                ? Colors.white
+                                ? AppColors.textPrimary
                                 : AppColors.textSecondary,
                             fontSize: 13,
                             fontWeight: comments > 0
@@ -712,7 +881,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           likes > 0 ? Iconsax.heart5 : Iconsax.heart,
                           size: 20,
                           color: likes > 0
-                              ? Colors.redAccent
+                              ? AppColors.error
                               : AppColors.textSecondary,
                         ),
                         SizedBox(width: 6),
@@ -720,7 +889,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                           likes.toString(),
                           style: GoogleFonts.poppins(
                             color: likes > 0
-                                ? Colors.white
+                                ? AppColors.textPrimary
                                 : AppColors.textSecondary,
                             fontSize: 13,
                           ),

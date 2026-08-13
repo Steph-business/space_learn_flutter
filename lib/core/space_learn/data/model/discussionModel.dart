@@ -12,6 +12,15 @@ class Discussion {
   /// caractères de [creePar], c'est-à-dire un morceau d'identifiant — « @70f2c9 ».
   final String? nomUtilisateur;
   final String? type;
+
+  /// Categorie du sujet, choisie a l'ouverture.
+  ///
+  /// Les onglets de la page de forum filtraient sur le TITRE : « Theories » ne
+  /// retenait que les sujets dont le titre contenait litteralement ce mot.
+  /// Trois onglets sur quatre ne renvoyaient donc jamais rien. La colonne
+  /// existe cote serveur depuis toujours ; elle n'etait ni remplie ni lue.
+  final String? categorie;
+
   final String? description;
   final String? imageBanniere;
   final String? auteurId;
@@ -29,6 +38,7 @@ class Discussion {
     this.creePar,
     this.nomUtilisateur,
     this.type,
+    this.categorie,
     this.description,
     this.imageBanniere,
     this.auteurId,
@@ -97,6 +107,7 @@ class Discussion {
       creePar: json['cree_par'],
       nomUtilisateur: json['nom_utilisateur']?.toString(),
       type: json['type'],
+      categorie: json['categorie']?.toString(),
       description: json['description'],
       imageBanniere: json['image_banniere'],
       auteurId: json['auteur_id'],
