@@ -180,16 +180,10 @@ class _TeamsPageState extends State<TeamsPage> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Iconsax.notification,
-              color: AppColors.textPrimary,
-              size: 20,
-            ),
-            onPressed: () {},
-          ),
-        ],
+        // Une cloche etait posee ici avec `onPressed: () {}` : elle ne faisait
+        // rien. La barre de navigation en porte deja une, celle-la ouvrant
+        // vraiment les notifications. Deux cloches cote a cote, dont une
+        // inerte, apprennent surtout a ne pas s'y fier.
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -622,9 +616,20 @@ class _TeamsPageState extends State<TeamsPage> {
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusSmall,
                         ),
+                        // Repli sur l'icone quand l'URL est morte.
+                        //
+                        // Sans errorBuilder, une couverture supprimee du
+                        // stockage laissait un rectangle vide et une exception
+                        // dans la console : la carte paraissait cassee alors
+                        // qu'il ne manquait qu'une image.
                         child: Image.network(
                           book.imageCouverture!,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) => Icon(
+                            Iconsax.book,
+                            color: AppColors.textHint,
+                            size: 24,
+                          ),
                         ),
                       )
                     : Icon(Iconsax.book, color: AppColors.textHint, size: 24),

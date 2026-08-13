@@ -655,7 +655,6 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                               ? d.description!.trim()
                               : "Aucune description",
                           comments: d.messagesCount ?? d.messages.length,
-                          likes: d.likesCount ?? 0,
                           hasNewNotification: (() {
                             if (d.dernierMessageLe == null) return false;
                             final lastViewed = _lastViewedDates[d.id];
@@ -724,7 +723,6 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
     required String title,
     required String content,
     required int comments,
-    required int likes,
     String? rang,
     bool isAnonymous = false,
     bool hasNewNotification = false,
@@ -828,13 +826,21 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 12),
+                    // Le nombre de reponses, et lui seul.
+                    //
+                    // Un coeur et son compteur s'affichaient a cote. Aucune
+                    // route ne permet d'aimer quoi que ce soit : la colonne
+                    // etait a zero sur les sept salons et les huit messages de
+                    // la base, et le restait. Un compteur qui ne bouge jamais
+                    // fait croire que personne n'apprecie ce qui se dit, alors
+                    // qu'on n'a simplement pas les moyens de le dire.
                     Row(
                       children: [
                         Icon(
                           Iconsax.message_text,
                           size: 20,
                           color: comments > 0
-                              ? AppColors.secondaryVariant
+                              ? AppColors.accentInk
                               : AppColors.textSecondary,
                         ),
                         SizedBox(width: 6),
@@ -848,24 +854,6 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                             fontWeight: comments > 0
                                 ? FontWeight.w600
                                 : FontWeight.w400,
-                          ),
-                        ),
-                        SizedBox(width: 20),
-                        Icon(
-                          likes > 0 ? Iconsax.heart5 : Iconsax.heart,
-                          size: 20,
-                          color: likes > 0
-                              ? AppColors.error
-                              : AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          likes.toString(),
-                          style: GoogleFonts.poppins(
-                            color: likes > 0
-                                ? AppColors.textPrimary
-                                : AppColors.textSecondary,
-                            fontSize: 13,
                           ),
                         ),
                       ],

@@ -453,9 +453,20 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusSmall,
                         ),
+                        // Repli sur l'icone quand l'URL est morte.
+                        //
+                        // Sans errorBuilder, une couverture supprimee du
+                        // stockage laissait un rectangle vide et une exception
+                        // dans la console : la carte paraissait cassee alors
+                        // qu'il ne manquait qu'une image.
                         child: Image.network(
                           book.imageCouverture!,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) => Icon(
+                            Iconsax.book,
+                            color: AppColors.textHint,
+                            size: 24,
+                          ),
                         ),
                       )
                     : Icon(Iconsax.book, color: AppColors.textHint, size: 24),
