@@ -52,4 +52,20 @@ class MessageService {
       throw Exception('Failed to fetch messages');
     }
   }
+
+  /// Retire un message.
+  ///
+  /// Le serveur decide qui en a le droit : son auteur, celui qui a ouvert le
+  /// sujet, ou l'auteur du livre autour duquel le club s'est forme.
+  Future<void> deleteMessage(String messageId, String token) async {
+    final url = ApiRoutes.messageById.replaceFirst(':id', messageId);
+    final response = await client.delete(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to delete message');
+    }
+  }
 }

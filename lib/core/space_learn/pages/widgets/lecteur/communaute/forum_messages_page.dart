@@ -9,6 +9,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.
 import 'package:space_learn_flutter/core/space_learn/data/model/messageModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/messageService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'temps_relatif.dart';
 
 class ForumMessagesPage extends StatefulWidget {
   final Discussion discussion;
@@ -35,23 +36,6 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
 
   /// Pour amener le fil sur le dernier message.
   final ScrollController _defilement = ScrollController();
-
-  String _timeAgo(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
-    if (diff.inDays >= 7) {
-      final weeks = diff.inDays ~/ 7;
-      return "il y a $weeks semaine${weeks > 1 ? 's' : ''}";
-    } else if (diff.inDays >= 1) {
-      return "il y a ${diff.inDays} jour${diff.inDays > 1 ? 's' : ''}";
-    } else if (diff.inHours >= 1) {
-      return "il y a ${diff.inHours} heure${diff.inHours > 1 ? 's' : ''}";
-    } else if (diff.inMinutes >= 1) {
-      return "il y a ${diff.inMinutes} min";
-    } else {
-      return "à l'instant";
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -417,7 +401,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
               Text(
                 username,
                 style: GoogleFonts.poppins(
-                  color: AppColors.secondaryVariant,
+                  color: AppColors.accentInk,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -426,12 +410,30 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
               _getUserRankBadge(username, rank: msg.rangUtilisateur),
               Spacer(),
               Text(
-                _timeAgo(msg.creeLe),
+                tempsRelatif(msg.creeLe),
                 style: GoogleFonts.poppins(
                   color: AppColors.textHint,
                   fontSize: 10,
                 ),
               ),
+              // Le geste n'apparait qu'a qui en a le droit, et c'est le
+              // serveur qui le dit : l'auteur du propos, celui qui a ouvert le
+              // sujet, ou l'auteur du livre dont c'est le club.
+              if (msg.peutSupprimer) ...[
+                SizedBox(width: 4),
+                InkWell(
+                  onTap: () => _confirmerSuppression(msg),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Iconsax.trash,
+                      size: 14,
+                      color: AppColors.textHint,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           SizedBox(height: 8),
@@ -439,5 +441,68 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
         ],
       ),
     );
+  }
+
+  /// Retirer un message se confirme.
+  ///
+  /// Le geste est definitif et peut porter sur les propos de quelqu'un
+  /// d'autre : il ne doit pas partir d'une touche mal placee.
+  Future<void> _confirmerSuppression(Message msg) async {
+    final accepte = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        title: Text(
+          "Retirer ce message ?",
+          style: GoogleFonts.poppins(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          "Il disparaîtra de la discussion pour tout le monde.",
+          style: GoogleFonts.poppins(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              "Annuler",
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.onAccent,
+            ),
+            child: const Text("Retirer"),
+          ),
+        ],
+      ),
+    );
+
+    if (accepte != true || !mounted) return;
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) {
+        if (!mounted) return;
+        AppNotifications.showSnackBar(
+          context,
+          message: "Votre session a expiré. Reconnectez-vous.",
+          isError: true,
+        );
+        return;
+      }
+      await _messageService.deleteMessage(msg.id, token);
+      if (!mounted) return;
+      setState(() => _messages.removeWhere((m) => m.id == msg.id));
+    } catch (e) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: "Le message n'a pas pu être retiré.",
+        isError: true,
+      );
+    }
   }
 }

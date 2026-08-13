@@ -54,48 +54,55 @@ class NavBarAll extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.textHint, width: 1),
-                  color: AppColors.cardBackground,
-                ),
-                child: ClipOval(
-                  child: ProfileImageHelper.buildProfileImage(
-                    userUrl,
-                    fallbackInitial: initial,
-                    textStyle: AppTextStyles.sectionTitle,
-                    width: 45,
-                    height: 45,
-                    fit: BoxFit.cover,
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 45,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.textHint, width: 1),
+                    color: AppColors.cardBackground,
                   ),
-                ),
-              ),
-              SizedBox(width: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    "${greeting ?? getGreeting()}, ",
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: AppColors.textHint,
-                      fontWeight: FontWeight.w400,
+                  child: ClipOval(
+                    child: ProfileImageHelper.buildProfileImage(
+                      userUrl,
+                      fallbackInitial: initial,
+                      textStyle: AppTextStyles.sectionTitle,
+                      width: 45,
+                      height: 45,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                  Text(
-                    userName,
-                    style: AppTextStyles.sectionTitle.copyWith(fontSize: 13),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "${greeting ?? getGreeting()}, ",
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: AppColors.textHint,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        TextSpan(
+                          text: userName,
+                          style: AppTextStyles.sectionTitle.copyWith(fontSize: 13),
+                        ),
+                      ],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [

@@ -30,8 +30,8 @@ class MainNavBarState extends State<MainNavBar> {
     "Accueil",
     "Boutique",
     "Bibliothèque",
-    "Communauté",
-    "Paramètres",
+    "Teams",
+    "Profil",
   ];
 
   final List<IconData> _icons = [
@@ -39,7 +39,7 @@ class MainNavBarState extends State<MainNavBar> {
     Iconsax.shop,
     Iconsax.book,
     Iconsax.people,
-    Icons.settings,
+    Icons.person_outline_rounded,
   ];
 
   void _onItemTapped(int index) {
@@ -81,11 +81,6 @@ class MainNavBarState extends State<MainNavBar> {
     }
   }
 
-  void _navigateToPage(BuildContext context, int index) {
-    setState(() => _selectedIndex = index);
-    // Navigation logique si nécessaire
-  }
-
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
@@ -105,11 +100,11 @@ class MainNavBarState extends State<MainNavBar> {
           showUnselectedLabels: true,
           selectedLabelStyle: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontSize: 11,
           ),
           unselectedLabelStyle: GoogleFonts.poppins(
             fontWeight: FontWeight.w400,
-            fontSize: 12,
+            fontSize: 11,
           ),
           items: List.generate(
             _titles.length,

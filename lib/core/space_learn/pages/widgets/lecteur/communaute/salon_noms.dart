@@ -23,4 +23,22 @@ abstract final class SalonNoms {
 
   /// Le salon attaché à un livre : son sous-titre est le titre de l'ouvrage.
   static const String clubTitre = 'Club de lecture';
+
+  /// Catégories d'un sujet de discussion.
+  ///
+  /// Elles servent à la fois d'onglets de filtrage et de choix à l'ouverture
+  /// d'un sujet : une seule liste, sans quoi un onglet qu'on ne peut pas
+  /// choisir en créant un sujet ne renverrait jamais rien.
+  ///
+  /// Les précédentes — « Théories », « Personnages », « Animations » — venaient
+  /// d'un forum de fiction. Space Learn est une place de marché de livres :
+  /// on y vient pour dire ce qu'on a pensé d'un ouvrage, en demander un, ou
+  /// parler du métier d'écrire. Ces quatre-là couvrent ce qui s'y dit vraiment,
+  /// dans le salon commun comme dans le club d'un livre.
+  static const List<String> categories = [
+    'Avis de lecture',
+    'Recommandations',
+    'Questions à l\'auteur',
+    'Écriture & édition',
+  ];
 }

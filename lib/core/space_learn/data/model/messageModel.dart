@@ -11,6 +11,14 @@ class Message {
   final String? photoProfil;
   final String? rangUtilisateur;
 
+  /// Le serveur dit si la personne connectee peut retirer ce message.
+  ///
+  /// Le droit ne se devine pas cote application : il vaut pour ses propres
+  /// propos, mais aussi pour qui repond du salon — celui qui a ouvert le
+  /// sujet, ou l'auteur du livre autour duquel le club s'est forme. Seul le
+  /// serveur connait ces liens.
+  final bool peutSupprimer;
+
   Message({
     required this.id,
     required this.discussionId,
@@ -21,6 +29,7 @@ class Message {
     this.nomUtilisateur,
     this.photoProfil,
     this.rangUtilisateur,
+    this.peutSupprimer = false,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -33,6 +42,7 @@ class Message {
       nomUtilisateur: json['nom_utilisateur'],
       photoProfil: json['photo_profil'],
       rangUtilisateur: json['rang_utilisateur'] ?? json['RangUtilisateur'],
+      peutSupprimer: json['peut_supprimer'] == true,
       discussion: json['Discussion'] != null
           ? Discussion.fromJson(json['Discussion'])
           : null,

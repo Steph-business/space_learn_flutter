@@ -11,6 +11,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussio
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'forum_messages_page.dart';
 import 'salon_noms.dart';
+import 'temps_relatif.dart';
 
 /// Un salon de discussion.
 ///
@@ -57,38 +58,11 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
 
   String _selectedCategory = _categorieTout;
 
-  /// Categories proposees a l'ouverture d'un sujet, et onglets de filtrage.
-  ///
-  /// Les deux listes n'en font qu'une : un onglet qu'on ne peut pas choisir en
-  /// creant un sujet ne renverra jamais rien.
-  static const List<String> categoriesSujet = [
-    "Théories",
-    "Personnages",
-    "Animations",
-  ];
-
-  final List<String> _categories = [_categorieTout, ...categoriesSujet];
+  final List<String> _categories = [_categorieTout, ...SalonNoms.categories];
 
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
-
-  String _timeAgo(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
-    if (diff.inDays >= 7) {
-      final weeks = diff.inDays ~/ 7;
-      return "il y a $weeks semaine${weeks > 1 ? 's' : ''}";
-    } else if (diff.inDays >= 1) {
-      return "il y a ${diff.inDays} jour${diff.inDays > 1 ? 's' : ''}";
-    } else if (diff.inHours >= 1) {
-      return "il y a ${diff.inHours} heure${diff.inHours > 1 ? 's' : ''}";
-    } else if (diff.inMinutes >= 1) {
-      return "il y a ${diff.inMinutes} min";
-    } else {
-      return "à l'instant";
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -199,7 +173,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
     final TextEditingController titleController = TextEditingController();
     // La categorie se choisit ici. Sans ce choix, la colonne restait vide et
     // les onglets de filtrage ne pouvaient rien trouver.
-    String categorie = categoriesSujet.first;
+    String categorie = SalonNoms.categories.first;
 
     showDialog(
       context: context,
@@ -238,7 +212,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: categoriesSujet.map((c) {
+                    children: SalonNoms.categories.map((c) {
                       final choisie = c == categorie;
                       return GestureDetector(
                         onTap: () => setDialogState(() => categorie = c),
@@ -670,7 +644,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                               ? d.nomUtilisateur!.trim()
                               : "Anonyme",
                           time: d.creeLe != null
-                              ? _timeAgo(d.creeLe!)
+                              ? tempsRelatif(d.creeLe!)
                               : "inconnu",
                           title: d.titre,
                           // La description de la discussion. Un texte

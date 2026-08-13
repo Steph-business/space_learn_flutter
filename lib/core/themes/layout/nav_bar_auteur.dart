@@ -56,13 +56,13 @@ class NavBarAuteur extends StatelessWidget {
               _buildNavItem(
                 icon: Iconsax.people,
                 activeIcon: Iconsax.people4,
-                label: "Communauté",
+                label: "Teams",
                 index: 3,
               ),
               _buildNavItem(
-                icon: Iconsax.setting_2,
-                activeIcon: Iconsax.setting_25,
-                label: "Paramètres",
+                icon: Iconsax.user,
+                activeIcon: Iconsax.user_square,
+                label: "Profil",
                 index: 4,
               ),
             ],
