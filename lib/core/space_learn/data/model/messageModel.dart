@@ -19,6 +19,15 @@ class Message {
   /// serveur connait ces liens.
   final bool peutSupprimer;
 
+  /// Ce message vient-il de l'auteur du livre autour duquel le club s'est
+  /// forme ?
+  ///
+  /// Le role n'etait jamais transporte : dans le salon de son propre ouvrage,
+  /// l'ecrivain apparaissait comme un lecteur parmi d'autres. Celui qui posait
+  /// une question ne savait pas que la reponse venait de la personne qui avait
+  /// ecrit le livre.
+  final bool estAuteurDuLivre;
+
   Message({
     required this.id,
     required this.discussionId,
@@ -30,6 +39,7 @@ class Message {
     this.photoProfil,
     this.rangUtilisateur,
     this.peutSupprimer = false,
+    this.estAuteurDuLivre = false,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -43,6 +53,7 @@ class Message {
       photoProfil: json['photo_profil'],
       rangUtilisateur: json['rang_utilisateur'] ?? json['RangUtilisateur'],
       peutSupprimer: json['peut_supprimer'] == true,
+      estAuteurDuLivre: json['est_auteur_du_livre'] == true,
       discussion: json['Discussion'] != null
           ? Discussion.fromJson(json['Discussion'])
           : null,

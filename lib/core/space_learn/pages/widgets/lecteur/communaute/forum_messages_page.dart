@@ -131,6 +131,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
         String? nom;
         String? photo;
         String? rang;
+        bool auteur = false;
 
         // On récupère le nom/photo/rang d'un message précédent si possible (même utilisateur)
         for (var m in _messages) {
@@ -138,6 +139,7 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
             if (m.nomUtilisateur != null) nom = m.nomUtilisateur;
             if (m.photoProfil != null) photo = m.photoProfil;
             if (m.rangUtilisateur != null) rang = m.rangUtilisateur;
+            if (m.estAuteurDuLivre) auteur = true;
             if (nom != null && photo != null && rang != null) break;
           }
         }
@@ -152,6 +154,11 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
           nomUtilisateur: nom ?? newMessage.nomUtilisateur,
           photoProfil: photo ?? newMessage.photoProfil,
           rangUtilisateur: rang ?? newMessage.rangUtilisateur,
+          // Le serveur ne renvoie pas ces deux-la sur la creation ; le
+          // rechargement qui suit les remettra d'aplomb, mais entre-temps on
+          // peut au moins retirer son propre message.
+          peutSupprimer: true,
+          estAuteurDuLivre: auteur,
         );
 
         _msgController.clear();
@@ -406,6 +413,29 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              // Le seul badge qui compte vraiment dans un club de lecture :
+              // celui qui dit que la reponse vient de qui a ecrit le livre.
+              if (msg.estAuteurDuLivre) ...[
+                SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+                  ),
+                  child: Text(
+                    "Auteur",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.onAccent,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
               SizedBox(width: 6),
               _getUserRankBadge(username, rank: msg.rangUtilisateur),
               Spacer(),

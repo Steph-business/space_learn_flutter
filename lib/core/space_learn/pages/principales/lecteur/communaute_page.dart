@@ -15,6 +15,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussio
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'recherche_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/salon_noms.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/evenement_detail_page.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -533,96 +534,109 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
           final colorType = AppColors.accentInk;
           final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
 
-          return Container(
-            width: double.infinity,
-            margin: EdgeInsets.only(
-              bottom: index == _evenements.length - 1 ? 0 : 12,
+          // La carte s'ouvre.
+          //
+          // Son texte est coupe a trois lignes et rien ne permettait de lire
+          // la suite : une annonce d'auteur s'arretait au milieu d'une phrase,
+          // definitivement. Cote auteur, la meme carte menait deja au detail.
+          return GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EvenementDetailPage(evenement: evt),
+              ),
             ),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-              border: Border.all(color: colorType.withOpacity(0.3)),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colorType.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusSmall,
+            child: Container(
+              width: double.infinity,
+              margin: EdgeInsets.only(
+                bottom: index == _evenements.length - 1 ? 0 : 12,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+                border: Border.all(color: colorType.withOpacity(0.3)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colorType.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
+                        ),
+                        child: Icon(iconType, color: colorType, size: 16),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          (evt.categorie?.trim().isNotEmpty ?? false)
+                              ? evt.categorie!.trim().toUpperCase()
+                              : evt.typePublication.toUpperCase(),
+                          style: GoogleFonts.poppins(
+                            color: colorType,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                          ),
                         ),
                       ),
-                      child: Icon(iconType, color: colorType, size: 16),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        (evt.categorie?.trim().isNotEmpty ?? false)
-                            ? evt.categorie!.trim().toUpperCase()
-                            : evt.typePublication.toUpperCase(),
-                        style: GoogleFonts.poppins(
-                          color: colorType,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6,
+                      if (evt.dateEvenement != null)
+                        Text(
+                          DateFormat(
+                            'd MMM yyyy',
+                            'fr_FR',
+                          ).format(evt.dateEvenement!),
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textHint,
+                            fontSize: 10,
+                          ),
                         ),
-                      ),
-                    ),
-                    if (evt.dateEvenement != null)
-                      Text(
-                        DateFormat(
-                          'd MMM yyyy',
-                          'fr_FR',
-                        ).format(evt.dateEvenement!),
-                        style: GoogleFonts.poppins(
-                          color: AppColors.textHint,
-                          fontSize: 10,
-                        ),
-                      ),
-                  ],
-                ),
-                SizedBox(height: 12),
-                Text(
-                  evt.titre,
-                  style: GoogleFonts.poppins(
-                    color: AppColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 6),
-                Text(
-                  evt.contenu,
-                  style: AppTextStyles.grey12,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 10),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person,
-                      size: 12,
-                      color: AppColors.textSecondary,
+                  SizedBox(height: 12),
+                  Text(
+                    evt.titre,
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
                     ),
-                    SizedBox(width: 4),
-                    Text(
-                      "Événement Communauté",
-                      style: GoogleFonts.poppins(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    evt.contenu,
+                    style: AppTextStyles.grey12,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        size: 12,
                         color: AppColors.textSecondary,
-                        fontSize: 11,
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      SizedBox(width: 4),
+                      Text(
+                        "Événement Communauté",
+                        style: GoogleFonts.poppins(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         }),

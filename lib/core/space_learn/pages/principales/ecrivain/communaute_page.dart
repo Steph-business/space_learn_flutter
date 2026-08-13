@@ -198,7 +198,11 @@ class _TeamsPageState extends State<TeamsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(_error!, style: TextStyle(color: Colors.red)),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.error),
+                  ),
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: _loadData,
@@ -254,7 +258,7 @@ class _TeamsPageState extends State<TeamsPage> {
                           child: _buildQuickAction(
                             Iconsax.edit,
                             "Nouvelle annonce",
-                            AppColors.secondaryVariant,
+                            AppColors.accentInk,
                             onTap: () async {
                               final result = await Navigator.push(
                                 context,
@@ -277,7 +281,7 @@ class _TeamsPageState extends State<TeamsPage> {
                             // confirmation partout ailleurs. Deux actions de
                             // meme rang portent le meme accent ; leurs icones
                             // suffisent a les distinguer.
-                            AppColors.secondaryVariant,
+                            AppColors.accentInk,
                             onTap: () async {
                               final result = await Navigator.push(
                                 context,
@@ -528,7 +532,7 @@ class _TeamsPageState extends State<TeamsPage> {
               ),
               child: Icon(
                 Iconsax.messages_2,
-                color: AppColors.secondaryVariant,
+                color: AppColors.accentInk,
                 size: 30,
               ),
             ),
@@ -572,14 +576,14 @@ class _TeamsPageState extends State<TeamsPage> {
   }
 
   Widget _buildBookForumCard(BookModel book) {
-    // Fake stats variables for demonstration
-    final activityScore = book.telechargements > 50
-        ? "Très actif"
-        : "Peu actif";
-    final msgCount = book.telechargements * 2;
-    final color = book.telechargements > 50
-        ? Colors.greenAccent
-        : Colors.orangeAccent;
+    // On affiche ce qu'on sait, et rien d'autre.
+    //
+    // La carte annoncait « N messages » avec N = telechargements x 2, et un
+    // verdict « Tres actif » / « Peu actif » tire du meme compteur de
+    // telechargements. Aucun des deux ne parlait du salon : un auteur pouvait
+    // lire « 120 messages » sur un club ou personne n'avait jamais ecrit. Le
+    // nombre de lecteurs, lui, est reel.
+    final lecteurs = book.telechargements;
 
     return GestureDetector(
       onTap: () {
@@ -645,38 +649,27 @@ class _TeamsPageState extends State<TeamsPage> {
                   Row(
                     children: [
                       Icon(
-                        Iconsax.message,
+                        Iconsax.book_1,
                         size: 14,
                         color: AppColors.textSecondary,
                       ),
                       SizedBox(width: 4),
                       Text(
-                        "$msgCount messages",
+                        lecteurs == 0
+                            ? "Aucun lecteur pour l'instant"
+                            : lecteurs == 1
+                            ? "1 lecteur"
+                            : "$lecteurs lecteurs",
                         style: GoogleFonts.poppins(
                           color: AppColors.textSecondary,
                           fontSize: 12,
                         ),
                       ),
                       const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
-                          ),
-                        ),
-                        child: Text(
-                          activityScore,
-                          style: GoogleFonts.poppins(
-                            color: color,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      Icon(
+                        Iconsax.arrow_right_3,
+                        size: 14,
+                        color: AppColors.textHint,
                       ),
                     ],
                   ),

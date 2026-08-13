@@ -12,6 +12,8 @@ import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/bibliotheque_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_messages_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/communaute_page.dart'
     as ecrivainTeams;
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
@@ -61,16 +63,18 @@ class NotificationService {
     // Role check (normalization)
     final isLecteur = (notif.role == 'lecteur' || notif.role == null);
 
-    if (type.contains('message') || type.contains('reponse')) {
-      if (isLecteur) {
-        popToRoot();
-        MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ForumDiscussionPage()),
-        );
-      }
+    if (type.contains('message') ||
+        type.contains('reponse') ||
+        type.contains('communaute')) {
+      // On ouvre le salon dont il est question, pas « un » salon.
+      //
+      // Le serveur joint l'identifiant de la discussion a la notification
+      // depuis toujours ; le routage l'ignorait et poussait le salon global,
+      // meme quand le message venait du club d'un livre. Et « communaute » —
+      // le type reellement emis pour « Nouveau message dans votre salon » —
+      // n'etait reconnu par aucune branche : il tombait dans le cas par
+      // defaut, qui renvoie a la bibliotheque.
+      _ouvrirLeSalon(context, notif.referenceId, popToRoot);
     } else if (type.contains('annonce') || type.contains('evenement')) {
       if (!isLecteur) {
         Navigator.push(
@@ -112,6 +116,44 @@ class NotificationService {
           MaterialPageRoute(builder: (context) => const BibliothequePage()),
         );
       }
+    }
+  }
+
+  /// Ouvre la discussion designee par la notification.
+  ///
+  /// Faute d'identifiant exploitable — vieille notification, reference
+  /// manquante — on retombe sur le salon commun plutot que de ne rien faire.
+  static Future<void> _ouvrirLeSalon(
+    BuildContext context,
+    String? discussionId,
+    VoidCallback popToRoot,
+  ) async {
+    if (discussionId == null || discussionId.trim().isEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ForumDiscussionPage()),
+      );
+      return;
+    }
+
+    try {
+      final discussion = await DiscussionService().getDiscussionById(
+        discussionId,
+      );
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ForumMessagesPage(discussion: discussion),
+        ),
+      );
+    } catch (_) {
+      // La discussion a pu etre supprimee entre-temps.
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ForumDiscussionPage()),
+      );
     }
   }
 
