@@ -141,6 +141,32 @@ class DiscussionService {
     }
   }
 
+  /// Aime un sujet, ou retire son j'aime.
+  ///
+  /// Un seul appel pour les deux sens : l'application n'a pas a savoir dans
+  /// quel etat elle se trouve avant d'agir, ce qui evite qu'un double appui ne
+  /// laisse deux mentions. Le serveur renvoie l'etat obtenu.
+  Future<({bool aime, int total})> basculerJaime(
+    String discussionId,
+    String token,
+  ) async {
+    final url = '${ApiRoutes.discussions}/$discussionId/jaime';
+    final response = await client.post(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      final contenu = (data['data'] ?? data) as Map<String, dynamic>;
+      return (
+        aime: contenu['aime_par_moi'] == true,
+        total: (contenu['nombre_jaime'] as num?)?.toInt() ?? 0,
+      );
+    }
+    throw Exception('Failed to toggle like');
+  }
+
   Future<void> deleteDiscussion(String id, String token) async {
     final url = ApiRoutes.discussionById.replaceFirst(':id', id);
     final response = await client.delete(

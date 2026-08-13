@@ -31,6 +31,12 @@ class Discussion {
   final List<Message> messages;
   final int? messagesCount;
   final int? likesCount;
+
+  /// Ai-je aime ce sujet ?
+  ///
+  /// Sans cette information, le coeur ne peut etre que creux : l'application
+  /// ne saurait pas distinguer « personne n'a aime » de « moi j'ai aime ».
+  final bool aimeParMoi;
   final DateTime? dernierMessageLe;
 
   Discussion({
@@ -49,6 +55,7 @@ class Discussion {
     this.messages = const [],
     this.messagesCount,
     this.likesCount,
+    this.aimeParMoi = false,
     this.dernierMessageLe,
   });
 
@@ -88,19 +95,10 @@ class Discussion {
       return parseCount(json['messages']);
     })();
 
-    final int calculatedLikes = (() {
-      final possibleKeys = [
-        'likes_count',
-        'likesCount',
-        'nb_likes',
-        'nbr_likes',
-      ];
-      for (final key in possibleKeys) {
-        final val = parseCount(json[key]);
-        if (val > 0) return val;
-      }
-      return 0;
-    })();
+    // Le serveur envoie « nombre_jaime ». Les quatre autres cles essayees
+    // auparavant n'ont jamais existe : la valeur restait donc a zero, et le
+    // coeur affiche avec elle ne bougeait jamais.
+    final int calculatedLikes = parseCount(json['nombre_jaime']);
 
     final d = Discussion(
       id: json['id'] ?? '',
@@ -126,6 +124,7 @@ class Discussion {
           : [],
       messagesCount: calculatedCount,
       likesCount: calculatedLikes,
+      aimeParMoi: json['aime_par_moi'] == true,
       dernierMessageLe: json['dernier_message_le'] != null
           ? DateTime.tryParse(json['dernier_message_le'])
           : null,
@@ -148,11 +147,39 @@ class Discussion {
         messages: d.messages,
         messagesCount: d.messages.length,
         likesCount: d.likesCount,
+        aimeParMoi: d.aimeParMoi,
         dernierMessageLe: d.dernierMessageLe,
       );
     }
 
     return d;
+  }
+
+  /// Le meme sujet, avec quelques champs changes.
+  ///
+  /// Recopier la liste des champs a chaque endroit qui modifie un sujet est un
+  /// piege : le jour ou l'on ajoute un champ au modele, chaque copie oubliee
+  /// le perd sans bruit. Ici, un seul endroit a tenir a jour.
+  Discussion copyWith({int? likesCount, bool? aimeParMoi}) {
+    return Discussion(
+      id: id,
+      creePar: creePar,
+      nomUtilisateur: nomUtilisateur,
+      type: type,
+      categorie: categorie,
+      description: description,
+      imageBanniere: imageBanniere,
+      auteurId: auteurId,
+      livreId: livreId,
+      titre: titre,
+      creeLe: creeLe,
+      livre: livre,
+      messages: messages,
+      messagesCount: messagesCount,
+      likesCount: likesCount ?? this.likesCount,
+      aimeParMoi: aimeParMoi ?? this.aimeParMoi,
+      dernierMessageLe: dernierMessageLe,
+    );
   }
 
   Map<String, dynamic> toJson() {

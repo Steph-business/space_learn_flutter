@@ -655,6 +655,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                               ? d.description!.trim()
                               : "Aucune description",
                           comments: d.messagesCount ?? d.messages.length,
+                          sujet: d,
                           hasNewNotification: (() {
                             if (d.dernierMessageLe == null) return false;
                             final lastViewed = _lastViewedDates[d.id];
@@ -717,12 +718,103 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
     );
   }
 
+  /// Sujets dont la mention j'aime est en cours d'envoi.
+  ///
+  /// Le compte affiche est mis a jour avant la reponse du serveur, pour que
+  /// l'appui reponde tout de suite ; ce jeu evite qu'un second appui ne parte
+  /// pendant que le premier est en vol, ce qui laisserait l'affichage et la
+  /// base en desaccord.
+  final Set<String> _jaimeEnCours = {};
+
+  Future<void> _basculerJaime(Discussion sujet) async {
+    if (_jaimeEnCours.contains(sujet.id)) return;
+
+    final avantAime = sujet.aimeParMoi;
+    final avantTotal = sujet.likesCount ?? 0;
+
+    setState(() {
+      _jaimeEnCours.add(sujet.id);
+      _remplacer(
+        sujet.id,
+        aime: !avantAime,
+        total: avantAime ? avantTotal - 1 : avantTotal + 1,
+      );
+    });
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) throw Exception('session');
+      final resultat = await _discussionService.basculerJaime(sujet.id, token);
+      if (!mounted) return;
+      // Le serveur fait foi : il connait les mentions des autres, que
+      // l'affichage anticipe ne pouvait pas deviner.
+      setState(
+        () => _remplacer(sujet.id, aime: resultat.aime, total: resultat.total),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      // L'envoi a echoue : on remet ce qui etait affiche avant l'appui,
+      // plutot que de laisser croire que la mention est partie.
+      setState(() => _remplacer(sujet.id, aime: avantAime, total: avantTotal));
+      AppNotifications.showSnackBar(
+        context,
+        message: "Votre mention n'a pas pu être enregistrée.",
+        isError: true,
+      );
+    } finally {
+      if (mounted) setState(() => _jaimeEnCours.remove(sujet.id));
+    }
+  }
+
+  /// Remplace un sujet de la liste par le meme, avec un autre etat de j'aime.
+  void _remplacer(String id, {required bool aime, required int total}) {
+    final index = _discussions.indexWhere((d) => d.id == id);
+    if (index == -1) return;
+    _discussions[index] = _discussions[index].copyWith(
+      likesCount: total < 0 ? 0 : total,
+      aimeParMoi: aime,
+    );
+  }
+
+  Widget _boutonJaime(Discussion sujet) {
+    final aime = sujet.aimeParMoi;
+    final total = sujet.likesCount ?? 0;
+
+    return InkWell(
+      onTap: () => _basculerJaime(sujet),
+      borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              aime ? Iconsax.heart5 : Iconsax.heart,
+              size: 20,
+              color: aime ? AppColors.error : AppColors.textSecondary,
+            ),
+            SizedBox(width: 6),
+            Text(
+              total.toString(),
+              style: GoogleFonts.poppins(
+                color: aime ? AppColors.textPrimary : AppColors.textSecondary,
+                fontSize: 13,
+                fontWeight: aime ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPostItem({
     required String username,
     required String time,
     required String title,
     required String content,
     required int comments,
+    required Discussion sujet,
     String? rang,
     bool isAnonymous = false,
     bool hasNewNotification = false,
@@ -856,6 +948,8 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                                 : FontWeight.w400,
                           ),
                         ),
+                        SizedBox(width: 20),
+                        _boutonJaime(sujet),
                       ],
                     ),
                   ],
