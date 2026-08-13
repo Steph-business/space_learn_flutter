@@ -27,6 +27,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/dataServices/readingSettingsService.dart';
 import '../../../data/dataServices/readerStatsService.dart';
 import 'payment_page.dart';
+import 'package:space_learn_flutter/core/services/lecture_audio_handler.dart';
 
 class ReadingPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -122,6 +123,23 @@ class _ReadingPageState extends State<ReadingPage> {
     // Initialisation TTS
     _ttsService.onCompletion = _onTtsCompletion;
     _ttsService.addListener(_onTtsStateChanged);
+
+    // Ce que la notification de lecture annonce.
+    lectureAudio?.annoncerLivre(
+      titre: (widget.book['titre'] ?? widget.book['title'] ?? 'Lecture')
+          .toString(),
+      auteur:
+          (widget.book['auteur_nom'] ??
+                  widget.book['auteurNom'] ??
+                  widget.book['auteur'] ??
+                  '')
+              .toString(),
+      couverture:
+          (widget.book['image_couverture'] ??
+                  widget.book['imageCouverture'] ??
+                  '')
+              .toString(),
+    );
   }
 
   Future<void> _loadBookFile() async {

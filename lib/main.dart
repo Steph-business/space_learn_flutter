@@ -31,6 +31,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
     as lecteurHome;
 import 'package:space_learn_flutter/core/widgets/splash_screen.dart';
+import 'package:space_learn_flutter/core/services/lecture_audio_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +72,12 @@ Future<void> main() async {
   // frame s'affiche dans la palette par défaut puis bascule, et les écrans qui
   // lisent AppColors au moment de leur construction restent sur l'ancienne.
   final savedThemeMode = await ThemeProvider.loadSavedMode();
+
+  // Branche la lecture a voix haute au systeme : notification, commandes sur
+  // l'ecran verrouille, boutons du casque. Sans elle, la synthese s'arrete des
+  // que l'application passe en arriere-plan. Un echec n'empeche pas le
+  // demarrage : la lecture fonctionne alors ecran allume, comme avant.
+  await demarrerLectureAudio();
 
   runApp(MyApp(initialThemeMode: savedThemeMode));
 }

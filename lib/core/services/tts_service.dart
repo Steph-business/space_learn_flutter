@@ -362,6 +362,39 @@ class TtsService extends ChangeNotifier {
     await _dire();
   }
 
+  /// Passe au segment suivant, sans attendre la fin du courant.
+  ///
+  /// Sur une lecture à voix haute, « avancer de trente secondes » ne veut rien
+  /// dire : on ignore où cela tombe, et cela coupe au milieu d'un mot. Sauter
+  /// à la phrase suivante, si.
+  Future<void> segmentSuivant() async {
+    if (_segments.isEmpty) return;
+    if (_segmentCourant >= _segments.length - 1) return;
+    await _sauterVers(_segmentCourant + 1);
+  }
+
+  /// Revient au segment précédent.
+  Future<void> segmentPrecedent() async {
+    if (_segments.isEmpty) return;
+    if (_segmentCourant <= 0) return;
+    await _sauterVers(_segmentCourant - 1);
+  }
+
+  Future<void> _sauterVers(int index) async {
+    final reprendre = _state != TtsState.stopped;
+    // Interrompre l'énoncé en cours sans perdre la liste des segments : le
+    // `stop()` public la vide, ce qu'on ne veut pas ici.
+    _arretDemande = true;
+    try {
+      await _flutterTts.stop();
+    } catch (e) {
+      debugPrint("Saut de segment : arrêt impossible : $e");
+    }
+    _segmentCourant = index;
+    notifyListeners();
+    if (reprendre) await _dire();
+  }
+
   Future<void> stop() async {
     _arretDemande = true;
     try {
