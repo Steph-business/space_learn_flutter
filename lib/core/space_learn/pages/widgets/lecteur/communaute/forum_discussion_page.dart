@@ -11,24 +11,35 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussio
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import '../../../../../themes/layout/nav_bar_lecteur.dart';
 import 'forum_messages_page.dart';
+import 'salon_noms.dart';
 
+/// Un salon de discussion.
+///
+/// Le nom n'est pas un parametre : il se deduit de la salle. `book` nul
+/// designe le salon global, `book` renseigne le club de lecture d'un ouvrage —
+/// c'est exactement ce que le serveur distingue.
+///
+/// Les parametres `title` et `subtitle` ont ete supprimes plutot que rendus
+/// optionnels. Tant qu'ils existaient, chaque appelant ecrivait les siens et
+/// la meme salle portait quatre noms selon la porte empruntee ; un parametre
+/// optionnel aurait laisse le sixieme ecran en inventer un cinquieme sans que
+/// rien ne le signale. Sans eux, c'est impossible a ecrire.
 class ForumDiscussionPage extends StatefulWidget {
-  final String title;
-  final String subtitle;
   final BookModel? book;
 
-  const ForumDiscussionPage({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    this.book,
-  });
+  const ForumDiscussionPage({super.key, this.book});
 
   @override
   State<ForumDiscussionPage> createState() => _ForumDiscussionPageState();
 }
 
 class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
+  /// Le nom vient de la salle, jamais de l'appelant.
+  String get _titre =>
+      widget.book == null ? SalonNoms.globalTitre : SalonNoms.clubTitre;
+
+  String get _sousTitre => widget.book?.titre ?? SalonNoms.globalSousTitre;
+
   final DiscussionService _discussionService = DiscussionService();
   List<Discussion> _discussions = [];
   Map<String, DateTime?> _lastViewedDates = {};
@@ -213,7 +224,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
             : Column(
                 children: [
                   Text(
-                    widget.title.toUpperCase(),
+                    _titre.toUpperCase(),
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
@@ -227,7 +238,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                   // en accentInk : secondaryVariant tenait 2,40:1 sur un fond
                   // clair, illisible a onze pixels.
                   Text(
-                    widget.subtitle,
+                    _sousTitre,
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

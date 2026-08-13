@@ -68,12 +68,7 @@ class NotificationService {
       } else {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const ForumDiscussionPage(
-              title: "Le Café des Lecteurs",
-              subtitle: "Discussions générales",
-            ),
-          ),
+          MaterialPageRoute(builder: (context) => const ForumDiscussionPage()),
         );
       }
     } else if (type.contains('annonce') || type.contains('evenement')) {

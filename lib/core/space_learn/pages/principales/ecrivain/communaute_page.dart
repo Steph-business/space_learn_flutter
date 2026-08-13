@@ -18,6 +18,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationS
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/evenement_detail_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/salon_noms.dart';
 
 class TeamsPage extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -499,12 +500,7 @@ class _TeamsPageState extends State<TeamsPage> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => ForumDiscussionPage(
-              title: "SALON DE L'AUTEUR",
-              subtitle: "Discussions générales avec votre communauté",
-            ),
-          ),
+          MaterialPageRoute(builder: (context) => const ForumDiscussionPage()),
         );
       },
       child: Container(
@@ -541,8 +537,12 @@ class _TeamsPageState extends State<TeamsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Le libelle de la carte lit la meme source que l'en-tete
+                  // du salon : « Votre Salon Officiel » promettait un espace
+                  // prive alors qu'elle mene au forum commun a toute la
+                  // plateforme.
                   Text(
-                    "Votre Salon Officiel",
+                    SalonNoms.globalTitre,
                     style: GoogleFonts.poppins(
                       color: AppColors.textPrimary,
                       fontSize: 16,
@@ -586,11 +586,7 @@ class _TeamsPageState extends State<TeamsPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ForumDiscussionPage(
-              title: "CLUB DE LECTURE",
-              subtitle: book.titre,
-              book: book,
-            ),
+            builder: (context) => ForumDiscussionPage(book: book),
           ),
         );
       },

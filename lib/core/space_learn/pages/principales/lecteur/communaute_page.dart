@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'recherche_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/salon_noms.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -320,12 +321,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => ForumDiscussionPage(
-              title: "LE CAFE DES LECTEURS",
-              subtitle: "Espace global d'échange Space Learn",
-            ),
-          ),
+          MaterialPageRoute(builder: (context) => const ForumDiscussionPage()),
         );
       },
       child: Container(
@@ -359,7 +355,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Le Café des Lecteurs",
+                    SalonNoms.globalTitre,
                     style: GoogleFonts.poppins(
                       color: AppColors.textPrimary,
                       fontSize: 16,
@@ -424,11 +420,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ForumDiscussionPage(
-              title: "CLUB DE LECTURE",
-              subtitle: book.titre,
-              book: book,
-            ),
+            builder: (context) => ForumDiscussionPage(book: book),
           ),
         );
       },
