@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificationService.dart';
 import 'package:space_learn_flutter/core/services/api_client.dart';
@@ -188,7 +187,6 @@ class _MyAppState extends State<MyApp> {
     AppColors.suivreLeTheme(context);
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(
           create: (_) => ThemeProvider(initialMode: widget.initialThemeMode),

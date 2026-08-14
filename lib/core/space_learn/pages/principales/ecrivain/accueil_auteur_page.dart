@@ -101,11 +101,7 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
               preferredSize: const Size.fromHeight(
                 100,
               ), // Adjust height as needed
-              child: NavBarAll(
-                userName: widget.userName,
-                showCart: false,
-                role: 'auteur',
-              ),
+              child: NavBarAll(userName: widget.userName, role: 'auteur'),
             )
           : null,
       body: IndexedStack(

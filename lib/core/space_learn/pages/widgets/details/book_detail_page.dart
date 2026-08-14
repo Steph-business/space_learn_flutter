@@ -8,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/cart_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'reading_page.dart';
 import 'payment_page.dart';
@@ -28,13 +27,19 @@ import 'all_reviews_page.dart';
 class BookDetailPage extends StatefulWidget {
   final BookModel book;
   final bool isOwned;
-  final bool showCart;
+
+  /// Celui qui regarde peut-il acheter cet ouvrage ?
+  ///
+  /// Faux quand un auteur consulte son propre livre depuis ses publications.
+  /// Le drapeau s'appelait `showCart` : il commandait l'affichage du panier,
+  /// lequel n'existe plus. Son nom decrivait un bouton, pas une regle.
+  final bool peutAcheter;
 
   const BookDetailPage({
     super.key,
     required this.book,
     this.isOwned = false,
-    this.showCart = true,
+    this.peutAcheter = true,
   });
 
   @override
@@ -974,7 +979,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     : !isOwned && _estGratuit
                     ? _boutonLireGratuitement()
                     : !isOwned
-                    ? widget.showCart
+                    ? widget.peutAcheter
                           ? Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1000,39 +1005,18 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                         ),
                                       ],
                                     ),
-                                    SizedBox(width: 32),
-                                    Container(
-                                      height: 50,
-                                      width: 50,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.surfaceVariant,
-                                        borderRadius: BorderRadius.circular(
-                                          AppDimensions.radiusInner,
-                                        ),
-                                        border: Border.all(
-                                          color: AppColors.textPrimary
-                                              .withOpacity(0.1),
-                                        ),
-                                      ),
-                                      child: IconButton(
-                                        onPressed: () {
-                                          context.read<CartProvider>().addItem(
-                                            book,
-                                          );
-                                          AppNotifications.showSnackBar(
-                                            context,
-                                            message:
-                                                "${book.titre} ajouté au panier",
-                                            isSuccess: true,
-                                          );
-                                        },
-                                        icon: Icon(
-                                          Icons.shopping_cart_outlined,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
+                                    // Le panier est parti.
+                                    //
+                                    // Il affichait le total de tous les
+                                    // livres puis n'en payait qu'un seul —
+                                    // les autres disparaissaient sans un mot.
+                                    // Et un panier sert a grouper : a amortir
+                                    // des frais de port, ou a composer une
+                                    // commande sur plusieurs jours. Un fichier
+                                    // livre a l'instant n'a rien a amortir,
+                                    // ce que Kindle, Apple Books et Google
+                                    // Play Livres ont tous conclu avant nous.
+                                    SizedBox(width: 24),
                                     Expanded(
                                       child: SizedBox(
                                         height: 50,

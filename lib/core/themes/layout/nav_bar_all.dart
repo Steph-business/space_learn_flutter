@@ -7,16 +7,13 @@ import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import '../../space_learn/pages/principales/notificationPage.dart';
 import '../../space_learn/pages/principales/messages_page.dart';
 import 'package:provider/provider.dart';
-import '../../space_learn/data/dataServices/cart_provider.dart';
 import '../../space_learn/data/dataServices/notification_provider.dart';
-import '../../space_learn/pages/widgets/lecteur/boutique/cart_page.dart';
 
 class NavBarAll extends StatelessWidget {
   final String userName;
   final String? userUrl;
   final String? greeting;
   final String? subtitle;
-  final bool showCart;
   final String role; // 'lecteur' or 'auteur'
 
   const NavBarAll({
@@ -25,7 +22,6 @@ class NavBarAll extends StatelessWidget {
     this.userUrl,
     this.greeting,
     this.subtitle,
-    this.showCart = true,
     this.role = 'lecteur',
   });
 
@@ -91,7 +87,9 @@ class NavBarAll extends StatelessWidget {
                         ),
                         TextSpan(
                           text: userName,
-                          style: AppTextStyles.sectionTitle.copyWith(fontSize: 13),
+                          style: AppTextStyles.sectionTitle.copyWith(
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -107,22 +105,21 @@ class NavBarAll extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Chat icon currently exists in NavBarAll but not in image, I'll keep just notifications if it's Auteur
-              if (showCart) // Just a trick to distinguish Reader/Author if needed, but safer to just show icons
-                IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MessagesPage(),
-                      ),
-                    );
-                  },
-                  icon: Icon(
-                    Icons.chat_bubble_outline_rounded,
-                    color: AppColors.textPrimary,
-                    size: 24,
-                  ),
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MessagesPage(),
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: AppColors.textPrimary,
+                  size: 24,
                 ),
+              ),
               Stack(
                 alignment: Alignment.topRight,
                 children: [
@@ -181,60 +178,6 @@ class NavBarAll extends StatelessWidget {
                   ),
                 ],
               ),
-              if (showCart)
-                Stack(
-                  alignment: Alignment.topRight,
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CartPage(),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.shopping_cart_outlined,
-                        color: AppColors.textPrimary,
-                        size: 24,
-                      ),
-                    ),
-                    Consumer<CartProvider>(
-                      builder: (context, cart, child) {
-                        if (cart.itemCount == 0) return const SizedBox.shrink();
-                        return Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            padding: EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.scaffoldBackground,
-                                width: 1.5,
-                              ),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 14,
-                              minHeight: 14,
-                            ),
-                            child: Text(
-                              '${cart.itemCount}',
-                              style: TextStyle(
-                                color: AppColors.onAccent,
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
             ],
           ),
         ],

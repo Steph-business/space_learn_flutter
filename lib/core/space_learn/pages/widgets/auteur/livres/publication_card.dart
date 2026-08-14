@@ -28,7 +28,7 @@ class PublicationCard extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) =>
-            BookDetailPage(book: book, isOwned: true, showCart: false),
+            BookDetailPage(book: book, isOwned: true, peutAcheter: false),
       ),
     );
   }

@@ -352,7 +352,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
       body: Column(
         children: [
           // En-tête fixe
-          NavBarAll(userName: _userName, showCart: true),
+          NavBarAll(userName: _userName),
           // Contenu défilable
           Expanded(
             child: RefreshIndicator(
