@@ -17,6 +17,9 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussio
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/communaute_page.dart'
     as ecrivainTeams;
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/reading_page.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class NotificationService {
   final http.Client client;
@@ -87,10 +90,17 @@ class NotificationService {
         popToRoot();
         MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
       }
+    } else if (type.contains('rappel_lecture')) {
+      // « Vous n'avez pas lu X depuis plus de 24h » doit rouvrir X.
+      //
+      // Le rappel menait a la bibliotheque : au lecteur de retrouver lui-meme
+      // l'ouvrage dont on venait de lui parler, alors que la notification en
+      // porte l'identifiant. C'est un geste de plus a chaque fois, et le
+      // rappel perd ce qui le rendait utile.
+      _ouvrirLeLivre(context, notif.referenceId, popToRoot);
     } else if (type.contains('paiement') ||
         type.contains('achat') ||
         type.contains('vente') ||
-        type.contains('rappel_lecture') ||
         type.contains('livre') ||
         type.contains('chapitre')) {
       if (isLecteur) {
@@ -116,6 +126,40 @@ class NotificationService {
           MaterialPageRoute(builder: (context) => const BibliothequePage()),
         );
       }
+    }
+  }
+
+  /// Ouvre le livre designe par la notification, la ou la lecture s'etait
+  /// arretee.
+  ///
+  /// Sans identifiant exploitable, on retombe sur la bibliotheque plutot que
+  /// de ne rien faire.
+  static Future<void> _ouvrirLeLivre(
+    BuildContext context,
+    String? livreId,
+    VoidCallback popToRoot,
+  ) async {
+    if (livreId == null || livreId.trim().isEmpty) {
+      popToRoot();
+      MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
+      return;
+    }
+
+    try {
+      final token = await TokenStorage.getToken();
+      final livre = await BookService().getBookById(livreId, authToken: token);
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ReadingPage(book: livre.toJson()),
+        ),
+      );
+    } catch (_) {
+      // Le livre a pu etre retire du catalogue depuis l'envoi du rappel.
+      if (!context.mounted) return;
+      popToRoot();
+      MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
     }
   }
 

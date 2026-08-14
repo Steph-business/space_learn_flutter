@@ -10,16 +10,53 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificat
 import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
+/// Le type, en francais.
+///
+/// Il s'affichait brut : « RAPPEL_LECTURE », « COMMUNAUTE », « VENTE ». Ce
+/// sont des valeurs de base de donnees, pas des mots qu'on lit.
+String libelleTypeNotification(String type) {
+  switch (type.toLowerCase().trim()) {
+    case 'rappel_lecture':
+      return 'REPRENDRE LA LECTURE';
+    case 'communaute':
+      return 'COMMUNAUTÉ';
+    case 'vente':
+      return 'VENTE';
+    case 'achat':
+      return 'ACHAT';
+    case 'paiement':
+      return 'PAIEMENT';
+    case 'annonce':
+      return 'ANNONCE';
+    case 'evenement':
+      return 'ÉVÉNEMENT';
+    case 'message':
+    case 'reponse':
+      return 'MESSAGE';
+    default:
+      // Un type inconnu reste lisible : les tirets bas s'effacent.
+      return type.replaceAll('_', ' ').toUpperCase();
+  }
+}
+
 class RecentNotificationsPage extends StatefulWidget {
   final VoidCallback? onTapOpenNotifications;
   final List<NotificationModel>? customNotifications;
   final String? title;
+
+  /// Ce qu'on affiche quand il n'y a rien.
+  ///
+  /// « Aucune notification » est faux des qu'un filtre est actif : la liste
+  /// peut etre vide parce que tout a ete lu, ce qui est une bonne nouvelle et
+  /// non une absence.
+  final String? messageVide;
 
   const RecentNotificationsPage({
     super.key,
     this.onTapOpenNotifications,
     this.customNotifications,
     this.title,
+    this.messageVide,
   });
 
   @override
@@ -134,7 +171,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
               ),
               SizedBox(height: 16),
               Text(
-                'Aucune notification.',
+                widget.messageVide ?? 'Aucune notification.',
                 style: GoogleFonts.poppins(
                   color: AppColors.textPrimary.withOpacity(0.5),
                   fontSize: 16,
@@ -270,7 +307,7 @@ class _NotificationCardFromModel extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  model.type.toUpperCase(),
+                                  libelleTypeNotification(model.type),
                                   style: GoogleFonts.poppins(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,

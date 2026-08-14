@@ -19,7 +19,13 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  String _filter = 'tous'; // 'tous', 'non_read', 'read'
+  /// Ce que la page montre a l'ouverture.
+  ///
+  /// Elle affichait tout, lu comme non lu : une notification ouverte restait
+  /// en place, identique, et la liste ne faisait que grandir. On n'y voyait
+  /// plus ce qui restait a faire. Les lues ne sont pas perdues pour autant —
+  /// « Archives » les retrouve.
+  String _filter = 'non_read';
 
   @override
   void initState() {
@@ -210,6 +216,11 @@ class _NotificationPageState extends State<NotificationPage> {
               RecentNotificationsPage(
                 customNotifications: notifications,
                 title: null, // Supprimé "Récemment"
+                messageVide: switch (_filter) {
+                  'non_read' => "Vous êtes à jour.",
+                  'archives' => "Aucune notification lue.",
+                  _ => "Aucune notification.",
+                },
               ),
             ],
           ),
