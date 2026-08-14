@@ -31,15 +31,13 @@ class LivreCard extends StatelessWidget {
   ///
   /// Titre sur deux lignes, auteur, note, prix, plus les marges. Fixée ici
   /// pour que la grille calcule son rapport à partir d'une seule source.
-  static const double hauteurTexte = 104;
+  /// Hauteur du bloc de texte sous la couverture (désormais 0 car le texte est sur la couverture).
+  static const double hauteurTexte = 0;
 
   /// Hauteur totale d'une carte pour une largeur donnée.
   ///
-  /// Une carte trop courte rogne la couverture ou fait déborder le texte, et
-  /// rien ne le signale à la compilation — un débordement ne se voit qu'à
-  /// l'écran. Chaque endroit qui pose une carte demande donc sa hauteur ici,
-  /// plutôt que de deviner un nombre : la grille de la boutique comme les
-  /// carrousels de l'accueil.
+  /// La carte occupe son rapport d'aspect 2/3 complet, les informations étant
+  /// incrustées directement sur l'image avec un dégradé sombre en bas.
   static double hauteurPour(double largeur) =>
       largeur / rapportCouverture + hauteurTexte;
 
@@ -61,65 +59,87 @@ class LivreCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: rapportCouverture,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    color: AppColors.surfaceVariant,
-                    child: _couverture(),
-                  ),
-                  // L'étiquette du gratuit, sur la couverture.
-                  //
-                  // C'est l'argument le plus fort d'une fiche : il doit se voir
-                  // depuis la grille, sans avoir à lire le prix.
-                  if (_estGratuit)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: _etiquette(
-                        "GRATUIT",
-                        AppColors.success,
-                        AppColors.onAccent,
-                      ),
-                    ),
-                  if (isOwned)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: _etiquette(
-                        "DANS VOTRE BIBLIOTHÈQUE",
-                        AppColors.primary,
-                        AppColors.onAccent,
-                        icone: Iconsax.book_saved,
-                        compacte: true,
-                      ),
-                    ),
-                ],
+        child: AspectRatio(
+          aspectRatio: rapportCouverture,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Container(
+                color: AppColors.surfaceVariant,
+                child: _couverture(),
               ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+              // Dégradé sombre progressif en bas pour garantir une lisibilité optimale
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.25, 0.6, 1.0],
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.45),
+                        Colors.black.withOpacity(0.88),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Étiquttes du haut (GRATUIT / DANS VOTRE BIBLIOTHÈQUE)
+              if (_estGratuit)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: _etiquette(
+                    "GRATUIT",
+                    AppColors.success,
+                    AppColors.onAccent,
+                  ),
+                ),
+              if (isOwned)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: _etiquette(
+                    "DANS VOTRE BIBLIOTHÈQUE",
+                    AppColors.primary,
+                    AppColors.onAccent,
+                    icone: Iconsax.book_saved,
+                    compacte: true,
+                  ),
+                ),
+              // Informations sur le livre incrustées en bas
+              Positioned(
+                left: 10,
+                right: 10,
+                bottom: 10,
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Deux lignes. Sur une seule, « L'histoire du monde »
-                    // devenait « L'histoire du mon… » — on ne sait plus de quel
-                    // ouvrage il s'agit.
                     Text(
                       book.titre,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13.5,
-                        color: AppColors.textPrimary,
-                        height: 1.25,
+                        fontSize: 13,
+                        color: Colors.white,
+                        height: 1.2,
+                        shadows: const [
+                          Shadow(
+                            color: Colors.black54,
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -129,13 +149,13 @@ class LivreCard extends StatelessWidget {
                       book.authorName,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w500,
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
+                        fontSize: 10.5,
+                        color: Colors.white.withOpacity(0.85),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Expanded(
@@ -143,17 +163,23 @@ class LivreCard extends StatelessWidget {
                             _estGratuit ? "Gratuit" : "${book.prix} FCFA",
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w800,
-                              fontSize: 14,
+                              fontSize: 13,
                               color: _estGratuit
-                                  ? AppColors.success
-                                  : AppColors.accentInk,
+                                  ? const Color(0xFF4CAF50)
+                                  : const Color(0xFFFFD700),
+                              shadows: const [
+                                Shadow(
+                                  color: Colors.black87,
+                                  blurRadius: 4,
+                                ),
+                              ],
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (book.noteMoyenne > 0) ...[
-                          Icon(
+                          const Icon(
                             Icons.star_rounded,
                             color: AppColors.warning,
                             size: 13,
@@ -164,7 +190,7 @@ class LivreCard extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
+                              color: Colors.white.withOpacity(0.9),
                             ),
                           ),
                         ],
@@ -173,8 +199,8 @@ class LivreCard extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

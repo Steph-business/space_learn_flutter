@@ -76,10 +76,10 @@ void main() {
     // La couverture garde les proportions d'un livre : élargir la carte doit
     // la rendre plus haute, sinon l'image serait rognée.
     expect(LivreCard.hauteurPour(200), greaterThan(LivreCard.hauteurPour(160)));
-    // Deux tiers de large pour trois de haut, plus le bloc de texte.
+    // Deux tiers de large pour trois de haut.
     expect(
       LivreCard.hauteurPour(160),
-      closeTo(160 / LivreCard.rapportCouverture + LivreCard.hauteurTexte, 0.01),
+      closeTo(160 / LivreCard.rapportCouverture, 0.01),
     );
   });
 

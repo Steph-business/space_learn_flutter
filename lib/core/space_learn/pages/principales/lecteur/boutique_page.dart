@@ -313,9 +313,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   final largeurCarte =
                       (contraintes.maxWidth - ecart * (colonnes - 1)) /
                       colonnes;
-                  final hauteurCarte =
-                      largeurCarte / LivreCard.rapportCouverture +
-                      LivreCard.hauteurTexte;
+                  final hauteurCarte = LivreCard.hauteurPour(largeurCarte);
 
                   return GridView.builder(
                     shrinkWrap: true,
