@@ -73,10 +73,7 @@ class LivreCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Container(
-                color: AppColors.surfaceVariant,
-                child: _couverture(),
-              ),
+              Container(color: AppColors.surfaceVariant, child: _couverture()),
               // Dégradé sombre progressif en bas pour garantir une lisibilité optimale
               Positioned.fill(
                 child: DecoratedBox(
@@ -168,10 +165,7 @@ class LivreCard extends StatelessWidget {
                                   ? const Color(0xFF4CAF50)
                                   : const Color(0xFFFFD700),
                               shadows: const [
-                                Shadow(
-                                  color: Colors.black87,
-                                  blurRadius: 4,
-                                ),
+                                Shadow(color: Colors.black87, blurRadius: 4),
                               ],
                             ),
                             maxLines: 1,
