@@ -206,17 +206,22 @@ class ApiRoutes {
           } catch (_) {}
         }
       }
+    } else if (useGin) {
+      // Un chemin relatif ne se devine pas.
+      //
+      // On construisait ici une URL vers un seau nomme « books ». Ce seau
+      // n'existe pas : les couvertures vivent dans « book_covers » et
+      // « covers ». Chaque chemin relatif produisait donc une adresse en
+      // « Bucket not found », une requete reseau inutile et une exception dans
+      // la console — pour un fichier qu'on n'aurait de toute facon pas trouve.
+      //
+      // Le client ne peut pas savoir ou le serveur a range un fichier. Ce
+      // n'est pas a lui de l'inventer : sans URL exploitable, il n'y a pas
+      // d'image, et l'ecran affiche son repli sans rien tenter.
+      return null;
     } else {
-      // Relative path
-      // Match the Web app behavior for relative paths (books/covers uploaded previously)
-      if (useGin) {
-        final cleanPath = url.startsWith('/') ? url.substring(1) : url;
-        sanitized =
-            'https://uqmydsydlkwxcfcdtsbu.supabase.co/storage/v1/object/public/books/$cleanPath';
-      } else {
-        final separator = url.startsWith('/') ? '' : '/';
-        sanitized = '$targetBaseUrl$separator$url';
-      }
+      final separator = url.startsWith('/') ? '' : '/';
+      sanitized = '$targetBaseUrl$separator$url';
     }
 
     return sanitized;
