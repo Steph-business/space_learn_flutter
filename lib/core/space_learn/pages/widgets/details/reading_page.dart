@@ -1115,9 +1115,13 @@ class _ReadingPageState extends State<ReadingPage> {
       key: _pdfViewerKey,
       controller: _pdfViewerController,
       pageLayoutMode: PdfPageLayoutMode.single,
+      // La correspondance etait inversee : « Horizontal » donnait un
+      // defilement vertical, et inversement. Le reglage faisait donc le
+      // contraire de ce qu'il annoncait, et le lecteur qui cherchait a
+      // corriger le sens l'inversait une seconde fois.
       scrollDirection: _isHorizontal
-          ? PdfScrollDirection.vertical
-          : PdfScrollDirection.horizontal,
+          ? PdfScrollDirection.horizontal
+          : PdfScrollDirection.vertical,
       enableDoubleTapZooming: true,
       onDocumentLoaded: (PdfDocumentLoadedDetails details) {
         if (mounted) {
@@ -1241,6 +1245,30 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
+  /// Une fleche de page, eteinte quand il n'y a plus rien de ce cote.
+  ///
+  /// Eteinte plutot qu'absente : une commande qui disparait deplace celles
+  /// d'a cote, et l'oeil doit les retrouver a chaque tournee.
+  Widget _flechePage({
+    required IconData icone,
+    required Color couleur,
+    required bool actif,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: actif ? onTap : null,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(
+          icone,
+          size: 20,
+          color: actif ? couleur : couleur.withValues(alpha: 0.25),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBottomControls() {
     final bool isDark = _backgroundColor.computeLuminance() < 0.5;
     final Color textColor = isDark ? Colors.white : AppColors.readingBrown;
@@ -1252,21 +1280,47 @@ class _ReadingPageState extends State<ReadingPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Page Indicator (Centered, floating above the bar)
+          // Tourner la page, sans avoir a le deviner.
+          //
+          // Le compteur ne faisait qu'afficher « PAGE 1 SUR 10 » : rien
+          // n'indiquait comment atteindre la deuxieme. Il fallait glisser
+          // lateralement, geste qu'aucun element de l'ecran ne suggerait — et
+          // que le reglage du sens de lecture contredisait. Les deux fleches
+          // encadrent maintenant le compteur.
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: _backgroundColor.withOpacity(0.95),
+              color: _backgroundColor.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
-            child: Text(
-              "PAGE $_currentPage SUR $_totalPages",
-              style: GoogleFonts.poppins(
-                color: textColor,
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-                letterSpacing: 0.5,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _flechePage(
+                  icone: Icons.chevron_left,
+                  couleur: textColor,
+                  actif: _currentPage > 1,
+                  onTap: () => _pdfViewerController.previousPage(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    "PAGE $_currentPage SUR $_totalPages",
+                    style: GoogleFonts.poppins(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                _flechePage(
+                  icone: Icons.chevron_right,
+                  couleur: textColor,
+                  actif: _currentPage < _totalPages,
+                  onTap: () => _pdfViewerController.nextPage(),
+                ),
+              ],
             ),
           ),
           SizedBox(height: 12),
