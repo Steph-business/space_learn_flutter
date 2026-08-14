@@ -255,6 +255,9 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
       context: context,
       backgroundColor: AppColors.cardBackground,
       builder: (context) {
+        // Une feuille est une route a part : elle lit la palette sans
+        // s'y abonner, donc elle garde celle du dernier ecran construit.
+        AppColors.suivreLeTheme(context);
         return ListView(
           shrinkWrap: true,
           padding: EdgeInsets.symmetric(vertical: 20),
@@ -285,6 +288,9 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
       context: context,
       backgroundColor: AppColors.cardBackground,
       builder: (context) {
+        // Une feuille est une route a part : elle lit la palette sans
+        // s'y abonner, donc elle garde celle du dernier ecran construit.
+        AppColors.suivreLeTheme(context);
         return ListView(
           shrinkWrap: true,
           padding: EdgeInsets.symmetric(vertical: 20),

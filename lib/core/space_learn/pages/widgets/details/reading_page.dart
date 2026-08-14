@@ -1368,183 +1368,188 @@ class _ReadingPageState extends State<ReadingPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppDimensions.spaceXl,
-              0,
-              AppDimensions.spaceXl,
-              AppDimensions.spaceXl,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  "Confort de lecture",
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 19,
-                    color: AppColors.textPrimary,
+        builder: (context, setModalState) {
+          // Une feuille est une route a part : elle lit la palette sans s'y
+          // abonner, donc elle garde celle du dernier ecran construit.
+          AppColors.suivreLeTheme(context);
+          return SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppDimensions.spaceXl,
+                0,
+                AppDimensions.spaceXl,
+                AppDimensions.spaceXl,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    "Confort de lecture",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 19,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppDimensions.spaceXl),
+                  const SizedBox(height: AppDimensions.spaceXl),
 
-                // Le meme curseur ne fait pas la meme chose selon le format :
-                // sur un PDF la mise en page est figee, on ne peut qu'agrandir
-                // l'image ; un EPUB recompose son texte. L'intitule le dit,
-                // plutot que de laisser croire a un reglage qui n'existe pas.
-                _titreReglage(_isPdf ? "Agrandissement" : "Taille du texte"),
-                const SizedBox(height: AppDimensions.spaceXs),
-                Row(
-                  children: [
-                    Icon(
-                      _isPdf ? Icons.zoom_out : Icons.text_decrease,
-                      size: 18,
-                      color: AppColors.textSecondary,
-                    ),
-                    Expanded(
-                      child: Slider(
-                        value: _zoomLevel,
-                        min: 0.5,
-                        max: 3.0,
-                        // Des crans : un zoom continu ne se retrouve jamais.
-                        divisions: 10,
-                        label: "${(_zoomLevel * 100).round()} %",
-                        onChanged: (val) {
-                          setState(() {
-                            _zoomLevel = val;
-                            _pdfViewerController.zoomLevel = val;
-                          });
-                          setModalState(() {});
-                          _saveSettingsDebounced();
-                        },
+                  // Le meme curseur ne fait pas la meme chose selon le format :
+                  // sur un PDF la mise en page est figee, on ne peut qu'agrandir
+                  // l'image ; un EPUB recompose son texte. L'intitule le dit,
+                  // plutot que de laisser croire a un reglage qui n'existe pas.
+                  _titreReglage(_isPdf ? "Agrandissement" : "Taille du texte"),
+                  const SizedBox(height: AppDimensions.spaceXs),
+                  Row(
+                    children: [
+                      Icon(
+                        _isPdf ? Icons.zoom_out : Icons.text_decrease,
+                        size: 18,
+                        color: AppColors.textSecondary,
                       ),
-                    ),
-                    Icon(
-                      _isPdf ? Icons.zoom_in : Icons.text_increase,
-                      size: 22,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: AppDimensions.spaceMd),
-                    // La valeur, sinon on règle à l'aveugle.
-                    SizedBox(
-                      width: 48,
-                      child: Text(
-                        "${(_zoomLevel * 100).round()} %",
-                        textAlign: TextAlign.end,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.accentInk,
+                      Expanded(
+                        child: Slider(
+                          value: _zoomLevel,
+                          min: 0.5,
+                          max: 3.0,
+                          // Des crans : un zoom continu ne se retrouve jamais.
+                          divisions: 10,
+                          label: "${(_zoomLevel * 100).round()} %",
+                          onChanged: (val) {
+                            setState(() {
+                              _zoomLevel = val;
+                              _pdfViewerController.zoomLevel = val;
+                            });
+                            setModalState(() {});
+                            _saveSettingsDebounced();
+                          },
                         ),
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppDimensions.spaceXl),
-
-                _titreReglage("Luminosité"),
-                const SizedBox(height: AppDimensions.spaceXs),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.brightness_low,
-                      size: 18,
-                      color: AppColors.textSecondary,
-                    ),
-                    Expanded(
-                      child: Slider(
-                        value: _brightness,
-                        min: 0.25,
-                        max: 1.0,
-                        divisions: 15,
-                        label: "${(_brightness * 100).round()} %",
-                        onChanged: (val) {
-                          setState(() => _brightness = val);
-                          setModalState(() {});
-                          _saveSettingsDebounced();
-                        },
+                      Icon(
+                        _isPdf ? Icons.zoom_in : Icons.text_increase,
+                        size: 22,
+                        color: AppColors.textSecondary,
                       ),
-                    ),
-                    Icon(
-                      Icons.brightness_high,
-                      size: 20,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: AppDimensions.spaceMd),
-                    SizedBox(
-                      width: 48,
-                      child: Text(
-                        "${(_brightness * 100).round()} %",
-                        textAlign: TextAlign.end,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.accentInk,
+                      const SizedBox(width: AppDimensions.spaceMd),
+                      // La valeur, sinon on règle à l'aveugle.
+                      SizedBox(
+                        width: 48,
+                        child: Text(
+                          "${(_zoomLevel * 100).round()} %",
+                          textAlign: TextAlign.end,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.accentInk,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
 
-                const SizedBox(height: AppDimensions.spaceXl),
+                  const SizedBox(height: AppDimensions.spaceXl),
 
-                _titreReglage("Sens de lecture"),
-                const SizedBox(height: AppDimensions.spaceSm),
-                // Deux choix nommés plutôt qu'un interrupteur : le libellé
-                // « Défilement vertical » restait écrit même une fois passé à
-                // l'horizontal, et rien ne disait vers quoi l'on basculait.
-                AppSegmentedControl(
-                  labels: const ["Vertical", "Horizontal"],
-                  selectedIndex: _isHorizontal ? 1 : 0,
-                  onChanged: (index) {
-                    setState(() => _isHorizontal = index == 1);
-                    setModalState(() {});
-                    _saveSettings();
-                  },
-                ),
-
-                const SizedBox(height: AppDimensions.spaceXl),
-
-                _titreReglage("Fond de page"),
-                const SizedBox(height: AppDimensions.spaceSm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildThemeOption(
-                        "Original",
-                        AppColors.parchmentLight,
-                        AppColors.textOnLight,
-                        setModalState,
+                  _titreReglage("Luminosité"),
+                  const SizedBox(height: AppDimensions.spaceXs),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.brightness_low,
+                        size: 18,
+                        color: AppColors.textSecondary,
                       ),
-                    ),
-                    const SizedBox(width: AppDimensions.spaceMd),
-                    Expanded(
-                      child: _buildThemeOption(
-                        "Nuit",
-                        AppColors.readingDark,
-                        AppColors.textOnDark,
-                        setModalState,
+                      Expanded(
+                        child: Slider(
+                          value: _brightness,
+                          min: 0.25,
+                          max: 1.0,
+                          divisions: 15,
+                          label: "${(_brightness * 100).round()} %",
+                          onChanged: (val) {
+                            setState(() => _brightness = val);
+                            setModalState(() {});
+                            _saveSettingsDebounced();
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppDimensions.spaceMd),
-                    Expanded(
-                      child: _buildThemeOption(
-                        "Sépia",
-                        AppColors.parchment,
-                        AppColors.readingBrownDark,
-                        setModalState,
+                      Icon(
+                        Icons.brightness_high,
+                        size: 20,
+                        color: AppColors.textSecondary,
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: AppDimensions.spaceMd),
+                      SizedBox(
+                        width: 48,
+                        child: Text(
+                          "${(_brightness * 100).round()} %",
+                          textAlign: TextAlign.end,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.accentInk,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: AppDimensions.spaceXl),
+
+                  _titreReglage("Sens de lecture"),
+                  const SizedBox(height: AppDimensions.spaceSm),
+                  // Deux choix nommés plutôt qu'un interrupteur : le libellé
+                  // « Défilement vertical » restait écrit même une fois passé à
+                  // l'horizontal, et rien ne disait vers quoi l'on basculait.
+                  AppSegmentedControl(
+                    labels: const ["Vertical", "Horizontal"],
+                    selectedIndex: _isHorizontal ? 1 : 0,
+                    onChanged: (index) {
+                      setState(() => _isHorizontal = index == 1);
+                      setModalState(() {});
+                      _saveSettings();
+                    },
+                  ),
+
+                  const SizedBox(height: AppDimensions.spaceXl),
+
+                  _titreReglage("Fond de page"),
+                  const SizedBox(height: AppDimensions.spaceSm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildThemeOption(
+                          "Original",
+                          AppColors.parchmentLight,
+                          AppColors.textOnLight,
+                          setModalState,
+                        ),
+                      ),
+                      const SizedBox(width: AppDimensions.spaceMd),
+                      Expanded(
+                        child: _buildThemeOption(
+                          "Nuit",
+                          AppColors.readingDark,
+                          AppColors.textOnDark,
+                          setModalState,
+                        ),
+                      ),
+                      const SizedBox(width: AppDimensions.spaceMd),
+                      Expanded(
+                        child: _buildThemeOption(
+                          "Sépia",
+                          AppColors.parchment,
+                          AppColors.readingBrownDark,
+                          setModalState,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -1637,61 +1642,64 @@ class _ReadingPageState extends State<ReadingPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => DefaultTabController(
-        length: 3,
-        initialIndex: initialTab,
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          // Meme confusion : la feuille entiere etait peinte dans la couleur
-          // du texte. Elle prend la surface des cartes, comme toutes les
-          // autres feuilles de l'application.
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(AppDimensions.radiusPill),
+      builder: (context) {
+        AppColors.suivreLeTheme(context);
+        return DefaultTabController(
+          length: 3,
+          initialIndex: initialTab,
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            // Meme confusion : la feuille entiere etait peinte dans la couleur
+            // du texte. Elle prend la surface des cartes, comme toutes les
+            // autres feuilles de l'application.
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppDimensions.radiusPill),
+              ),
             ),
-          ),
-          child: Column(
-            children: [
-              SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.textSecondary,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+            child: Column(
+              children: [
+                SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+                  ),
                 ),
-              ),
-              TabBar(
-                indicatorColor: AppColors.primaryLight,
-                labelColor: AppColors.primaryLight,
-                unselectedLabelColor: AppColors.textSecondary,
-                labelStyle: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-                tabs: const [
-                  Tab(text: "Chapitres"),
-                  Tab(text: "Signets"),
-                  Tab(text: "Notes"),
-                ],
-              ),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    // Tab 1: PDF Chapters
-                    _buildChaptersList(),
-                    // Tab 2: User Bookmarks
-                    _buildUserBookmarksList(onlyWithNotes: false),
-                    // Tab 3: User Notes
-                    _buildUserBookmarksList(onlyWithNotes: true),
+                TabBar(
+                  indicatorColor: AppColors.primaryLight,
+                  labelColor: AppColors.primaryLight,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  labelStyle: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  tabs: const [
+                    Tab(text: "Chapitres"),
+                    Tab(text: "Signets"),
+                    Tab(text: "Notes"),
                   ],
                 ),
-              ),
-            ],
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      // Tab 1: PDF Chapters
+                      _buildChaptersList(),
+                      // Tab 2: User Bookmarks
+                      _buildUserBookmarksList(onlyWithNotes: false),
+                      // Tab 3: User Notes
+                      _buildUserBookmarksList(onlyWithNotes: true),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

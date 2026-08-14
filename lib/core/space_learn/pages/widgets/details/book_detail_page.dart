@@ -244,6 +244,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        // Une feuille est une route a part : elle lit la palette sans
+        // s'y abonner, donc elle garde celle du dernier ecran construit.
+        AppColors.suivreLeTheme(context);
         final chaptersList = _chapitres;
         return Container(
           height: MediaQuery.of(context).size.height * 0.75,

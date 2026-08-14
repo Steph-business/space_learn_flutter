@@ -293,6 +293,62 @@ void main() {
     );
   });
 
+  // ── Règle 5 bis ────────────────────────────────────────────────────────
+  // Une feuille est une route à part, et doit s'abonner comme les autres.
+  //
+  // La règle 6 ne regarde que les méthodes `build`. Le corps d'un
+  // `showModalBottomSheet` n'en est pas une : il lisait donc la palette laissée
+  // par le dernier écran construit, et gardait cette teinte tant qu'il restait
+  // ouvert. Le sommaire du lecteur s'affichait noir au-dessus d'une page
+  // claire. Les six feuilles du dépôt étaient dans ce cas — aucune n'était
+  // abonnée.
+  //
+  // Seules comptent celles dont le CORPS lit la palette : `backgroundColor:
+  // AppColors.x` passé en argument est évalué dans le contexte appelant, qui
+  // est abonné, lui.
+  test('les feuilles modales s\'abonnent au thème', () {
+    final fautes = <String>[];
+
+    for (final fichier in _fichiersDart()) {
+      final texte = fichier.readAsStringSync();
+      var i = 0;
+      while (true) {
+        i = texte.indexOf('showModalBottomSheet(', i);
+        if (i < 0) break;
+
+        // Fin de l'appel : la parenthèse qui referme.
+        var profondeur = 0;
+        var j = i + 'showModalBottomSheet'.length;
+        while (j < texte.length) {
+          if (texte[j] == '(') profondeur++;
+          if (texte[j] == ')') {
+            profondeur--;
+            if (profondeur == 0) break;
+          }
+          j++;
+        }
+
+        final appel = texte.substring(i, j);
+        final debutCorps = appel.indexOf('builder:');
+        final corps = debutCorps >= 0 ? appel.substring(debutCorps) : '';
+
+        if (corps.contains('AppColors.') && !corps.contains('suivreLeTheme')) {
+          final ligne = '\n'.allMatches(texte.substring(0, i)).length + 1;
+          fautes.add('${fichier.path}:$ligne');
+        }
+        i = j;
+      }
+    }
+
+    expect(
+      fautes,
+      isEmpty,
+      reason:
+          'Feuille(s) lisant la palette sans AppColors.suivreLeTheme(context) '
+          'en tête de leur builder :\n${fautes.join('\n')}',
+    );
+  });
+
   // ── Règle 6 ────────────────────────────────────────────────────────────
   // Tout écran qui lit la palette doit s'abonner au thème.
   //

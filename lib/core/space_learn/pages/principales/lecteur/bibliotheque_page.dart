@@ -561,6 +561,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        // Une feuille est une route a part : elle lit la palette sans
+        // s'y abonner, donc elle garde celle du dernier ecran construit.
+        AppColors.suivreLeTheme(context);
         return Container(
           padding: EdgeInsets.symmetric(vertical: 24),
           decoration: BoxDecoration(
