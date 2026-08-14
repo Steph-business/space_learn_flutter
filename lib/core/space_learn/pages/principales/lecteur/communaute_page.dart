@@ -10,12 +10,13 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
-import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'recherche_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/salon_noms.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/evenement_detail_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/carte_evenement.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenement_apercu.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenements_page.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -531,126 +532,75 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
   /// deux publications, on voyait une carte s'arreter aux trois quarts de
   /// l'ecran et un grand vide a droite, sans rien indiquant qu'il fallait
   /// faire defiler. Une annonce se lit, elle ne se parcourt pas du regard.
+  /// Nombre de publications montrees sur la page communaute.
+  ///
+  /// Elles y etaient toutes deroulees : avec une dizaine d'annonces il fallait
+  /// faire defiler longtemps avant d'atteindre les clubs de lecture, qui sont
+  /// pourtant l'essentiel de cette page. Trois donnent le ton, le reste tient
+  /// dans sa propre page.
+  static const int _apercuEvenements = 3;
+
+  void _ouvrirTousLesEvenements() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EvenementsPage(
+          evenements: _evenements,
+          titre: "Actualites de vos auteurs",
+          // Cote lecteur, il n'y a rien a faire d'une publication qu'on ne
+          // peut ni modifier ni supprimer : on la lit, on revient.
+          onOuvrir: afficherEvenement,
+        ),
+      ),
+    );
+  }
+
   Widget _buildEvenementsSection() {
+    final apercu = _evenements.take(_apercuEvenements).toList();
+    final reste = _evenements.length - apercu.length;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        children: List.generate(_evenements.length, (index) {
-          final evt = _evenements[index];
-          final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
-          // AppColors.success est la couleur de confirmation. L'employer en
-          // decor lui retire son sens partout ailleurs : quand un vrai succes
-          // s'affiche, il ne se distingue plus de rien. L'icone suffit a
-          // separer une annonce d'un evenement.
-          final colorType = AppColors.accentInk;
-          final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
-
-          // La carte s'ouvre.
-          //
-          // Son texte est coupe a trois lignes et rien ne permettait de lire
-          // la suite : une annonce d'auteur s'arretait au milieu d'une phrase,
-          // definitivement. Cote auteur, la meme carte menait deja au detail.
-          return GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EvenementDetailPage(evenement: evt),
+        children: [
+          for (var i = 0; i < apercu.length; i++)
+            Padding(
+              padding: EdgeInsets.only(bottom: i == apercu.length - 1 ? 0 : 12),
+              child: CarteEvenement(
+                evenement: apercu[i],
+                onTap: () => afficherEvenement(context, apercu[i]),
               ),
             ),
-            child: Container(
-              width: double.infinity,
-              margin: EdgeInsets.only(
-                bottom: index == _evenements.length - 1 ? 0 : 12,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-                border: Border.all(color: colorType.withOpacity(0.3)),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colorType.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
-                          ),
-                        ),
-                        child: Icon(iconType, color: colorType, size: 16),
+          if (reste > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _ouvrirTousLesEvenements,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.accentInk,
+                    side: BorderSide(color: AppColors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusCard,
                       ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          (evt.categorie?.trim().isNotEmpty ?? false)
-                              ? evt.categorie!.trim().toUpperCase()
-                              : evt.typePublication.toUpperCase(),
-                          style: GoogleFonts.poppins(
-                            color: colorType,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ),
-                      if (evt.dateEvenement != null)
-                        Text(
-                          DateFormat(
-                            'd MMM yyyy',
-                            'fr_FR',
-                          ).format(evt.dateEvenement!),
-                          style: GoogleFonts.poppins(
-                            color: AppColors.textHint,
-                            fontSize: 10,
-                          ),
-                        ),
-                    ],
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    evt.titre,
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 6),
-                  Text(
-                    evt.contenu,
-                    style: AppTextStyles.grey12,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                  child: Text(
+                    reste == 1
+                        ? "Voir 1 autre publication"
+                        : "Voir les $reste autres publications",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
-                  SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person,
-                        size: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        "Événement Communauté",
-                        style: GoogleFonts.poppins(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
-          );
-        }),
+        ],
       ),
     );
   }

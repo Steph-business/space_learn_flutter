@@ -16,9 +16,10 @@ import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.d
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
-import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/evenement_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/salon_noms.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/carte_evenement.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenements_page.dart';
 
 class TeamsPage extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -738,117 +739,91 @@ class _TeamsPageState extends State<TeamsPage> {
   ///
   /// Verticale et pleine largeur : le texte respire, et la hauteur suit le
   /// contenu au lieu d'être figée.
+  /// Nombre de publications montrees sur la page communaute.
+  ///
+  /// Elles y etaient toutes deroulees : un auteur qui publie regulierement
+  /// devait faire defiler longtemps avant d'atteindre ses clubs de lecture.
+  /// Trois donnent le ton, le reste tient dans sa propre page.
+  static const int _apercuEvenements = 3;
+
+  /// Ouvre une publication.
+  ///
+  /// L'auteur passe par la page, et non par une feuille : c'est la que se
+  /// trouvent ses boutons de modification et de suppression. Le lecteur, qui
+  /// n'a rien a y faire, la lit en feuille sans quitter sa liste.
+  Future<void> _ouvrirPublication(BuildContext context, Evenement evt) async {
+    final resultat = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EvenementDetailPage(evenement: evt),
+      ),
+    );
+    if (resultat == true && mounted) _loadData();
+  }
+
+  void _ouvrirToutesLesPublications() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EvenementsPage(
+          evenements: _evenements,
+          titre: "Vos publications",
+          onOuvrir: _ouvrirPublication,
+        ),
+      ),
+    ).then((_) {
+      if (mounted) _loadData();
+    });
+  }
+
   Widget _buildEvenementsSection() {
+    final apercu = _evenements.take(_apercuEvenements).toList();
+    final reste = _evenements.length - apercu.length;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          for (final evt in _evenements) ...[
-            _cartePublication(evt),
-            if (evt != _evenements.last)
-              const SizedBox(height: AppDimensions.spaceMd),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _cartePublication(Evenement evt) {
-    final isAnnonce = evt.typePublication.toLowerCase() == "annonce";
-    // L'annonce et l'événement se distinguent par leur icône et leur libellé.
-    // Le vert d'AppColors.success servait ici de décor, ce qui lui retirait son
-    // sens de confirmation partout ailleurs dans l'application.
-    final iconType = isAnnonce ? Iconsax.notification : Iconsax.calendar;
-
-    return GestureDetector(
-      onTap: () async {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EvenementDetailPage(evenement: evt),
-          ),
-        );
-        if (result == true) _loadData();
-      },
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-          border: Border.all(color: AppColors.border),
-        ),
-        padding: const EdgeInsets.all(AppDimensions.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusSmall,
+          for (var i = 0; i < apercu.length; i++)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: i == apercu.length - 1 ? 0 : AppDimensions.spaceMd,
+              ),
+              child: CarteEvenement(
+                evenement: apercu[i],
+                onTap: () => _ouvrirPublication(context, apercu[i]),
+              ),
+            ),
+          if (reste > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: AppDimensions.spaceMd),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _ouvrirToutesLesPublications,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.accentInk,
+                    side: BorderSide(color: AppColors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusCard,
+                      ),
                     ),
                   ),
-                  child: Icon(iconType, color: AppColors.accentInk, size: 16),
-                ),
-                const SizedBox(width: AppDimensions.spaceMd),
-                Expanded(
                   child: Text(
-                    // La categorie dit ce qu'est reellement l'evenement —
-                    // « Seance de Dedicace » plutot que « EVENEMENT ».
-                    (evt.categorie?.trim().isNotEmpty ?? false)
-                        ? evt.categorie!.trim().toUpperCase()
-                        : evt.typePublication.toUpperCase(),
+                    reste == 1
+                        ? "Voir 1 autre publication"
+                        : "Voir vos $reste autres publications",
                     style: GoogleFonts.poppins(
-                      color: AppColors.accentInk,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
                 ),
-                if (evt.dateEvenement != null)
-                  Text(
-                    DateFormat(
-                      'd MMM yyyy',
-                      'fr_FR',
-                    ).format(evt.dateEvenement!),
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textHint,
-                      fontSize: 11,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.spaceMd),
-            Text(
-              evt.titre,
-              style: GoogleFonts.poppins(
-                color: AppColors.textPrimary,
-                fontSize: 15.5,
-                fontWeight: FontWeight.w700,
-                height: 1.3,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
-            if (evt.contenu.trim().isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                evt.contenu,
-                style: GoogleFonts.poppins(
-                  color: AppColors.textSecondary,
-                  fontSize: 12.5,
-                  height: 1.45,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ],
-        ),
+        ],
       ),
     );
   }
