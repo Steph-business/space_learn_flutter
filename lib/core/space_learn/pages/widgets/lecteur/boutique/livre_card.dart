@@ -33,6 +33,16 @@ class LivreCard extends StatelessWidget {
   /// pour que la grille calcule son rapport à partir d'une seule source.
   static const double hauteurTexte = 104;
 
+  /// Hauteur totale d'une carte pour une largeur donnée.
+  ///
+  /// Une carte trop courte rogne la couverture ou fait déborder le texte, et
+  /// rien ne le signale à la compilation — un débordement ne se voit qu'à
+  /// l'écran. Chaque endroit qui pose une carte demande donc sa hauteur ici,
+  /// plutôt que de deviner un nombre : la grille de la boutique comme les
+  /// carrousels de l'accueil.
+  static double hauteurPour(double largeur) =>
+      largeur / rapportCouverture + hauteurTexte;
+
   bool get _estGratuit => book.prix <= 0;
 
   @override

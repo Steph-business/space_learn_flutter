@@ -808,6 +808,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
   // Helpers UI du nouveau design
 
+  /// Largeur d'une carte de livre sur l'accueil.
+  ///
+  /// Reprise de la boutique : deux colonnes sur un ecran ordinaire y donnent
+  /// environ cette largeur, si bien qu'un meme ouvrage a la meme taille d'un
+  /// ecran a l'autre.
+  static const double _largeurCarte = 160;
+
   Widget _buildFeaturedHorizontalList() {
     List<BookModel> displayBooks = [];
     if (_featuredBooks.isNotEmpty) {
@@ -817,11 +824,17 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     }
 
     if (displayBooks.isEmpty) {
-      return SizedBox(height: 250);
+      return SizedBox(height: LivreCard.hauteurPour(_largeurCarte));
     }
 
+    // Meme carte qu'en boutique, donc meme hauteur.
+    //
+    // Elle etait posee dans une bande de 250 px : la couverture y tenait ce
+    // qu'elle pouvait et le texte debordait par le bas, sans que rien ne le
+    // signale a la compilation. La hauteur se demande maintenant a la carte
+    // elle-meme, qui seule connait ses proportions.
     return SizedBox(
-      height: 250,
+      height: LivreCard.hauteurPour(_largeurCarte),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -829,9 +842,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         itemBuilder: (context, index) {
           final book = displayBooks[index];
           return Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 14),
             child: SizedBox(
-              width: 160,
+              width: _largeurCarte,
               child: LivreCard(
                 book: book,
                 isOwned: _ownedBookIds.contains(book.id),
@@ -937,8 +950,14 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       return const SizedBox.shrink();
     }
 
+    // Meme carte qu'en boutique, donc meme hauteur.
+    //
+    // Elle etait posee dans une bande de 250 px : la couverture y tenait ce
+    // qu'elle pouvait et le texte debordait par le bas, sans que rien ne le
+    // signale a la compilation. La hauteur se demande maintenant a la carte
+    // elle-meme, qui seule connait ses proportions.
     return SizedBox(
-      height: 250,
+      height: LivreCard.hauteurPour(_largeurCarte),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -946,9 +965,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         itemBuilder: (context, index) {
           final book = displayBooks[index];
           return Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 14),
             child: SizedBox(
-              width: 160,
+              width: _largeurCarte,
               child: LivreCard(
                 book: book,
                 isOwned: _ownedBookIds.contains(book.id),
