@@ -41,11 +41,17 @@ class CustomSearchBar extends StatelessWidget {
                   size: 20,
                 ),
                 SizedBox(width: 12),
+                // Le champ occupe toute la hauteur et centre son texte.
+                //
+                // Il etait pose avec `isDense` et une marge nulle dans une
+                // barre de 48 px : la ligne de base tombait trop haut, et
+                // l'invite paraissait rognee par le bord superieur.
                 Expanded(
                   child: TextField(
                     controller: controller,
                     onChanged: onChanged,
                     readOnly: onChanged == null,
+                    textAlignVertical: TextAlignVertical.center,
                     onTap: onChanged == null
                         ? () {
                             Navigator.push(
@@ -64,11 +70,33 @@ class CustomSearchBar extends StatelessWidget {
                         fontSize: 14,
                       ),
                       border: InputBorder.none,
-                      isDense: true,
+                      isCollapsed: true,
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
                 ),
+                // Effacer, sans avoir a viser la petite croix du clavier.
+                if (controller != null && onChanged != null)
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: controller!,
+                    builder: (context, valeur, _) {
+                      if (valeur.text.isEmpty) return const SizedBox.shrink();
+                      return GestureDetector(
+                        onTap: () {
+                          controller!.clear();
+                          onChanged!('');
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),

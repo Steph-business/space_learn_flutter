@@ -56,6 +56,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
   bool _isLoadingReviews = true;
   final LibraryService _libraryService = LibraryService();
   bool _isOwned = false;
+  bool _acquisitionEnCours = false;
+
+  /// Un livre a prix nul.
+  bool get _estGratuit => widget.book.prix <= 0;
   bool _isLoadingOwnership = true;
 
   final ReadingProgressService _readingProgressService =
@@ -962,6 +966,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           style: TextStyle(color: AppColors.textPrimary),
                         ),
                       )
+                    // Un livre gratuit ne se vend pas.
+                    //
+                    // Proposer un panier et un bouton « Acheter » sur un
+                    // ouvrage a prix nul, c'est demander de payer ce que
+                    // l'auteur a decide de donner. On l'ouvre, c'est tout.
+                    : !isOwned && _estGratuit
+                    ? _boutonLireGratuitement()
                     : !isOwned
                     ? widget.showCart
                           ? Column(
@@ -1379,6 +1390,90 @@ class _BookDetailPageState extends State<BookDetailPage> {
         ),
       ),
     );
+  }
+
+  /// Le seul bouton d'un livre gratuit.
+  ///
+  /// Il fait les deux gestes d'un coup : le livre entre dans la bibliotheque —
+  /// sans quoi le lecteur ne pourrait ni le retrouver ni reprendre ou il en
+  /// etait — puis la lecture s'ouvre. Le serveur verifie le prix ; l'appel
+  /// echoue si l'ouvrage n'est pas reellement gratuit.
+  Widget _boutonLireGratuitement() {
+    return SizedBox(
+      height: 50,
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _acquisitionEnCours ? null : _lireGratuitement,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.success,
+          foregroundColor: AppColors.onAccent,
+          disabledBackgroundColor: AppColors.success.withValues(alpha: 0.6),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+          ),
+        ),
+        child: _acquisitionEnCours
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.onAccent,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.menu_book, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    "Lire gratuitement",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Future<void> _lireGratuitement() async {
+    setState(() => _acquisitionEnCours = true);
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) {
+        if (!mounted) return;
+        AppNotifications.showSnackBar(
+          context,
+          message: "Votre session a expiré. Reconnectez-vous.",
+          isError: true,
+        );
+        return;
+      }
+
+      await LibraryService().acquerirGratuitement(widget.book.id, token);
+      if (!mounted) return;
+
+      setState(() => _isOwned = true);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ReadingPage(book: widget.book.toJson()),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: "Le livre n'a pas pu être ouvert. Vérifiez votre connexion.",
+        isError: true,
+      );
+    } finally {
+      if (mounted) setState(() => _acquisitionEnCours = false);
+    }
   }
 
   Widget _buildPlaceholderCover() {

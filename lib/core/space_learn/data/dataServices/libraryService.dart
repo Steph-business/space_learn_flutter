@@ -9,37 +9,44 @@ class LibraryService {
 
   LibraryService({http.Client? client}) : client = client ?? ApiClient.instance;
 
-  Future<LibraryModel> addToLibrary(
+  /// Met un livre gratuit dans la bibliotheque du lecteur.
+  ///
+  /// Le client ne dit plus comment il l'acquiert : il envoyait « GRATUIT »,
+  /// valeur que le serveur rejetait — la lecture d'un livre gratuit ne
+  /// fonctionnait donc pas du tout. Et le champ etait libre, si bien qu'un
+  /// « achat » declare suffisait a s'offrir n'importe quel ouvrage payant.
+  /// C'est le serveur qui verifie le prix et decide.
+  ///
+  /// Les livres payants entrent par la confirmation d'un paiement, jamais ici.
+  Future<LibraryModel> acquerirGratuitement(
     String livreId,
-    String utilisateurId,
-    String acquisVia,
     String authToken,
   ) async {
-    final uri = Uri.parse(ApiRoutes.library);
-    try {
-      final response = await client
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $authToken',
-            },
-            body: jsonEncode({
-              'livre_id': livreId,
-              'utilisateur_id': utilisateurId,
-              'acquis_via': acquisVia,
-            }),
-          )
-          .timeout(const Duration(seconds: 15)); // Add timeout
-      if (response.statusCode == 201) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        return LibraryModel.fromJson(responseData['data'] ?? responseData);
-      } else {
-        throw Exception('Failed to add to library: ${response.statusCode}');
-      }
-    } catch (e) {
-      rethrow;
+    final response = await client
+        .post(
+          Uri.parse(ApiRoutes.library),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $authToken',
+          },
+          body: jsonEncode({'livre_id': livreId}),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    // 409 : le livre y est deja. C'est le resultat voulu, pas un echec — le
+    // lecteur a pu appuyer deux fois, ou revenir sur la fiche.
+    if (response.statusCode == 201 ||
+        response.statusCode == 200 ||
+        response.statusCode == 409) {
+      final Map<String, dynamic> corps = jsonDecode(response.body);
+      return LibraryModel.fromJson(corps['data'] ?? corps);
     }
+    if (response.statusCode == 402) {
+      throw Exception('Ce livre est payant.');
+    }
+    throw Exception(
+      'Ajout à la bibliothèque impossible (${response.statusCode})',
+    );
   }
 
   Future<List<LibraryModel>> getUserLibrary(String authToken) async {

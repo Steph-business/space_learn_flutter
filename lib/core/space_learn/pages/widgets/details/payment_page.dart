@@ -107,10 +107,8 @@ class _PaymentPageState extends State<PaymentPage> {
                         if (token != null) {
                           final bookId = widget.book['id']?.toString() ?? '';
                           if (bookId.isNotEmpty) {
-                            await LibraryService().addToLibrary(
+                            await LibraryService().acquerirGratuitement(
                               bookId,
-                              profileId,
-                              'GRATUIT',
                               token,
                             );
                           }
@@ -378,10 +376,8 @@ class _PaymentPageState extends State<PaymentPage> {
       }
 
       // Si gratuit
-      await libraryService.addToLibrary(
+      await libraryService.acquerirGratuitement(
         widget.book['id']?.toString() ?? "",
-        user.id,
-        "gratuit",
         token,
       );
 

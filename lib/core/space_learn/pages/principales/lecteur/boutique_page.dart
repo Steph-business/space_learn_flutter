@@ -131,6 +131,50 @@ class _MarketplacePageState extends State<MarketplacePage> {
     }
   }
 
+  /// Recherche ou filtre sans resultat.
+  ///
+  /// La grille se contentait de ne rien afficher : une page vide ressemble a
+  /// un chargement qui n'a pas abouti, et rien n'indiquait qu'il suffisait de
+  /// changer de mot.
+  Widget _aucunResultat() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(40, 60, 40, 60),
+      child: Column(
+        children: [
+          Icon(Icons.search_off_rounded, size: 44, color: AppColors.textHint),
+          const SizedBox(height: 14),
+          Text(
+            _searchQuery.isNotEmpty
+                ? "Aucun livre ne correspond à « $_searchQuery »."
+                : "Aucun livre dans cette catégorie.",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          if (_searchQuery.isNotEmpty || _selectedCategory != "Tout") ...[
+            const SizedBox(height: 14),
+            TextButton(
+              onPressed: () => setState(() {
+                _searchQuery = '';
+                _searchController.clear();
+                _selectedCategory = "Tout";
+              }),
+              child: Text(
+                "Voir tout le catalogue",
+                style: GoogleFonts.poppins(
+                  color: AppColors.accentInk,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   void _onCategorySelected(String category) {
     setState(() {
       _selectedCategory = category;
@@ -247,28 +291,53 @@ class _MarketplacePageState extends State<MarketplacePage> {
             ),
           ),
 
-          // Books Grid
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.68,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 12,
+          // Sans resultat, on remplace la grille — et elle seule. Un retour
+          // anticipe emporterait la barre de recherche et les categories avec
+          // lui, laissant le lecteur sans moyen d'effacer ce qu'il a tape.
+          if (filteredBooks.isEmpty)
+            _aucunResultat()
+          else
+            // La grille se cale sur la carte, et non l'inverse.
+            //
+            // Le rapport valait 0,68 en dur : la couverture recevait ce que le
+            // texte laissait, donc une hauteur variable qu'il fallait rogner.
+            // On part maintenant de la largeur reelle d'une colonne, on lui
+            // ajoute la hauteur d'une couverture au rapport d'un livre, puis
+            // celle du bloc de texte. Rien ne deborde, rien n'est coupe.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: LayoutBuilder(
+                builder: (context, contraintes) {
+                  const colonnes = 2;
+                  const ecart = 14.0;
+                  final largeurCarte =
+                      (contraintes.maxWidth - ecart * (colonnes - 1)) /
+                      colonnes;
+                  final hauteurCarte =
+                      largeurCarte / LivreCard.rapportCouverture +
+                      LivreCard.hauteurTexte;
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: colonnes,
+                      childAspectRatio: largeurCarte / hauteurCarte,
+                      crossAxisSpacing: ecart,
+                      mainAxisSpacing: ecart,
+                    ),
+                    itemCount: filteredBooks.length,
+                    itemBuilder: (context, index) {
+                      final book = filteredBooks[index];
+                      return LivreCard(
+                        book: book,
+                        isOwned: _ownedBookIds.contains(book.id),
+                      );
+                    },
+                  );
+                },
               ),
-              itemCount: filteredBooks.length,
-              itemBuilder: (context, index) {
-                final book = filteredBooks[index];
-                return LivreCard(
-                  book: book,
-                  isOwned: _ownedBookIds.contains(book.id),
-                );
-              },
             ),
-          ),
           SizedBox(height: 100),
         ],
       );
