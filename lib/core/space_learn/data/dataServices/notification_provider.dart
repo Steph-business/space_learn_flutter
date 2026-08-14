@@ -172,48 +172,86 @@ class NotificationProvider extends ChangeNotifier {
         );
   }
 
+  /// Le meme modele, marque comme lu.
+  ///
+  /// NotificationModel n'a pas de copyWith : recopier ses neuf champs a chaque
+  /// endroit qui en modifie un est un piege — le jour ou l'on en ajoute un,
+  /// chaque copie oubliee le perd sans bruit. Une seule copie a tenir.
+  NotificationModel _marquee(NotificationModel n) => NotificationModel(
+    id: n.id,
+    utilisateurId: n.utilisateurId,
+    type: n.type,
+    contenu: n.contenu,
+    lu: true,
+    creeLe: n.creeLe,
+    role: n.role,
+    referenceId: n.referenceId,
+    data: n.data,
+  );
+
+  /// Marque une notification comme lue, dans les deux listes.
+  ///
+  /// Il y en a deux : `_notifications`, a plat, et `_groupedNotifications`,
+  /// par role. La page des notifications lit la seconde ; cette methode ne
+  /// touchait que la premiere. Une notification ouverte restait donc affichee
+  /// comme non lue, et le filtre « non lues » continuait de la montrer —
+  /// exactement le contraire de ce qu'on attend en la lisant.
   Future<void> markAsRead(String id, String token) async {
     try {
       await _service.markAsRead(id, token);
+
       final index = _notifications.indexWhere((n) => n.id == id);
       if (index != -1) {
-        final old = _notifications[index];
-        _notifications[index] = NotificationModel(
-          id: old.id,
-          utilisateurId: old.utilisateurId,
-          type: old.type,
-          contenu: old.contenu,
-          lu: true,
-          creeLe: old.creeLe,
-          role: old.role,
-          referenceId: old.referenceId,
-          data: old.data,
-        );
-        notifyListeners();
+        _notifications[index] = _marquee(_notifications[index]);
       }
+
+      for (final role in _groupedNotifications.keys) {
+        final liste = _groupedNotifications[role]!;
+        final i = liste.indexWhere((n) => n.id == id);
+        if (i != -1) liste[i] = _marquee(liste[i]);
+      }
+
+      notifyListeners();
     } catch (e) {}
   }
 
   Future<void> markAllAsRead(String token) async {
     try {
       await _service.markAllAsRead(token);
-      _notifications = _notifications
-          .map(
-            (n) => NotificationModel(
-              id: n.id,
-              utilisateurId: n.utilisateurId,
-              type: n.type,
-              contenu: n.contenu,
-              lu: true,
-              creeLe: n.creeLe,
-              role: n.role,
-              referenceId: n.referenceId,
-              data: n.data,
-            ),
-          )
-          .toList();
+      _notifications = _notifications.map(_marquee).toList();
+      _groupedNotifications = _groupedNotifications.map(
+        (role, liste) => MapEntry(role, liste.map(_marquee).toList()),
+      );
       notifyListeners();
     } catch (e) {}
+  }
+
+  /// Retire une notification, ici et sur le serveur.
+  ///
+  /// L'affichage est mis a jour avant la reponse pour que le geste reponde
+  /// tout de suite ; si le serveur refuse, elle revient a sa place plutot que
+  /// de disparaitre d'un ecran ou elle existe encore.
+  Future<bool> supprimer(String id, String token) async {
+    final avantPlat = List<NotificationModel>.from(_notifications);
+    final avantGroupe = _groupedNotifications.map(
+      (role, liste) => MapEntry(role, List<NotificationModel>.from(liste)),
+    );
+
+    _notifications.removeWhere((n) => n.id == id);
+    for (final liste in _groupedNotifications.values) {
+      liste.removeWhere((n) => n.id == id);
+    }
+    notifyListeners();
+
+    try {
+      await _service.deleteNotification(id, token);
+      return true;
+    } catch (e) {
+      _notifications = avantPlat;
+      _groupedNotifications = avantGroupe;
+      notifyListeners();
+      return false;
+    }
   }
 
   @override

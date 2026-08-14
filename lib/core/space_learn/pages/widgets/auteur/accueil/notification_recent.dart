@@ -9,6 +9,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/notificat
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 /// Le type, en francais.
 ///
@@ -51,12 +52,24 @@ class RecentNotificationsPage extends StatefulWidget {
   /// non une absence.
   final String? messageVide;
 
+  /// Icône affichée dans l'état vide (optionnel, sinon icone cloche par défaut).
+  final IconData? emptyIcon;
+
+  /// Animation de fondu pour l'état vide (optionnel).
+  final Animation<double>? emptyFadeAnimation;
+
+  /// Animation de glissement pour l'état vide (optionnel).
+  final Animation<Offset>? emptySlideAnimation;
+
   const RecentNotificationsPage({
     super.key,
     this.onTapOpenNotifications,
     this.customNotifications,
     this.title,
     this.messageVide,
+    this.emptyIcon,
+    this.emptyFadeAnimation,
+    this.emptySlideAnimation,
   });
 
   @override
@@ -124,6 +137,23 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
     return AppColors.primary;
   }
 
+  Future<void> _supprimer(BuildContext context, NotificationModel notif) async {
+    final provider = context.read<NotificationProvider>();
+    final token = await TokenStorage.getToken();
+    if (token == null) return;
+
+    final retire = await provider.supprimer(notif.id, token);
+    if (!retire && context.mounted) {
+      // Elle est revenue a sa place : il faut le dire, sinon on croit l'avoir
+      // ecartee et on la retrouve au prochain affichage sans comprendre.
+      AppNotifications.showSnackBar(
+        context,
+        message: "La notification n'a pas pu être retirée.",
+        isError: true,
+      );
+    }
+  }
+
   /// Navigate based on notification type and reference
   Future<void> _handleNotificationTap(
     BuildContext context,
@@ -159,28 +189,58 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
     }
 
     if (notifications.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 60),
-          child: Column(
-            children: [
-              Icon(
-                Iconsax.notification_bing,
-                size: 64,
-                color: AppColors.textPrimary.withOpacity(0.2),
+      Widget emptyContent = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 80),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                shape: BoxShape.circle,
               ),
-              SizedBox(height: 16),
-              Text(
-                widget.messageVide ?? 'Aucune notification.',
-                style: GoogleFonts.poppins(
-                  color: AppColors.textPrimary.withOpacity(0.5),
-                  fontSize: 16,
-                ),
+              child: Icon(
+                widget.emptyIcon ?? Iconsax.notification_bing,
+                size: 40,
+                color: AppColors.textPrimary.withOpacity(0.25),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              widget.messageVide ?? 'Aucune notification.',
+              style: GoogleFonts.poppins(
+                color: AppColors.textPrimary.withOpacity(0.5),
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Revenez plus tard',
+              style: GoogleFonts.poppins(
+                color: AppColors.textPrimary.withOpacity(0.3),
+                fontSize: 12.5,
+              ),
+            ),
+          ],
         ),
       );
+
+      if (widget.emptyFadeAnimation != null) {
+        emptyContent = FadeTransition(
+          opacity: widget.emptyFadeAnimation!,
+          child: widget.emptySlideAnimation != null
+              ? SlideTransition(
+                  position: widget.emptySlideAnimation!,
+                  child: emptyContent,
+                )
+              : emptyContent,
+        );
+      }
+
+      return Center(child: emptyContent);
     }
 
     return Column(
@@ -205,12 +265,33 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
           itemCount: notifications.length,
           itemBuilder: (context, index) {
             final notif = notifications[index];
-            return _NotificationCardFromModel(
-              model: notif,
-              icon: _iconForType(notif.type),
-              accentColor: _accentColorForType(notif.type),
-              timeAgo: _formatTimeAgo(notif.creeLe),
-              onTap: () => _handleNotificationTap(context, notif),
+            // Ecarter sans ouvrir.
+            //
+            // La seule facon de se debarrasser d'une notification etait de la
+            // lire : pour dix rappels sur le meme livre, dix ouvertures. Le
+            // glissement lateral est le geste attendu partout, et la route de
+            // suppression existait deja cote serveur.
+            return Dismissible(
+              key: ValueKey(notif.id),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 24),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+                ),
+                child: Icon(Iconsax.trash, color: AppColors.error, size: 20),
+              ),
+              onDismissed: (_) => _supprimer(context, notif),
+              child: _NotificationCardFromModel(
+                model: notif,
+                icon: _iconForType(notif.type),
+                accentColor: _accentColorForType(notif.type),
+                timeAgo: _formatTimeAgo(notif.creeLe),
+                onTap: () => _handleNotificationTap(context, notif),
+              ),
             );
           },
         ),
