@@ -1441,11 +1441,23 @@ class _BookDetailPageState extends State<BookDetailPage> {
       await LibraryService().acquerirGratuitement(widget.book.id, token);
       if (!mounted) return;
 
+      // Le livre est relu apres l'acquisition, et ce n'est pas un luxe.
+      //
+      // Le serveur masque l'adresse du manuscrit tant que le lecteur ne
+      // possede pas l'ouvrage. L'objet affiche sur cette fiche a donc ete
+      // recu SANS elle : le passer tel quel au lecteur donnait « Aucun fichier
+      // disponible pour ce livre » sur un livre qu'on venait d'obtenir.
+      final aJour = await BookService().getBookById(
+        widget.book.id,
+        authToken: token,
+      );
+      if (!mounted) return;
+
       setState(() => _isOwned = true);
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ReadingPage(book: widget.book.toJson()),
+          builder: (context) => ReadingPage(book: aJour.toJson()),
         ),
       );
     } catch (e) {

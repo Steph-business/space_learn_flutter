@@ -148,8 +148,24 @@ class _ReadingPageState extends State<ReadingPage> {
     final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
 
     if (pdfUrl == null || pdfUrl.isEmpty || bookId.isEmpty) {
+      // Deux causes tres differentes, un seul message jusqu'ici.
+      //
+      // Le serveur masque l'adresse du manuscrit tant que le lecteur ne
+      // possede pas l'ouvrage. Un fichier absent et un livre non acquis
+      // arrivaient donc ici de la meme facon, et le lecteur lisait « aucun
+      // fichier disponible » alors que le fichier existe et qu'il lui manque
+      // seulement de l'obtenir.
+      //
+      // Le drapeau a_un_fichier existe pour cela : il est calcule avant le
+      // masquage, et dit si un manuscrit est depose.
+      final aUnFichier =
+          widget.book['a_un_fichier'] == true ||
+          widget.book['aUnFichier'] == true;
+
       setState(() {
-        _loadError = "Aucun fichier disponible pour ce livre.";
+        _loadError = aUnFichier
+            ? "Ce livre n'est pas encore dans votre bibliothèque."
+            : "Aucun fichier disponible pour ce livre.";
       });
       return;
     }
