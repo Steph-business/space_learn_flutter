@@ -232,6 +232,43 @@ void main() {
     );
   });
 
+  // ── Règle 4 bis ────────────────────────────────────────────────────────
+  // Une couleur de texte n'est pas une surface.
+  //
+  // La barre de recherche du lecteur peignait son fond en AppColors
+  // .textPrimary — la couleur la plus contrastée de la palette, faite pour
+  // être LUE sur un fond, jamais pour en être un — puis y posait du texte
+  // noir. En thème clair, textPrimary est presque noir : on tapait donc du
+  // noir sur du noir, sans voir ce qu'on cherchait. La feuille du sommaire
+  // faisait la même chose sur toute sa hauteur.
+  //
+  // La règle ne vise que textPrimary à pleine intensité : une teinte à faible
+  // opacité fait une surface discrète légitime, et textHint ou textSecondary
+  // servent parfois de trait — une poignée, une piste de progression.
+  test('aucune couleur de texte ne sert de surface', () {
+    final texteEnSurface = RegExp(
+      r'BoxDecoration\(\s*color:\s*AppColors\.textPrimary\s*,',
+      multiLine: true,
+    );
+    final fautes = <String>[];
+
+    for (final fichier in _fichiersDart()) {
+      final source = fichier.readAsStringSync();
+      for (final m in texteEnSurface.allMatches(source)) {
+        final ligne = source.substring(0, m.start).split('\n').length;
+        fautes.add('${fichier.path}:$ligne');
+      }
+    }
+
+    expect(
+      fautes,
+      isEmpty,
+      reason:
+          'AppColors.textPrimary employé comme fond. Utiliser cardBackground, '
+          'surfaceVariant ou scaffoldBackground :\n${fautes.join('\n')}',
+    );
+  });
+
   // ── Règle 5 ────────────────────────────────────────────────────────────
   // Quatorze rayons distincts circulaient (2, 3, 4, 6, 8, 10, 12, 14, 15, 16,
   // 20, 24, 28, 30) : deux cartes voisines n'avaient pas le même arrondi.

@@ -1642,9 +1642,14 @@ class _ReadingPageState extends State<ReadingPage> {
         initialIndex: initialTab,
         child: Container(
           height: MediaQuery.of(context).size.height * 0.7,
+          // Meme confusion : la feuille entiere etait peinte dans la couleur
+          // du texte. Elle prend la surface des cartes, comme toutes les
+          // autres feuilles de l'application.
           decoration: BoxDecoration(
-            color: AppColors.textPrimary,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppDimensions.radiusPill),
+            ),
           ),
           child: Column(
             children: [
@@ -1660,7 +1665,7 @@ class _ReadingPageState extends State<ReadingPage> {
               TabBar(
                 indicatorColor: AppColors.primaryLight,
                 labelColor: AppColors.primaryLight,
-                unselectedLabelColor: Colors.grey,
+                unselectedLabelColor: AppColors.textSecondary,
                 labelStyle: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
@@ -2008,9 +2013,14 @@ class _ReadingPageState extends State<ReadingPage> {
       child: Container(
         height: 50,
         padding: EdgeInsets.symmetric(horizontal: 16),
+        // Le fond etait AppColors.textPrimary — une couleur de TEXTE employee
+        // comme surface — avec du texte noir par-dessus. En theme clair,
+        // textPrimary est presque noir : on tapait donc du noir sur du noir,
+        // sans voir ce qu'on cherchait.
         decoration: BoxDecoration(
-          color: AppColors.textPrimary,
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
@@ -2020,10 +2030,10 @@ class _ReadingPageState extends State<ReadingPage> {
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: TextStyle(color: Colors.black87, fontSize: 14),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'Rechercher dans le texte...',
-                  hintStyle: TextStyle(color: Colors.grey),
+                  hintStyle: TextStyle(color: AppColors.textHint),
                   border: InputBorder.none,
                 ),
                 onChanged: (value) {
@@ -2046,7 +2056,7 @@ class _ReadingPageState extends State<ReadingPage> {
               Text(
                 '${_searchResult!.currentInstanceIndex} / ${_searchResult!.totalInstanceCount}',
                 style: GoogleFonts.poppins(
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
