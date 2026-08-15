@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'preparation_texte.dart';
 
@@ -77,6 +78,14 @@ class TtsService extends ChangeNotifier {
   EtatVoix _etatVoix = EtatVoix.inconnu;
   String? _nomVoix;
 
+  /// Les voix francaises installees sur l'appareil, la meilleure d'abord.
+  ///
+  /// Le service en choisissait une et gardait la liste pour lui. Or les
+  /// moteurs en proposent souvent plusieurs — masculine, feminine, de qualites
+  /// differentes — et laquelle « sonne bien » ne se decide pas depuis le code :
+  /// cela s'ecoute.
+  List<Map<String, String>> _voixDisponibles = const [];
+
   /// Plafond réellement accepté, lu sur l'appareil.
   ///
   /// Android accepte jusqu'à 1,5 sur l'échelle du greffon ; iOS écrête tout
@@ -101,6 +110,7 @@ class TtsService extends ChangeNotifier {
 
   EtatVoix get etatVoix => _etatVoix;
   String? get nomVoix => _nomVoix;
+  List<Map<String, String>> get voixDisponibles => _voixDisponibles;
   bool get voixFrancaiseDisponible => _etatVoix == EtatVoix.ok;
   double get vitesseMax => _vitesseMax;
 
@@ -244,24 +254,59 @@ class TtsService extends ChangeNotifier {
       }
 
       voix.sort(_meilleureEnPremier);
-      final choisie = voix.first;
+      _voixDisponibles = voix;
 
-      final retenu = await _flutterTts.setVoice({
-        'name': choisie['name'] ?? '',
-        'locale': choisie['locale'] ?? 'fr-FR',
-      });
+      // Le choix du lecteur l'emporte sur le classement, s'il tient encore :
+      // une voix desinstallee depuis ne doit pas laisser la lecture muette.
+      final prefs = await SharedPreferences.getInstance();
+      final memorisee = prefs.getString(_cleVoix);
+      final choisie = voix.firstWhere(
+        (v) => v['name'] == memorisee,
+        orElse: () => voix.first,
+      );
 
-      if (retenu == 1) {
-        _nomVoix = choisie['name'];
-        _language = choisie['locale'] ?? 'fr-FR';
-        _etatVoix = EtatVoix.ok;
-      } else {
-        _etatVoix = EtatVoix.absente;
-      }
+      _etatVoix = await _appliquerVoix(choisie)
+          ? EtatVoix.ok
+          : EtatVoix.absente;
     } catch (e) {
       debugPrint("Résolution de la voix française impossible : $e");
       _etatVoix = EtatVoix.moteurIndisponible;
     }
+  }
+
+  static const String _cleVoix = 'tts_voix_choisie';
+
+  Future<bool> _appliquerVoix(Map<String, String> voix) async {
+    final retenu = await _flutterTts.setVoice({
+      'name': voix['name'] ?? '',
+      'locale': voix['locale'] ?? 'fr-FR',
+    });
+    if (retenu != 1) return false;
+    _nomVoix = voix['name'];
+    _language = voix['locale'] ?? 'fr-FR';
+    return true;
+  }
+
+  /// Change de voix, et retient le choix.
+  ///
+  /// La lecture en cours est relancee sur le segment courant : changer de voix
+  /// au milieu d'un paragraphe sans rien reprendre laisserait le lecteur sur
+  /// une phrase coupee, dans l'ancienne voix.
+  Future<bool> choisirVoix(Map<String, String> voix) async {
+    final ok = await _appliquerVoix(voix);
+    if (!ok) return false;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cleVoix, voix['name'] ?? '');
+
+    if (_state == TtsState.playing && _segments.isNotEmpty) {
+      final reprise = _segmentCourant;
+      await _flutterTts.stop();
+      _segmentCourant = reprise;
+      await _dire();
+    }
+    notifyListeners();
+    return true;
   }
 
   bool _estFrancaiseEtInstallee(Map<String, String> v) {

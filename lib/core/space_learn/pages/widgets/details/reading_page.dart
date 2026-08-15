@@ -691,6 +691,39 @@ class _ReadingPageState extends State<ReadingPage> {
     await _ttsService.speak(textToRead);
   }
 
+  /// Un nom de voix lisible.
+  ///
+  /// Les moteurs renvoient des identifiants — « fr-fr-x-frd-local »,
+  /// « fr-FR-language ». On en tire le pays et un numero d'ordre : c'est peu,
+  /// mais c'est deja plus qu'une chaine technique dans une liste de choix.
+  String _nomLisibleVoix(Map<String, String> voix) {
+    final locale = (voix['locale'] ?? '').toLowerCase();
+    final pays = locale.startsWith('fr-ca')
+        ? 'Français (Canada)'
+        : locale.startsWith('fr-be')
+        ? 'Français (Belgique)'
+        : locale.startsWith('fr-ch')
+        ? 'Français (Suisse)'
+        : 'Français (France)';
+
+    final rang = _ttsService.voixDisponibles.indexOf(voix) + 1;
+    return '$pays — voix $rang';
+  }
+
+  String _qualiteLisible(Map<String, String> voix) {
+    switch ((voix['quality'] ?? '').toLowerCase()) {
+      case 'very high':
+        return 'Qualité très élevée';
+      case 'high':
+        return 'Qualité élevée';
+      case 'low':
+      case 'very low':
+        return 'Qualité réduite';
+      default:
+        return 'Qualité standard';
+    }
+  }
+
   Widget _buildTtsPlayerPanel() {
     final bool isDark = _backgroundColor.computeLuminance() < 0.5;
     final Color panelBg = AppColors.cardBackground.withOpacity(0.95);
@@ -1677,6 +1710,89 @@ class _ReadingPageState extends State<ReadingPage> {
                   ),
 
                   const SizedBox(height: AppDimensions.spaceXl),
+
+                  // Le choix de la voix.
+                  //
+                  // Le service en retenait une — la meilleure qualite annoncee
+                  // par le moteur, francais de France en premier — et gardait
+                  // la liste pour lui. Or laquelle « sonne bien » ne se decide
+                  // pas depuis le code : cela s'ecoute, et cela varie d'une
+                  // oreille a l'autre.
+                  if (_ttsService.voixDisponibles.length > 1) ...[
+                    _titreReglage("Voix"),
+                    const SizedBox(height: AppDimensions.spaceSm),
+                    ..._ttsService.voixDisponibles.map((voix) {
+                      final nom = voix['name'] ?? '';
+                      final choisie = nom == _ttsService.nomVoix;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: GestureDetector(
+                          onTap: () async {
+                            await _ttsService.choisirVoix(voix);
+                            setModalState(() {});
+                            setState(() {});
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: choisie
+                                  ? AppColors.primary.withValues(alpha: 0.15)
+                                  : AppColors.surfaceVariant,
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
+                              border: Border.all(
+                                color: choisie
+                                    ? AppColors.primary
+                                    : AppColors.border,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  choisie
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_unchecked,
+                                  size: 18,
+                                  color: choisie
+                                      ? AppColors.accentInk
+                                      : AppColors.textHint,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _nomLisibleVoix(voix),
+                                        style: GoogleFonts.poppins(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        _qualiteLisible(voix),
+                                        style: GoogleFonts.poppins(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: AppDimensions.spaceXl),
+                  ],
 
                   _titreReglage("Sens de lecture"),
                   const SizedBox(height: AppDimensions.spaceSm),
