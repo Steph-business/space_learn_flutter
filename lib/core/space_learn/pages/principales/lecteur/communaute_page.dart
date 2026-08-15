@@ -12,6 +12,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.d
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'recherche_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/salon_noms.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/carte_evenement.dart';
@@ -30,6 +31,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
   final LibraryService _libraryService = LibraryService();
   final EvenementService _evenementService = EvenementService();
   final DiscussionService _discussionService = DiscussionService();
+  final BookService _bookService = BookService();
 
   /// Le prénom du lecteur, pour que la page s'adresse à lui.
   /// Elle s'ouvrait sur « Vos espaces d'échange » — un intitulé qui aurait
@@ -76,6 +78,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
       List<Evenement> evts = [];
       try {
         evts = await _evenementService.getGlobalEvenements(token);
+        evts = await _enrichirEvenementsAvecAuteurs(evts, libraryItems);
       } catch (e) {}
 
       int totalCafeMsgs = 0;
@@ -603,5 +606,67 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         ],
       ),
     );
+  }
+
+  Future<List<Evenement>> _enrichirEvenementsAvecAuteurs(
+    List<Evenement> evts,
+    List<LibraryModel> libraryItems,
+  ) async {
+    final Map<String, String> cacheAuteurs = {};
+
+    for (var item in libraryItems) {
+      final livre = item.livre;
+      final nom = (item.auteurNom != null && item.auteurNom!.trim().isNotEmpty)
+          ? item.auteurNom!.trim()
+          : (livre != null ? livre.authorName : '');
+      if (livre != null &&
+          livre.auteurId.isNotEmpty &&
+          nom.isNotEmpty &&
+          nom != 'Auteur inconnu') {
+        cacheAuteurs[livre.auteurId] = nom;
+      }
+    }
+
+    final enriched = <Evenement>[];
+    for (var evt in evts) {
+      if (evt.nomAuteur != null && evt.nomAuteur!.trim().isNotEmpty) {
+        enriched.add(evt);
+        continue;
+      }
+
+      String? nom = cacheAuteurs[evt.auteurId];
+
+      if (nom == null && evt.auteurId.isNotEmpty) {
+        try {
+          final books = await _bookService.getBooksByAuthorId(evt.auteurId);
+          if (books.isNotEmpty &&
+              books.first.authorName.isNotEmpty &&
+              books.first.authorName != 'Auteur inconnu') {
+            nom = books.first.authorName;
+            cacheAuteurs[evt.auteurId] = nom;
+          }
+        } catch (_) {}
+      }
+
+      if (nom != null && nom.isNotEmpty && nom != 'Auteur inconnu') {
+        enriched.add(
+          Evenement(
+            id: evt.id,
+            typePublication: evt.typePublication,
+            categorie: evt.categorie,
+            titre: evt.titre,
+            contenu: evt.contenu,
+            imageUrl: evt.imageUrl,
+            dateEvenement: evt.dateEvenement,
+            auteurId: evt.auteurId,
+            nomAuteur: nom,
+            creeLe: evt.creeLe,
+          ),
+        );
+      } else {
+        enriched.add(evt);
+      }
+    }
+    return enriched;
   }
 }

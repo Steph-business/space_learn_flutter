@@ -11,15 +11,15 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/readingPreferencesPage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/base_settings_layout.dart';
+import 'package:space_learn_flutter/core/utils/profile_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart' as lecteurHome;
 
 // Nouvelles pages de paramètres
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/password_change_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/help_faq_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/privacy_policy_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/language_selection_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/notification_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/publication_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/sales_report_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/terms_of_use_page.dart';
@@ -58,6 +58,14 @@ class SettingsPageAuteur extends StatelessWidget {
             _pickProfilePhoto(context);
           },
         ),
+        SettingItemTile(
+          icon: Icons.switch_account_outlined,
+          title: "Passer au mode Lecteur",
+          subtitle: "Basculer vers votre espace lecteur",
+          onTap: () => _switchToReaderMode(context),
+        ),
+
+        // Section Publication
 
         // Section Publication
         SettingSectionHeader(
@@ -182,6 +190,17 @@ class SettingsPageAuteur extends StatelessWidget {
           accentColor: AppColors.secondaryVariant,
         ),
         SettingItemTile(
+          icon: Icons.description_outlined,
+          title: "Conditions d'utilisation",
+          subtitle: "Lire les conditions",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TermsOfUsePage()),
+            );
+          },
+        ),
+        SettingItemTile(
           icon: Icons.info_outline,
           title: "Version de l'application",
           subtitle: "1.0.0",
@@ -193,17 +212,6 @@ class SettingsPageAuteur extends StatelessWidget {
                   "SpaceLearn Mobile (Auteur)\nVersion: 1.0.0\nConstruit avec amour par Steph-business.",
               confirmText: "Fermer",
               isSuccess: true,
-            );
-          },
-        ),
-        SettingItemTile(
-          icon: Icons.description_outlined,
-          title: "Conditions d'utilisation",
-          subtitle: "Lire les conditions",
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const TermsOfUsePage()),
             );
           },
         ),
@@ -385,5 +393,47 @@ class SettingsPageAuteur extends StatelessWidget {
         Navigator.of(context).pop();
       },
     );
+  }
+
+  void _switchToReaderMode(BuildContext context) {
+    AppNotifications.showPremiumDialog(
+      context,
+      title: "Mode Lecteur",
+      message: "Voulez-vous vraiment basculer vers votre espace Lecteur ?",
+      confirmText: "Basculer",
+      cancelText: "Annuler",
+      onConfirm: () => _executeSwitchToReaderMode(context),
+    );
+  }
+
+  Future<void> _executeSwitchToReaderMode(BuildContext context) async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) return;
+      final authService = AuthService();
+      final user = await authService.getUser(token);
+      if (user == null) return;
+
+      await ProfileStorage.saveSelectedProfileRole("lecteur");
+      if (!context.mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => lecteurHome.HomePageLecteur(
+            profileId: user.profilId,
+            userName: user.nomComplet,
+          ),
+        ),
+        (route) => false,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur lors du changement de profil.",
+          isError: true,
+        );
+      }
+    }
   }
 }

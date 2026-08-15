@@ -10,7 +10,8 @@ import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'reading_page.dart';
-import 'payment_page.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/paymentService.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
@@ -22,6 +23,8 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/librarySe
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/chapitre_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/chapitre_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/partageService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
 import 'all_reviews_page.dart';
 
 class BookDetailPage extends StatefulWidget {
@@ -61,11 +64,26 @@ class _BookDetailPageState extends State<BookDetailPage> {
   bool _isLoadingReviews = true;
   final LibraryService _libraryService = LibraryService();
   bool _isOwned = false;
+  bool _isAuthorOfThisBook = false;
+  UserModel? _currentUser;
   bool _acquisitionEnCours = false;
+  bool _paiementEnCours = false;
 
   /// Un livre a prix nul.
-  bool get _estGratuit => widget.book.prix <= 0;
+  bool get _estGratuit => (_fullBook ?? widget.book).prix <= 0;
   bool _isLoadingOwnership = true;
+
+  String _getAuthorDisplayName(BookModel book) {
+    if (book.authorName.isNotEmpty && book.authorName != 'Auteur inconnu') {
+      return book.authorName;
+    }
+    if (_isAuthorOfThisBook &&
+        _currentUser != null &&
+        _currentUser!.nomComplet.isNotEmpty) {
+      return _currentUser!.nomComplet;
+    }
+    return book.authorName;
+  }
 
   final ReadingProgressService _readingProgressService =
       ReadingProgressService();
@@ -100,25 +118,39 @@ class _BookDetailPageState extends State<BookDetailPage> {
         setState(() {
           _fullBook = fullBook;
         });
+        await _checkOwnershipStatus();
       }
     } catch (e) {}
   }
 
   Future<void> _checkOwnershipStatus() async {
-    if (_isOwned) {
-      _loadReadingProgress();
-      setState(() => _isLoadingOwnership = false);
-      return;
-    }
-
     try {
       final token = await TokenStorage.getToken();
       if (token != null) {
+        final authService = AuthService();
+        final user = await authService.getUser(token);
+        final currentBook = _fullBook ?? widget.book;
+
+        final isAuthor = user != null &&
+            ((currentBook.auteurId.isNotEmpty &&
+                    (user.id == currentBook.auteurId ||
+                        user.profilId == currentBook.auteurId)) ||
+                (currentBook.auteur != null &&
+                    (currentBook.auteur!.id == user.id ||
+                        currentBook.auteur!.profilId == user.id ||
+                        currentBook.auteur!.id == user.profilId)) ||
+                (currentBook.authorName.isNotEmpty &&
+                    currentBook.authorName != 'Auteur inconnu' &&
+                    user.nomComplet.trim().toLowerCase() ==
+                        currentBook.authorName.trim().toLowerCase()));
+
         final library = await _libraryService.getUserLibrary(token);
         final found = library.any((item) => item.livreId == widget.book.id);
         if (mounted) {
           setState(() {
-            _isOwned = found;
+            _currentUser = user;
+            _isAuthorOfThisBook = isAuthor;
+            _isOwned = _isOwned || isAuthor || found;
             _ownedBookIds = library.map((e) => e.livreId).toSet();
             _isLoadingOwnership = false;
           });
@@ -557,7 +589,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        book.authorName,
+                        _getAuthorDisplayName(book),
                         style: AppTextStyles.withColor(
                           AppTextStyles.subtitle,
                           AppColors.primary,
@@ -1024,21 +1056,16 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       child: SizedBox(
                                         height: 50,
                                         child: ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    PaymentPage(
-                                                      book: book.toJson(),
-                                                    ),
-                                              ),
-                                            );
-                                          },
+                                          onPressed: _paiementEnCours
+                                              ? null
+                                              : () => _lancerPaiementDirect(book),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:
                                                 AppColors.secondary,
                                             foregroundColor: AppColors.onAccent,
+                                            disabledBackgroundColor:
+                                                AppColors.secondary
+                                                    .withValues(alpha: 0.6),
                                             elevation: 0,
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
@@ -1047,29 +1074,42 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                                   ),
                                             ),
                                           ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.shopping_bag,
-                                                size: 18,
-                                              ),
-                                              SizedBox(width: 4),
-                                              Flexible(
-                                                child: Text(
-                                                  'Acheter',
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w600,
+                                          child: _paiementEnCours
+                                              ? SizedBox(
+                                                  height: 20,
+                                                  width: 20,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: AppColors.onAccent,
                                                   ),
+                                                )
+                                              : Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.shopping_bag,
+                                                      size: 18,
+                                                    ),
+                                                    SizedBox(width: 6),
+                                                    Flexible(
+                                                      child: Text(
+                                                        'Acheter',
+                                                        overflow:
+                                                            TextOverflow.ellipsis,
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ),
-                                            ],
-                                          ),
                                         ),
                                       ),
                                     ),
@@ -1182,6 +1222,29 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               ),
                             ),
                           ],
+                          if (_isAuthorOfThisBook)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome,
+                                    size: 15,
+                                    color: AppColors.accentInk,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    "Vous êtes l'auteur de cet ouvrage",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.accentInk,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           SizedBox(
                             width: double.infinity,
                             height: 50,
@@ -1214,10 +1277,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   Icon(Icons.menu_book, size: 18),
                                   SizedBox(width: 8),
                                   Text(
-                                    _readingProgress != null &&
-                                            _readingProgress!.pourcentage > 0
-                                        ? 'Continuer la lecture'
-                                        : 'Commencer la lecture',
+                                    _isAuthorOfThisBook
+                                        ? 'Lire mon ouvrage (Auteur)'
+                                        : (_readingProgress != null &&
+                                                _readingProgress!.pourcentage >
+                                                    0
+                                            ? 'Continuer la lecture'
+                                            : 'Commencer la lecture'),
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -1392,9 +1458,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
       child: ElevatedButton(
         onPressed: _acquisitionEnCours ? null : _lireGratuitement,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.success,
+          backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onAccent,
-          disabledBackgroundColor: AppColors.success.withValues(alpha: 0.6),
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
@@ -1425,6 +1491,83 @@ class _BookDetailPageState extends State<BookDetailPage> {
               ),
       ),
     );
+  }
+
+  Future<void> _lancerPaiementDirect(BookModel book) async {
+    if (_paiementEnCours) return;
+
+    final double amount = book.prix.toDouble();
+    if (amount <= 0) {
+      await _lireGratuitement();
+      return;
+    }
+
+    setState(() => _paiementEnCours = true);
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) {
+        if (mounted) {
+          AppNotifications.showSnackBar(
+            context,
+            message: "Veuillez vous connecter pour effectuer un achat",
+            isError: true,
+          );
+        }
+        return;
+      }
+
+      final user = _currentUser ?? await AuthService().getUser(token);
+      if (user == null) {
+        if (mounted) {
+          AppNotifications.showSnackBar(
+            context,
+            message: "Impossible de récupérer les informations de votre compte",
+            isError: true,
+          );
+        }
+        return;
+      }
+
+      final paymentService = PaymentService();
+      final result = await paymentService.initiateCinetpayPayment(
+        livreId: book.id,
+        montant: amount,
+        authToken: token,
+        customerName: user.nomComplet.isNotEmpty ? user.nomComplet : "Lecteur SpaceLearn",
+        customerEmail: user.email.isNotEmpty ? user.email : "client@spacelearn.com",
+      );
+
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CinetpayWebViewPage(
+            paymentUrl: result.paymentUrl,
+            transactionId: result.paiement.transactionId,
+            book: book.toJson(),
+            montant: amount,
+          ),
+        ),
+      );
+
+      if (mounted) {
+        await _checkOwnershipStatus();
+      }
+    } catch (e) {
+      if (mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur lors de l'initialisation du paiement : $e",
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _paiementEnCours = false);
+      }
+    }
   }
 
   Future<void> _lireGratuitement() async {

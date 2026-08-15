@@ -39,8 +39,9 @@ class CarteEvenement extends StatelessWidget {
   /// sinon. « ÉVÉNEMENT » seul ne dit rien de ce qu'on va lire.
   String get _etiquette {
     final categorie = evenement.categorie?.trim();
-    if (categorie != null && categorie.isNotEmpty)
+    if (categorie != null && categorie.isNotEmpty) {
       return categorie.toUpperCase();
+    }
     return evenement.typePublication.toUpperCase();
   }
 
@@ -93,12 +94,53 @@ class CarteEvenement extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                // Badge visio : indique d'un coup d'œil que la rencontre est en ligne.
+                if (evenement.lienVisio != null &&
+                    evenement.lienVisio!.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Iconsax.video, size: 10, color: AppColors.success),
+                        const SizedBox(width: 3),
+                        Text(
+                          "Visio",
+                          style: GoogleFonts.poppins(
+                            color: AppColors.success,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
                 if (evenement.dateEvenement != null)
                   Text(
                     DateFormat(
                       'd MMM yyyy',
                       'fr_FR',
                     ).format(evenement.dateEvenement!),
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textHint,
+                      fontSize: 10,
+                    ),
+                  )
+                else if (evenement.creeLe != null)
+                  Text(
+                    DateFormat(
+                      'd MMM yyyy',
+                      'fr_FR',
+                    ).format(evenement.creeLe!),
                     style: GoogleFonts.poppins(
                       color: AppColors.textHint,
                       fontSize: 10,
@@ -121,38 +163,85 @@ class CarteEvenement extends StatelessWidget {
             Text(
               evenement.contenu,
               style: AppTextStyles.grey12,
-              maxLines: 3,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                if (signature != null && signature!.trim().isNotEmpty) ...[
-                  Icon(Icons.person, size: 12, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      signature!.trim(),
+            Builder(
+              builder: (context) {
+                final nomAuteurEffectif = (signature != null && signature!.trim().isNotEmpty)
+                    ? signature!.trim()
+                    : (evenement.nomAuteur?.trim().isNotEmpty == true
+                        ? evenement.nomAuteur!.trim()
+                        : null);
+
+                final datePubStr = evenement.creeLe != null
+                    ? "Publié le ${DateFormat('d MMM yyyy', 'fr_FR').format(evenement.creeLe!)}"
+                    : null;
+
+                final hasAuthor = nomAuteurEffectif != null;
+                final hasPubDate = datePubStr != null;
+
+                return Row(
+                  children: [
+                    if (hasAuthor || hasPubDate)
+                      Expanded(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (hasAuthor) ...[
+                              Icon(Icons.person, size: 12, color: AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  nomAuteurEffectif,
+                                  style: GoogleFonts.poppins(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                            if (hasAuthor && hasPubDate)
+                              Text(
+                                " • ",
+                                style: GoogleFonts.poppins(
+                                  color: AppColors.textHint,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            if (hasPubDate)
+                              Flexible(
+                                child: Text(
+                                  datePubStr,
+                                  style: GoogleFonts.poppins(
+                                    color: AppColors.textHint,
+                                    fontSize: 11,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                        ),
+                      )
+                    else
+                      const Spacer(),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Lire",
                       style: GoogleFonts.poppins(
-                        color: AppColors.textSecondary,
+                        color: accent,
                         fontSize: 11,
+                        fontWeight: FontWeight.w600,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ] else
-                  const Spacer(),
-                Text(
-                  "Lire",
-                  style: GoogleFonts.poppins(
-                    color: accent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Icon(Iconsax.arrow_right_3, size: 13, color: accent),
-              ],
+                    Icon(Iconsax.arrow_right_3, size: 13, color: accent),
+                  ],
+                );
+              },
             ),
           ],
         ),

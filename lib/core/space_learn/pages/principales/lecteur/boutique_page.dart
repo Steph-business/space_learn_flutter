@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../themes/layout/nav_bar_all.dart';
@@ -38,6 +39,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
   String _selectedCategory = "Tout";
   String _searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
+  bool _isGridView = true;
+
 
   @override
   void initState() {
@@ -249,13 +252,46 @@ class _MarketplacePageState extends State<MarketplacePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CustomSearchBar(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomSearchBar(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () => setState(() => _isGridView = !_isGridView),
+                      child: Container(
+                        height: 48,
+                        width: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBackground,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusCard,
+                          ),
+                          border: Border.all(
+                            color: _isGridView
+                                ? AppColors.accentInk
+                                : Colors.transparent,
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          _isGridView
+                              ? Icons.list_rounded
+                              : Icons.grid_view_rounded,
+                          color: AppColors.textPrimary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 22),
                 SelectCategorie(
@@ -296,14 +332,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
           // lui, laissant le lecteur sans moyen d'effacer ce qu'il a tape.
           if (filteredBooks.isEmpty)
             _aucunResultat()
-          else
+          else if (_isGridView)
             // La grille se cale sur la carte, et non l'inverse.
-            //
-            // Le rapport valait 0,68 en dur : la couverture recevait ce que le
-            // texte laissait, donc une hauteur variable qu'il fallait rogner.
-            // On part maintenant de la largeur reelle d'une colonne, on lui
-            // ajoute la hauteur d'une couverture au rapport d'un livre, puis
-            // celle du bloc de texte. Rien ne deborde, rien n'est coupe.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: LayoutBuilder(
@@ -332,6 +362,22 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         isOwned: _ownedBookIds.contains(book.id),
                       );
                     },
+                  );
+                },
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredBooks.length,
+                itemBuilder: (context, index) {
+                  final book = filteredBooks[index];
+                  return LivreListCard(
+                    book: book,
+                    isOwned: _ownedBookIds.contains(book.id),
                   );
                 },
               ),

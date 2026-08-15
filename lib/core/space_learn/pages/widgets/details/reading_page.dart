@@ -22,11 +22,14 @@ import '../../../../utils/token_storage.dart';
 import '../../../data/dataServices/readingProgressService.dart';
 import '../../../data/dataServices/bookmarkService.dart';
 import '../../../data/model/bookmark_model.dart';
+import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/partageService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/dataServices/readingSettingsService.dart';
 import '../../../data/dataServices/readerStatsService.dart';
-import 'payment_page.dart';
+import '../../../data/dataServices/paymentService.dart';
+import '../../../data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
 import 'package:space_learn_flutter/core/services/lecture_audio_handler.dart';
 
 class ReadingPage extends StatefulWidget {
@@ -511,12 +514,7 @@ class _ReadingPageState extends State<ReadingPage> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PaymentPage(book: widget.book),
-                        ),
-                      );
+                      _lancerPaiementDepuisExtrait();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
@@ -557,6 +555,65 @@ class _ReadingPageState extends State<ReadingPage> {
         );
       },
     );
+  }
+
+  Future<void> _lancerPaiementDepuisExtrait() async {
+    final rawPrix = widget.book['prix'];
+    final double amount = (rawPrix is num)
+        ? rawPrix.toDouble()
+        : double.tryParse(rawPrix?.toString() ?? '0') ?? 0.0;
+
+    if (amount <= 0) return;
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) {
+        if (mounted) {
+          AppNotifications.showSnackBar(
+            context,
+            message: "Veuillez vous connecter pour acheter ce livre",
+            isError: true,
+          );
+        }
+        return;
+      }
+
+      final user = await AuthService().getUser(token);
+      final paymentService = PaymentService();
+      final result = await paymentService.initiateCinetpayPayment(
+        livreId: widget.book['id']?.toString() ?? '',
+        montant: amount,
+        authToken: token,
+        customerName: user?.nomComplet.isNotEmpty == true
+            ? user!.nomComplet
+            : "Lecteur SpaceLearn",
+        customerEmail: user?.email.isNotEmpty == true
+            ? user!.email
+            : "client@spacelearn.com",
+      );
+
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CinetpayWebViewPage(
+            paymentUrl: result.paymentUrl,
+            transactionId: result.paiement.transactionId,
+            book: widget.book,
+            montant: amount,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur lors de l'initialisation du paiement : $e",
+          isError: true,
+        );
+      }
+    }
   }
 
   Future<void> _toggleBookmark() async {
@@ -2360,18 +2417,11 @@ class _ReadingPageState extends State<ReadingPage> {
         ),
         child: Row(
           children: [
-            Icon(Icons.search, color: AppColors.accentInk, size: 22),
-            SizedBox(width: 12),
             Expanded(
-              child: TextField(
+              child: CustomSearchBar(
                 controller: _searchController,
                 autofocus: true,
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'Rechercher dans le texte...',
-                  hintStyle: TextStyle(color: AppColors.textHint),
-                  border: InputBorder.none,
-                ),
+                hintText: 'Rechercher dans le texte...',
                 onChanged: (value) {
                   if (value.isEmpty) {
                     setState(() {

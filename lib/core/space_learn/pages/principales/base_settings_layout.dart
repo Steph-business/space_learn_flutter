@@ -84,30 +84,29 @@ class BaseSettingsLayout extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 24),
       height: 52,
-      child: ElevatedButton.icon(
+      child: OutlinedButton.icon(
         onPressed: () => showLogoutDialog(context),
-        icon: Icon(
+        icon: const Icon(
           Icons.logout_rounded,
-          color: AppColors.textPrimary,
+          color: AppColors.error,
           size: 20,
         ),
         label: Text(
           "Se déconnecter",
           style: GoogleFonts.poppins(
-            color: AppColors.textPrimary,
+            color: AppColors.error,
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.error.withOpacity(0.85),
-          elevation: 0,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: AppColors.error.withValues(alpha: 0.08),
+          side: BorderSide(
+            color: AppColors.error.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-            side: BorderSide(
-              color: AppColors.error.withOpacity(0.3),
-              width: 1.5,
-            ),
           ),
         ),
       ),
@@ -217,7 +216,7 @@ class BaseSettingsLayout extends StatelessWidget {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.error,
-                            foregroundColor: AppColors.textPrimary,
+                            foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
@@ -228,6 +227,7 @@ class BaseSettingsLayout extends StatelessWidget {
                           child: Text(
                             "Déconnexion",
                             style: GoogleFonts.poppins(
+                              color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),

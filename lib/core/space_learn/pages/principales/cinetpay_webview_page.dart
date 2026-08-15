@@ -223,7 +223,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
                   Icon(Icons.lock_outline, size: 14, color: AppColors.success),
                   SizedBox(width: 6),
                   Text(
-                    'Paiement sécurisé par CinetPay',
+                    'Paiement 100% sécurisé ',
                     style: GoogleFonts.poppins(
                       color: AppColors.textHint,
                       fontSize: 11,

@@ -1,6 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -8,6 +9,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookServi
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import '../../widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
@@ -50,11 +52,16 @@ class _RecherchePageState extends State<RecherchePage> {
           _libraryService.getUserLibrary(token)
         else
           Future.value(<LibraryModel>[]),
+        if (token != null)
+          AuthService().getUser(token)
+        else
+          Future.value(null),
       ];
 
       final results = await Future.wait(futures);
       final allBooks = results[0] as List<BookModel>;
       final library = results[1] as List<LibraryModel>;
+      final currentUser = results[2] as UserModel?;
 
       // Enrich author names using library data
       final Map<String, String> authorNames = {};
@@ -85,7 +92,18 @@ class _RecherchePageState extends State<RecherchePage> {
 
       if (mounted) {
         setState(() {
-          _ownedBookIds = library.map((e) => e.livreId).toSet();
+          _ownedBookIds = {
+            ...library.map((e) => e.livreId),
+            if (currentUser != null)
+              ...allBooks
+                  .where((b) =>
+                      (b.auteurId.isNotEmpty &&
+                          b.auteurId == currentUser.id) ||
+                      (b.authorName.isNotEmpty &&
+                          b.authorName.trim().toLowerCase() ==
+                              currentUser.nomComplet.trim().toLowerCase()))
+                  .map((b) => b.id),
+          };
         });
       }
 
@@ -123,32 +141,11 @@ class _RecherchePageState extends State<RecherchePage> {
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Container(
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-          ),
-          child: TextField(
-            controller: _searchController,
-            autofocus: true,
-            style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
-            onChanged: _onSearch,
-            decoration: InputDecoration(
-              hintText: "Rechercher...",
-              hintStyle: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
-              prefixIcon: Icon(
-                Iconsax.search_normal,
-                color: AppColors.textSecondary,
-                size: 18,
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-          ),
+        title: CustomSearchBar(
+          controller: _searchController,
+          autofocus: true,
+          onChanged: _onSearch,
+          hintText: "Rechercher...",
         ),
       ),
       body: _isLoading

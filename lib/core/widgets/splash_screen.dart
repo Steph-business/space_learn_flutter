@@ -20,20 +20,21 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 600),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    // Démarre à 0.4 pour éviter la phase entièrement noire
+    _fadeAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+        curve: Curves.easeOut,
       ),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.82, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.92, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack),
+        curve: Curves.easeOutBack,
       ),
     );
 
@@ -58,24 +59,9 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          // Ambient background glow behind logo
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, -0.15),
-                  radius: 0.8,
-                  colors: [
-                    AppColors.primary.withOpacity(isDark ? 0.18 : 0.12),
-                    backgroundColor.withOpacity(0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
           // Main centered content
-          Center(
+          Align(
+            alignment: const Alignment(0, -0.15), // Décale légèrement vers le haut
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: ScaleTransition(
@@ -132,7 +118,7 @@ class _SplashScreenState extends State<SplashScreen>
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
                           color: (isDark ? Colors.white : AppColors.textPrimary)
-                              .withOpacity(0.7),
+                              .withValues(alpha: 0.7),
                           letterSpacing: 0.3,
                         ),
                         textAlign: TextAlign.center,
@@ -173,3 +159,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+

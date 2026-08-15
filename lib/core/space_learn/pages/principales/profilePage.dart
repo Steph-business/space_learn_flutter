@@ -189,12 +189,6 @@ class _ProfilePageState extends State<ProfilePage> {
             SizedBox(height: 30),
 
             // Formulaire
-            _buildReadOnlyField(
-              value: _user?.profilId ?? '',
-              label: "ID Profil",
-              icon: Icons.perm_identity,
-            ),
-            SizedBox(height: 20),
 
             _buildTextField(
               controller: _nameController,
@@ -226,12 +220,6 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             SizedBox(height: 20),
 
-            _buildTextField(
-              controller: _walletAddressController,
-              label: "Adresse portefeuille",
-              icon: Icons.account_balance_wallet,
-            ),
-            SizedBox(height: 20),
 
             _buildTextField(
               controller: _phoneController,
@@ -330,6 +318,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   _selectedAgeRange = newValue;
                 });
               },
+            ),
+            SizedBox(height: 20),
+            
+            _buildTextField(
+              controller: _walletAddressController,
+              label: "Adresse portefeuille",
+              icon: Icons.account_balance_wallet,
             ),
             SizedBox(height: 20),
 

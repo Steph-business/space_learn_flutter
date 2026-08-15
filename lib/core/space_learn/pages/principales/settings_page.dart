@@ -17,6 +17,8 @@ import 'package:space_learn_flutter/core/space_learn/data/model/library_model.da
 import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/readingPreferencesPage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/base_settings_layout.dart';
+import 'package:space_learn_flutter/core/utils/profile_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart' as ecrivainHome;
 
 // Nouvelles pages de paramètres
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/password_change_page.dart';
@@ -125,6 +127,12 @@ class _SettingsPageState extends State<SettingsPage> {
           onTap: () {
             _pickProfilePhoto(context);
           },
+        ),
+        SettingItemTile(
+          icon: Icons.switch_account_outlined,
+          title: "Passer au mode Auteur",
+          subtitle: "Basculer vers votre espace créateur",
+          onTap: () => _switchToAuthorMode(context),
         ),
 
         // Section Lecture
@@ -262,6 +270,17 @@ class _SettingsPageState extends State<SettingsPage> {
         // Section À propos
         SettingSectionHeader(title: "À propos", accentColor: AppColors.primary),
         SettingItemTile(
+          icon: Icons.description_outlined,
+          title: "Conditions d'utilisation",
+          subtitle: "Lire les conditions",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TermsOfUsePage()),
+            );
+          },
+        ),
+        SettingItemTile(
           icon: Icons.info_outline,
           title: "Version de l'application",
           subtitle: "1.0.0",
@@ -273,17 +292,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   "SpaceLearn Mobile\nVersion: 1.0.0\nConstruit avec amour par Steph-business.",
               confirmText: "Fermer",
               isSuccess: true,
-            );
-          },
-        ),
-        SettingItemTile(
-          icon: Icons.description_outlined,
-          title: "Conditions d'utilisation",
-          subtitle: "Lire les conditions",
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const TermsOfUsePage()),
             );
           },
         ),
@@ -577,6 +585,49 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       },
     );
+  }
+
+  void _switchToAuthorMode(BuildContext context) {
+    AppNotifications.showPremiumDialog(
+      context,
+      title: "Mode Auteur",
+      message: "Voulez-vous vraiment basculer vers votre espace Auteur ?",
+      confirmText: "Basculer",
+      cancelText: "Annuler",
+      onConfirm: () => _executeSwitchToAuthorMode(context),
+    );
+  }
+
+  Future<void> _executeSwitchToAuthorMode(BuildContext context) async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) return;
+      final authService = AuthService();
+      final user = await authService.getUser(token);
+      if (user == null) return;
+
+      await ProfileStorage.saveSelectedProfileRole("auteur");
+      if (!context.mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ecrivainHome.HomePageAuteur(
+            key: ecrivainHome.HomePageAuteur.navKey,
+            profileId: user.profilId,
+            userName: user.nomComplet,
+          ),
+        ),
+        (route) => false,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Erreur lors du changement de profil.",
+          isError: true,
+        );
+      }
+    }
   }
 
   Widget _buildThemeOption(

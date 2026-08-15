@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
@@ -58,7 +59,7 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
 
   String _selectedCategory = _categorieTout;
 
-  final List<String> _categories = [_categorieTout, ...SalonNoms.categories];
+  List<String> _categories = [_categorieTout, ...SalonNoms.categories];
 
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
@@ -97,13 +98,18 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
 
       if (mounted) {
         final Map<String, DateTime?> viewedDates = {};
+        final Set<String> allCats = {_categorieTout, ...SalonNoms.categories};
         for (var d in dbDiscussions) {
           viewedDates[d.id] = await TokenStorage.getDiscussionLastViewed(d.id);
+          if (d.categorie != null && d.categorie!.trim().isNotEmpty) {
+            allCats.add(d.categorie!.trim());
+          }
         }
 
         setState(() {
           _discussions = dbDiscussions;
           _lastViewedDates = viewedDates;
+          _categories = allCats.toList();
           _isLoading = false;
         });
       }
@@ -141,8 +147,21 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       );
 
       if (mounted) {
+        final cleanCat = newDisc.categorie?.trim() ?? categorie.trim();
         setState(() {
+          _discussions.removeWhere((d) => d.id == newDisc.id);
           _discussions.insert(0, newDisc);
+          if (cleanCat.isNotEmpty &&
+              cleanCat != _categorieTout &&
+              !_categories.contains(cleanCat)) {
+            _categories.add(cleanCat);
+          }
+          // On garde le filtre "Tout" ou le filtre actuel s'il correspond,
+          // afin que toutes les discussions existantes restent visibles.
+          if (_selectedCategory != _categorieTout &&
+              cleanCat.toLowerCase() != _selectedCategory.toLowerCase()) {
+            _selectedCategory = _categorieTout;
+          }
         });
         Navigator.pop(context); // close dialog
       }
@@ -171,9 +190,16 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
 
   void _showNewDiscussionDialog() {
     final TextEditingController titleController = TextEditingController();
-    // La categorie se choisit ici. Sans ce choix, la colonne restait vide et
-    // les onglets de filtrage ne pouvaient rien trouver.
-    String categorie = SalonNoms.categories.first;
+    final TextEditingController customCatController = TextEditingController();
+
+    final List<String> dialogCategories = List.from(
+      _categories.where((c) => c != _categorieTout),
+    );
+
+    String categorie = dialogCategories.isNotEmpty
+        ? dialogCategories.first
+        : SalonNoms.categories.first;
+    bool isCustomCategory = false;
 
     showDialog(
       context: context,
@@ -182,68 +208,231 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
           builder: (context, setDialogState) {
             return AlertDialog(
               backgroundColor: AppColors.cardBackground,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+              ),
               title: Text(
                 "Nouveau sujet",
-                style: GoogleFonts.poppins(color: AppColors.textPrimary),
+                style: GoogleFonts.poppins(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    autofocus: true,
-                    style: TextStyle(color: AppColors.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: "Titre de la discussion",
-                      hintStyle: TextStyle(color: AppColors.textHint),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Catégorie",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: SalonNoms.categories.map((c) {
-                      final choisie = c == categorie;
-                      return GestureDetector(
-                        onTap: () => setDialogState(() => categorie = c),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      autofocus: true,
+                      style: TextStyle(color: AppColors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: "Titre de la discussion",
+                        hintStyle: TextStyle(color: AppColors.textHint),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusInner,
                           ),
-                          decoration: BoxDecoration(
-                            color: choisie
-                                ? AppColors.primary
-                                : AppColors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusPill,
-                            ),
-                          ),
-                          child: Text(
-                            c,
-                            style: GoogleFonts.poppins(
-                              color: choisie
-                                  ? AppColors.onAccent
-                                  : AppColors.textPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 1.5,
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusInner,
+                          ),
+                          borderSide: BorderSide(
+                            color: AppColors.textPrimary.withOpacity(0.15),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      "Catégorie",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
+                        border: Border.all(
+                          color: AppColors.textPrimary.withOpacity(0.15),
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: isCustomCategory
+                              ? "__CUSTOM__"
+                              : (dialogCategories.contains(categorie)
+                                    ? categorie
+                                    : (dialogCategories.isNotEmpty
+                                          ? dialogCategories.first
+                                          : "__CUSTOM__")),
+                          isExpanded: true,
+                          dropdownColor: AppColors.cardBackground,
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: AppColors.textSecondary,
+                          ),
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textPrimary,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          onChanged: (String? newValue) {
+                            if (newValue == null) return;
+                            setDialogState(() {
+                              if (newValue == "__CUSTOM__") {
+                                isCustomCategory = true;
+                              } else {
+                                isCustomCategory = false;
+                                categorie = newValue;
+                              }
+                            });
+                          },
+                          items: [
+                            ...dialogCategories.map((c) {
+                              return DropdownMenuItem<String>(
+                                value: c,
+                                child: Text(
+                                  c,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }),
+                            DropdownMenuItem<String>(
+                              value: "__CUSTOM__",
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.add_circle_outline_rounded,
+                                    size: 18,
+                                    color: AppColors.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      "+ Autre ",
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.poppins(
+                                        color: AppColors.primary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (isCustomCategory) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: customCatController,
+                              autofocus: true,
+                              style: GoogleFonts.poppins(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: "Nom de la nouvelle catégorie...",
+                                hintStyle: GoogleFonts.poppins(
+                                  color: AppColors.textHint,
+                                  fontSize: 13,
+                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                filled: true,
+                                fillColor: AppColors.surfaceVariant,
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primary,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
+                                  borderSide: BorderSide(
+                                    color: AppColors.textPrimary.withOpacity(
+                                      0.15,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              onSubmitted: (text) {
+                                final val = text.trim();
+                                if (val.isNotEmpty) {
+                                  setDialogState(() {
+                                    if (!dialogCategories.contains(val)) {
+                                      dialogCategories.add(val);
+                                    }
+                                    categorie = val;
+                                    isCustomCategory = false;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: () {
+                              final val = customCatController.text.trim();
+                              if (val.isNotEmpty) {
+                                setDialogState(() {
+                                  if (!dialogCategories.contains(val)) {
+                                    dialogCategories.add(val);
+                                  }
+                                  categorie = val;
+                                  isCustomCategory = false;
+                                });
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.primary,
+                              size: 28,
+                            ),
+                            tooltip: "Valider la catégorie",
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -255,16 +444,27 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (titleController.text.trim().isNotEmpty) {
-                      _createNewDiscussion(
-                        titleController.text.trim(),
-                        categorie,
-                      );
+                    final title = titleController.text.trim();
+                    if (title.isEmpty) return;
+
+                    String selectedCat = categorie;
+                    if (isCustomCategory) {
+                      final customVal = customCatController.text.trim();
+                      if (customVal.isNotEmpty) {
+                        selectedCat = customVal;
+                      }
                     }
+
+                    _createNewDiscussion(title, selectedCat);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.onAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusInner,
+                      ),
+                    ),
                   ),
                   child: Text("Créer"),
                 ),
@@ -301,15 +501,10 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: _isSearching
-            ? TextField(
+            ? CustomSearchBar(
                 controller: _searchController,
                 autofocus: true,
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: "Rechercher...",
-                  hintStyle: TextStyle(color: AppColors.textHint),
-                  border: InputBorder.none,
-                ),
+                hintText: "Rechercher...",
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;

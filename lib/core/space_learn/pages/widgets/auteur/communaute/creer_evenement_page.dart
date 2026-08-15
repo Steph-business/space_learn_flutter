@@ -21,6 +21,7 @@ class CreerEvenementPage extends StatefulWidget {
 class _CreerEvenementPageState extends State<CreerEvenementPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  final TextEditingController _visioController = TextEditingController();
   final EvenementService _evenementService = EvenementService();
   String _eventType = "Séance de Dédicace";
   DateTime? _selectedDate;
@@ -42,6 +43,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
           widget.initialEvenement!.dateEvenement!,
         );
       }
+      _visioController.text = widget.initialEvenement!.lienVisio ?? '';
     }
   }
 
@@ -49,6 +51,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
   void dispose() {
     _titleController.dispose();
     _descController.dispose();
+    _visioController.dispose();
     super.dispose();
   }
 
@@ -303,8 +306,23 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
             SizedBox(height: 8),
             _buildTextField(
               controller: _descController,
-              hint: "Détails de l'événement (lien visio, adresse)...",
+              hint: "Détails de l'événement (lieu, programme, comment participer…)",
               maxLines: 5,
+            ),
+            SizedBox(height: 20),
+
+            _buildLabel("Lien de visio (optionnel)"),
+            SizedBox(height: 4),
+            Text(
+              "Google Meet, Zoom, Jitsi, YouTube Live…",
+              style: AppTextStyles.grey12,
+            ),
+            SizedBox(height: 8),
+            _buildTextField(
+              controller: _visioController,
+              hint: "https://meet.google.com/abc-defg-hij",
+              maxLines: 1,
+              keyboardType: TextInputType.url,
             ),
             SizedBox(height: 40),
 
@@ -387,6 +405,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
           contenu: desc,
           token: token,
           dateEvenement: eventDate,
+          lienVisio: _visioController.text.trim().isEmpty
+              ? null
+              : _visioController.text.trim(),
         );
       } else {
         await _evenementService.createEvenement(
@@ -396,6 +417,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
           contenu: desc,
           token: token,
           dateEvenement: eventDate,
+          lienVisio: _visioController.text.trim().isEmpty
+              ? null
+              : _visioController.text.trim(),
         );
       }
 
@@ -430,10 +454,12 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
     required TextEditingController controller,
     required String hint,
     int maxLines = 1,
+    TextInputType keyboardType = TextInputType.multiline,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      keyboardType: maxLines == 1 ? keyboardType : TextInputType.multiline,
       style: AppTextStyles.body,
       decoration: InputDecoration(
         hintText: hint,

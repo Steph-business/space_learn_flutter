@@ -1,5 +1,7 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
+import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -233,45 +235,13 @@ class _LivresPageState extends State<LivresPage> {
               child: Column(
                 children: [
                   // Search bar (Sleek)
-                  Container(
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.textPrimary.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusCard,
-                      ),
-                      border: Border.all(
-                        color: AppColors.textPrimary.withOpacity(0.06),
-                      ),
-                    ),
-                    child: TextField(
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value.toLowerCase();
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: "Rechercher par titre...",
-                        hintStyle: GoogleFonts.poppins(
-                          color: AppColors.textPrimary.withOpacity(0.2),
-                          fontSize: 14,
-                        ),
-                        prefixIcon: Icon(
-                          Iconsax.search_status,
-                          color: AppColors.textPrimary.withOpacity(0.3),
-                          size: 20,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                        ),
-                      ),
-                    ),
+                  CustomSearchBar(
+                    hintText: "Rechercher par titre...",
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value.toLowerCase();
+                      });
+                    },
                   ),
                   SizedBox(height: 12),
 

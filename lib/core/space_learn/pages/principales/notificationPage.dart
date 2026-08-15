@@ -66,177 +66,168 @@ class _NotificationPageState extends State<NotificationPage>
     AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      extendBodyBehindAppBar: true,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: AppBar(
-              backgroundColor: AppColors.scaffoldBackground.withOpacity(0.85),
-              elevation: 0,
-              centerTitle: true,
-              leading: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.textPrimary.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.chevron_left,
-                      color: AppColors.textPrimary,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
+      appBar: AppBar(
+        backgroundColor: AppColors.scaffoldBackground,
+        elevation: 0,
+        centerTitle: true,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.textPrimary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.chevron_left,
+                color: AppColors.textPrimary,
               ),
-              title: Text(
-                "Notifications",
-                style: GoogleFonts.poppins(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 20,
-                  letterSpacing: 0.3,
-                ),
-              ),
-              actions: [
-                Consumer<NotificationProvider>(
-                  builder: (context, provider, _) {
-                    final total =
-                        provider.groupedNotifications[widget.role ?? 'lecteur']
-                            ?.where((n) => !n.lu)
-                            .length ??
-                        0;
-                    return PopupMenuButton<String>(
-                      icon: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(Icons.more_vert, color: AppColors.accentInk),
-                          if (total > 0)
-                            Positioned(
-                              top: -4,
-                              right: -4,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      offset: const Offset(0, 45),
-                      color: AppColors.cardBackground,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusInner,
-                        ),
-                      ),
-                      onSelected: (value) async {
-                        if (value == 'mark_all') {
-                          final notifProvider = context
-                              .read<NotificationProvider>();
-                          final token = await TokenStorage.getToken();
-                          if (token != null) {
-                            notifProvider.markAllAsRead(token);
-                          }
-                        } else {
-                          setState(() {
-                            _filter = value;
-                            _emptyAnimController
-                              ..reset()
-                              ..forward();
-                          });
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'tous',
-                          height: 40,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.list_rounded,
-                                size: 16,
-                                color: _filter == 'tous'
-                                    ? AppColors.accentInk
-                                    : AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 10),
-                              Text("Toutes", style: AppTextStyles.body13),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'non_read',
-                          height: 40,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.mark_email_unread_outlined,
-                                size: 16,
-                                color: _filter == 'non_read'
-                                    ? AppColors.accentInk
-                                    : AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 10),
-                              Text("Non lues", style: AppTextStyles.body13),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'archives',
-                          height: 40,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.archive_outlined,
-                                size: 16,
-                                color: _filter == 'archives'
-                                    ? AppColors.accentInk
-                                    : AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 10),
-                              Text("Archives", style: AppTextStyles.body13),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuDivider(height: 1),
-                        PopupMenuItem(
-                          value: 'mark_all',
-                          height: 40,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.checklist_rounded,
-                                size: 16,
-                                color: AppColors.accentInk,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                "Tout marquer comme lu",
-                                style: GoogleFonts.poppins(
-                                  color: AppColors.accentInk,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-              ],
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
         ),
+        title: Text(
+          "Notifications",
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            letterSpacing: 0.3,
+          ),
+        ),
+        actions: [
+          Consumer<NotificationProvider>(
+            builder: (context, provider, _) {
+              final total =
+                  provider.groupedNotifications[widget.role ?? 'lecteur']
+                      ?.where((n) => !n.lu)
+                      .length ??
+                  0;
+              return PopupMenuButton<String>(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(Icons.more_vert, color: AppColors.accentInk),
+                    if (total > 0)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                offset: const Offset(0, 45),
+                color: AppColors.cardBackground,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
+                ),
+                onSelected: (value) async {
+                  if (value == 'mark_all') {
+                    final notifProvider = context
+                        .read<NotificationProvider>();
+                    final token = await TokenStorage.getToken();
+                    if (token != null) {
+                      notifProvider.markAllAsRead(token);
+                    }
+                  } else {
+                    setState(() {
+                      _filter = value;
+                      _emptyAnimController
+                        ..reset()
+                        ..forward();
+                    });
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'tous',
+                    height: 40,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.list_rounded,
+                          size: 16,
+                          color: _filter == 'tous'
+                              ? AppColors.accentInk
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 10),
+                        Text("Toutes", style: AppTextStyles.body13),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'non_read',
+                    height: 40,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.mark_email_unread_outlined,
+                          size: 16,
+                          color: _filter == 'non_read'
+                              ? AppColors.accentInk
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 10),
+                        Text("Non lues", style: AppTextStyles.body13),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'archives',
+                    height: 40,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.archive_outlined,
+                          size: 16,
+                          color: _filter == 'archives'
+                              ? AppColors.accentInk
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 10),
+                        Text("Archives", style: AppTextStyles.body13),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(height: 1),
+                  PopupMenuItem(
+                    value: 'mark_all',
+                    height: 40,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.checklist_rounded,
+                          size: 16,
+                          color: AppColors.accentInk,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          "Tout marquer comme lu",
+                          style: GoogleFonts.poppins(
+                            color: AppColors.accentInk,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: _buildBody(context),
     );
@@ -258,31 +249,13 @@ class _NotificationPageState extends State<NotificationPage>
           onRefresh: _fetchGrouped,
           color: AppColors.accentInk,
           backgroundColor: AppColors.cardBackground,
-          edgeOffset: 100,
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
             slivers: [
-              // Espace sous la barre du haut.
-              //
-              // Il valait 90 px en dur. La barre en fait 70, mais elle est
-              // posee derriere le corps et se superpose a la barre d'etat, qui
-              // ajoute une quarantaine de pixels variables selon l'appareil :
-              // ce qui venait en premier se retrouvait coupe en deux. On
-              // demande la hauteur reelle plutot que de la deviner.
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: MediaQuery.of(context).padding.top + 70,
-                ),
-              ),
-
               // ── Liste des notifications ──
               SliverPadding(
-                // Le bloc qui separait cette liste de la barre du haut ne
-                // contenait plus que des commentaires depuis le retrait du
-                // resume et des filtres : il ne restait qu'un vide, entre la
-                // barre et la premiere notification.
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
                 sliver: SliverToBoxAdapter(
                   child: RecentNotificationsPage(

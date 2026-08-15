@@ -91,27 +91,25 @@ class LivreCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Étiquttes du haut (GRATUIT / DANS VOTRE BIBLIOTHÈQUE)
+              // Étiqettes du haut
               if (_estGratuit)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: _etiquette(
-                    "GRATUIT",
-                    AppColors.success,
-                    AppColors.onAccent,
-                  ),
-                ),
-              if (isOwned)
                 Positioned(
                   top: 8,
                   right: 8,
                   child: _etiquette(
-                    "DANS VOTRE BIBLIOTHÈQUE",
+                    "GRATUIT",
                     AppColors.primary,
                     AppColors.onAccent,
-                    icone: Iconsax.book_saved,
-                    compacte: true,
+                  ),
+                )
+              else if (isOwned)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: _etiquette(
+                    "ACQUIS",
+                    AppColors.primary,
+                    AppColors.onAccent,
                   ),
                 ),
               // Informations sur le livre incrustées en bas
@@ -252,3 +250,203 @@ class LivreCard extends StatelessWidget {
     );
   }
 }
+
+/// Carte sous forme de liste horizontale pour la boutique.
+class LivreListCard extends StatelessWidget {
+  final BookModel book;
+  final bool isOwned;
+
+  const LivreListCard({
+    super.key,
+    required this.book,
+    this.isOwned = false,
+  });
+
+  bool get _estGratuit => book.prix <= 0;
+
+  @override
+  Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookDetailPage(book: book, isOwned: isOwned),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Couverture du livre
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+              child: SizedBox(
+                width: 75,
+                height: 105,
+                child: _couverture(),
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Détails du livre
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.titre,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: AppColors.textPrimary,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    book.authorName,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (book.categorie != null && book.categorie!.nom.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.scaffoldBackground,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusSmall,
+                        ),
+                      ),
+                      child: Text(
+                        book.categorie!.nom,
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _estGratuit ? "Gratuit" : "${book.prix} FCFA",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: _estGratuit
+                              ? const Color(0xFF4CAF50)
+                              : AppColors.accentInk,
+                        ),
+                      ),
+                      if (isOwned)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusPill,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Iconsax.book_saved,
+                                size: 12,
+                                color: AppColors.accentInk,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                "Acquis",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.accentInk,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (book.noteMoyenne > 0)
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              color: AppColors.warning,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              book.noteMoyenne.toStringAsFixed(1),
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _couverture() {
+    final url = book.imageCouverture;
+    final utilisable =
+        url != null && url.isNotEmpty && !url.contains('example.com');
+    if (!utilisable) return _placeholder();
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => _placeholder(),
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(
+      color: AppColors.surfaceVariant,
+      child: Center(
+        child: Icon(Icons.book_rounded, color: AppColors.textHint, size: 28),
+      ),
+    );
+  }
+}
+

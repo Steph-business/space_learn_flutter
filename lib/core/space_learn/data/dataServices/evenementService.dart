@@ -18,6 +18,7 @@ class EvenementService {
     String? imageUrl,
     DateTime? dateEvenement,
     String? categorie,
+    String? lienVisio,
   }) async {
     final Map<String, dynamic> body = {
       'type_publication': typePublication,
@@ -30,6 +31,9 @@ class EvenementService {
     if (imageUrl != null) body['image_url'] = imageUrl;
     if (dateEvenement != null) {
       body['date_evenement'] = dateEvenement.toIso8601String();
+    }
+    if (lienVisio != null && lienVisio.trim().isNotEmpty) {
+      body['lien_visio'] = lienVisio.trim();
     }
 
     final response = await client.post(
@@ -95,6 +99,7 @@ class EvenementService {
     String? imageUrl,
     DateTime? dateEvenement,
     String? categorie,
+    String? lienVisio,
   }) async {
     final url = ApiRoutes.evenementById.replaceFirst(':id', id);
     final Map<String, dynamic> body = {
@@ -109,6 +114,8 @@ class EvenementService {
     if (dateEvenement != null) {
       body['date_evenement'] = dateEvenement.toIso8601String();
     }
+    // Envoyer une chaîne vide pour effacer le lien existant
+    body['lien_visio'] = lienVisio?.trim() ?? '';
 
     final response = await client.put(
       Uri.parse(url),

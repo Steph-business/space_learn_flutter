@@ -104,7 +104,25 @@ class _TeamsPageState extends State<TeamsPage> {
 
       List<Evenement> evts = [];
       try {
-        evts = await _evenementService.getEvenementsByAuthor(user.id, token);
+        final rawEvts =
+            await _evenementService.getEvenementsByAuthor(user.id, token);
+        evts = rawEvts
+            .map((e) => Evenement(
+                  id: e.id,
+                  typePublication: e.typePublication,
+                  categorie: e.categorie,
+                  titre: e.titre,
+                  contenu: e.contenu,
+                  imageUrl: e.imageUrl,
+                  dateEvenement: e.dateEvenement,
+                  auteurId: e.auteurId,
+                  nomAuteur: (e.nomAuteur != null &&
+                          e.nomAuteur!.trim().isNotEmpty)
+                      ? e.nomAuteur
+                      : user.nomComplet,
+                  creeLe: e.creeLe,
+                ))
+            .toList();
       } catch (e) {}
 
       if (mounted) {

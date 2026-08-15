@@ -231,7 +231,7 @@ class _PaymentPageState extends State<PaymentPage> {
             SizedBox(height: 16),
             Center(
               child: Text(
-                'Paiement sécurisé par CinetPay',
+                'Paiement 100% sécurisé ',
                 style: AppTextStyles.greyMedium12,
               ),
             ),
@@ -334,7 +334,31 @@ class _PaymentPageState extends State<PaymentPage> {
                 item.livre!.id == (widget.book['id']?.toString() ?? "")),
       );
 
+      final String auteurId =
+          widget.book['auteur_id']?.toString() ??
+          widget.book['auteurId']?.toString() ??
+          "";
+      final String auteurNom = widget.book['authorName']?.toString() ?? "";
+      final bool isAuthor =
+          (auteurId.isNotEmpty && auteurId == user.id) ||
+          (auteurNom.isNotEmpty &&
+              auteurNom.trim().toLowerCase() ==
+                  user.nomComplet.trim().toLowerCase());
+
       if (!mounted) return;
+
+      if (isAuthor) {
+        Navigator.of(context).pop();
+        AppNotifications.showPremiumDialog(
+          context,
+          title: "Auteur de l'ouvrage",
+          message:
+              "Vous êtes l'auteur de ce livre. Vous y avez accès gratuitement sans avoir besoin de l'acheter.",
+          confirmText: "Compris",
+          isSuccess: true,
+        );
+        return;
+      }
 
       if (isAlreadyOwned) {
         Navigator.of(context).pop();

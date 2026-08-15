@@ -3,6 +3,7 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
@@ -268,10 +269,63 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                   ),
                 ),
               ),
+            if (_evenement.lienVisio != null &&
+                _evenement.lienVisio!.isNotEmpty) ...[
+              SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: () => _ouvrirVisio(_evenement.lienVisio!),
+                  icon: Icon(Iconsax.video, size: 20),
+                  label: Text(
+                    "Rejoindre la visio",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusCard,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
             SizedBox(height: 100),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _ouvrirVisio(String lien) async {
+    final uri = Uri.tryParse(lien);
+    if (uri == null) {
+      if (mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Lien invalide",
+          isError: true,
+        );
+      }
+      return;
+    }
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Impossible d'ouvrir le lien",
+          isError: true,
+        );
+      }
+    }
   }
 }

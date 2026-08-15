@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -392,7 +393,21 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               .map((r) => enrichBook(r.livre!))
               .toList();
 
-          _ownedBookIds = library.map((item) => item.livreId).toSet();
+          final authorOwnBookIds = _allBooks
+              .where((b) =>
+                  (b.auteurId.isNotEmpty && b.auteurId == _currentUserId) ||
+                  (b.auteur != null && b.auteur!.id == _currentUserId) ||
+                  (b.authorName.isNotEmpty &&
+                      (b.authorName.trim().toLowerCase() ==
+                              _displayName.trim().toLowerCase() ||
+                          b.authorName.trim().toLowerCase() ==
+                              widget.userName.trim().toLowerCase())))
+              .map((b) => b.id);
+
+          _ownedBookIds = {
+            ...library.map((item) => item.livreId),
+            ...authorOwnBookIds,
+          };
           _followingIds = followings.map((f) => f.suitId).toSet();
 
           // 3. Finalize Lists
@@ -492,47 +507,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-                border: Border.all(
-                  color: AppColors.textPrimary.withOpacity(0.05),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Icon(Icons.search, color: AppColors.textSecondary, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: _onSearch,
-                      style: AppTextStyles.body,
-                      decoration: InputDecoration(
-                        hintText: "Rechercher un livre, un auteur...",
-                        hintStyle: AppTextStyles.greyBody13,
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_searchQuery.isNotEmpty)
-                    GestureDetector(
-                      onTap: _clearSearch,
-                      child: Icon(
-                        Icons.close,
-                        color: AppColors.textSecondary,
-                        size: 18,
-                      ),
-                    ),
-                ],
-              ),
+            child: CustomSearchBar(
+              controller: _searchController,
+              onChanged: _onSearch,
+              hintText: "Rechercher un livre, un auteur...",
             ),
           ),
           SizedBox(width: 10),
