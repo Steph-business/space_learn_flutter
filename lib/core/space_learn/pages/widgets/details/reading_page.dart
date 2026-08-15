@@ -709,6 +709,46 @@ class _ReadingPageState extends State<ReadingPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // L'etat de la voix, quand il empeche de lire.
+            //
+            // Le service resolvait deja une voix francaise au demarrage et
+            // exposait le resultat, mais aucun ecran ne le lisait : sur un
+            // appareil sans voix francaise, appuyer sur lecture ne produisait
+            // rien du tout. Un silence n'apprend rien a celui qui attend.
+            if (_ttsService.etatVoix != EtatVoix.ok &&
+                _ttsService.etatVoix != EtatVoix.inconnu)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: AppColors.warning,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _ttsService.etatVoix == EtatVoix.moteurIndisponible
+                            ? "Votre appareil n'a pas de moteur de synthèse "
+                                  "vocale. La lecture à voix haute ne peut pas "
+                                  "fonctionner."
+                            : "Aucune voix française n'est installée sur votre "
+                                  "appareil. Ajoutez-la dans Paramètres › "
+                                  "Accessibilité › Synthèse vocale — un "
+                                  "téléchargement unique, de préférence en "
+                                  "Wi-Fi.",
+                        style: GoogleFonts.poppins(
+                          color: itemColor,
+                          fontSize: 12,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -829,6 +869,23 @@ class _ReadingPageState extends State<ReadingPage> {
                 ),
                 GestureDetector(
                   onTap: () {
+                    // Sans voix utilisable, l'appui ne produisait rien : le
+                    // service sortait sans parler et sans rien dire. On
+                    // repete l'explication plutot que de laisser croire a une
+                    // panne.
+                    if (!_ttsService.voixFrancaiseDisponible) {
+                      AppNotifications.showSnackBar(
+                        context,
+                        message:
+                            _ttsService.etatVoix == EtatVoix.moteurIndisponible
+                            ? "Aucun moteur de synthèse vocale sur cet appareil."
+                            : "Installez une voix française dans les réglages "
+                                  "de votre appareil pour écouter les livres.",
+                        isError: true,
+                      );
+                      return;
+                    }
+
                     // La reprise appelait _speakCurrentPage(), qui relisait
                     // la page depuis le haut : le stop() en tete de speak()
                     // effacait la position memorisee. resume() reprend au

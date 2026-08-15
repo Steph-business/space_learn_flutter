@@ -273,42 +273,17 @@ class _NotificationPageState extends State<NotificationPage>
               // demande la hauteur reelle plutot que de la deviner.
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: MediaQuery.of(context).padding.top + 70 + 16,
-                ),
-              ),
-
-              // ── Résumé unread + chips filtres ──
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // L'encadre « N notifications non lues » a ete retire.
-                      //
-                      // Il occupait le haut de l'ecran pour redire ce que la
-                      // liste montrait juste en dessous : la page s'ouvre sur
-                      // les non lues, elles sont donc toutes la, et les
-                      // compter du regard va aussi vite que de lire la phrase.
-                      // La place revient aux notifications elles-memes.
-                      //
-                      // Les trois filtres en pastilles ont ete retires.
-                      //
-                      // Poses sous une barre translucide qui deborde sur le
-                      // corps, ils s'en trouvaient coupes en deux — et une
-                      // rangee de boutons tronques est la premiere chose qu'on
-                      // voyait en ouvrant la page. Le meme choix reste dans le
-                      // menu des trois points, ou il ne genait personne.
-                    ],
-                  ),
+                  height: MediaQuery.of(context).padding.top + 70,
                 ),
               ),
 
               // ── Liste des notifications ──
               SliverPadding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                ).copyWith(bottom: 40),
+                // Le bloc qui separait cette liste de la barre du haut ne
+                // contenait plus que des commentaires depuis le retrait du
+                // resume et des filtres : il ne restait qu'un vide, entre la
+                // barre et la premiere notification.
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
                 sliver: SliverToBoxAdapter(
                   child: RecentNotificationsPage(
                     customNotifications: notifications,
