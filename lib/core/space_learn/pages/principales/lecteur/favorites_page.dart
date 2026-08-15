@@ -8,6 +8,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/favoriteModel.da
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/boutique/livre_card.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -169,7 +170,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                 ),
                                 SizedBox(height: 8),
                                 Text(
-                                  "${book.prix} FCFA",
+                                  LivreCard.formatPrix(book.prix),
                                   style: GoogleFonts.poppins(
                                     color: AppColors.accentInk,
                                     fontSize: 14,

@@ -43,6 +43,19 @@ class LivreCard extends StatelessWidget {
 
   bool get _estGratuit => book.prix <= 0;
 
+  static String formatPrix(int prix) {
+    if (prix <= 0) return "Gratuit";
+    final str = prix.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && (str.length - i) % 3 == 0) {
+        buffer.write(' ');
+      }
+      buffer.write(str[i]);
+    }
+    return "${buffer.toString()} FCFA";
+  }
+
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
@@ -155,7 +168,7 @@ class LivreCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            _estGratuit ? "Gratuit" : "${book.prix} FCFA",
+                            _estGratuit ? "Gratuit" : LivreCard.formatPrix(book.prix),
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w800,
                               fontSize: 13,
@@ -357,7 +370,7 @@ class LivreListCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _estGratuit ? "Gratuit" : "${book.prix} FCFA",
+                        _estGratuit ? "Gratuit" : LivreCard.formatPrix(book.prix),
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w800,
                           fontSize: 13,

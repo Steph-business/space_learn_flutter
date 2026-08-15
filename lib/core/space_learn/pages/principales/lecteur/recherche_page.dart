@@ -8,6 +8,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import '../../widgets/details/book_detail_page.dart';
+import '../../widgets/lecteur/boutique/livre_card.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
@@ -266,7 +267,7 @@ class _RecherchePageState extends State<RecherchePage> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    "${book.prix} FCFA",
+                    LivreCard.formatPrix(book.prix),
                     style: AppTextStyles.withColor(
                       AppTextStyles.cardTitle,
                       AppColors.primary,

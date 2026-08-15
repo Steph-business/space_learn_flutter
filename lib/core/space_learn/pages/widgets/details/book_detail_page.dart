@@ -253,6 +253,30 @@ class _BookDetailPageState extends State<BookDetailPage> {
     }
   }
 
+  /// Détermine dynamiquement si un chapitre fait partie de l'extrait gratuit.
+  /// Se base sur la gratuité explicite (ch.estGratuit) ou la page de départ (<= 10 pages).
+  bool _isChapterInExtrait(ChapitreModel ch, int index) {
+    if (ch.estGratuit) return true;
+    if (ch.pageDepart > 0) {
+      return ch.pageDepart <= 10;
+    }
+    return index < 2;
+  }
+
+  /// Formate le prix proprement avec espace des milliers pour prévenir tout décalage
+  String _formatPrix(int prix) {
+    if (prix <= 0) return "Gratuit";
+    final str = prix.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && (str.length - i) % 3 == 0) {
+        buffer.write(' ');
+      }
+      buffer.write(str[i]);
+    }
+    return "${buffer.toString()} FCFA";
+  }
+
   Future<void> _loadReviews() async {
     try {
       final reviews = await _reviewService.getBookReviews(widget.book.id);
@@ -331,7 +355,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final ch = chaptersList[index];
-                          final isLocked = !isOwned && !ch.estGratuit;
+                          final isExtraitGratuit = (!isOwned) && _isChapterInExtrait(ch, index);
+                          final isLocked = !isOwned && !isExtraitGratuit;
                           final numStr = ch.numero < 10
                               ? "0${ch.numero}"
                               : "${ch.numero}";
@@ -342,22 +367,27 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 ? ch.description
                                 : (isLocked
                                       ? "Contenu verrouillé - Achetez le livre pour lire la suite."
-                                      : "Découvrez cet extrait gratuit."),
+                                      : "Extrait gratuit - Disponible à la lecture."),
                             isLocked: isLocked,
-                            onTap: isLocked
-                                ? null
-                                : () {
-                                    Navigator.pop(context);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ReadingPage(
-                                          book: book.toJson(),
-                                          isExtrait: !isOwned,
-                                        ),
-                                      ),
-                                    );
-                                  },
+                            onTap: () {
+                              Navigator.pop(context);
+                              if (isLocked) {
+                                _lancerPaiementDirect(book);
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ReadingPage(
+                                      book: book.toJson(),
+                                      isExtrait: !isOwned,
+                                      initialPage: ch.pageDepart > 0
+                                          ? ch.pageDepart
+                                          : null,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
                           );
                         },
                       )
@@ -367,7 +397,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             number: "01",
                             title: "Introduction",
                             description:
-                                "Découvrez les premières pages de l'œuvre.",
+                                "Découvrez cet extrait gratuit.",
                             isLocked: false,
                             onTap: () {
                               Navigator.pop(context);
@@ -386,40 +416,44 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           _buildChapterTile(
                             number: "02",
                             title: "Développement",
-                            description: "Le cœur de l'histoire prend forme.",
-                            isLocked: !isOwned,
-                            onTap: isOwned
-                                ? () {
-                                    Navigator.pop(context);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ReadingPage(book: book.toJson()),
-                                      ),
-                                    );
-                                  }
-                                : null,
+                            description:
+                                "Découvrez cet extrait gratuit.",
+                            isLocked: false,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReadingPage(
+                                    book: book.toJson(),
+                                    isExtrait: !isOwned,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 8),
                           _buildChapterTile(
                             number: "03",
                             title: "Conclusion",
-                            description:
-                                "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                            description: isOwned
+                                ? "Disponible dans l'ouvrage."
+                                : "Contenu verrouillé - Achetez le livre pour lire la suite.",
                             isLocked: !isOwned,
-                            onTap: isOwned
-                                ? () {
-                                    Navigator.pop(context);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ReadingPage(book: book.toJson()),
-                                      ),
-                                    );
-                                  }
-                                : null,
+                            onTap: () {
+                              Navigator.pop(context);
+                              if (!isOwned) {
+                                _lancerPaiementDirect(book);
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ReadingPage(book: book.toJson()),
+                                  ),
+                                );
+                              }
+                            },
                           ),
                         ],
                       ),
@@ -708,8 +742,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       SizedBox(height: 16),
 
                       if (_chapitres.isNotEmpty)
-                        ..._chapitres.map((ch) {
-                          final isLocked = !isOwned && !ch.estGratuit;
+                        ..._chapitres.take(3).toList().asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final ch = entry.value;
+                          final isExtraitGratuit = (!isOwned) && _isChapterInExtrait(ch, index);
+                          final isLocked = !isOwned && !isExtraitGratuit;
                           final numStr = ch.numero < 10
                               ? "0${ch.numero}"
                               : "${ch.numero}";
@@ -722,27 +759,26 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   ? ch.description
                                   : (isLocked
                                         ? "Contenu verrouillé - Achetez le livre pour lire la suite."
-                                        : "Découvrez cet extrait gratuit."),
+                                        : "Extrait gratuit - Disponible à la lecture."),
                               isLocked: isLocked,
-                              onTap: isLocked
-                                  ? null
-                                  : () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ReadingPage(
-                                            book: book.toJson(),
-                                            isExtrait: !isOwned,
-                                            // Ouvre directement au chapitre.
-                                            // Sans page connue, le lecteur
-                                            // reprend ou il en etait.
-                                            initialPage: ch.pageDepart > 0
-                                                ? ch.pageDepart
-                                                : null,
-                                          ),
-                                        ),
-                                      );
-                                    },
+                              onTap: () {
+                                if (isLocked) {
+                                  _lancerPaiementDirect(book);
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ReadingPage(
+                                        book: book.toJson(),
+                                        isExtrait: !isOwned,
+                                        initialPage: ch.pageDepart > 0
+                                            ? ch.pageDepart
+                                            : null,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                           );
                         }).toList()
@@ -751,7 +787,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           number: "01",
                           title: "Introduction",
                           description:
-                              "Découvrez les premières pages de l'œuvre.",
+                              "Extrait gratuit - Disponible à la lecture.",
                           isLocked: false,
                           onTap: () {
                             Navigator.push(
@@ -769,38 +805,42 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         _buildChapterTile(
                           number: "02",
                           title: "Développement",
-                          description: "Le cœur de l'histoire prend forme.",
-                          isLocked: !isOwned,
-                          onTap: isOwned
-                              ? () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ReadingPage(book: book.toJson()),
-                                    ),
-                                  );
-                                }
-                              : null,
+                          description:
+                              "Extrait gratuit - Disponible à la lecture.",
+                          isLocked: false,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReadingPage(
+                                  book: book.toJson(),
+                                  isExtrait: !isOwned,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                         SizedBox(height: 8),
                         _buildChapterTile(
                           number: "03",
                           title: "Conclusion",
-                          description:
-                              "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                          description: isOwned
+                              ? "Disponible dans l'ouvrage."
+                              : "Contenu verrouillé - Achetez le livre pour lire la suite.",
                           isLocked: !isOwned,
-                          onTap: isOwned
-                              ? () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ReadingPage(book: book.toJson()),
-                                    ),
-                                  );
-                                }
-                              : null,
+                          onTap: () {
+                            if (!isOwned) {
+                              _lancerPaiementDirect(book);
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ReadingPage(book: book.toJson()),
+                                ),
+                              );
+                            }
+                          },
                         ),
                       ],
 
@@ -1020,38 +1060,33 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               children: [
                                 Row(
                                   children: [
-                                    Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "PRIX EBOOK",
-                                          style: GoogleFonts.poppins(
-                                            color: AppColors.textSecondary,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 0.5,
+                                    Flexible(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "PRIX EBOOK",
+                                            style: GoogleFonts.poppins(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: 0.5,
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          "${book.prix} FCFA",
-                                          style: AppTextStyles.heroTitle22,
-                                        ),
-                                      ],
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              _formatPrix(book.prix),
+                                              style: AppTextStyles.heroTitle22,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    // Le panier est parti.
-                                    //
-                                    // Il affichait le total de tous les
-                                    // livres puis n'en payait qu'un seul —
-                                    // les autres disparaissaient sans un mot.
-                                    // Et un panier sert a grouper : a amortir
-                                    // des frais de port, ou a composer une
-                                    // commande sur plusieurs jours. Un fichier
-                                    // livre a l'instant n'a rien a amortir,
-                                    // ce que Kindle, Apple Books et Google
-                                    // Play Livres ont tous conclu avant nous.
-                                    SizedBox(width: 24),
+                                    const SizedBox(width: 16),
                                     Expanded(
                                       child: SizedBox(
                                         height: 50,

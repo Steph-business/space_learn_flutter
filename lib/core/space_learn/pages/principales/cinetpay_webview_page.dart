@@ -134,7 +134,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Paiement CinetPay',
+              'Paiement',
               style: GoogleFonts.poppins(
                 color: AppColors.textPrimary,
                 fontSize: 16,
