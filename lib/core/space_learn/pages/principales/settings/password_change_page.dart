@@ -3,6 +3,8 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/forgot_password.dart';
 
 class PasswordChangePage extends StatefulWidget {
   const PasswordChangePage({super.key});
@@ -15,9 +17,20 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   final _currentController = TextEditingController();
   final _newController = TextEditingController();
   final _confirmController = TextEditingController();
+  final _authService = AuthService();
+
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _currentController.dispose();
+    _newController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +39,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.scaffoldBackground
-          : Color.fromARGB(255, 250, 249, 246),
+          : const Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -56,7 +69,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
                 color: AppColors.textPrimary,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               "Votre nouveau mot de passe doit comporter au moins 6 caractères.",
               style: GoogleFonts.poppins(
@@ -64,7 +77,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
                 color: AppColors.textSecondary,
               ),
             ),
-            SizedBox(height: 36),
+            const SizedBox(height: 32),
             _buildPasswordField(
               controller: _currentController,
               label: "Mot de passe actuel",
@@ -72,14 +85,34 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
               onToggle: () =>
                   setState(() => _obscureCurrent = !_obscureCurrent),
             ),
-            SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ForgotPasswordPage(),
+                    ),
+                  );
+                },
+                child: Text(
+                  "Mot de passe oublié ?",
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             _buildPasswordField(
               controller: _newController,
               label: "Nouveau mot de passe",
               obscureText: _obscureNew,
               onToggle: () => setState(() => _obscureNew = !_obscureNew),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _buildPasswordField(
               controller: _confirmController,
               label: "Confirmer le nouveau mot de passe",
@@ -87,28 +120,38 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
               onToggle: () =>
                   setState(() => _obscureConfirm = !_obscureConfirm),
             ),
-            SizedBox(height: 40),
+            const SizedBox(height: 36),
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: _handleSubmit,
+                onPressed: _isLoading ? null : _handleSubmit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusInner,
                     ),
                   ),
                 ),
-                child: Text(
-                  "Mettre à jour le mot de passe",
-                  style: GoogleFonts.poppins(
-                    color: AppColors.onAccent,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : Text(
+                        "Mettre à jour le mot de passe",
+                        style: GoogleFonts.poppins(
+                          color: AppColors.onAccent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -161,10 +204,12 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     );
   }
 
-  void _handleSubmit() {
-    final current = _currentController.text;
-    final newPass = _newController.text;
-    final confirm = _confirmController.text;
+  Future<void> _handleSubmit() async {
+    if (_isLoading) return;
+
+    final current = _currentController.text.trim();
+    final newPass = _newController.text.trim();
+    final confirm = _confirmController.text.trim();
 
     if (current.isEmpty || newPass.isEmpty || confirm.isEmpty) {
       AppNotifications.showSnackBar(
@@ -185,17 +230,57 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     if (newPass.length < 6) {
       AppNotifications.showSnackBar(
         context,
-        message: "Le mot de passe doit contenir au moins 6 caractères.",
+        message: "Le nouveau mot de passe doit contenir au moins 6 caractères.",
+        isError: true,
+      );
+      return;
+    }
+    if (current == newPass) {
+      AppNotifications.showSnackBar(
+        context,
+        message: "Le nouveau mot de passe doit être différent de l'actuel.",
         isError: true,
       );
       return;
     }
 
-    Navigator.of(context).pop();
-    AppNotifications.showSnackBar(
-      context,
-      message: "Mot de passe modifié avec succès !",
-      isSuccess: true,
-    );
+    setState(() => _isLoading = true);
+
+    try {
+      final success = await _authService.changePassword(
+        currentPassword: current,
+        newPassword: newPass,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        AppNotifications.showPremiumDialog(
+          context,
+          title: "Mot de passe modifié",
+          message:
+              "Votre mot de passe a été mis à jour avec succès dans la base de données. Vous pourrez vous connecter avec ce nouveau mot de passe.",
+          confirmText: "D'accord",
+          isSuccess: true,
+          onConfirm: () {
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppNotifications.showSnackBar(
+          context,
+          message: e.toString().replaceFirst("Exception: ", ""),
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 }

@@ -42,7 +42,7 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.scaffoldBackground
-          : Color.fromARGB(255, 250, 249, 246),
+          : const Color.fromARGB(255, 250, 249, 246),
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -70,7 +70,7 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
               color: AppColors.textPrimary,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             "Sélectionnez votre langue d'affichage préférée.",
             style: GoogleFonts.poppins(
@@ -78,19 +78,38 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
               color: AppColors.textSecondary,
             ),
           ),
-          SizedBox(height: 28),
+          const SizedBox(height: 28),
           Card(
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
+            elevation: 0,
             child: Column(
               children: [
-                _buildLangTile("Français (French)", "fr", "🇫🇷"),
-                Divider(height: 1, indent: 16, endIndent: 16),
-                _buildLangTile("English (English)", "en", "🇬🇧"),
-                Divider(height: 1, indent: 16, endIndent: 16),
-                _buildLangTile("Español (Spanish)", "es", "🇪🇸"),
+                _buildLangTile(
+                  name: "Français",
+                  subtitle: "French",
+                  code: "fr",
+                  flag: "🇫🇷",
+                  isAvailable: true,
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _buildLangTile(
+                  name: "English",
+                  subtitle: "Anglais",
+                  code: "en",
+                  flag: "🇬🇧",
+                  isAvailable: false,
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _buildLangTile(
+                  name: "Español",
+                  subtitle: "Espagnol",
+                  code: "es",
+                  flag: "🇪🇸",
+                  isAvailable: false,
+                ),
               ],
             ),
           ),
@@ -99,27 +118,95 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
     );
   }
 
-  Widget _buildLangTile(String name, String code, String flag) {
-    final isSelected = _selectedLang == code;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildLangTile({
+    required String name,
+    required String subtitle,
+    required String code,
+    required String flag,
+    required bool isAvailable,
+  }) {
+    final isSelected = _selectedLang == code && isAvailable;
+
     return ListTile(
-      leading: Text(flag, style: TextStyle(fontSize: 24)),
-      title: Text(
-        name,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      leading: Container(
+        width: 42,
+        height: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : (isAvailable
+                  ? Colors.grey.withValues(alpha: 0.1)
+                  : Colors.grey.withValues(alpha: 0.05)),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+        ),
+        child: Text(flag, style: const TextStyle(fontSize: 22)),
+      ),
+      title: Row(
+        children: [
+          Text(
+            name,
+            style: GoogleFonts.poppins(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isAvailable
+                  ? AppColors.textPrimary
+                  : AppColors.textSecondary.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (!isAvailable)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "Bientôt",
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.amber.shade800,
+                ),
+              ),
+            ),
+        ],
+      ),
+      subtitle: Text(
+        subtitle,
         style: GoogleFonts.poppins(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? AppColors.accentInk : (AppColors.textPrimary),
+          fontSize: 12,
+          color: AppColors.textSecondary,
         ),
       ),
       trailing: isSelected
-          ? Icon(Icons.check_circle, color: AppColors.accentInk)
-          : null,
+          ? Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 24)
+          : (!isAvailable
+              ? Icon(
+                  Icons.lock_clock_outlined,
+                  color: AppColors.textHint,
+                  size: 20,
+                )
+              : null),
       onTap: () {
+        if (!isAvailable) {
+          AppNotifications.showPremiumDialog(
+            context,
+            title: "Langue non disponible",
+            message:
+                "La langue $name ($subtitle) n'est pas encore disponible pour le moment. L'application est actuellement optimisée en Français.",
+            confirmText: "Compris",
+            isSuccess: false,
+          );
+          return;
+        }
+
         setState(() => _selectedLang = code);
         _setLang(code);
         AppNotifications.showSnackBar(
           context,
-          message: "Langue modifiée avec succès !",
+          message: "Langue définie sur $name.",
           isSuccess: true,
         );
       },

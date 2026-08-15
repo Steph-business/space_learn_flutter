@@ -17,7 +17,6 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
@@ -44,8 +43,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   String? _selectedCoverPath;
   Uint8List? _selectedCoverBytes;
   bool _isUploading = false;
-  double _progressionUpload = 0;
-  String _etapeUpload = '';
   bool _isFree = false;
 
   /// Un manuscrit est déjà déposé côté serveur, et sera conservé tant que
@@ -112,7 +109,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           });
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      debugPrint("Erreur lors du chargement de l'utilisateur courant : $e");
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -167,13 +166,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
             _selectedFileBytes = result.files.single.bytes;
           }
         });
-        if (mounted) {
-          AppNotifications.showSnackBar(
-            context,
-            message: "Fichier du livre sélectionné avec succès",
-            isSuccess: true,
-          );
-        }
       }
     } catch (e) {
       if (mounted) {
@@ -200,13 +192,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
             _selectedCoverBytes = bytes;
           }
         });
-        if (mounted) {
-          AppNotifications.showSnackBar(
-            context,
-            message: "Image de couverture sélectionnée avec succès",
-            isSuccess: true,
-          );
-        }
       }
     } catch (e) {
       if (mounted) {
@@ -362,10 +347,8 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         livreId = cree.id;
       }
 
-      // Televersement via le backend : c'est lui qui detient la cle de service
-      // et qui enregistre le chemin du fichier sur le livre.
+      // Téléversement des fichiers si modifiés/fournis
       if (_selectedCoverPath != null || _selectedCoverBytes != null) {
-        setState(() => _etapeUpload = "Envoi de la couverture");
         await UploadService.envoyer(
           authToken: token,
           livreId: livreId,
@@ -373,15 +356,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           cheminFichier: _selectedCoverPath,
           octets: _selectedCoverBytes,
           nomFichier: _selectedCoverName,
-          onProgress: (p) => setState(() => _progressionUpload = p),
         );
       }
 
       if (_selectedFilePath != null || _selectedFileBytes != null) {
-        setState(() {
-          _etapeUpload = "Envoi du livre";
-          _progressionUpload = 0;
-        });
         await UploadService.envoyer(
           authToken: token,
           livreId: livreId,
@@ -389,13 +367,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           cheminFichier: _selectedFilePath,
           octets: _selectedFileBytes,
           nomFichier: _selectedFileName,
-          onProgress: (p) => setState(() => _progressionUpload = p),
         );
       }
 
       // Publication effective une fois les fichiers en place.
       if (!isDraft && statutInitial != 'publie') {
-        setState(() => _etapeUpload = "Publication");
         await _bookService.updateBook(livreId, champs('publie'), token);
       }
 
@@ -417,8 +393,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       if (mounted) {
         setState(() {
           _isUploading = false;
-          _progressionUpload = 0;
-          _etapeUpload = '';
         });
       }
     }
@@ -444,7 +418,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -857,38 +831,13 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   ),
                 ),
                 child: _isUploading
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              // Progression reelle des que l'envoi a
-                              // commence : un manuscrit de 20 Mo sur
-                              // reseau lent laisse sinon l'auteur sans
-                              // aucun signe de vie.
-                              value: _progressionUpload > 0
-                                  ? _progressionUpload
-                                  : null,
-                              color: AppColors.onAccent,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          if (_etapeUpload.isNotEmpty) ...[
-                            const SizedBox(width: 10),
-                            Text(
-                              _progressionUpload > 0
-                                  ? '$_etapeUpload ${(_progressionUpload * 100).round()} %'
-                                  : _etapeUpload,
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.onAccent,
-                              ),
-                            ),
-                          ],
-                        ],
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.onAccent,
+                          strokeWidth: 2.5,
+                        ),
                       )
                     : Text(
                         widget.book != null ? "Modifier" : "Publier",
@@ -1038,7 +987,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         decoration: BoxDecoration(
           color: AppColors.error,
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-          border: Border.all(color: AppColors.error!),
+          border: Border.all(color: AppColors.error),
         ),
         child: Row(
           children: [
@@ -1293,7 +1242,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           border: Border.all(
             color: isSelected
-                ? AppColors.secondaryVariant.withOpacity(0.5)
+                ? AppColors.secondaryVariant.withValues(alpha: 0.5)
                 : Colors.transparent,
             width: 1.5,
           ),
@@ -1359,10 +1308,17 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
                     subtitle,
                     style: GoogleFonts.poppins(
-                      // Le fond sélectionné n'est qu'un voile orange à 10 % :
-                      // un texte blanc y devenait illisible en mode clair.
                       color: AppColors.textPrimary,
                       fontSize: 14,
                       fontWeight: isSelected

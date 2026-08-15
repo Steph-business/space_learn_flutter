@@ -2,7 +2,6 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../themes/layout/nav_bar_all.dart';
 import '../../../../themes/layout/recherche_bar.dart';
 import '../../widgets/lecteur/boutique/livre_card.dart';
 import '../../widgets/lecteur/boutique/select_categorie.dart';
@@ -13,8 +12,6 @@ import 'package:space_learn_flutter/core/space_learn/data/model/library_model.da
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 
 class MarketplacePage extends StatefulWidget {
   const MarketplacePage({super.key});
@@ -27,9 +24,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
   final BookService _bookService = BookService();
   final LibraryService _libraryService = LibraryService();
   final ReviewService _reviewService = ReviewService();
-  final AuthService _authService = AuthService();
   List<BookModel> _books = [];
-  String _userName = "Lecteur";
   List<String> _categories = [];
   Set<String> _ownedBookIds = {};
   bool _isLoading = true;
@@ -71,20 +66,15 @@ class _MarketplacePageState extends State<MarketplacePage> {
         token != null
             ? _reviewService.getUserReviews(token)
             : Future.value(<ReviewModel>[]),
-        token != null ? _authService.getUser(token) : Future.value(null),
       ]);
 
       List<BookModel> books = results[0] as List<BookModel>;
       final library = results[1] as List<LibraryModel>;
       final userReviews = results[2] as List<ReviewModel>;
-      final user = results[3];
 
       if (mounted) {
         setState(() {
           _ownedBookIds = library.map((e) => e.livreId).toSet();
-          if (user != null && user is UserModel && user.nomComplet.isNotEmpty) {
-            _userName = user.nomComplet;
-          }
 
           // Enrichment: Update books with data from library and user's own ratings
           final Map<String, BookModel> libraryBooks = {};
@@ -393,27 +383,33 @@ class _MarketplacePageState extends State<MarketplacePage> {
     AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      body: Column(
-        children: [
-          // En-tête fixe
-          NavBarAll(userName: _userName),
-          // Contenu défilable
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _loadBooks,
-              color: AppColors.accentInk,
-              backgroundColor: AppColors.cardBackground,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [_buildBody(context)],
-                ),
-              ),
-            ),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: Text(
+          "BOUTIQUE",
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
           ),
-        ],
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadBooks,
+        color: AppColors.accentInk,
+        backgroundColor: AppColors.cardBackground,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [_buildBody(context)],
+          ),
+        ),
       ),
     );
   }

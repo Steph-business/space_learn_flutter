@@ -13,6 +13,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenement
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
 import 'recherche_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/salon_noms.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/carte_evenement.dart';
@@ -67,18 +68,48 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
 
       final libraryItems = await _libraryService.getUserLibrary(token);
 
-      // Le prénom n'est qu'un ornement : son absence ne doit pas priver le
-      // lecteur de sa page.
+      // Le prénom et l'utilisateur connecté
       String prenom = '';
+      UserModel? currentUser;
       try {
-        final user = await AuthService().getUser(token);
-        if (user != null) prenom = user.nomComplet.trim().split(' ').first;
+        currentUser = await AuthService().getUser(token);
+        if (currentUser != null) {
+          prenom = currentUser.nomComplet.trim().split(' ').first;
+        }
       } catch (_) {}
+
+      // Si l'utilisateur a écrit des livres, ses propres œuvres sont automatiquement
+      // intégrées dans ses clubs de lecture pour qu'il puisse échanger avec ses lecteurs
+      // sans avoir besoin d'acheter ses propres livres.
+      List<LibraryModel> authorItems = [];
+      if (currentUser != null && currentUser.id.isNotEmpty) {
+        try {
+          final authorBooks = await _bookService.getBooksByAuthorId(currentUser.id);
+          for (final book in authorBooks) {
+            final alreadyInLib = libraryItems.any((item) => item.livre?.id == book.id);
+            if (!alreadyInLib) {
+              authorItems.add(
+                LibraryModel(
+                  id: 'author_${book.id}',
+                  utilisateurId: currentUser.id,
+                  livreId: book.id,
+                  acquisVia: 'AUTEUR',
+                  auteurNom: currentUser.nomComplet,
+                  livre: book,
+                  creeLe: book.creeLe,
+                ),
+              );
+            }
+          }
+        } catch (_) {}
+      }
+
+      final allLibraryItems = [...libraryItems, ...authorItems];
 
       List<Evenement> evts = [];
       try {
         evts = await _evenementService.getGlobalEvenements(token);
-        evts = await _enrichirEvenementsAvecAuteurs(evts, libraryItems);
+        evts = await _enrichirEvenementsAvecAuteurs(evts, allLibraryItems);
       } catch (e) {}
 
       int totalCafeMsgs = 0;
@@ -94,7 +125,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
       } catch (e) {}
 
       // Filtrer les entrées sans livre valide
-      final validItems = libraryItems
+      final validItems = allLibraryItems
           .where((item) => item.livre != null)
           .toList();
 

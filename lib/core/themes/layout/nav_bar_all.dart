@@ -6,6 +6,7 @@ import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 
 import '../../space_learn/pages/principales/notificationPage.dart';
 import '../../space_learn/pages/principales/messages_page.dart';
+import '../../space_learn/pages/principales/profilePage.dart';
 import 'package:provider/provider.dart';
 import '../../space_learn/data/dataServices/notification_provider.dart';
 
@@ -53,22 +54,58 @@ class NavBarAll extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                Container(
-                  width: 45,
-                  height: 45,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.textHint, width: 1),
-                    color: AppColors.cardBackground,
-                  ),
-                  child: ClipOval(
-                    child: ProfileImageHelper.buildProfileImage(
-                      userUrl,
-                      fallbackInitial: initial,
-                      textStyle: AppTextStyles.sectionTitle,
-                      width: 45,
-                      height: 45,
-                      fit: BoxFit.cover,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ProfilePage(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: userUrl != null && userUrl!.isNotEmpty
+                          ? null
+                          : LinearGradient(
+                              colors: [
+                                AppColors.secondaryVariant,
+                                AppColors.secondaryVariant.withValues(alpha: 0.85),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      color: userUrl != null && userUrl!.isNotEmpty
+                          ? AppColors.cardBackground
+                          : null,
+                      border: Border.all(
+                        color: AppColors.secondaryVariant.withValues(alpha: 0.4),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.secondaryVariant.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: ProfileImageHelper.buildProfileImage(
+                        userUrl,
+                        fallbackInitial: initial,
+                        textStyle: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        width: 45,
+                        height: 45,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),

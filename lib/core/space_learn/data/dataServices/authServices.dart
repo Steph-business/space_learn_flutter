@@ -117,7 +117,7 @@ class AuthService {
     if (token != null) {
       try {
         final url = Uri.parse(ApiRoutes.logout);
-        final response = await http.post(
+        await http.post(
           url,
           headers: {
             "Content-Type": "application/json",
@@ -315,6 +315,47 @@ class AuthService {
       try {
         final errorData = jsonDecode(response.body);
         errorMessage = errorData['error'] ?? errorMessage;
+      } catch (_) {}
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// ✅ Modifier le mot de passe d'un utilisateur connecté
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final currentToken = await TokenStorage.getToken();
+    if (currentToken == null) {
+      throw Exception("Vous devez être connecté pour modifier votre mot de passe.");
+    }
+
+    final url = Uri.parse(ApiRoutes.changePassword);
+    final response = await http.put(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $currentToken",
+      },
+      body: jsonEncode({
+        "current_password": currentPassword,
+        "old_password": currentPassword,
+        "ancien_mot_de_passe": currentPassword,
+        "new_password": newPassword,
+        "nouveau_mot_de_passe": newPassword,
+        "password": newPassword,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    } else {
+      String errorMessage = "Impossible de modifier le mot de passe.";
+      try {
+        final errorData = jsonDecode(response.body);
+        if (errorData is Map) {
+          errorMessage = errorData['error'] ?? errorData['message'] ?? errorMessage;
+        }
       } catch (_) {}
       throw Exception(errorMessage);
     }

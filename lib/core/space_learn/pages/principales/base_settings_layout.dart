@@ -113,133 +113,162 @@ class BaseSettingsLayout extends StatelessWidget {
     );
   }
 
-  static void showLogoutDialog(BuildContext context) {
+  static void showLogoutDialog(BuildContext parentContext) {
     showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-              border: Border.all(
-                color: AppColors.textPrimary.withOpacity(0.08),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.error.withOpacity(0.12),
-                    border: Border.all(
-                      color: AppColors.error.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.logout_rounded,
-                    size: 28,
-                    color: AppColors.error,
+      context: parentContext,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        bool isLoggingOut = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBackground,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+                  border: Border.all(
+                    color: AppColors.textPrimary.withOpacity(0.08),
                   ),
                 ),
-                SizedBox(height: 20),
-                Text(
-                  "Déconnexion",
-                  style: GoogleFonts.poppins(
-                    color: AppColors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 12),
-                Text(
-                  "Êtes-vous sûr de vouloir vous déconnecter de votre compte ?",
-                  style: GoogleFonts.poppins(
-                    color: AppColors.textPrimary.withOpacity(0.7),
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 24),
-                Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.textHint,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppDimensions.radiusInner,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            "Annuler",
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.error.withOpacity(0.12),
+                        border: Border.all(
+                          color: AppColors.error.withOpacity(0.3),
+                          width: 1.5,
                         ),
+                      ),
+                      child: const Icon(
+                        Icons.logout_rounded,
+                        size: 28,
+                        color: AppColors.error,
                       ),
                     ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            Navigator.of(context).pop();
-                            final authService = AuthService();
-                            await authService.logout();
-                            await ProfileStorage.clearSelectedProfile();
-                            await ProfileStorage.clearSelectedProfileRole();
-                            if (context.mounted) {
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginPage(),
+                    const SizedBox(height: 20),
+                    Text(
+                      "Déconnexion",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Êtes-vous sûr de vouloir vous déconnecter de votre compte ?",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textPrimary.withOpacity(0.7),
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: TextButton(
+                              onPressed: isLoggingOut
+                                  ? null
+                                  : () => Navigator.of(dialogContext).pop(),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.textHint,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
                                 ),
-                                (route) => false,
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.error,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppDimensions.radiusInner,
+                              ),
+                              child: Text(
+                                "Annuler",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
-                          child: Text(
-                            "Déconnexion",
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: isLoggingOut
+                                  ? null
+                                  : () async {
+                                      setDialogState(() {
+                                        isLoggingOut = true;
+                                      });
+                                      try {
+                                        final authService = AuthService();
+                                        await authService.logout();
+                                        await ProfileStorage.clearSelectedProfile();
+                                        await ProfileStorage.clearSelectedProfileRole();
+                                      } catch (_) {}
+
+                                      if (dialogContext.mounted) {
+                                        Navigator.of(dialogContext).pop();
+                                      }
+                                      if (parentContext.mounted) {
+                                        Navigator.of(parentContext).pushAndRemoveUntil(
+                                          MaterialPageRoute(
+                                            builder: (_) => const LoginPage(),
+                                          ),
+                                          (route) => false,
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.error,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
+                                ),
+                              ),
+                              child: isLoggingOut
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      "Déconnexion",
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

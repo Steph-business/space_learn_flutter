@@ -37,6 +37,7 @@ class ApiRoutes {
   static const String getUser = "$baseUrl/utilisateurs/me";
   static const String updateUser = "$baseUrl/utilisateurs/update";
   static const String selectProfile = "$baseUrl/utilisateurs/me/profil";
+  static const String changePassword = "$baseUrl/utilisateurs/change-password";
 
   // Book routes
   static const String books = "$baseUrlsGin/api/books";

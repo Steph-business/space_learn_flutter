@@ -22,8 +22,21 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _visioController = TextEditingController();
+  final TextEditingController _customTypeController = TextEditingController();
   final EvenementService _evenementService = EvenementService();
+
+  static const String _autreTypeOption = 'autre_custom';
+  static const List<String> _predefinedTypes = [
+    "Séance de Dédicace",
+    "Live Q&A",
+    "Lancement de livre",
+    "Atelier d'écriture",
+    "Club de lecture",
+    "Conférence / Débat",
+  ];
+
   String _eventType = "Séance de Dédicace";
+  bool _showCustomType = false;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isCreating = false;
@@ -34,9 +47,15 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
     if (widget.initialEvenement != null) {
       _titleController.text = widget.initialEvenement!.titre;
       _descController.text = widget.initialEvenement!.contenu;
-      // La categorie, pas le type : rouvrir un evenement affichait
-      // « EVENEMENT » dans un menu qui ne propose que des natures.
-      _eventType = widget.initialEvenement!.categorie ?? _eventType;
+      final cat = widget.initialEvenement!.categorie ?? _eventType;
+      if (_predefinedTypes.contains(cat)) {
+        _eventType = cat;
+        _showCustomType = false;
+      } else if (cat.isNotEmpty) {
+        _eventType = _autreTypeOption;
+        _customTypeController.text = cat;
+        _showCustomType = true;
+      }
       _selectedDate = widget.initialEvenement!.dateEvenement;
       if (widget.initialEvenement!.dateEvenement != null) {
         _selectedTime = TimeOfDay.fromDateTime(
@@ -52,25 +71,61 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
     _titleController.dispose();
     _descController.dispose();
     _visioController.dispose();
+    _customTypeController.dispose();
     super.dispose();
   }
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
+      initialDate: _selectedDate ?? DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
             colorScheme: ColorScheme.dark(
-              primary: AppColors.success,
-              onPrimary: Colors.white,
+              primary: AppColors.secondaryVariant,
+              onPrimary: AppColors.onAccent,
               surface: AppColors.cardBackground,
+              onSurface: AppColors.textPrimary,
+              surfaceContainerHighest: AppColors.cardBackground,
+              onSurfaceVariant: AppColors.textSecondary,
             ),
             dialogTheme: DialogThemeData(
-              backgroundColor: AppColors.scaffoldBackground,
+              backgroundColor: AppColors.cardBackground,
+            ),
+            scaffoldBackgroundColor: AppColors.cardBackground,
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: AppColors.cardBackground,
+              headerBackgroundColor: AppColors.cardBackground,
+              headerForegroundColor: AppColors.textPrimary,
+              surfaceTintColor: Colors.transparent,
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppColors.onAccent;
+                }
+                if (states.contains(WidgetState.disabled)) {
+                  return AppColors.textHint;
+                }
+                return AppColors.textPrimary;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppColors.secondaryVariant;
+                }
+                return Colors.transparent;
+              }),
+              todayForegroundColor:
+                  WidgetStateProperty.all(AppColors.secondaryVariant),
+              todayBorder: BorderSide(color: AppColors.secondaryVariant),
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+              ),
+              confirmButtonStyle: TextButton.styleFrom(
+                foregroundColor: AppColors.secondaryVariant,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
           child: child!,
@@ -85,13 +140,37 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: _selectedTime ?? TimeOfDay.now(),
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AppColors.secondaryVariant,
+              onPrimary: AppColors.onAccent,
+              surface: AppColors.cardBackground,
+              onSurface: AppColors.textPrimary,
+              surfaceContainerHighest: AppColors.darkSurface,
+            ),
+            dialogTheme: DialogThemeData(
+              backgroundColor: AppColors.cardBackground,
+            ),
             timePickerTheme: TimePickerThemeData(
               backgroundColor: AppColors.cardBackground,
-              dialHandColor: AppColors.success,
+              hourMinuteColor: AppColors.darkSurface,
+              hourMinuteTextColor: AppColors.textPrimary,
+              dayPeriodColor: AppColors.darkSurface,
+              dayPeriodTextColor: AppColors.textPrimary,
+              dialBackgroundColor: AppColors.darkSurface,
+              dialHandColor: AppColors.secondaryVariant,
+              dialTextColor: AppColors.textPrimary,
+              entryModeIconColor: AppColors.secondaryVariant,
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+              ),
+              confirmButtonStyle: TextButton.styleFrom(
+                foregroundColor: AppColors.secondaryVariant,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
           child: child!,
@@ -141,12 +220,12 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
               "Organisez un événement pour réunir votre communauté (virtuel ou physique).",
               style: AppTextStyles.grey14,
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 30),
 
             _buildLabel("Type d'événement"),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
@@ -156,7 +235,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: _eventType,
+                  value: _showCustomType ? _autreTypeOption : _eventType,
                   isExpanded: true,
                   dropdownColor: AppColors.cardBackground,
                   icon: Icon(
@@ -164,36 +243,59 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                     color: AppColors.textHint,
                     size: 18,
                   ),
-                  style: AppTextStyles.body,
-                  items:
-                      [
-                        "Séance de Dédicace",
-                        "Live Q&A",
-                        "Lancement de livre",
-                        "Atelier d'écriture",
-                      ].map((type) {
-                        return DropdownMenuItem<String>(
-                          value: type,
-                          child: Text(type),
-                        );
-                      }).toList(),
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                  items: [
+                    ..._predefinedTypes.map((type) {
+                      return DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type),
+                      );
+                    }),
+                    DropdownMenuItem<String>(
+                      value: _autreTypeOption,
+                      child: Text(
+                        "Autre (personnalisé)...",
+                        style: GoogleFonts.poppins(
+                          color: AppColors.secondaryVariant,
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                   onChanged: (value) {
                     setState(() {
-                      if (value != null) _eventType = value;
+                      if (value == _autreTypeOption) {
+                        _showCustomType = true;
+                      } else if (value != null) {
+                        _showCustomType = false;
+                        _eventType = value;
+                        _customTypeController.clear();
+                      }
                     });
                   },
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            if (_showCustomType) ...[
+              const SizedBox(height: 12),
+              _buildTextField(
+                controller: _customTypeController,
+                hint: "Saisir votre type d'événement personnalisé (ex: Webinaire, Masterclass...)",
+              ),
+            ],
+            const SizedBox(height: 20),
 
             _buildLabel("Titre de l'événement"),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             _buildTextField(
               controller: _titleController,
               hint: "Ex: Soirée questions/réponses sur...",
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             Row(
               children: [
@@ -202,7 +304,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildLabel("Date"),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       GestureDetector(
                         onTap: _pickDate,
                         child: Container(
@@ -231,8 +333,11 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                                 style: GoogleFonts.poppins(
                                   color: _selectedDate == null
                                       ? AppColors.textHint
-                                      : Colors.white,
+                                      : AppColors.textPrimary,
                                   fontSize: 14,
+                                  fontWeight: _selectedDate == null
+                                      ? FontWeight.normal
+                                      : FontWeight.w500,
                                 ),
                               ),
                               Icon(
@@ -247,13 +352,13 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                     ],
                   ),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildLabel("Heure"),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       GestureDetector(
                         onTap: _pickTime,
                         child: Container(
@@ -282,8 +387,11 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                                 style: GoogleFonts.poppins(
                                   color: _selectedTime == null
                                       ? AppColors.textHint
-                                      : Colors.white,
+                                      : AppColors.textPrimary,
                                   fontSize: 14,
+                                  fontWeight: _selectedTime == null
+                                      ? FontWeight.normal
+                                      : FontWeight.w500,
                                 ),
                               ),
                               Icon(
@@ -300,39 +408,40 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                 ),
               ],
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             _buildLabel("Description"),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             _buildTextField(
               controller: _descController,
               hint: "Détails de l'événement (lieu, programme, comment participer…)",
               maxLines: 5,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             _buildLabel("Lien de visio (optionnel)"),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               "Google Meet, Zoom, Jitsi, YouTube Live…",
               style: AppTextStyles.grey12,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             _buildTextField(
               controller: _visioController,
               hint: "https://meet.google.com/abc-defg-hij",
               maxLines: 1,
               keyboardType: TextInputType.url,
             ),
-            SizedBox(height: 40),
+            const SizedBox(height: 40),
 
             SizedBox(
               width: double.infinity,
-              height: 56,
+              height: 54,
               child: ElevatedButton(
                 onPressed: _isCreating ? null : _createEvent,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
+                  backgroundColor: AppColors.secondaryVariant,
+                  elevation: 2,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusCard,
@@ -344,7 +453,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                          color: AppColors.textPrimary,
+                          color: AppColors.onAccent,
                           strokeWidth: 2,
                         ),
                       )
@@ -352,7 +461,11 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                         widget.initialEvenement != null
                             ? "Sauvegarder les modifications"
                             : "Créer l'événement",
-                        style: AppTextStyles.subtitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.onAccent,
+                        ),
                       ),
               ),
             ),
@@ -365,6 +478,16 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
   Future<void> _createEvent() async {
     final title = _titleController.text.trim();
     final desc = _descController.text.trim();
+    final customType = _customTypeController.text.trim();
+
+    if (_showCustomType && customType.isEmpty) {
+      AppNotifications.showSnackBar(
+        context,
+        message: "Veuillez préciser le type d'événement personnalisé.",
+        isError: true,
+      );
+      return;
+    }
 
     if (title.isEmpty ||
         desc.isEmpty ||
@@ -372,11 +495,13 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         _selectedTime == null) {
       AppNotifications.showSnackBar(
         context,
-        message: "Veuillez remplir tous les champs.",
+        message: "Veuillez remplir tous les champs obligatoires.",
         isError: true,
       );
       return;
     }
+
+    final finalEventType = _showCustomType ? customType : _eventType;
 
     setState(() => _isCreating = true);
 
@@ -396,11 +521,8 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
       if (widget.initialEvenement != null) {
         await _evenementService.updateEvenement(
           id: widget.initialEvenement!.id,
-          // Le menu choisit une *nature* d'evenement, pas un type de
-          // publication. Envoyee dans type_publication, elle butait sur la
-          // contrainte de la base, qui n'accepte que ANNONCE et EVENEMENT.
           typePublication: "EVENEMENT",
-          categorie: _eventType,
+          categorie: finalEventType,
           titre: title,
           contenu: desc,
           token: token,
@@ -412,7 +534,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
       } else {
         await _evenementService.createEvenement(
           typePublication: "EVENEMENT",
-          categorie: _eventType,
+          categorie: finalEventType,
           titre: title,
           contenu: desc,
           token: token,
@@ -480,7 +602,7 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-          borderSide: BorderSide(color: AppColors.success),
+          borderSide: BorderSide(color: AppColors.secondaryVariant),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

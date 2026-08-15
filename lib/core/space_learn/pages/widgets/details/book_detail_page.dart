@@ -68,6 +68,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
   UserModel? _currentUser;
   bool _acquisitionEnCours = false;
   bool _paiementEnCours = false;
+  bool _isDescriptionExpanded = false;
 
   /// Un livre a prix nul.
   bool get _estGratuit => (_fullBook ?? widget.book).prix <= 0;
@@ -131,7 +132,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
         final user = await authService.getUser(token);
         final currentBook = _fullBook ?? widget.book;
 
-        final isAuthor = user != null &&
+        final isAuthor =
+            user != null &&
             ((currentBook.auteurId.isNotEmpty &&
                     (user.id == currentBook.auteurId ||
                         user.profilId == currentBook.auteurId)) ||
@@ -355,7 +357,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final ch = chaptersList[index];
-                          final isExtraitGratuit = (!isOwned) && _isChapterInExtrait(ch, index);
+                          final isExtraitGratuit =
+                              (!isOwned) && _isChapterInExtrait(ch, index);
                           final isLocked = !isOwned && !isExtraitGratuit;
                           final numStr = ch.numero < 10
                               ? "0${ch.numero}"
@@ -396,8 +399,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           _buildChapterTile(
                             number: "01",
                             title: "Introduction",
-                            description:
-                                "Découvrez cet extrait gratuit.",
+                            description: "Découvrez cet extrait gratuit.",
                             isLocked: false,
                             onTap: () {
                               Navigator.pop(context);
@@ -416,8 +418,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           _buildChapterTile(
                             number: "02",
                             title: "Développement",
-                            description:
-                                "Découvrez cet extrait gratuit.",
+                            description: "Découvrez cet extrait gratuit.",
                             isLocked: false,
                             onTap: () {
                               Navigator.pop(context);
@@ -695,30 +696,79 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Description', style: AppTextStyles.sectionTitle),
-                      SizedBox(height: 12),
-                      Text(
-                        book.description.isEmpty
-                            ? "Aucune description disponible pour ce livre."
-                            : book.description,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                          height: 1.6,
+                      const SizedBox(height: 12),
+                      AnimatedCrossFade(
+                        firstChild: Text(
+                          book.description.isEmpty
+                              ? "Aucune description disponible pour ce livre."
+                              : book.description,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            height: 1.6,
+                          ),
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Lire la suite ⌄',
-                        style: GoogleFonts.poppins(
-                          color: AppColors.accentInk,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                        secondChild: Text(
+                          book.description.isEmpty
+                              ? "Aucune description disponible pour ce livre."
+                              : book.description,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            height: 1.6,
+                          ),
                         ),
+                        crossFadeState: _isDescriptionExpanded
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        duration: const Duration(milliseconds: 250),
                       ),
+                      if (book.description.length > 100) ...[
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _isDescriptionExpanded = !_isDescriptionExpanded;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 4,
+                              horizontal: 2,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _isDescriptionExpanded
+                                      ? 'Réduire'
+                                      : 'Lire la suite',
+                                  style: GoogleFonts.poppins(
+                                    color: AppColors.secondaryVariant,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  _isDescriptionExpanded
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.keyboard_arrow_down_rounded,
+                                  size: 18,
+                                  color: AppColors.secondaryVariant,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
 
-                      SizedBox(height: 40),
+                      const SizedBox(height: 40),
 
                       // Sommaire
                       Row(
@@ -742,10 +792,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       SizedBox(height: 16),
 
                       if (_chapitres.isNotEmpty)
-                        ..._chapitres.take(3).toList().asMap().entries.map((entry) {
+                        ..._chapitres.take(3).toList().asMap().entries.map((
+                          entry,
+                        ) {
                           final index = entry.key;
                           final ch = entry.value;
-                          final isExtraitGratuit = (!isOwned) && _isChapterInExtrait(ch, index);
+                          final isExtraitGratuit =
+                              (!isOwned) && _isChapterInExtrait(ch, index);
                           final isLocked = !isOwned && !isExtraitGratuit;
                           final numStr = ch.numero < 10
                               ? "0${ch.numero}"
@@ -1093,14 +1146,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                         child: ElevatedButton(
                                           onPressed: _paiementEnCours
                                               ? null
-                                              : () => _lancerPaiementDirect(book),
+                                              : () =>
+                                                    _lancerPaiementDirect(book),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:
                                                 AppColors.secondary,
                                             foregroundColor: AppColors.onAccent,
-                                            disabledBackgroundColor:
-                                                AppColors.secondary
-                                                    .withValues(alpha: 0.6),
+                                            disabledBackgroundColor: AppColors
+                                                .secondary
+                                                .withValues(alpha: 0.6),
                                             elevation: 0,
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
@@ -1115,9 +1169,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                                   width: 20,
                                                   child:
                                                       CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    color: AppColors.onAccent,
-                                                  ),
+                                                        strokeWidth: 2,
+                                                        color:
+                                                            AppColors.onAccent,
+                                                      ),
                                                 )
                                               : Row(
                                                   mainAxisAlignment:
@@ -1133,14 +1188,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                                     Flexible(
                                                       child: Text(
                                                         'Acheter',
-                                                        overflow:
-                                                            TextOverflow.ellipsis,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                         style:
                                                             GoogleFonts.poppins(
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
                                                       ),
                                                     ),
                                                   ],
@@ -1313,12 +1369,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   SizedBox(width: 8),
                                   Text(
                                     _isAuthorOfThisBook
-                                        ? 'Lire mon ouvrage (Auteur)'
+                                        ? 'Lire mon ouvrage '
                                         : (_readingProgress != null &&
-                                                _readingProgress!.pourcentage >
-                                                    0
-                                            ? 'Continuer la lecture'
-                                            : 'Commencer la lecture'),
+                                                  _readingProgress!
+                                                          .pourcentage >
+                                                      0
+                                              ? 'Continuer la lecture'
+                                              : 'Commencer la lecture'),
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -1569,8 +1626,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
         livreId: book.id,
         montant: amount,
         authToken: token,
-        customerName: user.nomComplet.isNotEmpty ? user.nomComplet : "Lecteur SpaceLearn",
-        customerEmail: user.email.isNotEmpty ? user.email : "client@spacelearn.com",
+        customerName: user.nomComplet.isNotEmpty
+            ? user.nomComplet
+            : "Lecteur SpaceLearn",
+        customerEmail: user.email.isNotEmpty
+            ? user.email
+            : "client@spacelearn.com",
       );
 
       if (!mounted) return;

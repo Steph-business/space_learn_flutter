@@ -2,14 +2,12 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_card.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
@@ -27,13 +25,11 @@ class _BibliothequePageState extends State<BibliothequePage> {
   String filtreActif = "Tous";
   final LibraryService _libraryService = LibraryService();
   final BookService _bookService = BookService();
-  final AuthService _authService = AuthService();
   final ReadingProgressService _progressService = ReadingProgressService();
   List<LibraryModel> _libraryItems = [];
   List<String> _categories = ["Tous"];
   bool _isLoading = true;
   String? _error;
-  String _userName = "Lecteur";
   String _statusFiltre = "Tous";
   String _sortOption = "Dernière lecture";
   String _searchQuery = "";
@@ -44,27 +40,12 @@ class _BibliothequePageState extends State<BibliothequePage> {
   void initState() {
     super.initState();
     _loadLibrary();
-    _loadUserInfo();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadUserInfo() async {
-    try {
-      final token = await TokenStorage.getToken();
-      if (token != null) {
-        final user = await _authService.getUser(token);
-        if (user != null && mounted) {
-          setState(() {
-            _userName = user.nomComplet;
-          });
-        }
-      }
-    } catch (e) {}
   }
 
   Future<void> _loadLibrary() async {
@@ -240,24 +221,33 @@ class _BibliothequePageState extends State<BibliothequePage> {
     AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      body: Column(
-        children: [
-          // En-tête fixe
-          NavBarAll(userName: _userName),
-          // Contenu défilable
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _loadLibrary,
-              color: AppColors.warning,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: Text(
+          "BIBLIOTHÈQUE",
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadLibrary,
+        color: AppColors.warning,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 12,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
                     // Header Row with Search and Views Toggle
                     Row(
                       children: [
@@ -420,9 +410,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
                 ),
               ),
             ),
-          ),
-        ],
-      ),
     );
   }
 

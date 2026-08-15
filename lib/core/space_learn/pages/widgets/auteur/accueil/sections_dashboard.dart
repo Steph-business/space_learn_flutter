@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/boutique/livre_card.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
+import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart';
 
@@ -101,7 +102,7 @@ class TopLivresSection extends StatelessWidget {
 
   Widget _buildItem(BuildContext context, String rank, BookModel book) {
     final views = book.telechargements.toString();
-    final priceDisplay = book.prix == 0 ? "Gratuit" : "${book.prix} FCFA";
+    final priceDisplay = LivreCard.formatPrix(book.prix);
 
     return Row(
       children: [
@@ -115,7 +116,7 @@ class TopLivresSection extends StatelessWidget {
           child: Container(
             width: 30,
             height: 38,
-            color: AppColors.textPrimary.withOpacity(0.05),
+            color: AppColors.textPrimary.withValues(alpha: 0.05),
             child:
                 book.imageCouverture != null &&
                     !book.imageCouverture!.contains('example.com')
@@ -162,27 +163,6 @@ class TopLivresSection extends StatelessWidget {
             fontSize: 13,
             fontWeight: FontWeight.bold,
           ),
-        ),
-        SizedBox(width: 8),
-        IconButton(
-          onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AjouterLivrePage(book: book),
-              ),
-            );
-            if (result == true && onBookUpdated != null) {
-              onBookUpdated!();
-            }
-          },
-          icon: Icon(
-            Icons.edit_note_rounded,
-            color: AppColors.textHint,
-            size: 22,
-          ),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
         ),
       ],
     );
@@ -332,30 +312,39 @@ class _CommentairesRecentsSectionState
 
   Widget _buildComment(ReviewModel comment, String bookTitle) {
     final author =
-        comment.nomUtilisateur != null && comment.nomUtilisateur!.isNotEmpty
-        ? comment.nomUtilisateur!
-        : "Lecteur";
+        comment.nomUtilisateur != null && comment.nomUtilisateur!.trim().isNotEmpty
+            ? comment.nomUtilisateur!.trim()
+            : "Lecteur";
     final text = comment.commentaire ?? "";
     final photo = comment.photoProfil;
+    final initial = author.isNotEmpty ? author[0].toUpperCase() : "L";
 
     return Row(
       children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: AppColors.textHint,
-          child: photo != null && photo.isNotEmpty
-              ? ClipOval(
-                  child: Image.network(
-                    photo,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(Icons.person, color: AppColors.textHint);
-                    },
-                  ),
-                )
-              : Icon(Icons.person, color: AppColors.textHint),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.secondaryVariant.withValues(alpha: 0.15),
+            border: Border.all(
+              color: AppColors.secondaryVariant.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: ClipOval(
+            child: ProfileImageHelper.buildProfileImage(
+              photo,
+              fallbackInitial: initial,
+              textStyle: GoogleFonts.poppins(
+                color: AppColors.secondaryVariant,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              width: 40,
+              height: 40,
+            ),
+          ),
         ),
         SizedBox(width: 12),
         Expanded(

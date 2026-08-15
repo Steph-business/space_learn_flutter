@@ -87,12 +87,8 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
-    // Pages that don't need NavBarAll (they have their own AppBars)
-    final pagesWithoutNavBarAll = [AjouterLivrePage, LivresPage, TeamsPage];
-
-    // Check if current page needs NavBarAll
-    final currentPageType = _getPage(_currentIndex).runtimeType;
-    final showNavBarAll = !pagesWithoutNavBarAll.contains(currentPageType);
+    // Seule la page d'accueil (index 0) affiche le grand en-tête NavBarAll
+    final showNavBarAll = _currentIndex == 0;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
