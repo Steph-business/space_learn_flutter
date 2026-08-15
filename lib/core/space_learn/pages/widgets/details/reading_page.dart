@@ -432,7 +432,7 @@ class _ReadingPageState extends State<ReadingPage> {
         ),
         title: Row(
           children: [
-            const Icon(Icons.lock, color: Colors.amber, size: 28),
+            Icon(Icons.lock, color: AppColors.warning, size: 24),
             const SizedBox(width: 10),
             Text(
               "Fin de l'extrait",
@@ -444,21 +444,25 @@ class _ReadingPageState extends State<ReadingPage> {
             ),
           ],
         ),
+        // Le message annoncait « 2 pages maximum par defaut ». L'extrait en
+        // compte dix depuis que le serveur les genere ainsi, et ce nombre peut
+        // encore changer : le citer ici condamne le texte a vieillir en
+        // silence. Le lecteur voit deja « PAGE 10 SUR 10 » au-dessus.
         content: Text(
-          "Vous avez atteint la limite de l'extrait gratuit (2 pages maximum par défaut). Achetez l'œuvre complète pour accéder à l'intégralité du livre !",
+          "Vous avez lu tout l'extrait offert. La suite vous attend dans "
+          "l'œuvre complète.",
           style: GoogleFonts.poppins(
             color: AppColors.textSecondary,
             fontSize: 13,
+            height: 1.5,
           ),
         ),
+        // Les deux boutons cote a cote debordaient sur un ecran etroit :
+        // « Acheter l'œuvre » est long, et AlertDialog ne replie pas ses
+        // actions de lui-meme. Ils sont empiles, l'action principale d'abord.
+        actionsOverflowDirection: VerticalDirection.down,
+        actionsOverflowButtonSpacing: 8,
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Fermer",
-              style: GoogleFonts.poppins(color: AppColors.textHint),
-            ),
-          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
@@ -481,6 +485,13 @@ class _ReadingPageState extends State<ReadingPage> {
                 color: AppColors.onAccent,
                 fontWeight: FontWeight.bold,
               ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Continuer sans acheter",
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
             ),
           ),
         ],
