@@ -185,12 +185,12 @@ class _StatistiqueState extends State<Statistique> {
             SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.show_chart, color: Colors.greenAccent, size: 14),
+                Icon(Icons.show_chart, color: AppColors.success, size: 14),
                 SizedBox(width: 4),
                 Text(
                   growth,
                   style: GoogleFonts.poppins(
-                    color: Colors.greenAccent,
+                    color: AppColors.success,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),

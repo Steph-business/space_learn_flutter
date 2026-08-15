@@ -93,7 +93,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.favorite_border, size: 80, color: Colors.grey),
+                  Icon(
+                    Icons.favorite_border,
+                    size: 80,
+                    color: AppColors.textSecondary,
+                  ),
                   SizedBox(height: 16),
                   Text(
                     "Aucune favorie pour le moment.",
@@ -175,7 +179,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.favorite, color: Colors.red),
+                            icon: Icon(Icons.favorite, color: AppColors.error),
                             onPressed: () => _removeFavorite(fav.livreId),
                           ),
                         ],
@@ -192,8 +196,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
     return Container(
       width: 70,
       height: 100,
-      color: Colors.grey[800],
-      child: Icon(Icons.book, color: Colors.grey),
+      color: AppColors.textSecondary,
+      child: Icon(Icons.book, color: AppColors.textSecondary),
     );
   }
 }

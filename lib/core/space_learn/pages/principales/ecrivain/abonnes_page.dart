@@ -118,7 +118,10 @@ class _AbonnesPageState extends State<AbonnesPage> {
           SizedBox(height: 8),
           Text(
             "Publiez plus de contenu pour attirer des lecteurs !",
-            style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14),
+            style: GoogleFonts.poppins(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
             textAlign: TextAlign.center,
           ),
         ],

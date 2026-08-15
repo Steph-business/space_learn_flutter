@@ -152,7 +152,7 @@ class NavBarAll extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
-                            color: Colors.red,
+                            color: AppColors.error,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: AppColors.scaffoldBackground,

@@ -421,81 +421,129 @@ class _ReadingPageState extends State<ReadingPage> {
     _showExtraitLimitDialog();
   }
 
+  /// La fin de l'extrait, et ce qu'on peut en faire.
+  ///
+  /// C'etait un AlertDialog avec ses deux boutons en ligne. « Acheter l'œuvre »
+  /// est long : sur un ecran etroit il sortait du cadre, et l'action la plus
+  /// importante de cet ecran s'affichait tronquee. AlertDialog ne replie ses
+  /// actions qu'en dernier recours, et sans maitrise de leur largeur.
+  ///
+  /// Un Dialog compose a la main les pose donc pleine largeur, empilees :
+  /// l'achat d'abord, puis la sortie. Le prix figure sur le bouton — c'est la
+  /// question que se pose le lecteur a cet instant, et l'obliger a fermer pour
+  /// aller la chercher ailleurs coute une vente.
   void _showExtraitLimitDialog() {
+    final prix = widget.book['prix'] ?? widget.book['price'];
+    final prixTexte = (prix is num && prix > 0)
+        ? "Acheter — $prix FCFA"
+        : "Acheter l'œuvre";
+
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        ),
-        title: Row(
-          children: [
-            Icon(Icons.lock, color: AppColors.warning, size: 24),
-            const SizedBox(width: 10),
-            Text(
-              "Fin de l'extrait",
-              style: GoogleFonts.poppins(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-        // Le message annoncait « 2 pages maximum par defaut ». L'extrait en
-        // compte dix depuis que le serveur les genere ainsi, et ce nombre peut
-        // encore changer : le citer ici condamne le texte a vieillir en
-        // silence. Le lecteur voit deja « PAGE 10 SUR 10 » au-dessus.
-        content: Text(
-          "Vous avez lu tout l'extrait offert. La suite vous attend dans "
-          "l'œuvre complète.",
-          style: GoogleFonts.poppins(
-            color: AppColors.textSecondary,
-            fontSize: 13,
-            height: 1.5,
+      barrierDismissible: true,
+      builder: (context) {
+        AppColors.suivreLeTheme(context);
+        return Dialog(
+          backgroundColor: AppColors.cardBackground,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           ),
-        ),
-        // Les deux boutons cote a cote debordaient sur un ecran etroit :
-        // « Acheter l'œuvre » est long, et AlertDialog ne replie pas ses
-        // actions de lui-meme. Ils sont empiles, l'action principale d'abord.
-        actionsOverflowDirection: VerticalDirection.down,
-        actionsOverflowButtonSpacing: 8,
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PaymentPage(book: widget.book),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.lock_outline_rounded,
+                    color: AppColors.accentInk,
+                    size: 24,
+                  ),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryLight,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-              ),
-            ),
-            child: Text(
-              "Acheter l'œuvre",
-              style: GoogleFonts.poppins(
-                color: AppColors.onAccent,
-                fontWeight: FontWeight.bold,
-              ),
+                const SizedBox(height: 18),
+                Text(
+                  "Fin de l'extrait",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Le message citait « 2 pages maximum par defaut ». L'extrait
+                // en compte dix, et ce nombre reste reglable : l'ecrire ici le
+                // condamne a vieillir en silence.
+                Text(
+                  "Vous avez lu tout l'extrait offert. La suite vous attend "
+                  "dans l'œuvre complète.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textSecondary,
+                    fontSize: 13.5,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PaymentPage(book: widget.book),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.onAccent,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      prixTexte,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    "Continuer sans acheter",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Continuer sans acheter",
-              style: GoogleFonts.poppins(color: AppColors.textSecondary),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1775,11 +1823,11 @@ class _ReadingPageState extends State<ReadingPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.menu_book, color: Colors.grey, size: 48),
+            Icon(Icons.menu_book, color: AppColors.textSecondary, size: 48),
             SizedBox(height: 16),
             Text(
               "Aucun chapitre trouvé.",
-              style: GoogleFonts.poppins(color: Colors.grey),
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -1836,7 +1884,7 @@ class _ReadingPageState extends State<ReadingPage> {
           children: [
             Icon(
               onlyWithNotes ? Icons.edit_note : Icons.bookmark_border,
-              color: Colors.grey,
+              color: AppColors.textSecondary,
               size: 48,
             ),
             SizedBox(height: 16),
@@ -1844,7 +1892,7 @@ class _ReadingPageState extends State<ReadingPage> {
               onlyWithNotes
                   ? "Aucune note trouvée."
                   : "Vous n'avez pas encore de marque-page.",
-              style: GoogleFonts.poppins(color: Colors.grey),
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -1867,7 +1915,7 @@ class _ReadingPageState extends State<ReadingPage> {
             style: AppTextStyles.greyBody12,
           ),
           trailing: IconButton(
-            icon: Icon(Icons.delete_outline, color: Colors.red, size: 20),
+            icon: Icon(Icons.delete_outline, color: AppColors.error, size: 20),
             onPressed: () async {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
               try {
@@ -2012,7 +2060,7 @@ class _ReadingPageState extends State<ReadingPage> {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      leading: Icon(icon, color: Colors.blueGrey[200], size: 22),
+      leading: Icon(icon, color: AppColors.textSecondary, size: 22),
       title: Text(
         title,
         style: GoogleFonts.poppins(
@@ -2035,7 +2083,7 @@ class _ReadingPageState extends State<ReadingPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
+            Icon(Icons.error_outline, size: 64, color: AppColors.error),
             SizedBox(height: 24),
             Text(
               "Oups !",
@@ -2156,7 +2204,7 @@ class _ReadingPageState extends State<ReadingPage> {
             ],
             IconButton(
               visualDensity: VisualDensity.compact,
-              icon: Icon(Icons.close, color: Colors.grey),
+              icon: Icon(Icons.close, color: AppColors.textSecondary),
               onPressed: () {
                 setState(() {
                   _isSearching = false;

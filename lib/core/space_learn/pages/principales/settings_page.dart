@@ -303,7 +303,7 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             const Icon(
               Icons.warning_amber_rounded,
-              color: Colors.red,
+              color: AppColors.error,
               size: 28,
             ),
             const SizedBox(width: 10),
@@ -334,7 +334,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
               ),

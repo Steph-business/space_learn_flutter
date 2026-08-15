@@ -141,7 +141,7 @@ class _ProfilPageState extends State<ProfilPage> {
                     Text(
                       error!,
                       style: GoogleFonts.poppins(
-                        color: Colors.redAccent,
+                        color: AppColors.error,
                         fontSize: 13,
                       ),
                     )

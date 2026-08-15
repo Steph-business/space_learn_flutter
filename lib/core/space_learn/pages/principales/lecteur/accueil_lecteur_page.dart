@@ -504,7 +504,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  Icon(Icons.search, color: Colors.grey, size: 20),
+                  Icon(Icons.search, color: AppColors.textSecondary, size: 20),
                   SizedBox(width: 8),
                   Expanded(
                     child: TextField(
@@ -525,7 +525,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   if (_searchQuery.isNotEmpty)
                     GestureDetector(
                       onTap: _clearSearch,
-                      child: Icon(Icons.close, color: Colors.grey, size: 18),
+                      child: Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: 18,
+                      ),
                     ),
                 ],
               ),
@@ -1629,11 +1633,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 48,
-              color: Colors.redAccent,
-            ),
+            Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
             SizedBox(height: 16),
             Text(
               _error!,

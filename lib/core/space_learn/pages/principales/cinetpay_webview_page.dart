@@ -220,7 +220,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.lock_outline, size: 14, color: Colors.green),
+                  Icon(Icons.lock_outline, size: 14, color: AppColors.success),
                   SizedBox(width: 6),
                   Text(
                     'Paiement sécurisé par CinetPay',
@@ -288,7 +288,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
             },
             child: Text(
               'Annuler',
-              style: GoogleFonts.poppins(color: Colors.red),
+              style: GoogleFonts.poppins(color: AppColors.error),
             ),
           ),
         ],

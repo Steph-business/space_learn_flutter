@@ -691,11 +691,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 48,
-              color: Colors.redAccent,
-            ),
+            Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
             SizedBox(height: 16),
             Text(
               _error!,

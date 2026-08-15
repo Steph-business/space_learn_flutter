@@ -136,10 +136,13 @@ class _RecherchePageState extends State<RecherchePage> {
             onChanged: _onSearch,
             decoration: InputDecoration(
               hintText: "Rechercher...",
-              hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
+              hintStyle: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
               prefixIcon: Icon(
                 Iconsax.search_normal,
-                color: Colors.grey,
+                color: AppColors.textSecondary,
                 size: 18,
               ),
               border: InputBorder.none,

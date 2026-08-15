@@ -11,7 +11,7 @@ class Messages extends StatelessWidget {
       onRefresh: () async {
         await Future.delayed(const Duration(seconds: 1));
       },
-      color: Colors.deepPurple,
+      color: AppColors.accentInk,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: SizedBox(
@@ -25,7 +25,7 @@ class Messages extends StatelessWidget {
                   Icon(
                     Icons.mail_outline_rounded,
                     size: 80,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary,
                   ),
                   SizedBox(height: 24),
                   Text(

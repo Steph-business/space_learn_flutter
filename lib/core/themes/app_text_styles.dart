@@ -295,21 +295,21 @@ class AppTextStyles {
 
   /// Gris — 13px normal
   static TextStyle get greyBody13 => GoogleFonts.poppins(
-    color: Colors.grey,
+    color: AppColors.textSecondary,
     fontSize: 13,
     fontWeight: FontWeight.normal,
   );
 
   /// Gris — 14px normal
   static TextStyle get greyBody14 => GoogleFonts.poppins(
-    color: Colors.grey,
+    color: AppColors.textSecondary,
     fontSize: 14,
     fontWeight: FontWeight.normal,
   );
 
   /// Gris — 12px normal
   static TextStyle get greyBody12 => GoogleFonts.poppins(
-    color: Colors.grey,
+    color: AppColors.textSecondary,
     fontSize: 12,
     fontWeight: FontWeight.normal,
   );
@@ -536,7 +536,7 @@ class AppTextStyles {
 
   /// Amber star rating — 11px bold amber
   static TextStyle get ratingAmber => GoogleFonts.poppins(
-    color: Colors.amber,
+    color: AppColors.warning,
     fontSize: 11,
     fontWeight: FontWeight.bold,
   );

@@ -444,12 +444,12 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: AppColors.success.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.check_circle_outline,
-                  color: Colors.green,
+                  color: AppColors.success,
                   size: 64,
                 ),
               ),
@@ -1036,22 +1036,22 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.red[50],
+          color: AppColors.error,
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-          border: Border.all(color: Colors.red[200]!),
+          border: Border.all(color: AppColors.error!),
         ),
         child: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.red),
+            Icon(Icons.error_outline, color: AppColors.error),
             SizedBox(width: 16),
             Expanded(
               child: Text(
                 _categoriesError!,
-                style: GoogleFonts.poppins(color: Colors.red[700]),
+                style: GoogleFonts.poppins(color: AppColors.error),
               ),
             ),
             IconButton(
-              icon: Icon(Icons.refresh, color: Colors.red),
+              icon: Icon(Icons.refresh, color: AppColors.error),
               onPressed: _loadCategories,
             ),
           ],
@@ -1319,7 +1319,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                             children: [
                               Icon(
                                 Icons.error_outline,
-                                color: Colors.orangeAccent,
+                                color: AppColors.warning,
                                 size: 20,
                               ),
                               SizedBox(height: 4),

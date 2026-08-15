@@ -505,10 +505,11 @@ class _LoginPageState extends State<LoginPage> {
                                         color: Colors.white,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Text(
+                                      // Pas const : la palette suit le theme.
+                                      child: Text(
                                         'G',
                                         style: TextStyle(
-                                          color: Colors.blue,
+                                          color: AppColors.accentInk,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 15,
                                         ),

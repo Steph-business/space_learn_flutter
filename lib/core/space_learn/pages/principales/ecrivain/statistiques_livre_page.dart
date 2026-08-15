@@ -151,7 +151,7 @@ class StatistiquesLivrePage extends StatelessWidget {
                     title: "Note",
                     value: "${book.noteMoyenne}/5",
                     icon: Icons.star_rounded,
-                    color: Colors.amber,
+                    color: AppColors.warning,
                   ),
                 ),
               ],
@@ -257,7 +257,12 @@ class StatistiquesLivrePage extends StatelessWidget {
               reservedSize: 22,
               interval: 1,
               getTitlesWidget: (value, meta) {
-                const style = TextStyle(color: Colors.grey, fontSize: 10);
+                // Pas const : la palette suit le theme, elle n'est donc pas
+                // connue a la compilation.
+                final style = TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                );
                 String text;
                 switch (value.toInt()) {
                   case 0:

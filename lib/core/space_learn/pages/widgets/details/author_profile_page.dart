@@ -300,7 +300,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                               width: double.infinity,
                             )
                           : Container(
-                              color: Colors.blueGrey,
+                              color: AppColors.textSecondary,
                               child: Center(
                                 child: Icon(
                                   Icons.book,

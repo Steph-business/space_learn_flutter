@@ -70,7 +70,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text("Supprimer", style: TextStyle(color: Colors.redAccent)),
+            child: Text("Supprimer", style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -171,7 +171,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                   onPressed: _editEvenement,
                 ),
                 IconButton(
-                  icon: Icon(Iconsax.trash, color: Colors.redAccent, size: 20),
+                  icon: Icon(Iconsax.trash, color: AppColors.error, size: 20),
                   onPressed: _confirmDelete,
                 ),
               ]

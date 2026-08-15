@@ -65,12 +65,12 @@ class _PaymentPageState extends State<PaymentPage> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: AppColors.success.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.card_giftcard,
-                    color: Colors.green,
+                    color: AppColors.success,
                     size: 64,
                   ),
                 ),
@@ -129,7 +129,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.success,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(

@@ -202,7 +202,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
               Icon(
                 Icons.error_outline_rounded,
                 size: 48,
-                color: Colors.redAccent,
+                color: AppColors.error,
               ),
               SizedBox(height: 16),
               Text(_error!, style: TextStyle(color: AppColors.textPrimary)),
