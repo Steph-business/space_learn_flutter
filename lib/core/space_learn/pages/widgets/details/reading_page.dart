@@ -161,11 +161,23 @@ class _ReadingPageState extends State<ReadingPage> {
       final aUnFichier =
           widget.book['a_un_fichier'] == true ||
           widget.book['aUnFichier'] == true;
+      final indisponible =
+          widget.book['fichier_indisponible'] == true ||
+          widget.book['fichierIndisponible'] == true;
 
       setState(() {
-        _loadError = aUnFichier
-            ? "Ce livre n'est pas encore dans votre bibliothèque."
-            : "Aucun fichier disponible pour ce livre.";
+        if (indisponible) {
+          // Le manuscrit est enregistre mais le serveur n'arrive pas a le
+          // servir. Ce n'est ni l'absence d'un fichier ni un defaut d'achat :
+          // le dire evite au lecteur de chercher ce qu'il a mal fait.
+          _loadError =
+              "Le fichier de ce livre est momentanément indisponible. "
+              "Nous en avons été informés.";
+        } else if (aUnFichier) {
+          _loadError = "Ce livre n'est pas encore dans votre bibliothèque.";
+        } else {
+          _loadError = "Aucun fichier disponible pour ce livre.";
+        }
       });
       return;
     }

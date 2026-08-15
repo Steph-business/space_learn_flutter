@@ -23,6 +23,13 @@ class BookModel {
   /// si un fichier existe. Ce drapeau répond à cette seule question, sans rien
   /// révéler du chemin de stockage.
   final bool aUnFichier;
+
+  /// Le manuscrit est enregistre mais illisible cote serveur.
+  ///
+  /// Sans cette distinction, un fichier disparu du stockage et un livre qu'on
+  /// ne possede pas arrivent sous la meme forme — une adresse vide — alors que
+  /// ce sont deux situations opposees.
+  final bool fichierIndisponible;
   final String format; // PDF | EPUB | MOBI
   final int prix;
   final int stock;
@@ -57,6 +64,7 @@ class BookModel {
     this.imageCouverture,
     this.fichierUrl,
     this.aUnFichier = false,
+    this.fichierIndisponible = false,
     required this.format,
     required this.prix,
     required this.stock,
@@ -161,6 +169,7 @@ class BookModel {
         useGin: true,
       ),
       fichierUrl: _sanitizeImageUrl(json['fichier_url'], useGin: true),
+      fichierIndisponible: json['fichier_indisponible'] == true,
       aUnFichier:
           json['a_un_fichier'] == true ||
           // Repli pour un serveur antérieur au drapeau : si l'URL est là,
@@ -317,6 +326,15 @@ class BookModel {
       'argumentaire_partage': argumentairePartage,
       'image_couverture': imageCouverture,
       'fichier_url': fichierUrl,
+      // Le drapeau doit ressortir comme il est entre.
+      //
+      // Il etait lu depuis le serveur, garde dans le modele, et perdu a la
+      // reserialisation. Or c'est sous cette forme que le livre est passe au
+      // lecteur : celui-ci ne voyait donc jamais la difference entre « aucun
+      // manuscrit n'a ete depose » et « vous ne possedez pas encore ce livre »,
+      // le serveur masquant l'adresse dans le second cas.
+      'a_un_fichier': aUnFichier,
+      'fichier_indisponible': fichierIndisponible,
       'format': format,
       'prix': prix,
       'stock': stock,
