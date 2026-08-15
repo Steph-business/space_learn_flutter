@@ -1,6 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/livres/publications_liste.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
@@ -119,88 +119,13 @@ class _LivresPageState extends State<LivresPage> {
     AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.scaffoldBackground,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Iconsax.arrow_left_2,
-            color: AppColors.textPrimary,
-            size: 20,
-          ),
-          onPressed: () {
-            if (widget.onBackPressed != null) {
-              widget.onBackPressed!();
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
-        ),
-        title: Text(
-          "MES LIVRES",
-          style: GoogleFonts.poppins(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: GestureDetector(
-              onTap: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AjouterLivrePage(),
-                  ),
-                );
-                if (result == true) _loadBooks();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.secondaryVariant.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusSmall,
-                  ),
-                  border: Border.all(
-                    color: AppColors.secondaryVariant.withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Iconsax.add,
-                      size: 16,
-                      color: AppColors.secondaryVariant,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      "Publier",
-                      style: GoogleFonts.poppins(
-                        color: AppColors.secondaryVariant,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Stats Sessions (Three individual cards) ──
+      body: Column(
+        children: [
+          const NavBarAll(role: 'auteur'),
+          Expanded(
+            child: Column(
+              children: [
+                // ── Stats Sessions (Three individual cards) ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
@@ -445,8 +370,10 @@ class _LivresPageState extends State<LivresPage> {
                       ),
                     ),
             ),
-          ],
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

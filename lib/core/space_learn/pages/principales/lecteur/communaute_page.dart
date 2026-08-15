@@ -14,11 +14,11 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussio
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
-import 'recherche_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/salon_noms.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/carte_evenement.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenement_apercu.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenements_page.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -176,88 +176,55 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
     AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.darkSurface,
-      appBar: AppBar(
-        backgroundColor: AppColors.darkSurface,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        leading:
-            (widget.onBackPressed != null || Navigator.of(context).canPop())
-            ? IconButton(
-                icon: Icon(
-                  Iconsax.arrow_left_2,
-                  color: AppColors.textPrimary,
-                  size: 20,
-                ),
-                onPressed:
-                    widget.onBackPressed ?? () => Navigator.of(context).pop(),
-              )
-            : null,
-        title: Text(
-          "COMMUNAUTÉ",
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-            letterSpacing: 1.2,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Iconsax.search_normal_1,
-              color: AppColors.textPrimary,
-              size: 20,
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const RecherchePage()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? Center(
-              child: Text(
-                "Chargement...",
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            )
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _error!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.error),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryLight,
-                    ),
+      body: Column(
+        children: [
+          const NavBarAll(role: 'lecteur'),
+          Expanded(
+            child: _isLoading
+                ? Center(
                     child: Text(
-                      "Réessayer",
-                      style: TextStyle(color: AppColors.onAccent),
+                      "Chargement...",
+                      style: TextStyle(color: AppColors.textSecondary),
                     ),
-                  ),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // En-tete : ce que le lecteur a devant lui, pas un intitule
-                  // qui conviendrait a n'importe qui.
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
-                    child: Text(
+                  )
+                : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                        SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: _loadData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryLight,
+                          ),
+                          child: Text(
+                            "Réessayer",
+                            style: TextStyle(color: AppColors.onAccent),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: AppColors.accentInk,
+                    backgroundColor: AppColors.cardBackground,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // En-tete : ce que le lecteur a devant lui, pas un intitule
+                          // qui conviendrait a n'importe qui.
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                            child: Text(
                       _prenom.isEmpty
                           ? "Vos espaces d'échange"
                           : "Vos lectures, $_prenom",
@@ -349,8 +316,12 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                 ],
               ),
             ),
-    );
-  }
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildGlobalSalonCard() {
     return GestureDetector(

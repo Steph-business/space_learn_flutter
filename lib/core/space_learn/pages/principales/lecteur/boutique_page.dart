@@ -11,6 +11,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/librarySe
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class MarketplacePage extends StatefulWidget {
@@ -383,33 +384,25 @@ class _MarketplacePageState extends State<MarketplacePage> {
     AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: Text(
-          "BOUTIQUE",
-          style: GoogleFonts.poppins(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
+      body: Column(
+        children: [
+          const NavBarAll(role: 'lecteur'),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadBooks,
+              color: AppColors.accentInk,
+              backgroundColor: AppColors.cardBackground,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [_buildBody(context)],
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadBooks,
-        color: AppColors.accentInk,
-        backgroundColor: AppColors.cardBackground,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [_buildBody(context)],
-          ),
-        ),
+        ],
       ),
     );
   }

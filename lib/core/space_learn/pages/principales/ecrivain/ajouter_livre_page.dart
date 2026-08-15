@@ -291,19 +291,30 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         _selectedFilePath ?? widget.book?.fichierUrl,
       );
 
-      // Le serveur remplace l'integralite des champs a chaque mise a jour :
+      // Le serveur remplace l'intégralité des champs à chaque mise à jour :
       // un envoi partiel effacerait ceux qu'on omet. On compose donc toujours
-      // la charge complete.
-      Map<String, dynamic> champs(String statut) => {
-        'titre': _titreController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'argumentaire_partage': _argumentaireController.text.trim(),
-        'prix': prixParsed,
-        'categorie_id': categorieId,
-        'format': format,
-        'statut': statut,
-        'stock': widget.book?.stock ?? 999,
-      };
+      // la charge complète, en y injectant les fichiers téléversés.
+      Map<String, dynamic> champs(
+        String statut, {
+        String? cover,
+        String? file,
+      }) {
+        final data = <String, dynamic>{
+          'titre': _titreController.text.trim(),
+          'description': _descriptionController.text.trim(),
+          'argumentaire_partage': _argumentaireController.text.trim(),
+          'prix': prixParsed,
+          'categorie_id': categorieId,
+          'format': format,
+          'statut': statut,
+          'stock': widget.book?.stock ?? 999,
+        };
+        final c = cover ?? widget.book?.imageCouverture;
+        if (c != null && c.isNotEmpty) data['image_couverture'] = c;
+        final f = file ?? widget.book?.fichierUrl;
+        if (f != null && f.isNotEmpty) data['fichier_url'] = f;
+        return data;
+      }
 
       final bool fichiersAEnvoyer =
           _selectedFilePath != null ||
@@ -312,7 +323,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           _selectedCoverBytes != null;
 
       // Tant que les fichiers ne sont pas en place, le livre reste brouillon :
-      // un livre publie sans manuscrit apparaitrait au catalogue et serait
+      // un livre publié sans manuscrit apparaîtrait au catalogue et serait
       // achetable pour rien.
       final statutInitial = (isDraft || fichiersAEnvoyer)
           ? 'brouillon'
@@ -347,9 +358,12 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         livreId = cree.id;
       }
 
+      String? uploadedCoverPath;
+      String? uploadedFilePath;
+
       // Téléversement des fichiers si modifiés/fournis
       if (_selectedCoverPath != null || _selectedCoverBytes != null) {
-        await UploadService.envoyer(
+        uploadedCoverPath = await UploadService.envoyer(
           authToken: token,
           livreId: livreId,
           type: TypeFichier.couverture,
@@ -360,7 +374,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       }
 
       if (_selectedFilePath != null || _selectedFileBytes != null) {
-        await UploadService.envoyer(
+        uploadedFilePath = await UploadService.envoyer(
           authToken: token,
           livreId: livreId,
           type: TypeFichier.manuscrit,
@@ -370,10 +384,16 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         );
       }
 
-      // Publication effective une fois les fichiers en place.
-      if (!isDraft && statutInitial != 'publie') {
-        await _bookService.updateBook(livreId, champs('publie'), token);
-      }
+      // Mise à jour / publication effective avec les chemins de fichiers définitifs
+      await _bookService.updateBook(
+        livreId,
+        champs(
+          isDraft ? 'brouillon' : 'publie',
+          cover: uploadedCoverPath,
+          file: uploadedFilePath,
+        ),
+        token,
+      );
 
       if (mounted) {
         _showSuccessDialog(

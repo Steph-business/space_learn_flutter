@@ -3,6 +3,7 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/revenus.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/statistique.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
@@ -78,16 +79,23 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      color: AppColors.secondaryVariant,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 10),
-            Statistique(stats: _stats),
+    return Column(
+      children: [
+        NavBarAll(
+          userName: widget.userName,
+          role: 'auteur',
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadData,
+            color: AppColors.secondaryVariant,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 10),
+                  Statistique(stats: _stats),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -154,6 +162,9 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+],
+);
   }
 }

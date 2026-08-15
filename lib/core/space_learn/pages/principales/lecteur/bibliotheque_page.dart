@@ -10,6 +10,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/library_model.da
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/readingProgressService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/readingActivityModel.dart';
@@ -221,33 +222,22 @@ class _BibliothequePageState extends State<BibliothequePage> {
     AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: Text(
-          "BIBLIOTHÈQUE",
-          style: GoogleFonts.poppins(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadLibrary,
-        color: AppColors.warning,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 12,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: Column(
+        children: [
+          const NavBarAll(role: 'lecteur'),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadLibrary,
+              color: AppColors.warning,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     // Header Row with Search and Views Toggle
                     Row(
                       children: [
@@ -410,6 +400,9 @@ class _BibliothequePageState extends State<BibliothequePage> {
                 ),
               ),
             ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -20,6 +20,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/evene
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/salon_noms.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/carte_evenement.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenements_page.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 
 class TeamsPage extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -173,66 +174,43 @@ class _TeamsPageState extends State<TeamsPage> {
     AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.scaffoldBackground,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        leading:
-            (widget.onBackPressed != null || Navigator.of(context).canPop())
-            ? IconButton(
-                icon: Icon(
-                  Iconsax.arrow_left_2,
-                  color: AppColors.textPrimary,
-                  size: 20,
-                ),
-                onPressed:
-                    widget.onBackPressed ?? () => Navigator.of(context).pop(),
-              )
-            : null,
-        title: Text(
-          "COMMUNAUTÉ",
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-            letterSpacing: 1.2,
-          ),
-        ),
-        centerTitle: true,
-        // Une cloche etait posee ici avec `onPressed: () {}` : elle ne faisait
-        // rien. La barre de navigation en porte deja une, celle-la ouvrant
-        // vraiment les notifications. Deux cloches cote a cote, dont une
-        // inerte, apprennent surtout a ne pas s'y fier.
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _error!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.error),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: Text("Réessayer"),
-                  ),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // En-tête : ce que l'auteur a devant lui, pas un intitulé
-                  // qui conviendrait à n'importe qui.
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
-                    child: Text(
+      body: Column(
+        children: [
+          const NavBarAll(role: 'auteur'),
+          Expanded(
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                        SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: _loadData,
+                          child: Text("Réessayer"),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: AppColors.secondaryVariant,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // En-tête : ce que l'auteur a devant lui, pas un intitulé
+                          // qui conviendrait à n'importe qui.
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                            child: Text(
                       _prenom.isEmpty
                           ? "Votre communauté"
                           : "La communauté de $_prenom",
@@ -509,8 +487,12 @@ class _TeamsPageState extends State<TeamsPage> {
                 ],
               ),
             ),
-    );
-  }
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildGlobalSalonCard() {
     return GestureDetector(

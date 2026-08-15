@@ -87,19 +87,8 @@ class _HomePageAuteurState extends State<HomePageAuteur> {
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
-    // Seule la page d'accueil (index 0) affiche le grand en-tête NavBarAll
-    final showNavBarAll = _currentIndex == 0;
-
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: showNavBarAll
-          ? PreferredSize(
-              preferredSize: const Size.fromHeight(
-                100,
-              ), // Adjust height as needed
-              child: NavBarAll(userName: widget.userName, role: 'auteur'),
-            )
-          : null,
       body: IndexedStack(
         index: _currentIndex,
         children: [

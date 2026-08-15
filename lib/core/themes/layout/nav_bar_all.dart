@@ -3,15 +3,17 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:provider/provider.dart';
 
 import '../../space_learn/pages/principales/notificationPage.dart';
 import '../../space_learn/pages/principales/messages_page.dart';
 import '../../space_learn/pages/principales/profilePage.dart';
-import 'package:provider/provider.dart';
 import '../../space_learn/data/dataServices/notification_provider.dart';
 
-class NavBarAll extends StatelessWidget {
-  final String userName;
+class NavBarAll extends StatefulWidget {
+  final String? userName;
   final String? userUrl;
   final String? greeting;
   final String? subtitle;
@@ -19,7 +21,7 @@ class NavBarAll extends StatelessWidget {
 
   const NavBarAll({
     super.key,
-    this.userName = 'Lecteur',
+    this.userName,
     this.userUrl,
     this.greeting,
     this.subtitle,
@@ -39,14 +41,90 @@ class NavBarAll extends StatelessWidget {
   }
 
   @override
+  State<NavBarAll> createState() => _NavBarAllState();
+}
+
+class _NavBarAllState extends State<NavBarAll> {
+  final AuthService _authService = AuthService();
+  String _displayName = '';
+  String? _profilePhoto;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayName = widget.userName ?? '';
+    _profilePhoto = widget.userUrl;
+    _resolveUserInfo();
+  }
+
+  @override
+  void didUpdateWidget(covariant NavBarAll oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.userName != null && widget.userName != oldWidget.userName) {
+      setState(() {
+        _displayName = widget.userName!;
+      });
+    }
+    if (widget.userUrl != null && widget.userUrl != oldWidget.userUrl) {
+      setState(() {
+        _profilePhoto = widget.userUrl;
+      });
+    }
+  }
+
+  Future<void> _resolveUserInfo() async {
+    // Si des informations complètes ont déjà été fournies par le parent, les conserver
+    final isGeneric = _displayName.isEmpty ||
+        _displayName == 'Lecteur' ||
+        _displayName == 'Auteur';
+
+    if (isGeneric) {
+      final savedName = await TokenStorage.getUserName();
+      if (savedName != null && savedName.isNotEmpty && mounted) {
+        setState(() {
+          _displayName = savedName;
+        });
+      }
+    }
+
+    if (_profilePhoto == null || isGeneric) {
+      try {
+        final token = await TokenStorage.getToken();
+        if (token != null) {
+          final user = await _authService.getUser(token);
+          if (user != null && mounted) {
+            setState(() {
+              if (user.nomComplet.isNotEmpty) {
+                _displayName = user.nomComplet;
+                TokenStorage.saveUserName(user.nomComplet);
+              }
+              if (user.profilePhoto != null && user.profilePhoto!.isNotEmpty) {
+                _profilePhoto = user.profilePhoto;
+              }
+            });
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
-    final String initial = userName.isNotEmpty
-        ? userName[0].toUpperCase()
-        : 'L';
+    final topPadding = MediaQuery.of(context).padding.top;
+    final fallbackName = widget.role == 'auteur' ? 'Auteur' : 'Lecteur';
+    final effectiveName = _displayName.isNotEmpty ? _displayName : fallbackName;
+    final String initial = effectiveName.isNotEmpty
+        ? effectiveName[0].toUpperCase()
+        : (widget.role == 'auteur' ? 'A' : 'L');
 
     return Container(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 60, bottom: 16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: topPadding > 0 ? topPadding + 10 : 50,
+        bottom: 12,
+      ),
       decoration: const BoxDecoration(color: Colors.transparent),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -64,11 +142,11 @@ class NavBarAll extends StatelessWidget {
                     );
                   },
                   child: Container(
-                    width: 45,
-                    height: 45,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: userUrl != null && userUrl!.isNotEmpty
+                      gradient: _profilePhoto != null && _profilePhoto!.isNotEmpty
                           ? null
                           : LinearGradient(
                               colors: [
@@ -78,7 +156,7 @@ class NavBarAll extends StatelessWidget {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                      color: userUrl != null && userUrl!.isNotEmpty
+                      color: _profilePhoto != null && _profilePhoto!.isNotEmpty
                           ? AppColors.cardBackground
                           : null,
                       border: Border.all(
@@ -95,15 +173,15 @@ class NavBarAll extends StatelessWidget {
                     ),
                     child: ClipOval(
                       child: ProfileImageHelper.buildProfileImage(
-                        userUrl,
+                        _profilePhoto,
                         fallbackInitial: initial,
                         textStyle: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
-                        width: 45,
-                        height: 45,
+                        width: 44,
+                        height: 44,
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -115,7 +193,7 @@ class NavBarAll extends StatelessWidget {
                     TextSpan(
                       children: [
                         TextSpan(
-                          text: "${greeting ?? getGreeting()}, ",
+                          text: "${widget.greeting ?? NavBarAll.getGreeting()}, ",
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             color: AppColors.textHint,
@@ -123,7 +201,7 @@ class NavBarAll extends StatelessWidget {
                           ),
                         ),
                         TextSpan(
-                          text: userName,
+                          text: effectiveName,
                           style: AppTextStyles.sectionTitle.copyWith(
                             fontSize: 13,
                           ),
@@ -141,7 +219,6 @@ class NavBarAll extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Chat icon currently exists in NavBarAll but not in image, I'll keep just notifications if it's Auteur
               IconButton(
                 onPressed: () {
                   Navigator.push(
@@ -165,7 +242,7 @@ class NavBarAll extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => NotificationPage(role: role),
+                          builder: (context) => NotificationPage(role: widget.role),
                         ),
                       );
                     },
@@ -177,10 +254,8 @@ class NavBarAll extends StatelessWidget {
                   ),
                   Consumer<NotificationProvider>(
                     builder: (context, notificationProvider, child) {
-                      final currentRole =
-                          role; // Use currentRole local to avoid any field access issues if possible
                       final count = notificationProvider.getUnreadCountByRole(
-                        currentRole,
+                        widget.role,
                       );
                       if (count == 0) return const SizedBox.shrink();
                       return Positioned(

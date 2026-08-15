@@ -2,22 +2,18 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:space_learn_flutter/core/themes/widgets/app_segmented_control.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart' hide Image;
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:space_learn_flutter/core/services/tts_service.dart';
 import 'package:space_learn_flutter/core/services/preparation_texte.dart';
 import 'package:space_learn_flutter/core/services/book_cache_service.dart';
-import 'dart:typed_data';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:epub_view/epub_view.dart' hide Image;
-import 'package:http/http.dart' as http;
-import '../../../../utils/api_routes.dart';
 import '../../../../utils/token_storage.dart';
 import '../../../data/dataServices/readingProgressService.dart';
 import '../../../data/dataServices/bookmarkService.dart';
@@ -147,20 +143,22 @@ class _ReadingPageState extends State<ReadingPage> {
 
   Future<void> _loadBookFile() async {
     final String? pdfUrl =
-        widget.book['fichier_url'] ?? widget.book['fichierUrl'];
+        (widget.isExtrait ? (widget.book['extrait_url'] ?? widget.book['extraitUrl'] ?? widget.book['extract_url']) : null) ??
+        widget.book['fichier_url'] ??
+        widget.book['fichierUrl'];
     final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
 
     if (pdfUrl == null || pdfUrl.isEmpty || bookId.isEmpty) {
-      // Deux causes tres differentes, un seul message jusqu'ici.
+      // Deux causes très différentes, un seul message jusqu'ici.
       //
       // Le serveur masque l'adresse du manuscrit tant que le lecteur ne
-      // possede pas l'ouvrage. Un fichier absent et un livre non acquis
-      // arrivaient donc ici de la meme facon, et le lecteur lisait « aucun
+      // possède pas l'ouvrage. Un fichier absent et un livre non acquis
+      // arrivaient donc ici de la même façon, et le lecteur lisait « aucun
       // fichier disponible » alors que le fichier existe et qu'il lui manque
       // seulement de l'obtenir.
       //
-      // Le drapeau a_un_fichier existe pour cela : il est calcule avant le
-      // masquage, et dit si un manuscrit est depose.
+      // Le drapeau a_un_fichier existe pour cela : il est calculé avant le
+      // masquage, et dit si un manuscrit est déposé.
       final aUnFichier =
           widget.book['a_un_fichier'] == true ||
           widget.book['aUnFichier'] == true;
@@ -169,10 +167,14 @@ class _ReadingPageState extends State<ReadingPage> {
           widget.book['fichierIndisponible'] == true;
 
       setState(() {
-        if (indisponible) {
-          // Le manuscrit est enregistre mais le serveur n'arrive pas a le
-          // servir. Ce n'est ni l'absence d'un fichier ni un defaut d'achat :
-          // le dire evite au lecteur de chercher ce qu'il a mal fait.
+        if (widget.isExtrait) {
+          _loadError =
+              "Aucun extrait gratuit n'est disponible pour ce livre. "
+              "Veuillez vous procurer l'ouvrage pour accéder à la lecture intégrale.";
+        } else if (indisponible) {
+          // Le manuscrit est enregistré mais le serveur n'arrive pas à le
+          // servir. Ce n'est ni l'absence d'un fichier ni un défaut d'achat :
+          // le dire évite au lecteur de chercher ce qu'il a mal fait.
           _loadError =
               "Le fichier de ce livre est momentanément indisponible. "
               "Nous en avons été informés.";
