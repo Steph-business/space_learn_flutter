@@ -699,29 +699,33 @@ class _ReadingPageState extends State<ReadingPage> {
   String _nomLisibleVoix(Map<String, String> voix) {
     final locale = (voix['locale'] ?? '').toLowerCase();
     final pays = locale.startsWith('fr-ca')
-        ? 'Français (Canada)'
+        ? 'Canada'
         : locale.startsWith('fr-be')
-        ? 'Français (Belgique)'
+        ? 'Belgique'
         : locale.startsWith('fr-ch')
-        ? 'Français (Suisse)'
-        : 'Français (France)';
+        ? 'Suisse'
+        : 'France';
 
     final rang = _ttsService.voixDisponibles.indexOf(voix) + 1;
-    return '$pays — voix $rang';
+    return 'Voix $rang · $pays';
   }
 
+  /// Ce qui distingue vraiment deux voix.
+  ///
+  /// Six entrees nommees « Français (France) — voix N », toutes « Qualité
+  /// élevée », ne se distinguent pas : on ne peut pas choisir. L'identifiant
+  /// du moteur, lui, differe toujours — c'est laid, mais c'est la seule chose
+  /// qui separe deux lignes tant qu'on ne les a pas entendues.
   String _qualiteLisible(Map<String, String> voix) {
-    switch ((voix['quality'] ?? '').toLowerCase()) {
-      case 'very high':
-        return 'Qualité très élevée';
-      case 'high':
-        return 'Qualité élevée';
-      case 'low':
-      case 'very low':
-        return 'Qualité réduite';
-      default:
-        return 'Qualité standard';
-    }
+    final identifiant = (voix['name'] ?? '').trim();
+    final qualite = switch ((voix['quality'] ?? '').toLowerCase()) {
+      'very high' => 'très élevée',
+      'high' => 'élevée',
+      'low' || 'very low' => 'réduite',
+      _ => 'standard',
+    };
+    if (identifiant.isEmpty) return 'Qualité $qualite';
+    return '$identifiant · qualité $qualite';
   }
 
   Widget _buildTtsPlayerPanel() {
@@ -1589,261 +1593,287 @@ class _ReadingPageState extends State<ReadingPage> {
           AppColors.suivreLeTheme(context);
           return SafeArea(
             top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppDimensions.spaceXl,
-                0,
-                AppDimensions.spaceXl,
-                AppDimensions.spaceXl,
+            // La feuille defile.
+            //
+            // Son contenu tenait tant qu'il etait fixe. La liste des voix, qui
+            // depend de l'appareil, l'a fait deborder de cent cinquante-sept
+            // pixels des qu'il y en a six. Une hauteur qu'on ne maitrise pas
+            // doit pouvoir defiler ; on la borne aussi a quatre-vingts pour
+            // cent de l'ecran, pour qu'on voie qu'il s'agit d'une feuille.
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    "Confort de lecture",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 19,
-                      color: AppColors.textPrimary,
-                    ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.spaceXl,
+                    0,
+                    AppDimensions.spaceXl,
+                    AppDimensions.spaceXl,
                   ),
-                  const SizedBox(height: AppDimensions.spaceXl),
-
-                  // Le meme curseur ne fait pas la meme chose selon le format :
-                  // sur un PDF la mise en page est figee, on ne peut qu'agrandir
-                  // l'image ; un EPUB recompose son texte. L'intitule le dit,
-                  // plutot que de laisser croire a un reglage qui n'existe pas.
-                  _titreReglage(_isPdf ? "Agrandissement" : "Taille du texte"),
-                  const SizedBox(height: AppDimensions.spaceXs),
-                  Row(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        _isPdf ? Icons.zoom_out : Icons.text_decrease,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
-                      Expanded(
-                        child: Slider(
-                          value: _zoomLevel,
-                          min: 0.5,
-                          max: 3.0,
-                          // Des crans : un zoom continu ne se retrouve jamais.
-                          divisions: 10,
-                          label: "${(_zoomLevel * 100).round()} %",
-                          onChanged: (val) {
-                            setState(() {
-                              _zoomLevel = val;
-                              _pdfViewerController.zoomLevel = val;
-                            });
-                            setModalState(() {});
-                            _saveSettingsDebounced();
-                          },
+                      Text(
+                        "Confort de lecture",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 19,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      Icon(
-                        _isPdf ? Icons.zoom_in : Icons.text_increase,
-                        size: 22,
-                        color: AppColors.textSecondary,
+                      const SizedBox(height: AppDimensions.spaceXl),
+
+                      // Le meme curseur ne fait pas la meme chose selon le format :
+                      // sur un PDF la mise en page est figee, on ne peut qu'agrandir
+                      // l'image ; un EPUB recompose son texte. L'intitule le dit,
+                      // plutot que de laisser croire a un reglage qui n'existe pas.
+                      _titreReglage(
+                        _isPdf ? "Agrandissement" : "Taille du texte",
                       ),
-                      const SizedBox(width: AppDimensions.spaceMd),
-                      // La valeur, sinon on règle à l'aveugle.
-                      SizedBox(
-                        width: 48,
-                        child: Text(
-                          "${(_zoomLevel * 100).round()} %",
-                          textAlign: TextAlign.end,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.accentInk,
+                      const SizedBox(height: AppDimensions.spaceXs),
+                      Row(
+                        children: [
+                          Icon(
+                            _isPdf ? Icons.zoom_out : Icons.text_decrease,
+                            size: 18,
+                            color: AppColors.textSecondary,
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: AppDimensions.spaceXl),
-
-                  _titreReglage("Luminosité"),
-                  const SizedBox(height: AppDimensions.spaceXs),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.brightness_low,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
-                      Expanded(
-                        child: Slider(
-                          value: _brightness,
-                          min: 0.25,
-                          max: 1.0,
-                          divisions: 15,
-                          label: "${(_brightness * 100).round()} %",
-                          onChanged: (val) {
-                            setState(() => _brightness = val);
-                            setModalState(() {});
-                            _saveSettingsDebounced();
-                          },
-                        ),
-                      ),
-                      Icon(
-                        Icons.brightness_high,
-                        size: 20,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: AppDimensions.spaceMd),
-                      SizedBox(
-                        width: 48,
-                        child: Text(
-                          "${(_brightness * 100).round()} %",
-                          textAlign: TextAlign.end,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.accentInk,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: AppDimensions.spaceXl),
-
-                  // Le choix de la voix.
-                  //
-                  // Le service en retenait une — la meilleure qualite annoncee
-                  // par le moteur, francais de France en premier — et gardait
-                  // la liste pour lui. Or laquelle « sonne bien » ne se decide
-                  // pas depuis le code : cela s'ecoute, et cela varie d'une
-                  // oreille a l'autre.
-                  if (_ttsService.voixDisponibles.length > 1) ...[
-                    _titreReglage("Voix"),
-                    const SizedBox(height: AppDimensions.spaceSm),
-                    ..._ttsService.voixDisponibles.map((voix) {
-                      final nom = voix['name'] ?? '';
-                      final choisie = nom == _ttsService.nomVoix;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: GestureDetector(
-                          onTap: () async {
-                            await _ttsService.choisirVoix(voix);
-                            setModalState(() {});
-                            setState(() {});
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
+                          Expanded(
+                            child: Slider(
+                              value: _zoomLevel,
+                              min: 0.5,
+                              max: 3.0,
+                              // Des crans : un zoom continu ne se retrouve jamais.
+                              divisions: 10,
+                              label: "${(_zoomLevel * 100).round()} %",
+                              onChanged: (val) {
+                                setState(() {
+                                  _zoomLevel = val;
+                                  _pdfViewerController.zoomLevel = val;
+                                });
+                                setModalState(() {});
+                                _saveSettingsDebounced();
+                              },
                             ),
-                            decoration: BoxDecoration(
-                              color: choisie
-                                  ? AppColors.primary.withValues(alpha: 0.15)
-                                  : AppColors.surfaceVariant,
-                              borderRadius: BorderRadius.circular(
-                                AppDimensions.radiusInner,
-                              ),
-                              border: Border.all(
-                                color: choisie
-                                    ? AppColors.primary
-                                    : AppColors.border,
+                          ),
+                          Icon(
+                            _isPdf ? Icons.zoom_in : Icons.text_increase,
+                            size: 22,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: AppDimensions.spaceMd),
+                          // La valeur, sinon on règle à l'aveugle.
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              "${(_zoomLevel * 100).round()} %",
+                              textAlign: TextAlign.end,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accentInk,
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  choisie
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_unchecked,
-                                  size: 18,
-                                  color: choisie
-                                      ? AppColors.accentInk
-                                      : AppColors.textHint,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: AppDimensions.spaceXl),
+
+                      _titreReglage("Luminosité"),
+                      const SizedBox(height: AppDimensions.spaceXs),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.brightness_low,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
+                          Expanded(
+                            child: Slider(
+                              value: _brightness,
+                              min: 0.25,
+                              max: 1.0,
+                              divisions: 15,
+                              label: "${(_brightness * 100).round()} %",
+                              onChanged: (val) {
+                                setState(() => _brightness = val);
+                                setModalState(() {});
+                                _saveSettingsDebounced();
+                              },
+                            ),
+                          ),
+                          Icon(
+                            Icons.brightness_high,
+                            size: 20,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: AppDimensions.spaceMd),
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              "${(_brightness * 100).round()} %",
+                              textAlign: TextAlign.end,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accentInk,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: AppDimensions.spaceXl),
+
+                      // Le choix de la voix.
+                      //
+                      // Le service en retenait une — la meilleure qualite annoncee
+                      // par le moteur, francais de France en premier — et gardait
+                      // la liste pour lui. Or laquelle « sonne bien » ne se decide
+                      // pas depuis le code : cela s'ecoute, et cela varie d'une
+                      // oreille a l'autre.
+                      if (_ttsService.voixDisponibles.length > 1) ...[
+                        _titreReglage("Voix"),
+                        const SizedBox(height: AppDimensions.spaceSm),
+                        ..._ttsService.voixDisponibles.map((voix) {
+                          final nom = voix['name'] ?? '';
+                          final choisie = nom == _ttsService.nomVoix;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: GestureDetector(
+                              // On selectionne et on ecoute aussitot : lire un
+                              // identifiant ne dit rien du timbre, et comparer six
+                              // voix sans les entendre est impossible.
+                              onTap: () async {
+                                await _ttsService.choisirVoix(voix);
+                                setModalState(() {});
+                                setState(() {});
+                                if (!_ttsService.isPlaying) {
+                                  await _ttsService.speak(
+                                    "Voici ma voix pour la lecture de vos livres.",
+                                  );
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _nomLisibleVoix(voix),
-                                        style: GoogleFonts.poppins(
-                                          color: AppColors.textPrimary,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Text(
-                                        _qualiteLisible(voix),
-                                        style: GoogleFonts.poppins(
-                                          color: AppColors.textSecondary,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ],
+                                decoration: BoxDecoration(
+                                  color: choisie
+                                      ? AppColors.primary.withValues(
+                                          alpha: 0.15,
+                                        )
+                                      : AppColors.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
+                                  border: Border.all(
+                                    color: choisie
+                                        ? AppColors.primary
+                                        : AppColors.border,
                                   ),
                                 ),
-                              ],
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      choisie
+                                          ? Icons.radio_button_checked
+                                          : Icons.radio_button_unchecked,
+                                      size: 18,
+                                      color: choisie
+                                          ? AppColors.accentInk
+                                          : AppColors.textHint,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _nomLisibleVoix(voix),
+                                            style: GoogleFonts.poppins(
+                                              color: AppColors.textPrimary,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            _qualiteLisible(voix),
+                                            style: GoogleFonts.poppins(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: AppDimensions.spaceXl),
+                      ],
+
+                      _titreReglage("Sens de lecture"),
+                      const SizedBox(height: AppDimensions.spaceSm),
+                      // Deux choix nommés plutôt qu'un interrupteur : le libellé
+                      // « Défilement vertical » restait écrit même une fois passé à
+                      // l'horizontal, et rien ne disait vers quoi l'on basculait.
+                      AppSegmentedControl(
+                        labels: const ["Vertical", "Horizontal"],
+                        selectedIndex: _isHorizontal ? 1 : 0,
+                        onChanged: (index) {
+                          setState(() => _isHorizontal = index == 1);
+                          setModalState(() {});
+                          _saveSettings();
+                        },
+                      ),
+
+                      const SizedBox(height: AppDimensions.spaceXl),
+
+                      _titreReglage("Fond de page"),
+                      const SizedBox(height: AppDimensions.spaceSm),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildThemeOption(
+                              "Original",
+                              AppColors.parchmentLight,
+                              AppColors.textOnLight,
+                              setModalState,
                             ),
                           ),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: AppDimensions.spaceXl),
-                  ],
-
-                  _titreReglage("Sens de lecture"),
-                  const SizedBox(height: AppDimensions.spaceSm),
-                  // Deux choix nommés plutôt qu'un interrupteur : le libellé
-                  // « Défilement vertical » restait écrit même une fois passé à
-                  // l'horizontal, et rien ne disait vers quoi l'on basculait.
-                  AppSegmentedControl(
-                    labels: const ["Vertical", "Horizontal"],
-                    selectedIndex: _isHorizontal ? 1 : 0,
-                    onChanged: (index) {
-                      setState(() => _isHorizontal = index == 1);
-                      setModalState(() {});
-                      _saveSettings();
-                    },
-                  ),
-
-                  const SizedBox(height: AppDimensions.spaceXl),
-
-                  _titreReglage("Fond de page"),
-                  const SizedBox(height: AppDimensions.spaceSm),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildThemeOption(
-                          "Original",
-                          AppColors.parchmentLight,
-                          AppColors.textOnLight,
-                          setModalState,
-                        ),
-                      ),
-                      const SizedBox(width: AppDimensions.spaceMd),
-                      Expanded(
-                        child: _buildThemeOption(
-                          "Nuit",
-                          AppColors.readingDark,
-                          AppColors.textOnDark,
-                          setModalState,
-                        ),
-                      ),
-                      const SizedBox(width: AppDimensions.spaceMd),
-                      Expanded(
-                        child: _buildThemeOption(
-                          "Sépia",
-                          AppColors.parchment,
-                          AppColors.readingBrownDark,
-                          setModalState,
-                        ),
+                          const SizedBox(width: AppDimensions.spaceMd),
+                          Expanded(
+                            child: _buildThemeOption(
+                              "Nuit",
+                              AppColors.readingDark,
+                              AppColors.textOnDark,
+                              setModalState,
+                            ),
+                          ),
+                          const SizedBox(width: AppDimensions.spaceMd),
+                          Expanded(
+                            child: _buildThemeOption(
+                              "Sépia",
+                              AppColors.parchment,
+                              AppColors.readingBrownDark,
+                              setModalState,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           );
