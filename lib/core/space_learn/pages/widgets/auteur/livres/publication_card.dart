@@ -1,4 +1,4 @@
-import 'package:space_learn_flutter/core/themes/app_colors.dart';
+﻿import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
@@ -6,11 +6,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/statistiques_livre_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
+// La carte est intentionnellement epuree : titre, statut, prix, note.
+// Les actions (Modifier, Publier, Supprimer) se trouvent dans le menu
+// 3-points de la page detail, accessible en appuyant sur la carte.
 class PublicationCard extends StatelessWidget {
   final BookModel book;
   final String? authorName;
@@ -23,131 +24,96 @@ class PublicationCard extends StatelessWidget {
     this.onBookUpdated,
   });
 
-  void _navigateToBookDetail(BuildContext context, BookModel book) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            BookDetailPage(book: book, isOwned: true, peutAcheter: false),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
     const mois = [
-      "",
-      "jan",
-      "fév",
-      "mars",
-      "avr",
-      "mai",
-      "juin",
-      "juil",
-      "août",
-      "sept",
-      "oct",
-      "nov",
-      "déc",
+      "", "jan", "fev", "mars", "avr", "mai", "juin",
+      "juil", "aout", "sept", "oct", "nov", "dec",
     ];
     final String formattedDate = book.creeLe != null
-        ? "${book.creeLe!.day} ${mois[book.creeLe!.month]} ${book.creeLe!.year} à ${book.creeLe!.hour.toString().padLeft(2, '0')}:${book.creeLe!.minute.toString().padLeft(2, '0')}"
+        ? "${book.creeLe!.day} ${mois[book.creeLe!.month]} ${book.creeLe!.year}"
         : "N/A";
 
     final isPublished = book.statut.toLowerCase() == 'publie';
     final statusColor = isPublished ? AppColors.success : AppColors.warning;
-    final statusText = isPublished ? "Publié" : book.statut;
+    final statusText = isPublished ? "Publie" : book.statut;
 
     return GestureDetector(
-      onTap: () => _navigateToBookDetail(context, book),
+      onTap: () async {
+        // Tap : page detail avec menu de gestion (modifier/publier/supprimer)
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookDetailPage(
+              book: book,
+              isOwned: true,
+              peutAcheter: false, // false = auteur = menu de gestion visible
+            ),
+          ),
+        );
+        if (result == true && onBookUpdated != null) {
+          onBookUpdated!();
+        }
+      },
       child: Container(
-        margin: EdgeInsets.only(bottom: 14),
-        padding: EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-          border: Border.all(color: AppColors.textPrimary.withOpacity(0.04)),
+          border: Border.all(
+            color: AppColors.textPrimary.withValues(alpha: 0.04),
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover Image
+            // Couverture
             Hero(
               tag: 'book_cover_${book.id}',
-              child: Container(
-                width: 72,
-                height: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusInner,
-                  ),
-                ),
-                child:
-                    book.imageCouverture != null &&
-                        book.imageCouverture!.isNotEmpty &&
-                        !book.imageCouverture!.contains('example.com')
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusInner,
-                        ),
-                        child: Image.network(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                child: SizedBox(
+                  width: 64,
+                  height: 90,
+                  child: book.imageCouverture != null &&
+                          book.imageCouverture!.isNotEmpty &&
+                          !book.imageCouverture!.contains('example.com')
+                      ? Image.network(
                           book.imageCouverture!,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildPlaceholderCover();
-                          },
-                        ),
-                      )
-                    : _buildPlaceholderCover(),
+                          errorBuilder: (_, __, ___) => _buildPlaceholderCover(),
+                        )
+                      : _buildPlaceholderCover(),
+                ),
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 14),
 
-            // Book Info
+            // Informations
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
                   Text(
                     book.titre,
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                      fontSize: 14,
                       color: AppColors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 6),
-                  // Date + Status
+                  const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(
-                        Iconsax.calendar_1,
-                        size: 12,
-                        color: AppColors.textPrimary.withOpacity(0.3),
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        formattedDate,
-                        style: GoogleFonts.poppins(
-                          color: AppColors.textPrimary.withOpacity(0.4),
-                          fontSize: 12,
-                        ),
-                      ),
-                      SizedBox(width: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
-                          ),
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                         ),
                         child: Text(
                           statusText,
@@ -158,53 +124,51 @@ class PublicationCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Iconsax.calendar_1,
+                        size: 11,
+                        color: AppColors.textPrimary.withValues(alpha: 0.3),
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        formattedDate,
+                        style: GoogleFonts.poppins(
+                          color: AppColors.textPrimary.withValues(alpha: 0.4),
+                          fontSize: 11,
+                        ),
+                      ),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
-                          ),
-                        ),
-                        child: Text(
-                          "${book.prix} FCFA",
-                          style: GoogleFonts.poppins(
-                            color: AppColors.accentInk,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      Text(
+                        "${book.prix} FCFA",
+                        style: GoogleFonts.poppins(
+                          color: AppColors.accentInk,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Icon(
                         Iconsax.eye,
-                        size: 14,
-                        color: AppColors.textPrimary.withOpacity(0.3),
+                        size: 13,
+                        color: AppColors.textPrimary.withValues(alpha: 0.3),
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 3),
                       Text(
                         "${book.telechargements} lectures",
                         style: GoogleFonts.poppins(
-                          color: AppColors.textPrimary.withOpacity(0.4),
+                          color: AppColors.textPrimary.withValues(alpha: 0.4),
                           fontSize: 11,
                         ),
                       ),
                       if (book.noteMoyenne > 0) ...[
-                        SizedBox(width: 12),
-                        Icon(
-                          Icons.star_rounded,
-                          size: 14,
-                          color: AppColors.warning,
-                        ),
-                        SizedBox(width: 2),
+                        const SizedBox(width: 8),
+                        Icon(Icons.star_rounded, size: 13, color: AppColors.warning),
+                        const SizedBox(width: 2),
                         Text(
                           "${book.noteMoyenne}",
                           style: GoogleFonts.poppins(
@@ -220,162 +184,11 @@ class PublicationCard extends StatelessWidget {
               ),
             ),
 
-            // ── Three-dot menu (top right) ──
-            PopupMenuButton<String>(
-              color: AppColors.cardBackground,
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(maxWidth: 140),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-                side: BorderSide(
-                  color: AppColors.textPrimary.withOpacity(0.06),
-                ),
-              ),
-              position: PopupMenuPosition.under,
-              offset: const Offset(0, 4),
-              onSelected: (value) async {
-                switch (value) {
-                  case 'edit':
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AjouterLivrePage(book: book),
-                      ),
-                    );
-                    if (result == true && onBookUpdated != null) {
-                      onBookUpdated!();
-                    }
-                    break;
-                  case 'stats':
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => StatistiquesLivrePage(book: book),
-                      ),
-                    );
-                    break;
-                  case 'publish':
-                    _handlePublish(context);
-                    break;
-                  case 'archive':
-                    _handleArchive(context);
-                    break;
-                  case 'delete':
-                    _handleDelete(context);
-                    break;
-                }
-              },
-              itemBuilder: (context) => [
-                if (!isPublished)
-                  PopupMenuItem(
-                    value: 'publish',
-                    height: 32,
-                    child: Row(
-                      children: [
-                        Icon(Icons.publish, color: AppColors.success, size: 14),
-                        SizedBox(width: 8),
-                        Text(
-                          "Publier",
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                PopupMenuItem(
-                  value: 'edit',
-                  height: 32,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Iconsax.edit_2,
-                        color: AppColors.secondaryVariant,
-                        size: 14,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        "modifier",
-                        style: GoogleFonts.poppins(
-                          color: AppColors.textPrimary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'stats',
-                  height: 32,
-                  child: Row(
-                    children: [
-                      Icon(Iconsax.chart_1, color: AppColors.success, size: 14),
-                      SizedBox(width: 8),
-                      Text(
-                        "statistiques",
-                        style: GoogleFonts.poppins(
-                          color: AppColors.textPrimary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(height: 1),
-                PopupMenuItem(
-                  value: 'archive',
-                  height: 32,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Iconsax.archive_2,
-                        color: AppColors.textPrimary.withOpacity(0.5),
-                        size: 14,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        "archiver",
-                        style: GoogleFonts.poppins(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(height: 1),
-                PopupMenuItem(
-                  value: 'delete',
-                  height: 32,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Iconsax.trash,
-                        color: AppColors.error.withOpacity(0.7),
-                        size: 14,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        "supprimer",
-                        style: GoogleFonts.poppins(
-                          color: AppColors.error,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              child: Padding(
-                padding: EdgeInsets.all(2),
-                child: Icon(
-                  Iconsax.more,
-                  color: AppColors.textPrimary.withOpacity(0.3),
-                  size: 18,
-                ),
-              ),
+            // Fleche indicatrice
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: AppColors.textPrimary.withValues(alpha: 0.2),
             ),
           ],
         ),
@@ -388,193 +201,15 @@ class PublicationCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.secondaryVariant.withOpacity(0.15),
-            AppColors.violet.withOpacity(0.1),
+            AppColors.secondaryVariant.withValues(alpha: 0.15),
+            AppColors.violet.withValues(alpha: 0.1),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-        border: Border.all(color: AppColors.secondaryVariant.withOpacity(0.15)),
       ),
       child: Center(
-        child: Icon(Iconsax.book_1, color: AppColors.textHint, size: 28),
-      ),
-    );
-  }
-
-  Future<void> _handlePublish(BuildContext context) async {
-    try {
-      final token = await TokenStorage.getToken();
-      if (token == null) {
-        if (context.mounted) {
-          AppNotifications.showSnackBar(
-            context,
-            message: "Session expirée",
-            isError: true,
-          );
-        }
-        return;
-      }
-
-      final BookService bookService = BookService();
-      await bookService.updateBook(book.id, {'statut': 'publie'}, token);
-
-      if (context.mounted) {
-        AppNotifications.showSnackBar(
-          context,
-          message: "Livre publié avec succès !",
-          isSuccess: true,
-        );
-        if (onBookUpdated != null) {
-          onBookUpdated!();
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        AppNotifications.showSnackBar(
-          context,
-          message: "Erreur: Impossible de publier le livre",
-          isError: true,
-        );
-      }
-    }
-  }
-
-  void _handleArchive(BuildContext context) {
-    AppNotifications.showSnackBar(
-      context,
-      message: "Fonction d'archivage en cours de développement.",
-    );
-  }
-
-  void _handleDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Iconsax.trash,
-                  color: AppColors.error.withOpacity(0.8),
-                  size: 32,
-                ),
-              ),
-              SizedBox(height: 20),
-              Text(
-                "Supprimer l'œuvre",
-                style: GoogleFonts.poppins(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                "Êtes-vous sûr de vouloir supprimer \"${book.titre}\" ? Cette action est irréversible.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  color: AppColors.textPrimary.withOpacity(0.5),
-                  fontSize: 13,
-                ),
-              ),
-              SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: AppColors.textPrimary.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusInner,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "Annuler",
-                            style: GoogleFonts.poppins(
-                              color: AppColors.textPrimary.withOpacity(0.6),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () async {
-                        Navigator.pop(context);
-                        try {
-                          final token = await TokenStorage.getToken();
-                          if (token != null) {
-                            await BookService().deleteBook(book.id, token);
-                            if (context.mounted) {
-                              AppNotifications.showSnackBar(
-                                context,
-                                message: "Livre supprimé avec succès",
-                                isSuccess: true,
-                              );
-                            }
-                            if (onBookUpdated != null) {
-                              onBookUpdated!();
-                            }
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            AppNotifications.showSnackBar(
-                              context,
-                              message: "Erreur lors de la suppression : $e",
-                              isError: true,
-                            );
-                          }
-                        }
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusInner,
-                          ),
-                          border: Border.all(
-                            color: AppColors.error.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "Supprimer",
-                            style: GoogleFonts.poppins(
-                              color: AppColors.error,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+        child: Icon(Iconsax.book_1, color: AppColors.textHint, size: 24),
       ),
     );
   }

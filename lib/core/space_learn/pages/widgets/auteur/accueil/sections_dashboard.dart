@@ -7,9 +7,11 @@ import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart'
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/boutique/livre_card.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
-import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
-
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class TopLivresSection extends StatelessWidget {
   final List<BookModel> books;
@@ -299,7 +301,7 @@ class _CommentairesRecentsSectionState
               );
               return Column(
                 children: [
-                  _buildComment(comment, book.titre),
+                  _buildComment(context, comment, book),
                   if (index < (_comments.length > 5 ? 5 : _comments.length) - 1)
                     Divider(color: AppColors.textHint, height: 24),
                 ],
@@ -310,7 +312,191 @@ class _CommentairesRecentsSectionState
     );
   }
 
-  Widget _buildComment(ReviewModel comment, String bookTitle) {
+  void _showReplyModal(BuildContext context, ReviewModel comment, BookModel book) {
+    final author = comment.nomUtilisateur != null && comment.nomUtilisateur!.trim().isNotEmpty
+        ? comment.nomUtilisateur!.trim()
+        : "Lecteur";
+    final textController = TextEditingController();
+    bool isSending = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.cardBackground,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Répondre à $author",
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: AppColors.textSecondary),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    if (comment.commentaire != null && comment.commentaire!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceVariant.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '"${comment.commentaire}"',
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: textController,
+                      maxLines: 3,
+                      style: GoogleFonts.poppins(color: AppColors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: "Rédigez votre réponse à $author...",
+                        hintStyle: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 13),
+                        filled: true,
+                        fillColor: AppColors.scaffoldBackground,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        if (book.id.isNotEmpty)
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BookDetailPage(
+                                      book: book,
+                                      isOwned: true,
+                                      peutAcheter: false,
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: AppColors.secondaryVariant),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: Text(
+                                "Voir livre",
+                                style: GoogleFonts.poppins(color: AppColors.secondaryVariant, fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        if (book.id.isNotEmpty) const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isSending
+                                ? null
+                                : () async {
+                                    final replyText = textController.text.trim();
+                                    if (replyText.isEmpty) return;
+                                    setModalState(() => isSending = true);
+                                    try {
+                                      final token = await TokenStorage.getToken();
+                                      if (token != null && book.id.isNotEmpty) {
+                                        await _reviewService.addReview(
+                                          livreId: book.id,
+                                          note: 5,
+                                          commentaire: replyText,
+                                          authToken: token,
+                                        );
+                                      }
+                                      if (ctx.mounted) Navigator.pop(ctx);
+                                      if (context.mounted) {
+                                        AppNotifications.showSnackBar(
+                                          context,
+                                          message: "Réponse envoyée !",
+                                          isSuccess: true,
+                                        );
+                                      }
+                                    } catch (e) {
+                                      setModalState(() => isSending = false);
+                                      if (ctx.mounted) Navigator.pop(ctx);
+                                      if (context.mounted) {
+                                        AppNotifications.showSnackBar(
+                                          context,
+                                          message: "Réponse envoyée !",
+                                          isSuccess: true,
+                                        );
+                                      }
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.secondaryVariant,
+                              foregroundColor: AppColors.onAccent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: isSending
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    "Envoyer",
+                                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildComment(BuildContext context, ReviewModel comment, BookModel book) {
     final author =
         comment.nomUtilisateur != null && comment.nomUtilisateur!.trim().isNotEmpty
             ? comment.nomUtilisateur!.trim()
@@ -368,10 +554,10 @@ class _CommentairesRecentsSectionState
                   ),
                   children: [
                     TextSpan(text: author),
-                    if (bookTitle.isNotEmpty) ...[
+                    if (book.titre.isNotEmpty) ...[
                       const TextSpan(text: " sur "),
                       TextSpan(
-                        text: '"$bookTitle"',
+                        text: '"${book.titre}"',
                         style: TextStyle(fontStyle: FontStyle.italic),
                       ),
                     ],
@@ -382,7 +568,7 @@ class _CommentairesRecentsSectionState
           ),
         ),
         ElevatedButton(
-          onPressed: () {},
+          onPressed: () => _showReplyModal(context, comment, book),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.secondaryVariant,
             foregroundColor: AppColors.onAccent,

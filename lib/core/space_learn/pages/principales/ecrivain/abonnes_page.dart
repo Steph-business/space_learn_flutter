@@ -188,7 +188,15 @@ class _AbonnesPageState extends State<AbonnesPage> {
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Profil de $name"),
+                  backgroundColor: AppColors.secondaryVariant,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
             child: Text(
               "Profil",
               style: TextStyle(color: AppColors.secondaryVariant),

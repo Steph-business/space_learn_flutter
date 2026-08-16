@@ -1,7 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
-import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/recherche_page.dart';
 

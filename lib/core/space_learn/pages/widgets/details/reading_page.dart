@@ -23,8 +23,10 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/partageSe
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/dataServices/readingSettingsService.dart';
 import '../../../data/dataServices/readerStatsService.dart';
+import '../../../data/dataServices/reading_time_storage.dart';
 import '../../../data/dataServices/paymentService.dart';
 import '../../../data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
 import 'package:space_learn_flutter/core/services/lecture_audio_handler.dart';
 
@@ -61,6 +63,8 @@ class _ReadingPageState extends State<ReadingPage> {
   Timer? _saveTimer;
   Timer? _settingsTimer;
   Timer? _heartbeatTimer;
+  DateTime? _lastHeartbeatTick;
+  DateTime? _sessionStartTime;
   bool _showControls = true;
 
   // PDF Reader Settings
@@ -93,6 +97,7 @@ class _ReadingPageState extends State<ReadingPage> {
 
   /// Evite de reproposer l'achat a chaque passage sur la derniere page.
   bool _achatDejaPropose = false;
+  bool _isLoadingFile = true;
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
   EpubController? _epubController;
@@ -106,6 +111,8 @@ class _ReadingPageState extends State<ReadingPage> {
     _loadProgress();
     _loadSettings();
     _loadBookmarks();
+    _lastHeartbeatTick = DateTime.now();
+    _sessionStartTime = DateTime.now();
     _startHeartbeat();
 
     // L'ecran ne doit pas s'eteindre pendant la lecture.
@@ -142,23 +149,36 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Future<void> _loadBookFile() async {
-    final String? pdfUrl =
-        (widget.isExtrait ? (widget.book['extrait_url'] ?? widget.book['extraitUrl'] ?? widget.book['extract_url']) : null) ??
+    // Pour un extrait, on essaie d'abord une URL d'extrait dédiée, puis le
+    // manuscrit complet (le backend peut autoriser l'accès aux premières pages
+    // sans que le lecteur possède le livre).
+    String? pdfUrl =
+        widget.book['extrait_url'] ??
+        widget.book['extraitUrl'] ??
+        widget.book['extract_url'] ??
         widget.book['fichier_url'] ??
         widget.book['fichierUrl'];
     final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
 
+    // Si le lien du fichier est absent de l'objet initial (ex: livre venant d'être acheté),
+    // on interroge le serveur avec le jeton d'authentification pour obtenir l'URL débloquée.
+    if ((pdfUrl == null || pdfUrl.isEmpty) && bookId.isNotEmpty) {
+      try {
+        final token = await TokenStorage.getToken();
+        if (token != null && token.isNotEmpty) {
+          final freshBook = await BookService().getBookById(bookId, authToken: token);
+          if (freshBook.fichierUrl != null && freshBook.fichierUrl!.isNotEmpty) {
+            pdfUrl = freshBook.fichierUrl;
+            widget.book['fichier_url'] = freshBook.fichierUrl;
+            widget.book['format'] = freshBook.format;
+          }
+        }
+      } catch (e) {
+        debugPrint("Impossible de récupérer le fichier frais du livre : $e");
+      }
+    }
+
     if (pdfUrl == null || pdfUrl.isEmpty || bookId.isEmpty) {
-      // Deux causes très différentes, un seul message jusqu'ici.
-      //
-      // Le serveur masque l'adresse du manuscrit tant que le lecteur ne
-      // possède pas l'ouvrage. Un fichier absent et un livre non acquis
-      // arrivaient donc ici de la même façon, et le lecteur lisait « aucun
-      // fichier disponible » alors que le fichier existe et qu'il lui manque
-      // seulement de l'obtenir.
-      //
-      // Le drapeau a_un_fichier existe pour cela : il est calculé avant le
-      // masquage, et dit si un manuscrit est déposé.
       final aUnFichier =
           widget.book['a_un_fichier'] == true ||
           widget.book['aUnFichier'] == true;
@@ -167,11 +187,8 @@ class _ReadingPageState extends State<ReadingPage> {
           widget.book['fichierIndisponible'] == true;
 
       setState(() {
-        if (widget.isExtrait) {
-          _loadError =
-              "Aucun extrait gratuit n'est disponible pour ce livre. "
-              "Veuillez vous procurer l'ouvrage pour accéder à la lecture intégrale.";
-        } else if (indisponible) {
+        _isLoadingFile = false;
+        if (indisponible) {
           // Le manuscrit est enregistré mais le serveur n'arrive pas à le
           // servir. Ce n'est ni l'absence d'un fichier ni un défaut d'achat :
           // le dire évite au lecteur de chercher ce qu'il a mal fait.
@@ -179,13 +196,22 @@ class _ReadingPageState extends State<ReadingPage> {
               "Le fichier de ce livre est momentanément indisponible. "
               "Nous en avons été informés.";
         } else if (aUnFichier) {
-          _loadError = "Ce livre n'est pas encore dans votre bibliothèque.";
+          // Le fichier existe mais le serveur le masque : le lecteur doit
+          // d'abord acquérir le livre.
+          _loadError = widget.isExtrait
+              ? "Ce livre ne propose pas d'extrait gratuit. "
+                "Procurez-vous l'ouvrage pour accéder à la lecture complète."
+              : "Ce livre n'est pas encore dans votre bibliothèque.";
         } else {
           _loadError = "Aucun fichier disponible pour ce livre.";
         }
       });
       return;
     }
+
+    setState(() {
+      _isLoadingFile = false;
+    });
 
     final String format = (widget.book['format'] ?? '')
         .toString()
@@ -392,10 +418,28 @@ class _ReadingPageState extends State<ReadingPage> {
 
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      final bookId = widget.book['id'] ?? widget.book['ID'];
-      if (bookId != null) {
-        _statsService.recordReadingTime(bookId.toString());
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      final now = DateTime.now();
+      final elapsedSec = _lastHeartbeatTick != null
+          ? now.difference(_lastHeartbeatTick!).inSeconds
+          : 15;
+      _lastHeartbeatTick = now;
+
+      final bookId =
+          (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
+      final userId =
+          (widget.book['utilisateur_id'] ?? widget.book['UtilisateurId'] ?? '')
+              .toString();
+
+      if (elapsedSec > 0) {
+        ReadingTimeStorage.addReadingSeconds(
+          userId: userId.isNotEmpty ? userId : null,
+          bookId: bookId.isNotEmpty ? bookId : null,
+          seconds: elapsedSec,
+        );
+        if (bookId.isNotEmpty) {
+          _statsService.recordReadingTime(bookId);
+        }
       }
     });
   }
@@ -644,6 +688,49 @@ class _ReadingPageState extends State<ReadingPage> {
   @override
   void dispose() {
     _saveTimer?.cancel();
+    if (_currentPage > 0 && _totalPages > 0 && !widget.isExtrait) {
+      _saveProgress(_currentPage);
+    }
+    final now = DateTime.now();
+    if (_lastHeartbeatTick != null) {
+      final elapsedSec = now.difference(_lastHeartbeatTick!).inSeconds;
+      if (elapsedSec > 0) {
+        final bookId =
+            (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
+        final userId =
+            (widget.book['utilisateur_id'] ?? widget.book['UtilisateurId'] ?? '')
+                .toString();
+        ReadingTimeStorage.addReadingSeconds(
+          userId: userId.isNotEmpty ? userId : null,
+          bookId: bookId.isNotEmpty ? bookId : null,
+          seconds: elapsedSec,
+        );
+        if (bookId.isNotEmpty) {
+          _statsService.recordReadingTime(bookId);
+        }
+      }
+    }
+    if (_sessionStartTime != null) {
+      final totalSessionSec = now.difference(_sessionStartTime!).inSeconds;
+      if (totalSessionSec >= 5) {
+        final bookId =
+            (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
+        final userId =
+            (widget.book['utilisateur_id'] ?? widget.book['UtilisateurId'] ?? '')
+                .toString();
+        final bookTitle = (widget.book['titre'] ??
+                widget.book['Titre'] ??
+                widget.book['title'] ??
+                'Livre')
+            .toString();
+        ReadingTimeStorage.recordSession(
+          userId: userId.isNotEmpty ? userId : null,
+          bookId: bookId,
+          bookTitle: bookTitle,
+          durationSeconds: totalSessionSec,
+        );
+      }
+    }
     _heartbeatTimer?.cancel();
     _settingsTimer?.cancel();
     _pdfViewerController.dispose();
@@ -1195,15 +1282,7 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Widget _buildBody(String? pdfUrl, String? imageUrl, bool isPdf) {
-    if (_loadError != null) {
-      return _buildErrorView(_loadError!);
-    }
-
-    if (pdfUrl == null || pdfUrl.isEmpty) {
-      return _buildErrorView("Aucun fichier disponible pour ce livre.");
-    }
-
-    if (_isDownloading) {
+    if (_isLoadingFile || _isDownloading) {
       final isDark = _backgroundColor.computeLuminance() < 0.5;
       final Color textColor = isDark ? Colors.white : AppColors.readingBrown;
       return Center(
@@ -1219,42 +1298,18 @@ class _ReadingPageState extends State<ReadingPage> {
               ),
               SizedBox(height: 24),
               Text(
-                "Téléchargement du livre...",
+                "Chargement du livre...",
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: textColor,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
-                "Votre livre sera disponible hors-ligne après cette étape.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: textColor.withOpacity(0.6),
-                ),
-              ),
-              SizedBox(height: 24),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                child: LinearProgressIndicator(
-                  value: _downloadProgress > 0 ? _downloadProgress : null,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                  minHeight: 8,
-                ),
-              ),
-              SizedBox(height: 12),
-              Text(
-                _downloadProgress > 0
-                    ? "${(_downloadProgress * 100).toStringAsFixed(0)} %"
-                    : "Connexion en cours...",
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.accentInk,
-                ),
+              SizedBox(height: 16),
+              LinearProgressIndicator(
+                value: _downloadProgress > 0 ? _downloadProgress : null,
+                backgroundColor: textColor.withValues(alpha: 0.15),
+                color: AppColors.accentInk,
               ),
             ],
           ),
@@ -1262,12 +1317,19 @@ class _ReadingPageState extends State<ReadingPage> {
       );
     }
 
+    if (_loadError != null) {
+      return _buildErrorView(_loadError!);
+    }
+
+    if (pdfUrl == null || pdfUrl.isEmpty) {
+      return _buildErrorView("Aucun fichier disponible pour ce livre.");
+    }
+
     final String format = (widget.book['format'] ?? '')
         .toString()
         .toLowerCase();
     final bool isEpub =
-        format == 'epub' ||
-        (pdfUrl != null && pdfUrl.toLowerCase().endsWith('.epub'));
+        format == 'epub' || pdfUrl.toLowerCase().endsWith('.epub');
 
     if (!isPdf && !isEpub) {
       // For demonstration of the UI if not a PDF, we show dummy text that looks like the mockup
@@ -2191,17 +2253,18 @@ class _ReadingPageState extends State<ReadingPage> {
           trailing: IconButton(
             icon: Icon(Icons.delete_outline, color: AppColors.error, size: 20),
             onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
               try {
                 final token = await TokenStorage.getToken();
                 if (token != null) {
                   await _bookmarkService.deleteBookmark(bk.id, token);
                   await _loadBookmarks();
-                  AppNotifications.showSnackBar(
-                    context,
-                    message: 'Marque-page supprimé',
-                    isSuccess: true,
-                  );
+                  if (mounted) {
+                    AppNotifications.showSnackBar(
+                      context,
+                      message: 'Marque-page supprimé',
+                      isSuccess: true,
+                    );
+                  }
                 }
               } catch (e) {}
             },

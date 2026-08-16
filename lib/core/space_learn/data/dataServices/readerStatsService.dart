@@ -78,6 +78,6 @@ class ReaderStatsService {
   }
 
   ReaderStatsModel _getMockStats() {
-    return ReaderStatsModel(booksRead: 12, totalTime: '34h', goalsAchieved: 5);
+    return ReaderStatsModel(booksRead: 0, totalTime: '0m', goalsAchieved: 0);
   }
 }

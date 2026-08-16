@@ -15,6 +15,7 @@ class BookModel {
   final String argumentairePartage;
   final String? imageCouverture;
   final String? fichierUrl;
+  final String? extraitUrl;
 
   /// Vrai quand un manuscrit est déjà déposé.
   ///
@@ -23,6 +24,9 @@ class BookModel {
   /// si un fichier existe. Ce drapeau répond à cette seule question, sans rien
   /// révéler du chemin de stockage.
   final bool aUnFichier;
+
+  /// Vrai quand un extrait gratuit est disponible pour ce livre.
+  final bool aUnExtrait;
 
   /// Le manuscrit est enregistre mais illisible cote serveur.
   ///
@@ -63,7 +67,9 @@ class BookModel {
     this.argumentairePartage = '',
     this.imageCouverture,
     this.fichierUrl,
+    this.extraitUrl,
     this.aUnFichier = false,
+    this.aUnExtrait = false,
     this.fichierIndisponible = false,
     required this.format,
     required this.prix,
@@ -169,12 +175,26 @@ class BookModel {
         useGin: true,
       ),
       fichierUrl: _sanitizeImageUrl(json['fichier_url'], useGin: true),
+      extraitUrl: _sanitizeImageUrl(
+        json['extrait_url'] ??
+            json['extraitUrl'] ??
+            json['extract_url'] ??
+            json['extractUrl'],
+        useGin: true,
+      ),
       fichierIndisponible: json['fichier_indisponible'] == true,
       aUnFichier:
           json['a_un_fichier'] == true ||
           // Repli pour un serveur antérieur au drapeau : si l'URL est là,
           // le fichier l'est aussi.
           (json['fichier_url']?.toString().isNotEmpty ?? false),
+      aUnExtrait:
+          json['a_un_extrait'] == true ||
+          json['aUnExtrait'] == true ||
+          (json['extrait_url']?.toString().isNotEmpty ?? false) ||
+          (json['extraitUrl']?.toString().isNotEmpty ?? false) ||
+          (json['extract_url']?.toString().isNotEmpty ?? false) ||
+          (json['extractUrl']?.toString().isNotEmpty ?? false),
       format: json['format'] ?? '',
       prix: (json['prix'] ?? json['price'] ?? 0) is num
           ? (json['prix'] ?? json['price'] ?? 0).toInt()
@@ -237,8 +257,8 @@ class BookModel {
                 .map((i) => ReviewModel.fromJson(i))
                 .toList()
           : null,
-      progressions: json['Progressions'] != null
-          ? (json['Progressions'] as List)
+      progressions: ((json['Progressions'] ?? json['progressions']) is List)
+          ? (json['Progressions'] ?? json['progressions'] as List)
                 .map((i) => ReadingActivityModel.fromJson(i))
                 .toList()
           : (json['Progression'] != null || json['progression'] != null)
@@ -272,7 +292,9 @@ class BookModel {
     String? description,
     String? imageCouverture,
     String? fichierUrl,
+    String? extraitUrl,
     bool? aUnFichier,
+    bool? aUnExtrait,
     String? format,
     int? prix,
     int? stock,
@@ -297,7 +319,9 @@ class BookModel {
       description: description ?? this.description,
       imageCouverture: imageCouverture ?? this.imageCouverture,
       fichierUrl: fichierUrl ?? this.fichierUrl,
+      extraitUrl: extraitUrl ?? this.extraitUrl,
       aUnFichier: aUnFichier ?? this.aUnFichier,
+      aUnExtrait: aUnExtrait ?? this.aUnExtrait,
       format: format ?? this.format,
       prix: prix ?? this.prix,
       stock: stock ?? this.stock,
@@ -326,6 +350,7 @@ class BookModel {
       'argumentaire_partage': argumentairePartage,
       'image_couverture': imageCouverture,
       'fichier_url': fichierUrl,
+      'extrait_url': extraitUrl,
       // Le drapeau doit ressortir comme il est entre.
       //
       // Il etait lu depuis le serveur, garde dans le modele, et perdu a la
@@ -334,6 +359,7 @@ class BookModel {
       // manuscrit n'a ete depose » et « vous ne possedez pas encore ce livre »,
       // le serveur masquant l'adresse dans le second cas.
       'a_un_fichier': aUnFichier,
+      'a_un_extrait': aUnExtrait,
       'fichier_indisponible': fichierIndisponible,
       'format': format,
       'prix': prix,

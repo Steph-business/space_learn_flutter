@@ -69,6 +69,26 @@ class LibraryModel {
     );
   }
 
+  LibraryModel copyWith({
+    String? id,
+    String? utilisateurId,
+    String? livreId,
+    String? acquisVia,
+    String? auteurNom,
+    DateTime? creeLe,
+    BookModel? livre,
+  }) {
+    return LibraryModel(
+      id: id ?? this.id,
+      utilisateurId: utilisateurId ?? this.utilisateurId,
+      livreId: livreId ?? this.livreId,
+      acquisVia: acquisVia ?? this.acquisVia,
+      auteurNom: auteurNom ?? this.auteurNom,
+      creeLe: creeLe ?? this.creeLe,
+      livre: livre ?? this.livre,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

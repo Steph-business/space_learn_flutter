@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/uploadService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/extrait_generator_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/categorie_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
@@ -298,6 +299,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         String statut, {
         String? cover,
         String? file,
+        String? extract,
       }) {
         final data = <String, dynamic>{
           'titre': _titreController.text.trim(),
@@ -313,6 +315,8 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         if (c != null && c.isNotEmpty) data['image_couverture'] = c;
         final f = file ?? widget.book?.fichierUrl;
         if (f != null && f.isNotEmpty) data['fichier_url'] = f;
+        final e = extract ?? widget.book?.extraitUrl;
+        if (e != null && e.isNotEmpty) data['extrait_url'] = e;
         return data;
       }
 
@@ -360,6 +364,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
 
       String? uploadedCoverPath;
       String? uploadedFilePath;
+      String? uploadedExtractPath;
 
       // Téléversement des fichiers si modifiés/fournis
       if (_selectedCoverPath != null || _selectedCoverBytes != null) {
@@ -382,6 +387,35 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           octets: _selectedFileBytes,
           nomFichier: _selectedFileName,
         );
+
+        // Génération automatique de l'extrait pour les PDF (règle d'or proportionnelle)
+        if (format.toUpperCase() == 'PDF') {
+          try {
+            final Uint8List? extractBytes =
+                await ExtraitGeneratorService.genererExtraitPdf(
+                  cheminFichier: _selectedFilePath,
+                  octets: _selectedFileBytes,
+                );
+
+            if (extractBytes != null && extractBytes.isNotEmpty) {
+              final String baseName = _selectedFileName ?? 'livre.pdf';
+              final String extractName =
+                  'extrait_${baseName.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '')}.pdf';
+
+              uploadedExtractPath = await UploadService.envoyer(
+                authToken: token,
+                livreId: livreId,
+                type: TypeFichier.extrait,
+                octets: extractBytes,
+                nomFichier: extractName,
+              );
+            }
+          } catch (e) {
+            debugPrint(
+              "Avertissement: Échec de la génération automatique d'extrait : $e",
+            );
+          }
+        }
       }
 
       // Mise à jour / publication effective avec les chemins de fichiers définitifs
@@ -391,6 +425,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           isDraft ? 'brouillon' : 'publie',
           cover: uploadedCoverPath,
           file: uploadedFilePath,
+          extract: uploadedExtractPath,
         ),
         token,
       );

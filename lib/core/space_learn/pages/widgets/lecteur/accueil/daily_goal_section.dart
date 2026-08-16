@@ -46,7 +46,7 @@ class DailyGoalSection extends StatelessWidget {
                     padding: EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.indigo, AppColors.violet],
+                        colors: [AppColors.primaryDark, AppColors.primary],
                       ),
                       borderRadius: BorderRadius.circular(
                         AppDimensions.radiusInner,
@@ -54,7 +54,7 @@ class DailyGoalSection extends StatelessWidget {
                     ),
                     child: Icon(
                       Icons.flag_rounded,
-                      color: AppColors.textPrimary,
+                      color: AppColors.onAccent,
                       size: 20,
                     ),
                   ),
@@ -88,8 +88,8 @@ class DailyGoalSection extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isCompleted
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.indigo.withOpacity(0.1),
+                      ? AppColors.success.withOpacity(0.15)
+                      : AppColors.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 ),
                 child: Text(
@@ -97,7 +97,9 @@ class DailyGoalSection extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: isCompleted ? AppColors.success : AppColors.indigo,
+                    color: isCompleted
+                        ? AppColors.success
+                        : AppColors.accentInk,
                   ),
                 ),
               ),
@@ -124,7 +126,7 @@ class DailyGoalSection extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: isCompleted
                           ? [AppColors.success, AppColors.success]
-                          : [AppColors.indigo, AppColors.violet],
+                          : [AppColors.primaryDark, AppColors.primary],
                     ),
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusSmall,

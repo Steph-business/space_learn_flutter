@@ -45,15 +45,7 @@ class LivreCard extends StatelessWidget {
 
   static String formatPrix(int prix) {
     if (prix <= 0) return "Gratuit";
-    final str = prix.toString();
-    final buffer = StringBuffer();
-    for (int i = 0; i < str.length; i++) {
-      if (i > 0 && (str.length - i) % 3 == 0) {
-        buffer.write(' ');
-      }
-      buffer.write(str[i]);
-    }
-    return "${buffer.toString()} FCFA";
+    return "$prix FCFA";
   }
 
   @override

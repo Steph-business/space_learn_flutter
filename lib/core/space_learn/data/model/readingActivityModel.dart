@@ -62,11 +62,23 @@ class ReadingActivityModel {
               )
             : null,
         pourcentage: (() {
-          final p =
-              json['pourcentage'] ?? json['Pourcentage'] ?? json['percentage'];
-          if (p == null) return 0.0;
+          final p = json['pourcentage'] ??
+              json['Pourcentage'] ??
+              json['percentage'] ??
+              json['Percentage'];
           if (p is num) return p.toDouble();
-          return double.tryParse(p.toString()) ?? 0.0;
+          if (p != null) {
+            final parsed = double.tryParse(p.toString());
+            if (parsed != null) return parsed;
+          }
+          final last = (json['last_page'] ?? json['LastPage']);
+          final total = (json['total_pages'] ?? json['TotalPages']);
+          final lNum = last is num ? last.toDouble() : double.tryParse(last?.toString() ?? '');
+          final tNum = total is num ? total.toDouble() : double.tryParse(total?.toString() ?? '');
+          if (lNum != null && tNum != null && tNum > 0) {
+            return ((lNum / tNum) * 100).clamp(0.0, 100.0);
+          }
+          return 0.0;
         })(),
         creeLe: (json['cree_le'] ?? json['CreeLe']) != null
             ? DateTime.parse((json['cree_le'] ?? json['CreeLe']).toString())
@@ -80,9 +92,10 @@ class ReadingActivityModel {
       );
     } catch (e) {
       return ReadingActivityModel(
-        id: (json['id'] ?? '').toString(),
-        utilisateurId: (json['utilisateur_id'] ?? '').toString(),
-        livreId: (json['livre_id'] ?? '').toString(),
+        id: (json['id'] ?? json['ID'] ?? '').toString(),
+        utilisateurId: (json['utilisateur_id'] ?? json['UtilisateurId'] ?? '')
+            .toString(),
+        livreId: (json['livre_id'] ?? json['LivreId'] ?? '').toString(),
       );
     }
   }

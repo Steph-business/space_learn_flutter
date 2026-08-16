@@ -22,6 +22,10 @@ import '../../../../themes/layout/nav_bar_all.dart';
 import '../../../../themes/layout/nav_bar_lecteur.dart';
 import '../../widgets/lecteur/communaute/forum_messages_page.dart';
 
+import '../../../data/dataServices/readingProgressService.dart';
+import '../../../data/dataServices/reading_time_storage.dart';
+import '../../../data/model/readingActivityModel.dart';
+import '../../../data/model/badgeModel.dart';
 import '../../../data/dataServices/libraryService.dart';
 import '../../../data/dataServices/bookService.dart';
 import '../../../data/dataServices/readerStatsService.dart';
@@ -43,6 +47,7 @@ import '../../../data/dataServices/authServices.dart';
 import '../../../data/model/relationModel.dart';
 import '../../../data/dataServices/citation_service.dart';
 import '../../../data/model/citation_model.dart';
+import 'temps_lecture_page.dart';
 
 class HomePageLecteur extends StatefulWidget {
   final String profileId;
@@ -70,6 +75,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   final AuthService _authService = AuthService();
   final BadgeService _badgeService = BadgeService();
   final CitationService _citationService = CitationService();
+  final ReadingProgressService _progressService = ReadingProgressService();
 
   GoalModel? _dailyGoal;
   CitationModel? _dailyCitation;
@@ -174,11 +180,19 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         });
       }
 
+      final readingMinutes = await ReadingTimeStorage.getTotalReadingMinutes(
+        user?.id ?? widget.profileId,
+      );
+      final todayReadingMinutes =
+          await ReadingTimeStorage.getTodayReadingMinutes(
+        user?.id ?? widget.profileId,
+      );
+
       final results = await Future.wait([
         _statsService.getReaderStats(widget.profileId).catchError((e) {
           return ReaderStatsModel(
             booksRead: 0,
-            totalTime: '0h',
+            totalTime: '0m',
             goalsAchieved: 0,
           );
         }),
@@ -211,6 +225,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         _citationService.getDailyCitation(token).catchError((e) {
           return null;
         }),
+        _progressService.getAllProgressions(token).catchError((e) {
+          return <ReadingActivityModel>[];
+        }),
+        _badgeService.getUserBadges().catchError((e) {
+          return <BadgeModel>[];
+        }),
       ]);
 
       if (mounted) {
@@ -221,71 +241,127 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         setState(() {
           // 1. Get stats from API
           ReaderStatsModel apiStats = results[0] as ReaderStatsModel;
-          _stats = apiStats;
 
-          if (results[2] is List) {
-            _recentActivities = (results[2] as List).cast<ReviewModel>();
-          }
-
-          if (results.length > 8 && results[8] is List) {
-            final goals = (results[8] as List).cast<GoalModel>();
-            if (goals.isNotEmpty) {
-              _dailyGoal = goals.first;
-            }
-          }
-
-          if (results.length > 9 && results[9] != null) {
-            _dailyCitation = results[9] as CitationModel;
-          }
-
-          if (results.length > 3 && results[3] is List) {
-            _categories = (results[3] as List).cast<Categorie>();
-          }
-
-          if (results.length > 4 && results[4] is List) {
-            _discussions = (results[4] as List).cast<Discussion>();
-            if (_discussions.isNotEmpty) {
-              _discussions.sort((a, b) {
-                if (a.creeLe != null && b.creeLe != null) {
-                  return b.creeLe!.compareTo(a.creeLe!);
-                }
-                return b.id.compareTo(a.id);
-              });
-            }
-          }
-
-          // Data sources for enrichment
           final allBooks = (results[1] as List).cast<BookModel>();
+          final reviews = (results[2] as List).cast<ReviewModel>();
+          final categories = (results[3] as List).cast<Categorie>();
+          final discussions = (results[4] as List).cast<Discussion>();
+          final recs = (results[5] as List).cast<RecommendationModel>();
           final library = (results.length > 6 && results[6] is List)
               ? (results[6] as List).cast<LibraryModel>()
               : <LibraryModel>[];
           final followings = (results.length > 7 && results[7] is List)
               ? (results[7] as List).cast<RelationModel>()
               : <RelationModel>[];
-          final recs = (results.length > 5 && results[5] is List)
-              ? (results[5] as List).cast<RecommendationModel>()
-              : <RecommendationModel>[];
+          final backendGoals = (results.length > 8 && results[8] is List)
+              ? (results[8] as List).cast<GoalModel>()
+              : <GoalModel>[];
+          final citation = results.length > 9 ? results[9] as CitationModel? : null;
+          final allProgress = (results.length > 10 && results[10] is List)
+              ? (results[10] as List).cast<ReadingActivityModel>()
+              : <ReadingActivityModel>[];
+          final backendBadges = (results.length > 11 && results[11] is List)
+              ? (results[11] as List).cast<BadgeModel>()
+              : <BadgeModel>[];
 
-          // 1.5 Local stats fallback if API is unavailable or returns mock data
-          if (_stats!.booksRead == 0 || _stats!.booksRead == 12) {
-            int totalInLibrary = library.length;
-            int finishedReading = library.where((item) {
+          _recentActivities = reviews;
+          _dailyCitation = citation;
+          _categories = categories;
+          _discussions = discussions;
+          if (_discussions.isNotEmpty) {
+            _discussions.sort((a, b) {
+              if (a.creeLe != null && b.creeLe != null) {
+                return b.creeLe!.compareTo(a.creeLe!);
+              }
+              return b.id.compareTo(a.id);
+            });
+          }
+
+          // Map allProgress onto library
+          final Map<String, ReadingActivityModel> progressMap = {};
+          for (var p in allProgress) {
+            if (p.livreId.isNotEmpty) {
+              progressMap[p.livreId] = p;
+            }
+          }
+          final updatedLibrary = library.map((item) {
+            if (item.livre != null) {
+              final prog = progressMap[item.livre!.id];
+              if (prog != null) {
+                return item.copyWith(
+                  livre: item.livre!.copyWith(progressions: [prog]),
+                );
+              }
+            }
+            return item;
+          }).toList();
+
+          // Compute accurate books read
+          int finishedReading = allProgress.where((p) {
+            return p.pourcentage >= 100 ||
+                (p.lastPage >= p.totalPages && p.totalPages > 0);
+          }).length;
+
+          if (finishedReading == 0) {
+            finishedReading = updatedLibrary.where((item) {
               final p = item.livre?.progressions;
-              return p != null && p.isNotEmpty && p.first.pourcentage >= 100;
+              return p != null &&
+                  p.isNotEmpty &&
+                  (p.first.pourcentage >= 100 ||
+                      (p.first.lastPage >= p.first.totalPages &&
+                          p.first.totalPages > 0));
             }).length;
+          }
 
-            int displayedBooksRead = finishedReading > 0
-                ? finishedReading
-                : totalInLibrary;
+          int displayedBooksRead =
+              (apiStats.booksRead > 0 && apiStats.booksRead != 12)
+                  ? apiStats.booksRead
+                  : finishedReading;
 
-            _stats = ReaderStatsModel(
-              booksRead: displayedBooksRead,
-              totalTime: _stats!.totalTime == '34h' ? '0h' : _stats!.totalTime,
-              goalsAchieved: _stats!.goalsAchieved == 5
-                  ? 0
-                  : _stats!.goalsAchieved,
+          // Format reading time
+          String formattedTime =
+              ReadingTimeStorage.formatMinutes(readingMinutes);
+          if (readingMinutes == 0 &&
+              apiStats.totalTime.isNotEmpty &&
+              apiStats.totalTime != '0h' &&
+              apiStats.totalTime != '0m' &&
+              apiStats.totalTime != '34h') {
+            formattedTime = apiStats.totalTime;
+          }
+
+          // Compute smart & backend goals
+          final smartGoals = ReadingTimeStorage.computeSmartGoals(
+            booksRead: displayedBooksRead,
+            totalMinutes: readingMinutes,
+            todayMinutes: todayReadingMinutes,
+            libraryCount: library.length,
+          );
+
+          final List<GoalModel> finalGoals =
+              backendGoals.isNotEmpty ? backendGoals : smartGoals;
+          int goalsAchievedCount =
+              finalGoals.where((g) => g.estTermine).length;
+
+          if (backendBadges.isNotEmpty) {
+            final unlockedBadges =
+                backendBadges.where((b) => b.debloqueLe != null).length;
+            if (unlockedBadges > goalsAchievedCount) {
+              goalsAchievedCount = unlockedBadges;
+            }
+          }
+
+          if (finalGoals.isNotEmpty) {
+            _dailyGoal = finalGoals.firstWhere(
+              (g) => g.type == 'DAILY',
+              orElse: () => finalGoals.first,
             );
           }
+
+          _stats = ReaderStatsModel(
+            booksRead: displayedBooksRead,
+            totalTime: formattedTime,
+            goalsAchieved: goalsAchievedCount,
+          );
 
           // 1. Build a comprehensive Author Map from all available sources
           final Map<String, UserModel> knownAuthors = {};
@@ -612,14 +688,15 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   if (_dailyGoal != null) ...[
                     SizedBox(height: 16),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
                                 BadgesPage(userId: widget.profileId),
                           ),
                         );
+                        _loadData();
                       },
                       child: DailyGoalSection(goal: _dailyGoal),
                     ),
@@ -1547,13 +1624,15 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               _stats!.totalTime,
               "Temps total",
               Icons.timer,
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BadgesPage(userId: widget.profileId),
+                    builder: (context) =>
+                        TempsLecturePage(userId: widget.profileId),
                   ),
                 );
+                _loadData();
               },
             ),
             _buildStatSeparator(),
@@ -1561,13 +1640,14 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               "${_stats!.goalsAchieved}",
               "Objectifs",
               Icons.emoji_events,
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => BadgesPage(userId: widget.profileId),
                   ),
                 );
+                _loadData();
               },
             ),
           ],

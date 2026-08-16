@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import '../principales/lecteur/accueil_lecteur_page.dart';
 import '../widgets/details/reading_page.dart'; // Ajout de l'import
 
@@ -149,14 +151,26 @@ class CinetpayResultPage extends StatelessWidget {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (isAccepted) {
-                      // Ouvrir directement le livre
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (_) => ReadingPage(book: book),
-                        ),
-                      );
+                      Map<String, dynamic> bookToOpen = Map<String, dynamic>.from(book);
+                      try {
+                        final token = await TokenStorage.getToken();
+                        final bookId = (book['id'] ?? book['ID'] ?? '').toString();
+                        if (token != null && token.isNotEmpty && bookId.isNotEmpty) {
+                          final freshBook = await BookService().getBookById(bookId, authToken: token);
+                          bookToOpen = freshBook.toJson();
+                        }
+                      } catch (e) {
+                        debugPrint("Erreur récupération livre après paiement : $e");
+                      }
+                      if (context.mounted) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (_) => ReadingPage(book: bookToOpen),
+                          ),
+                        );
+                      }
                     } else {
                       // Retour à l'accueil lecteur
                       Navigator.of(context).pushAndRemoveUntil(

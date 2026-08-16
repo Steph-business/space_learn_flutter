@@ -69,22 +69,26 @@ class ReadingProgressService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final data = responseData['data'];
-        if (data != null) {
-          return ReadingActivityModel.fromJson(data);
+        final dynamic decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          final data = decoded['data'] ?? decoded;
+          if (data is Map<String, dynamic>) {
+            return ReadingActivityModel.fromJson(data);
+          }
         }
-        return null;
-      } else if (response.statusCode == 404) {
-        return null;
-      } else {
-        throw Exception(
-          'Failed to fetch reading progress: ${response.statusCode}',
-        );
       }
-    } catch (e) {
-      rethrow;
-    }
+    } catch (_) {}
+
+    // Fallback: lookup in getAllProgressions which queries /api/reading/activities
+    try {
+      final all = await getAllProgressions(authToken);
+      final match = all.where((p) => p.livreId == livreId).toList();
+      if (match.isNotEmpty) {
+        return match.first;
+      }
+    } catch (_) {}
+
+    return null;
   }
 
   Future<void> updateReadingProgress({

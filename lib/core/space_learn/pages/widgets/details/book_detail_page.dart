@@ -20,12 +20,15 @@ import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/readingProgressService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/readingActivityModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/chapitre_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/chapitre_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/partageService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
 import 'all_reviews_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/statistiques_livre_page.dart';
 
 class BookDetailPage extends StatefulWidget {
   final BookModel book;
@@ -96,10 +99,25 @@ class _BookDetailPageState extends State<BookDetailPage> {
   List<ChapitreModel> _chapitres = [];
   bool _isLoadingChapitres = true;
 
+  int get _progressionPourcentage {
+    if (_readingProgress != null) {
+      return _readingProgress!.pourcentage.round().clamp(0, 100);
+    }
+    final progressions = (_fullBook ?? widget.book).progressions;
+    if (progressions != null && progressions.isNotEmpty) {
+      return progressions.first.pourcentage.round().clamp(0, 100);
+    }
+    return 0;
+  }
+
   @override
   void initState() {
     super.initState();
     _isOwned = widget.isOwned;
+    if (widget.book.progressions != null &&
+        widget.book.progressions!.isNotEmpty) {
+      _readingProgress = widget.book.progressions!.first;
+    }
     _loadFullBookDetails();
     _loadRelatedBooks();
     _checkFavoriteStatus();
@@ -118,6 +136,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
       if (mounted) {
         setState(() {
           _fullBook = fullBook;
+          if (fullBook.progressions != null &&
+              fullBook.progressions!.isNotEmpty) {
+            _readingProgress = fullBook.progressions!.first;
+          }
         });
         await _checkOwnershipStatus();
       }
@@ -148,6 +170,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
         final library = await _libraryService.getUserLibrary(token);
         final found = library.any((item) => item.livreId == widget.book.id);
+        LibraryModel? matchingItem;
+        try {
+          matchingItem = library.firstWhere(
+            (item) => item.livreId == widget.book.id,
+          );
+        } catch (_) {}
+
         if (mounted) {
           setState(() {
             _currentUser = user;
@@ -155,6 +184,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
             _isOwned = _isOwned || isAuthor || found;
             _ownedBookIds = library.map((e) => e.livreId).toSet();
             _isLoadingOwnership = false;
+            if (matchingItem?.livre?.progressions != null &&
+                matchingItem!.livre!.progressions!.isNotEmpty) {
+              _readingProgress = matchingItem.livre!.progressions!.first;
+            }
           });
           if (_isOwned) {
             _loadReadingProgress();
@@ -176,7 +209,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
           widget.book.id,
           token,
         );
-        if (mounted) {
+        if (progress != null && mounted) {
           setState(() {
             _readingProgress = progress;
           });
@@ -255,9 +288,23 @@ class _BookDetailPageState extends State<BookDetailPage> {
     }
   }
 
+  /// Détermine si un extrait gratuit est disponible pour ce livre.
+  bool _hasExtraitAvailable(BookModel book) {
+    if (_isAuthorOfThisBook || book.prix <= 0) return true;
+    if (book.aUnExtrait) return true;
+    if (book.extraitUrl != null && book.extraitUrl!.isNotEmpty) return true;
+    if (book.fichierUrl != null && book.fichierUrl!.isNotEmpty) return true;
+    return false;
+  }
+
   /// Détermine dynamiquement si un chapitre fait partie de l'extrait gratuit.
   /// Se base sur la gratuité explicite (ch.estGratuit) ou la page de départ (<= 10 pages).
-  bool _isChapterInExtrait(ChapitreModel ch, int index) {
+  bool _isChapterInExtrait(
+    ChapitreModel ch,
+    int index, {
+    bool hasExtrait = true,
+  }) {
+    if (!hasExtrait) return false;
     if (ch.estGratuit) return true;
     if (ch.pageDepart > 0) {
       return ch.pageDepart <= 10;
@@ -351,113 +398,151 @@ class _BookDetailPageState extends State<BookDetailPage> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: chaptersList.isNotEmpty
-                    ? ListView.separated(
-                        itemCount: chaptersList.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final ch = chaptersList[index];
-                          final isExtraitGratuit =
-                              (!isOwned) && _isChapterInExtrait(ch, index);
-                          final isLocked = !isOwned && !isExtraitGratuit;
-                          final numStr = ch.numero < 10
-                              ? "0${ch.numero}"
-                              : "${ch.numero}";
-                          return _buildChapterTile(
-                            number: numStr,
-                            title: ch.titre,
-                            description: ch.description.isNotEmpty
-                                ? ch.description
-                                : (isLocked
-                                      ? "Contenu verrouillé - Achetez le livre pour lire la suite."
-                                      : "Extrait gratuit - Disponible à la lecture."),
-                            isLocked: isLocked,
-                            onTap: () {
-                              Navigator.pop(context);
-                              if (isLocked) {
-                                _lancerPaiementDirect(book);
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ReadingPage(
-                                      book: book.toJson(),
-                                      isExtrait: !isOwned,
-                                      initialPage: ch.pageDepart > 0
-                                          ? ch.pageDepart
-                                          : null,
-                                    ),
+                child: () {
+                  final bool hasExtrait = _hasExtraitAvailable(book);
+                  if (chaptersList.isNotEmpty) {
+                    return ListView.separated(
+                      itemCount: chaptersList.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final ch = chaptersList[index];
+                        final isExtraitGratuit =
+                            (!isOwned) &&
+                            _isChapterInExtrait(
+                              ch,
+                              index,
+                              hasExtrait: hasExtrait,
+                            );
+                        final isLocked = !isOwned && !isExtraitGratuit;
+                        final numStr = ch.numero < 10
+                            ? "0${ch.numero}"
+                            : "${ch.numero}";
+                        return _buildChapterTile(
+                          number: numStr,
+                          title: ch.titre,
+                          description: ch.description.isNotEmpty
+                              ? ch.description
+                              : (isLocked
+                                    ? "Contenu verrouillé - Achetez le livre pour lire la suite."
+                                    : "Extrait gratuit - Disponible à la lecture."),
+                          isLocked: isLocked,
+                          onTap: () async {
+                            Navigator.pop(context);
+                            if (isLocked) {
+                              _lancerPaiementDirect(book);
+                            } else {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReadingPage(
+                                    book: book.toJson(),
+                                    isExtrait: !isOwned,
+                                    initialPage: ch.pageDepart > 0
+                                        ? ch.pageDepart
+                                        : null,
                                   ),
-                                );
+                                ),
+                              );
+                              if (mounted && _isOwned) {
+                                _loadReadingProgress();
                               }
-                            },
-                          );
+                            }
+                          },
+                        );
+                      },
+                    );
+                  }
+                  final bool isIntroExtrait = isOwned || hasExtrait;
+                  return ListView(
+                    children: [
+                      _buildChapterTile(
+                        number: "01",
+                        title: "Introduction",
+                        description: isIntroExtrait
+                            ? (isOwned
+                                  ? "Disponible dans l'ouvrage."
+                                  : "Découvrez cet extrait gratuit.")
+                            : "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                        isLocked: !isIntroExtrait,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          if (!isIntroExtrait) {
+                            _lancerPaiementDirect(book);
+                          } else {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReadingPage(
+                                  book: book.toJson(),
+                                  isExtrait: !isOwned,
+                                ),
+                              ),
+                            );
+                            if (mounted && _isOwned) {
+                              _loadReadingProgress();
+                            }
+                          }
                         },
-                      )
-                    : ListView(
-                        children: [
-                          _buildChapterTile(
-                            number: "01",
-                            title: "Introduction",
-                            description: "Découvrez cet extrait gratuit.",
-                            isLocked: false,
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ReadingPage(
-                                    book: book.toJson(),
-                                    isExtrait: !isOwned,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          _buildChapterTile(
-                            number: "02",
-                            title: "Développement",
-                            description: "Découvrez cet extrait gratuit.",
-                            isLocked: false,
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ReadingPage(
-                                    book: book.toJson(),
-                                    isExtrait: !isOwned,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          _buildChapterTile(
-                            number: "03",
-                            title: "Conclusion",
-                            description: isOwned
-                                ? "Disponible dans l'ouvrage."
-                                : "Contenu verrouillé - Achetez le livre pour lire la suite.",
-                            isLocked: !isOwned,
-                            onTap: () {
-                              Navigator.pop(context);
-                              if (!isOwned) {
-                                _lancerPaiementDirect(book);
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ReadingPage(book: book.toJson()),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        ],
                       ),
+                      const SizedBox(height: 8),
+                      _buildChapterTile(
+                        number: "02",
+                        title: "Développement",
+                        description: isIntroExtrait
+                            ? (isOwned
+                                  ? "Disponible dans l'ouvrage."
+                                  : "Découvrez cet extrait gratuit.")
+                            : "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                        isLocked: !isIntroExtrait,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          if (!isIntroExtrait) {
+                            _lancerPaiementDirect(book);
+                          } else {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReadingPage(
+                                  book: book.toJson(),
+                                  isExtrait: !isOwned,
+                                ),
+                              ),
+                            );
+                            if (mounted && _isOwned) {
+                              _loadReadingProgress();
+                            }
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildChapterTile(
+                        number: "03",
+                        title: "Conclusion",
+                        description: isOwned
+                            ? "Disponible dans l'ouvrage."
+                            : "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                        isLocked: !isOwned,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          if (!isOwned) {
+                            _lancerPaiementDirect(book);
+                          } else {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ReadingPage(book: book.toJson()),
+                              ),
+                            );
+                            if (mounted && _isOwned) {
+                              _loadReadingProgress();
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  );
+                }(),
               ),
             ],
           ),
@@ -499,6 +584,159 @@ class _BookDetailPageState extends State<BookDetailPage> {
     }
   }
 
+  Future<void> _publierLivre(BuildContext context, BookModel book) async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) return;
+      await BookService().updateBook(book.id, {'statut': 'publie'}, token);
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: '"${book.titre}" est maintenant publié !',
+        isSuccess: true,
+      );
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Impossible de publier : $e',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _archiverLivre(BuildContext context, BookModel book) async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) return;
+      await BookService().updateBook(book.id, {'statut': 'archive'}, token);
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: '"${book.titre}" a été archivé. Il reste accessible à ses acheteurs.',
+        isSuccess: true,
+      );
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Impossible d\'archiver : $e',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _supprimerLivre(BuildContext context, BookModel book) async {
+    // RÈGLE MÉTIER : Si le livre a déjà des acheteurs/lecteurs (> 0), la suppression
+    // définitive est bloquée pour préserver l'accès dans leur bibliothèque.
+    // L'auteur est invité à l'archiver à la place.
+    if (book.telechargements > 0) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Suppression impossible',
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Ce livre a déjà été acheté / lu par ${book.telechargements} lecteur(s).\n\n'
+            'Pour préserver l\'accès des acheteurs à leur bibliothèque, vous ne pouvez pas le supprimer définitivement. Vous pouvez plutôt l\'archiver pour le retirer de la boutique.',
+            style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler', style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _archiverLivre(context, book);
+              },
+              icon: Icon(Icons.archive_outlined, size: 16, color: Colors.white),
+              label: Text('Archiver le livre', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryVariant),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+        ),
+        title: Text(
+          'Supprimer ce livre ?',
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          '"${book.titre}" sera supprimé définitivement. Cette action est irréversible.',
+          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler', style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: Text('Supprimer', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null || !mounted) return;
+      await BookService().deleteBook(book.id, token);
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: '"${book.titre}" supprimé.',
+        isSuccess: true,
+      );
+      Navigator.of(context).pop(true); // Retour à la liste
+    } catch (e) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Impossible de supprimer : $e',
+        isError: true,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
@@ -531,29 +769,128 @@ class _BookDetailPageState extends State<BookDetailPage> {
               titreDeSecours: book.titre,
             ),
           ),
-          IconButton(
-            icon: _isLoadingFavorite
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: Padding(
-                      padding: EdgeInsets.all(4),
-                      child: Text(
-                        "...",
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 10,
+          // Favoris — uniquement pour les lecteurs
+          if (widget.peutAcheter)
+            IconButton(
+              icon: _isLoadingFavorite
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Text(
+                          "...",
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 10,
+                          ),
                         ),
                       ),
+                    )
+                  : Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: _isFavorite ? Colors.red : Colors.white,
+                      size: 20,
                     ),
-                  )
-                : Icon(
-                    _isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: _isFavorite ? Colors.red : Colors.white,
-                    size: 20,
+              onPressed: _isLoadingFavorite ? null : _toggleFavorite,
+            ),
+          // Menu de gestion — uniquement pour l'auteur (!peutAcheter)
+          if (!widget.peutAcheter)
+            PopupMenuButton<String>(
+              color: AppColors.cardBackground,
+              padding: EdgeInsets.zero,
+              icon: Icon(Icons.more_vert, color: AppColors.textPrimary, size: 22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                side: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.08)),
+              ),
+              onSelected: (value) async {
+                switch (value) {
+                  case 'edit':
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AjouterLivrePage(book: book),
+                      ),
+                    );
+                    if (result == true && mounted) {
+                      setState(() {});
+                    }
+                    break;
+                  case 'stats':
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => StatistiquesLivrePage(book: book),
+                      ),
+                    );
+                    break;
+                  case 'publish':
+                    await _publierLivre(context, book);
+                    break;
+                  case 'archive':
+                    await _archiverLivre(context, book);
+                    break;
+                  case 'delete':
+                    await _supprimerLivre(context, book);
+                    break;
+                }
+              },
+              itemBuilder: (context) {
+                final isPublished = book.statut.toLowerCase() == 'publie';
+                final isArchived = book.statut.toLowerCase() == 'archive';
+                return [
+                  PopupMenuItem(
+                    value: 'edit',
+                    height: 40,
+                    child: Row(children: [
+                      Icon(Icons.edit_outlined, color: AppColors.secondaryVariant, size: 18),
+                      const SizedBox(width: 12),
+                      Text('Modifier', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
+                    ]),
                   ),
-            onPressed: _isLoadingFavorite ? null : _toggleFavorite,
-          ),
+                  PopupMenuItem(
+                    value: 'stats',
+                    height: 40,
+                    child: Row(children: [
+                      Icon(Icons.insights, color: AppColors.accentInk, size: 18),
+                      const SizedBox(width: 12),
+                      Text('Statistiques', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
+                    ]),
+                  ),
+                  if (!isPublished)
+                    PopupMenuItem(
+                      value: 'publish',
+                      height: 40,
+                      child: Row(children: [
+                        Icon(Icons.publish_rounded, color: AppColors.success, size: 18),
+                        const SizedBox(width: 12),
+                        Text('Publier', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.success)),
+                      ]),
+                    ),
+                  if (!isArchived)
+                    PopupMenuItem(
+                      value: 'archive',
+                      height: 40,
+                      child: Row(children: [
+                        Icon(Icons.archive_outlined, color: AppColors.textSecondary, size: 18),
+                        const SizedBox(width: 12),
+                        Text('Archiver', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+                      ]),
+                    ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'delete',
+                    height: 40,
+                    child: Row(children: [
+                      Icon(Icons.delete_outline, color: AppColors.error, size: 18),
+                      const SizedBox(width: 12),
+                      Text('Supprimer', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.error)),
+                    ]),
+                  ),
+                ];
+              },
+            ),
         ],
       ),
       body: Stack(
@@ -797,8 +1134,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         ) {
                           final index = entry.key;
                           final ch = entry.value;
+                          final bool hasExtrait = _hasExtraitAvailable(book);
                           final isExtraitGratuit =
-                              (!isOwned) && _isChapterInExtrait(ch, index);
+                              (!isOwned) &&
+                              _isChapterInExtrait(
+                                ch,
+                                index,
+                                hasExtrait: hasExtrait,
+                              );
                           final isLocked = !isOwned && !isExtraitGratuit;
                           final numStr = ch.numero < 10
                               ? "0${ch.numero}"
@@ -814,11 +1157,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                         ? "Contenu verrouillé - Achetez le livre pour lire la suite."
                                         : "Extrait gratuit - Disponible à la lecture."),
                               isLocked: isLocked,
-                              onTap: () {
+                              onTap: () async {
                                 if (isLocked) {
                                   _lancerPaiementDirect(book);
                                 } else {
-                                  Navigator.push(
+                                  await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => ReadingPage(
@@ -830,71 +1173,107 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       ),
                                     ),
                                   );
+                                  if (mounted && _isOwned) {
+                                    _loadReadingProgress();
+                                  }
                                 }
                               },
                             ),
                           );
                         }).toList()
                       else ...[
-                        _buildChapterTile(
-                          number: "01",
-                          title: "Introduction",
-                          description:
-                              "Extrait gratuit - Disponible à la lecture.",
-                          isLocked: false,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReadingPage(
-                                  book: book.toJson(),
-                                  isExtrait: !isOwned,
-                                ),
+                        () {
+                          final bool hasExtrait = _hasExtraitAvailable(book);
+                          final bool isIntroExtrait = isOwned || hasExtrait;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildChapterTile(
+                                number: "01",
+                                title: "Introduction",
+                                description: isIntroExtrait
+                                    ? (isOwned
+                                          ? "Disponible dans l'ouvrage."
+                                          : "Extrait gratuit - Disponible à la lecture.")
+                                    : "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                                isLocked: !isIntroExtrait,
+                                onTap: () async {
+                                  if (!isIntroExtrait) {
+                                    _lancerPaiementDirect(book);
+                                  } else {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ReadingPage(
+                                          book: book.toJson(),
+                                          isExtrait: !isOwned,
+                                        ),
+                                      ),
+                                    );
+                                    if (mounted && _isOwned) {
+                                      _loadReadingProgress();
+                                    }
+                                  }
+                                },
                               ),
-                            );
-                          },
-                        ),
-                        SizedBox(height: 8),
-                        _buildChapterTile(
-                          number: "02",
-                          title: "Développement",
-                          description:
-                              "Extrait gratuit - Disponible à la lecture.",
-                          isLocked: false,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReadingPage(
-                                  book: book.toJson(),
-                                  isExtrait: !isOwned,
-                                ),
+                              const SizedBox(height: 8),
+                              _buildChapterTile(
+                                number: "02",
+                                title: "Développement",
+                                description: isIntroExtrait
+                                    ? (isOwned
+                                          ? "Disponible dans l'ouvrage."
+                                          : "Extrait gratuit - Disponible à la lecture.")
+                                    : "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                                isLocked: !isIntroExtrait,
+                                onTap: () async {
+                                  if (!isIntroExtrait) {
+                                    _lancerPaiementDirect(book);
+                                  } else {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ReadingPage(
+                                          book: book.toJson(),
+                                          isExtrait: !isOwned,
+                                        ),
+                                      ),
+                                    );
+                                    if (mounted && _isOwned) {
+                                      _loadReadingProgress();
+                                    }
+                                  }
+                                },
                               ),
-                            );
-                          },
-                        ),
-                        SizedBox(height: 8),
-                        _buildChapterTile(
-                          number: "03",
-                          title: "Conclusion",
-                          description: isOwned
-                              ? "Disponible dans l'ouvrage."
-                              : "Contenu verrouillé - Achetez le livre pour lire la suite.",
-                          isLocked: !isOwned,
-                          onTap: () {
-                            if (!isOwned) {
-                              _lancerPaiementDirect(book);
-                            } else {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ReadingPage(book: book.toJson()),
-                                ),
-                              );
-                            }
-                          },
-                        ),
+                              const SizedBox(height: 8),
+                              _buildChapterTile(
+                                number: "03",
+                                title: "Conclusion",
+                                description: isOwned
+                                    ? "Disponible dans l'ouvrage."
+                                    : "Contenu verrouillé - Achetez le livre pour lire la suite.",
+                                isLocked: !isOwned,
+                                onTap: () async {
+                                  if (!isOwned) {
+                                    _lancerPaiementDirect(book);
+                                  } else {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ReadingPage(
+                                          book: book.toJson(),
+                                        ),
+                                      ),
+                                    );
+                                    if (mounted && _isOwned) {
+                                      _loadReadingProgress();
+                                    }
+                                  }
+                                },
+                              ),
+                            ],
+                          );
+                        }(),
                       ],
 
                       const SizedBox(height: 12),
@@ -1207,50 +1586,84 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                   ],
                                 ),
                                 SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 50,
-                                  child: OutlinedButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ReadingPage(
-                                            book: book.toJson(),
-                                            isExtrait: true,
+                                () {
+                                  final bool hasExtrait = _hasExtraitAvailable(
+                                    book,
+                                  );
+                                  return SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: OutlinedButton(
+                                      onPressed: hasExtrait
+                                          ? () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      ReadingPage(
+                                                        book: book.toJson(),
+                                                        isExtrait: !isOwned,
+                                                      ),
+                                                ),
+                                              );
+                                            }
+                                          : null,
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.textPrimary,
+                                        disabledForegroundColor: AppColors
+                                            .textSecondary
+                                            .withValues(alpha: 0.4),
+                                        side: BorderSide(
+                                          color: hasExtrait
+                                              ? AppColors.textPrimary
+                                                    .withValues(alpha: 0.2)
+                                              : AppColors.textSecondary
+                                                    .withValues(alpha: 0.1),
+                                        ),
+                                        backgroundColor: hasExtrait
+                                            ? Colors.transparent
+                                            : Colors.white.withValues(
+                                                alpha: 0.02,
+                                              ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            AppDimensions.radiusInner,
                                           ),
                                         ),
-                                      );
-                                    },
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.textPrimary,
-                                      side: BorderSide(
-                                        color: AppColors.textPrimary
-                                            .withOpacity(0.2),
                                       ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(
-                                          AppDimensions.radiusInner,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.menu_book, size: 18),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          "Lire un extrait",
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            hasExtrait
+                                                ? Icons.menu_book
+                                                : Icons.menu_book_outlined,
+                                            size: 18,
+                                            color: hasExtrait
+                                                ? AppColors.textPrimary
+                                                : AppColors.textSecondary
+                                                      .withValues(alpha: 0.4),
                                           ),
-                                        ),
-                                      ],
+                                          SizedBox(width: 8),
+                                          Text(
+                                            hasExtrait
+                                                ? "Lire un extrait"
+                                                : "Aucun extrait disponible",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: hasExtrait
+                                                  ? AppColors.textPrimary
+                                                  : AppColors.textSecondary
+                                                        .withValues(alpha: 0.4),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                }(),
                               ],
                             )
                           : Center(
@@ -1264,7 +1677,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     : Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_readingProgress != null) ...[
+                          if (isOwned) ...[
                             Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Column(
@@ -1283,7 +1696,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                         ),
                                       ),
                                       Text(
-                                        "${_readingProgress!.pourcentage}%",
+                                        "$_progressionPourcentage%",
                                         style: GoogleFonts.poppins(
                                           color: AppColors.accentInk,
                                           fontSize: 12,
@@ -1292,16 +1705,16 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 6),
+                                  const SizedBox(height: 6),
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(
                                       AppDimensions.radiusXs,
                                     ),
                                     child: LinearProgressIndicator(
-                                      value:
-                                          _readingProgress!.pourcentage / 100,
-                                      backgroundColor: Colors.white.withOpacity(
-                                        0.05,
+                                      value: (_progressionPourcentage / 100)
+                                          .clamp(0.0, 1.0),
+                                      backgroundColor: Colors.white.withValues(
+                                        alpha: 0.05,
                                       ),
                                       valueColor: AlwaysStoppedAnimation<Color>(
                                         AppColors.primary,
@@ -1324,7 +1737,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     size: 15,
                                     color: AppColors.accentInk,
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
                                     "Vous êtes l'auteur de cet ouvrage",
                                     style: GoogleFonts.poppins(
@@ -1340,17 +1753,30 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
+                              onPressed: () async {
+                                final lastPage =
+                                    (_readingProgress?.lastPage != null &&
+                                            _readingProgress!.lastPage > 0)
+                                        ? _readingProgress!.lastPage
+                                        : (_readingProgress?.chapitreCourant !=
+                                                    null &&
+                                                _readingProgress!
+                                                        .chapitreCourant >
+                                                    0)
+                                            ? _readingProgress!.chapitreCourant
+                                            : null;
+                                await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => ReadingPage(
                                       book: book.toJson(),
-                                      initialPage:
-                                          _readingProgress?.chapitreCourant,
+                                      initialPage: lastPage,
                                     ),
                                   ),
                                 );
+                                if (mounted && _isOwned) {
+                                  _loadReadingProgress();
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
@@ -1365,17 +1791,16 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.menu_book, size: 18),
-                                  SizedBox(width: 8),
+                                  const Icon(Icons.menu_book, size: 18),
+                                  const SizedBox(width: 8),
                                   Text(
                                     _isAuthorOfThisBook
-                                        ? 'Lire mon ouvrage '
-                                        : (_readingProgress != null &&
-                                                  _readingProgress!
-                                                          .pourcentage >
-                                                      0
-                                              ? 'Continuer la lecture'
-                                              : 'Commencer la lecture'),
+                                        ? 'Lire mon ouvrage'
+                                        : (_progressionPourcentage >= 100
+                                            ? 'Relire l\'ouvrage'
+                                            : (_progressionPourcentage > 0
+                                                ? 'Continuer la lecture'
+                                                : 'Commencer la lecture')),
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -1897,9 +2322,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     ),
                   ),
                   onPressed: () async {
-                    final scaffoldMessenger = ScaffoldMessenger.of(context);
                     Navigator.pop(context);
                     final token = await TokenStorage.getToken();
+                    if (!context.mounted) return;
                     if (token == null) {
                       AppNotifications.showSnackBar(
                         context,
@@ -1918,17 +2343,21 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         authToken: token,
                       );
                       _loadReviews(); // Reload the reviews
-                      AppNotifications.showSnackBar(
-                        context,
-                        message: "Avis ajouté avec succès !",
-                        isSuccess: true,
-                      );
+                      if (context.mounted) {
+                        AppNotifications.showSnackBar(
+                          context,
+                          message: "Avis ajouté avec succès !",
+                          isSuccess: true,
+                        );
+                      }
                     } catch (e) {
-                      AppNotifications.showSnackBar(
-                        context,
-                        message: "Erreur lors de l'ajout de l'avis.",
-                        isError: true,
-                      );
+                      if (context.mounted) {
+                        AppNotifications.showSnackBar(
+                          context,
+                          message: "Erreur lors de l'ajout de l'avis.",
+                          isError: true,
+                        );
+                      }
                     }
                   },
                   child: Text(

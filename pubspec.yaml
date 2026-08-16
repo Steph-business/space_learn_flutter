@@ -45,6 +45,7 @@ dependencies:
   image_picker: ^1.2.1
   supabase_flutter: ^2.8.1
   syncfusion_flutter_pdfviewer: ^31.1.19
+  syncfusion_flutter_pdf: ^31.1.19
   flutter_tts: ^4.1.0
 
   path: any

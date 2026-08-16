@@ -75,14 +75,58 @@ class BadgeService {
   List<BadgeModel> _getMockBadges() {
     return [
       BadgeModel(
-        id: '1',
+        id: 'badge_first_page',
         utilisateurId: 'me',
         debloqueLe: DateTime.now(),
-        name: 'Expert du premier tome',
-        description: 'A terminé son tout premier livre !',
-        iconUrl:
-            'https://uqmydsydlkwxcfcdtsbu.supabase.co/storage/v1/object/public/badges/badge_1.png',
+        name: 'Premier Pas',
+        description: 'A commencé sa toute première lecture.',
+        iconUrl: 'auto_stories',
+        code: 'FIRST_STEP',
+      ),
+      BadgeModel(
+        id: 'badge_first_book',
+        utilisateurId: 'me',
+        debloqueLe: null,
+        name: 'Expert du Premier Tome',
+        description: 'A terminé son tout premier livre à 100%.',
+        iconUrl: 'stars',
         code: 'FIRST_BOOK',
+      ),
+      BadgeModel(
+        id: 'badge_daily_reader',
+        utilisateurId: 'me',
+        debloqueLe: null,
+        name: 'Lecteur du Jour',
+        description: 'A lu 15 minutes dans la même journée.',
+        iconUrl: 'timer',
+        code: 'DAILY_15MIN',
+      ),
+      BadgeModel(
+        id: 'badge_bibliophile',
+        utilisateurId: 'me',
+        debloqueLe: null,
+        name: 'Bibliophile',
+        description: 'A rassemblé au moins 2 livres dans sa bibliothèque.',
+        iconUrl: 'inventory_2',
+        code: 'COLLECTION_2',
+      ),
+      BadgeModel(
+        id: 'badge_critic',
+        utilisateurId: 'me',
+        debloqueLe: null,
+        name: 'Critique Littéraire',
+        description: 'A publié son premier avis ou notation de lecture.',
+        iconUrl: 'rate_review',
+        code: 'FIRST_REVIEW',
+      ),
+      BadgeModel(
+        id: 'badge_marathon',
+        utilisateurId: 'me',
+        debloqueLe: null,
+        name: 'Grand Marathonien',
+        description: 'A cumulé plus de 60 minutes de temps de lecture.',
+        iconUrl: 'stars',
+        code: 'READ_60MIN',
       ),
     ];
   }
