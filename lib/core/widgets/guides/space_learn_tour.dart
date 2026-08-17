@@ -116,7 +116,10 @@ class SpaceLearnTour {
 
     _currentTutorial = TutorialCoachMark(
       targets: targets,
-      colorShadow: const Color(0xFF070B19),
+      // Le voile qui assombrit l'écran derrière la bulle. Tiré de la palette
+      // plutôt que d'un bleu nuit écrit en dur, qui jurait sur le fond parchemin
+      // du mode clair.
+      colorShadow: AppColors.scaffoldDark,
       opacityShadow: 0.88,
       paddingFocus: 8,
       hideSkip: true, // Utilisation de notre propre bouton Passer dans la carte
@@ -145,27 +148,25 @@ class SpaceLearnTour {
     required TutorialCoachMarkController controller,
     bool isLast = false,
   }) {
-    final isDark = AppColors.isDark;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF16192E) : Colors.white,
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
         border: Border.all(
-          color: AppColors.purple.withOpacity(0.4),
+          color: AppColors.accentInk.withValues(alpha: 0.4),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.purple.withOpacity(0.18),
+            color: AppColors.accentInk.withValues(alpha: 0.18),
             blurRadius: 24,
             spreadRadius: 2,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.35),
+            color: AppColors.textPrimary.withValues(alpha: 0.18),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -182,15 +183,13 @@ class SpaceLearnTour {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.purple, AppColors.violet],
-                  ),
+                  color: AppColors.accentInk,
                   borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 ),
                 child: Text(
                   "Étape $step / $totalSteps",
                   style: GoogleFonts.poppins(
-                    color: Colors.white,
+                    color: AppColors.onAccent,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -204,7 +203,7 @@ class SpaceLearnTour {
                   child: Text(
                     "Passer",
                     style: GoogleFonts.poppins(
-                      color: isDark ? Colors.white60 : Colors.black45,
+                      color: AppColors.textSecondary,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -219,7 +218,7 @@ class SpaceLearnTour {
           Text(
             title,
             style: GoogleFonts.poppins(
-              color: isDark ? Colors.white : const Color(0xFF1E1E2E),
+              color: AppColors.textPrimary,
               fontSize: 17,
               fontWeight: FontWeight.bold,
               letterSpacing: -0.3,
@@ -231,7 +230,7 @@ class SpaceLearnTour {
           Text(
             description,
             style: GoogleFonts.poppins(
-              color: isDark ? const Color(0xFFB0B7C3) : const Color(0xFF555B6E),
+              color: AppColors.textSecondary,
               fontSize: 13.5,
               height: 1.45,
             ),
@@ -246,9 +245,9 @@ class SpaceLearnTour {
                 OutlinedButton(
                   onPressed: () => controller.previous(),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: isDark ? Colors.white70 : Colors.black87,
+                    foregroundColor: AppColors.textSecondary,
                     side: BorderSide(
-                      color: isDark ? Colors.white24 : Colors.black12,
+                      color: AppColors.textHint.withValues(alpha: 0.4),
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
@@ -278,10 +277,10 @@ class SpaceLearnTour {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.purple,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.accentInk,
+                  foregroundColor: AppColors.onAccent,
                   elevation: 4,
-                  shadowColor: AppColors.purple.withOpacity(0.5),
+                  shadowColor: AppColors.accentInk.withValues(alpha: 0.5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                   ),

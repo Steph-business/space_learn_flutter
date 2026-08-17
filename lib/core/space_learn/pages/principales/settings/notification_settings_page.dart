@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/utils/preferences_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,8 +19,6 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   bool _readingReminders = true;
   bool _newChapters = true;
   bool _salesReminders = true;
-  bool _newComments = true;
-  bool _marketingPush = false;
   bool _isLoading = true;
 
   @override
@@ -32,11 +31,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
-        _readingReminders = prefs.getBool('pref_readingReminders') ?? true;
-        _newChapters = prefs.getBool('pref_newChapters') ?? true;
-        _salesReminders = prefs.getBool('pref_salesReminders') ?? true;
-        _newComments = prefs.getBool('pref_newComments') ?? true;
-        _marketingPush = prefs.getBool('pref_marketingPush') ?? false;
+        _readingReminders = prefs.getBool(PreferencesNotifications.cleRappelsLecture) ?? true;
+        _newChapters = prefs.getBool(PreferencesNotifications.cleCommunaute) ?? true;
+        _salesReminders = prefs.getBool(PreferencesNotifications.cleVentes) ?? true;
         _isLoading = false;
       });
     }
@@ -71,7 +68,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           ),
         ),
       ),
-      body: ListView(
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: AppColors.accentInk))
+          : ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
@@ -92,8 +91,11 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           ),
           SizedBox(height: 28),
 
-          if (!widget.isAuthorMode) ...[
-            _buildSectionHeader("Lecture"),
+          // Lecture et communauté valent pour tout le monde : un auteur lit
+          // aussi, et c'est lui qui reçoit les avis sur ses livres. Les masquer
+          // derrière `isAuthorMode` le privait de ces deux réglages.
+          ...[
+            _buildSectionHeader("Lecture et communauté"),
             Card(
               color: AppColors.cardBackground,
               shape: RoundedRectangleBorder(
@@ -121,7 +123,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _readingReminders = val);
-                      _savePreference('pref_readingReminders', val);
+                      _savePreference(PreferencesNotifications.cleRappelsLecture, val);
                       AppNotifications.showSnackBar(
                         context,
                         message: "Préférences de rappels mises à jour.",
@@ -132,7 +134,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                   Divider(height: 1, indent: 16, endIndent: 16),
                   SwitchListTile(
                     title: Text(
-                      "Nouveaux chapitres",
+                      "Activité de la communauté",
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -140,7 +142,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                       ),
                     ),
                     subtitle: Text(
-                      "Être alerté dès qu'un auteur publie une suite.",
+                      "Avis reçus, messages dans un salon, nouvelle publication d'un auteur suivi.",
                       style: GoogleFonts.poppins(
                         color: AppColors.textSecondary,
                         fontSize: 12,
@@ -150,7 +152,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _newChapters = val);
-                      _savePreference('pref_newChapters', val);
+                      _savePreference(PreferencesNotifications.cleCommunaute, val);
                       AppNotifications.showSnackBar(
                         context,
                         message: "Préférences de nouveautés mises à jour.",
@@ -193,7 +195,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() => _salesReminders = val);
-                      _savePreference('pref_salesReminders', val);
+                      _savePreference(PreferencesNotifications.cleVentes, val);
                       AppNotifications.showSnackBar(
                         context,
                         message:
@@ -202,76 +204,22 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                       );
                     },
                   ),
-                  Divider(height: 1, indent: 16, endIndent: 16),
-                  SwitchListTile(
-                    title: Text(
-                      "Nouveaux commentaires",
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: Text(
-                      "Être notifié quand un lecteur laisse son avis.",
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    value: _newComments,
-                    activeColor: AppColors.primary,
-                    onChanged: (val) {
-                      setState(() => _newComments = val);
-                      _savePreference('pref_newComments', val);
-                      AppNotifications.showSnackBar(
-                        context,
-                        message: "Préférences de commentaires mises à jour.",
-                        isSuccess: true,
-                      );
-                    },
-                  ),
+                  // « Nouveaux commentaires » a été retiré : les avis relèvent
+                  // de l'activité de la communauté, réglée plus haut. Deux
+                  // interrupteurs sur la même préférence se seraient contredits.
                 ],
               ),
             ),
             SizedBox(height: 24),
           ],
 
-          _buildSectionHeader("Général"),
-          Card(
-            color: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-            ),
-            child: SwitchListTile(
-              title: Text(
-                "Offres & Nouveautés",
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                ),
-              ),
-              subtitle: Text(
-                "Alertes sur les promotions, événements et actus de la plateforme.",
-                style: GoogleFonts.poppins(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-              value: _marketingPush,
-              activeColor: AppColors.primary,
-              onChanged: (val) {
-                setState(() => _marketingPush = val);
-                _savePreference('pref_marketingPush', val);
-                AppNotifications.showSnackBar(
-                  context,
-                  message: "Préférences de promotions mises à jour.",
-                  isSuccess: true,
-                );
-              },
-            ),
-          ),
+          // « Offres & Nouveautés » a été retiré.
+          //
+          // Le serveur n'émet aucune notification promotionnelle : l'interrupteur
+          // enregistrait un choix que rien ne consultait, et sa bascule affichait
+          // « Préférences de promotions mises à jour » — une confirmation sans
+          // objet. Le jour où de telles notifications existeront, l'interrupteur
+          // reviendra avec elles, et PreferencesNotifications lui donnera son type.
         ],
       ),
     );

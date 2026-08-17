@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
-import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/services/tts_service.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/services/onboarding_guide_service.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'help_faq_page.dart';
 
-/// Page complète du Guide Utilisateur (Manuel Interactif)
-/// Couvrant à la fois le Parcours Lecteur et le Parcours Auteur.
+/// Le mode d'emploi de l'application.
+///
+/// Un lecteur n'y voit que son propre parcours. Un auteur voit les deux, parce
+/// qu'il est aussi lecteur — il achète et lit des livres comme les autres.
+///
+/// [estAuteur] remplace un ancien `initialIsAuthor`, qui ne décidait que de
+/// l'onglet OUVERT : les deux onglets restaient là, et un lecteur n'avait qu'à
+/// toucher le second pour lire tout le mode d'emploi de l'auteur — déposer un
+/// manuscrit, fixer un prix, suivre ses ventes. Un écran de réglages ne doit
+/// pas expliquer un métier qu'on n'exerce pas.
 class UserGuidePage extends StatefulWidget {
-  final bool initialIsAuthor;
+  final bool estAuteur;
 
-  const UserGuidePage({super.key, this.initialIsAuthor = false});
+  const UserGuidePage({super.key, this.estAuteur = false});
 
   @override
   State<UserGuidePage> createState() => _UserGuidePageState();
@@ -24,21 +33,40 @@ class _UserGuidePageState extends State<UserGuidePage>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  /// Titre de la section en cours de lecture, ou null.
+  String? _sectionLue;
+  final TtsService _tts = TtsService();
+
   @override
   void initState() {
     super.initState();
+    // Un seul onglet pour un lecteur : le parcours auteur n'existe pas pour lui.
     _tabController = TabController(
-      length: 2,
+      length: widget.estAuteur ? 2 : 1,
       vsync: this,
-      initialIndex: widget.initialIsAuthor ? 1 : 0,
     );
     _tabController.addListener(() {
       if (mounted) setState(() {});
+    });
+    _tts.addListener(_surEtatVoix);
+  }
+
+  void _surEtatVoix() {
+    if (!mounted) return;
+    setState(() {
+      // La voix s'est tue d'elle-même : plus aucune section n'est en cours.
+      if (_tts.isStopped) _sectionLue = null;
     });
   }
 
   @override
   void dispose() {
+    // Le service est un singleton : sans ce retrait, l'écouteur survit à
+    // l'écran et appelle setState sur un widget détruit. Et la voix doit se
+    // taire quand on quitte le guide — sinon elle continue de réciter le mode
+    // d'emploi par-dessus l'écran suivant.
+    _tts.removeListener(_surEtatVoix);
+    _tts.stop();
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -48,14 +76,14 @@ class _UserGuidePageState extends State<UserGuidePage>
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAuthorTab = _tabController.index == 1;
+    final isAuthorTab = widget.estAuteur && _tabController.index == 1;
     final accentColor =
-        isAuthorTab ? AppColors.secondaryVariant : AppColors.purple;
+        isAuthorTab ? AppColors.secondaryVariant : AppColors.accentInk;
 
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.scaffoldBackground
-          : const Color(0xFFF7F8FC),
+          : AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
@@ -77,10 +105,14 @@ class _UserGuidePageState extends State<UserGuidePage>
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
-          child: Container(
+          // La barre d'onglets n'a de sens qu'à deux onglets. Pour un lecteur,
+          // qui n'a que son propre parcours, elle laisserait croire qu'il en
+          // manque un.
+          child: widget.estAuteur
+              ? Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E2128) : const Color(0xFFE5E7EB),
+              color: AppColors.textHint.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
             child: TabBar(
@@ -96,9 +128,9 @@ class _UserGuidePageState extends State<UserGuidePage>
                   ),
                 ],
               ),
-              labelColor: Colors.white,
+              labelColor: AppColors.onAccent,
               unselectedLabelColor:
-                  isDark ? Colors.white60 : const Color(0xFF4B5563),
+                  AppColors.textSecondary,
               labelStyle: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -129,7 +161,8 @@ class _UserGuidePageState extends State<UserGuidePage>
                 ),
               ],
             ),
-          ),
+          )
+              : const SizedBox.shrink(),
         ),
       ),
       body: Column(
@@ -143,7 +176,7 @@ class _UserGuidePageState extends State<UserGuidePage>
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                 border: Border.all(
-                  color: isDark ? Colors.white12 : Colors.black12,
+                  color: AppColors.textHint.withValues(alpha: 0.3),
                 ),
               ),
               child: TextField(
@@ -157,7 +190,7 @@ class _UserGuidePageState extends State<UserGuidePage>
                   hintText: "Rechercher une aide, une fonctionnalité...",
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: isDark ? Colors.white38 : Colors.black38,
+                    color: AppColors.textHint,
                   ),
                   prefixIcon: Icon(
                     Icons.search_rounded,
@@ -185,7 +218,10 @@ class _UserGuidePageState extends State<UserGuidePage>
               controller: _tabController,
               children: [
                 _buildReaderGuide(isDark),
-                _buildAuthorGuide(isDark),
+                // Le parcours auteur n'est monte que pour un auteur : un
+                // TabBarView a deux enfants sur un controleur d'un seul onglet
+                // leve une assertion au premier rendu.
+                if (widget.estAuteur) _buildAuthorGuide(isDark),
               ],
             ),
           ),
@@ -199,7 +235,7 @@ class _UserGuidePageState extends State<UserGuidePage>
     final List<_GuideSection> sections = [
       _GuideSection(
         icon: Icons.explore_rounded,
-        color: AppColors.purple,
+        color: AppColors.accentInk,
         title: "1. Découvrir et trouver des livres",
         shortDesc: "Explorer la boutique, les filtres et les recommandations.",
         steps: [
@@ -212,7 +248,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.auto_stories_rounded,
-        color: const Color(0xFF00B4D8),
+        color: AppColors.accentInk,
         title: "2. Expérience de lecture (Liseuse)",
         shortDesc: "Personnaliser l'affichage, les thèmes et naviguer.",
         steps: [
@@ -225,7 +261,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.headphones_rounded,
-        color: const Color(0xFF9D4EDD),
+        color: AppColors.accentInk,
         title: "3. Lecture Audio & Synthèse Vocale (TTS)",
         shortDesc: "Écouter les livres à voix haute même écran éteint.",
         steps: [
@@ -238,7 +274,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.download_done_rounded,
-        color: const Color(0xFF06D6A0),
+        color: AppColors.accentInk,
         title: "4. Mode Hors-ligne & Téléchargements",
         shortDesc: "Télécharger pour lire sans connexion internet.",
         steps: [
@@ -249,7 +285,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.military_tech_rounded,
-        color: const Color(0xFFFFB703),
+        color: AppColors.accentInk,
         title: "5. Objectifs quotidiens & Badges",
         shortDesc: "Mesurer votre temps de lecture et débloquer des trophées.",
         steps: [
@@ -261,7 +297,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.forum_rounded,
-        color: const Color(0xFFF72585),
+        color: AppColors.accentInk,
         title: "6. Communauté & Échanges",
         shortDesc: "Discuter avec les auteurs et d'autres passionnés.",
         steps: [
@@ -273,7 +309,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.account_balance_wallet_rounded,
-        color: const Color(0xFF4361EE),
+        color: AppColors.accentInk,
         title: "7. Paiements & Sécurité",
         shortDesc: "Acheter des livres en toute confiance.",
         steps: [
@@ -290,7 +326,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       bannerTitle: "Visite Guidée Interactive de l'Accueil",
       bannerSubtitle: "Relancer le projecteur guidé pas-à-pas sur l'écran d'accueil.",
       bannerIcon: Icons.rocket_launch_rounded,
-      bannerColor: AppColors.purple,
+      bannerColor: AppColors.accentInk,
       onBannerTap: () async {
         await OnboardingGuideService.resetHomeTour();
         if (mounted) {
@@ -325,7 +361,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.price_change_rounded,
-        color: const Color(0xFF10B981),
+        color: AppColors.accentInk,
         title: "2. Fixation des prix & Droits d'auteur",
         shortDesc: "Modèle de rémunération et tarification.",
         steps: [
@@ -336,7 +372,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.insights_rounded,
-        color: const Color(0xFF6366F1),
+        color: AppColors.accentInk,
         title: "3. Tableau de bord & Statistiques de vente",
         shortDesc: "Suivre vos performances et vos lecteurs en temps réel.",
         steps: [
@@ -347,7 +383,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.account_balance_rounded,
-        color: const Color(0xFFF59E0B),
+        color: AppColors.accentInk,
         title: "4. Retrait des gains & Paiements",
         shortDesc: "Configurer vos coordonnées pour recevoir vos royalties.",
         steps: [
@@ -358,7 +394,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.campaign_rounded,
-        color: const Color(0xFFEC4899),
+        color: AppColors.accentInk,
         title: "5. Fidéliser et engager votre communauté",
         shortDesc: "Interagir avec vos lecteurs et vos abonnés.",
         steps: [
@@ -369,7 +405,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       ),
       _GuideSection(
         icon: Icons.swap_horiz_rounded,
-        color: const Color(0xFF3B82F6),
+        color: AppColors.accentInk,
         title: "6. Basculer entre le mode Lecteur et Auteur",
         shortDesc: "Un compte unique pour lire et écrire.",
         steps: [
@@ -424,7 +460,7 @@ class _UserGuidePageState extends State<UserGuidePage>
               Icon(
                 Icons.search_off_rounded,
                 size: 64,
-                color: isDark ? Colors.white30 : Colors.black26,
+                color: AppColors.textHint,
               ),
               const SizedBox(height: 16),
               Text(
@@ -485,7 +521,7 @@ class _UserGuidePageState extends State<UserGuidePage>
                           ),
                         ],
                       ),
-                      child: Icon(bannerIcon, color: Colors.white, size: 24),
+                      child: Icon(bannerIcon, color: AppColors.onAccent, size: 24),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -529,6 +565,81 @@ class _UserGuidePageState extends State<UserGuidePage>
     );
   }
 
+  /// Écouter une section plutôt que la lire.
+  ///
+  /// Un mode d'emploi sert surtout à qui n'est pas à l'aise avec l'écrit, ou
+  /// qui découvre l'application sur un petit écran d'entrée de gamme. Le moteur
+  /// de synthèse est déjà en place pour les livres : il ne demandait qu'à être
+  /// branché ici.
+  Widget _boutonEcoute(_GuideSection section) {
+    final enCours = _sectionLue == section.title && _tts.isPlaying;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () => _basculerEcoute(section),
+        icon: Icon(
+          enCours ? Icons.stop_circle_outlined : Icons.volume_up_rounded,
+          size: 18,
+          color: AppColors.accentInk,
+        ),
+        label: Text(
+          enCours ? "Arrêter" : "Écouter cette section",
+          style: GoogleFonts.poppins(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: AppColors.accentInk,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          minimumSize: const Size(0, 36),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _basculerEcoute(_GuideSection section) async {
+    if (_sectionLue == section.title && _tts.isPlaying) {
+      await _tts.stop();
+      return;
+    }
+
+    if (!_tts.voixFrancaiseDisponible && _tts.etatVoix != EtatVoix.inconnu) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: _tts.etatVoix == EtatVoix.moteurIndisponible
+            ? "Cet appareil n'a pas de moteur de synthèse vocale."
+            : "Aucune voix française installée. Ajoutez-en une dans "
+                  "Paramètres › Accessibilité › Synthèse vocale.",
+        isError: true,
+      );
+      return;
+    }
+
+    setState(() => _sectionLue = section.title);
+    // `speak` arrête d'abord ce qui parle : passer d'une section à l'autre ne
+    // superpose pas deux voix.
+    await _tts.speak(_texteDe(section), apercu: true);
+  }
+
+  /// Le texte d'une section, mis en forme pour l'oreille.
+  ///
+  /// Les numéros d'étape sont énoncés — « Étape 1 » — sans quoi la voix enchaîne
+  /// les consignes sans qu'on sache où l'une finit et où la suivante commence.
+  String _texteDe(_GuideSection section) {
+    final morceaux = <String>[section.title, section.shortDesc];
+    for (var i = 0; i < section.steps.length; i++) {
+      morceaux.add("Étape ${i + 1}. ${section.steps[i]}");
+    }
+    if (section.tip != null && section.tip!.trim().isNotEmpty) {
+      morceaux.add("Astuce. ${section.tip}");
+    }
+    return morceaux.join(". ");
+  }
+
   Widget _buildSectionCard(_GuideSection section, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -536,7 +647,7 @@ class _UserGuidePageState extends State<UserGuidePage>
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         border: Border.all(
-          color: isDark ? Colors.white10 : Colors.black.withOpacity(0.04),
+          color: AppColors.textHint.withValues(alpha: 0.12),
         ),
       ),
       child: Theme(
@@ -570,6 +681,7 @@ class _UserGuidePageState extends State<UserGuidePage>
           expandedCrossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Divider(height: 20, thickness: 0.8),
+            _boutonEcoute(section),
             ...section.steps.asMap().entries.map((entry) {
               final idx = entry.key + 1;
               final text = entry.value;
@@ -601,7 +713,7 @@ class _UserGuidePageState extends State<UserGuidePage>
                         text,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
-                          color: isDark ? Colors.white70 : const Color(0xFF374151),
+                          color: AppColors.textSecondary,
                           height: 1.4,
                         ),
                       ),
@@ -632,7 +744,7 @@ class _UserGuidePageState extends State<UserGuidePage>
                         section.tip!,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: isDark ? Colors.white70 : const Color(0xFF1F2937),
+                          color: AppColors.textPrimary,
                           fontStyle: FontStyle.italic,
                         ),
                       ),

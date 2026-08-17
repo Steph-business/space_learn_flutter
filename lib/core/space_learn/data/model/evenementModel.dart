@@ -17,6 +17,16 @@ class Evenement {
   /// Affiché sous forme de bouton « Rejoindre » sur la carte et la page de détail.
   final String? lienVisio;
 
+  /// L'événement a déjà eu lieu.
+  ///
+  /// Calculé par le serveur, jamais stocké : une colonne serait fausse dès la
+  /// minute suivante. Rien n'est masqué pour autant — un événement terminé
+  /// reste consultable, il descend en bas de liste et le dit.
+  ///
+  /// Toujours faux pour une annonce, qui n'a pas de date : elle vieillit sans
+  /// expirer.
+  final bool passe;
+
   Evenement({
     required this.id,
     required this.typePublication,
@@ -29,6 +39,7 @@ class Evenement {
     this.nomAuteur,
     this.creeLe,
     this.lienVisio,
+    this.passe = false,
   });
 
   factory Evenement.fromJson(Map<String, dynamic> json) {
@@ -50,6 +61,9 @@ class Evenement {
       lienVisio: (json['lien_visio'] as String?)?.trim().isEmpty == true
           ? null
           : json['lien_visio'] as String?,
+      // Le serveur tranche. En repli — serveur plus ancien — on recalcule
+      // localement plutôt que de tout afficher comme à venir.
+      passe: json['passe'] == true || _estPasse(json['date_evenement']),
     );
   }
 
@@ -65,6 +79,18 @@ class Evenement {
       'nom_auteur': nomAuteur,
       'cree_le': creeLe?.toIso8601String(),
       if (lienVisio != null && lienVisio!.isNotEmpty) 'lien_visio': lienVisio,
+      'passe': passe,
     };
+  }
+
+  /// Repli local : la journée entière compte, comme côté serveur. Un événement
+  /// du matin reste « à venir » jusqu'au soir, sinon il disparaîtrait de la
+  /// liste alors qu'il est en cours.
+  static bool _estPasse(dynamic brut) {
+    if (brut == null) return false;
+    final date = DateTime.tryParse(brut.toString());
+    if (date == null) return false;
+    final finDeJournee = DateTime(date.year, date.month, date.day + 1);
+    return DateTime.now().isAfter(finDeJournee);
   }
 }

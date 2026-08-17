@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/user_guide_page.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -220,6 +221,34 @@ class _NavBarAllState extends State<NavBarAll> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Le mode d'emploi, en tête d'écran.
+              //
+              // Il vivait au fond des réglages, sous « Guide d'utilisation » —
+              // c'est-à-dire là où personne ne va tant qu'il ne cherche pas
+              // déjà quelque chose. Or on a besoin d'un mode d'emploi au moment
+              // où l'on ne sait pas quoi faire, pas au moment où l'on règle ses
+              // préférences.
+              //
+              // Le rôle décide de ce qui s'ouvre : un lecteur n'a rien à faire
+              // du parcours auteur.
+              IconButton(
+                tooltip: "Aide et mode d'emploi",
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserGuidePage(
+                        estAuteur: widget.role == 'auteur',
+                      ),
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Icons.help_outline_rounded,
+                  color: AppColors.textPrimary,
+                  size: 24,
+                ),
+              ),
               IconButton(
                 onPressed: () {
                   Navigator.push(

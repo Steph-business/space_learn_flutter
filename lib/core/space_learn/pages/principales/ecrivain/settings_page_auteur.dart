@@ -18,12 +18,12 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/a
 // Nouvelles pages de paramètres
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/password_change_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/help_faq_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/notification_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/privacy_policy_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/language_selection_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/publication_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/sales_report_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/terms_of_use_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/user_guide_page.dart';
 
 class SettingsPageAuteur extends StatelessWidget {
   const SettingsPageAuteur({super.key});
@@ -124,6 +124,23 @@ class SettingsPageAuteur extends StatelessWidget {
             _showThemeSelectorDialog(context);
           },
         ),
+        // L'auteur n'avait aucun accès à ses réglages de notification : la page
+        // n'était construite qu'ici, côté lecteur, et toujours avec
+        // `isAuthorMode: false`. Les alertes de vente étaient donc inatteignables.
+        SettingItemTile(
+          icon: Icons.notifications_outlined,
+          title: "Notifications",
+          subtitle: "Ventes, avis, rappels de lecture",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    const NotificationSettingsPage(isAuthorMode: true),
+              ),
+            );
+          },
+        ),
 
         // Section Sécurité
         SettingSectionHeader(
@@ -162,31 +179,8 @@ class SettingsPageAuteur extends StatelessWidget {
           title: "Support",
           accentColor: AppColors.secondaryVariant,
         ),
-        SettingItemTile(
-          icon: Icons.auto_stories_outlined,
-          title: "Guide de l'auteur",
-          subtitle: "Publication, ventes, royalties, conseils",
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    const UserGuidePage(initialIsAuthor: true),
-              ),
-            );
-          },
-        ),
-        SettingItemTile(
-          icon: Icons.help_outline,
-          title: "Aide & FAQ",
-          subtitle: "Trouver des réponses",
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const HelpFaqPage()),
-            );
-          },
-        ),
+        // Le guide de l'auteur et l'aide ont quitté cet écran : ils sont sous
+        // l'icône « ? » de l'en-tête, atteignable depuis n'importe quelle page.
         SettingItemTile(
           icon: Icons.contact_support_outlined,
           title: "Contacter le support",

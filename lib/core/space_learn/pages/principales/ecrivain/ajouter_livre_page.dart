@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/publication_settings_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/uploadService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/categorie_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -76,6 +77,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   // User info
   String? _currentUserId;
 
+  /// Part de l'auteur et fourchette conseillée, lues au serveur.
+  ParametresPublication? _parametres;
+
   @override
   void initState() {
     super.initState();
@@ -96,6 +100,100 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     }
     _loadCategories();
     _loadCurrentUser();
+    _chargerParametresPublication();
+  }
+
+  /// Ce que le prix saisi rapporte, dit en francs.
+  ///
+  /// L'auteur ne voyait qu'un pourcentage, dans un autre écran. « 80 % » ne se
+  /// convertit pas de tête au moment où l'on hésite entre deux prix ; « vous
+  /// percevez 2 400 FCFA par vente », si.
+  ///
+  /// La fourchette conseillée vient du serveur. Elle ne bloque rien — l'auteur
+  /// reste maître de son prix — mais elle situe. Le catalogue portait des
+  /// livres à 89 876 FCFA, soit plus qu'un mois de SMIG ivoirien : personne
+  /// n'avait jamais eu de repère.
+  Widget _conseilDePrix() {
+    if (_isFree || _parametres == null) return const SizedBox.shrink();
+
+    final prix = double.tryParse(_prixController.text.trim()) ?? 0;
+    if (prix <= 0) return const SizedBox.shrink();
+
+    final p = _parametres!;
+    final gain = p.gainPour(prix);
+    final dansLaFourchette = p.dansLaFourchette(prix);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 15,
+                color: AppColors.accentInk,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  "Vous percevez ${_enFrancs(gain)} FCFA par vente "
+                  "(${p.partAuteurPourcent.toStringAsFixed(0)} %)",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.accentInk,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (!dansLaFourchette) ...[
+            const SizedBox(height: 6),
+            Text(
+              prix > p.prixConseilleMax
+                  ? "Au-dessus de la fourchette conseillée "
+                        "(${_enFrancs(p.prixConseilleMin)} à "
+                        "${_enFrancs(p.prixConseilleMax)} FCFA). Un prix élevé "
+                        "se vend rarement sur ce marché."
+                  : "En dessous de la fourchette conseillée "
+                        "(${_enFrancs(p.prixConseilleMin)} à "
+                        "${_enFrancs(p.prixConseilleMax)} FCFA).",
+              style: GoogleFonts.poppins(
+                fontSize: 11.5,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Un montant avec ses milliers séparés : 89876 se lit mal, 89 876 se lit.
+  static String _enFrancs(double montant) {
+    final entier = montant.round().toString();
+    final tampon = StringBuffer();
+    for (var i = 0; i < entier.length; i++) {
+      if (i > 0 && (entier.length - i) % 3 == 0) tampon.write(' ');
+      tampon.write(entier[i]);
+    }
+    return tampon.toString();
+  }
+
+  Future<void> _chargerParametresPublication() async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) return;
+      final p = await PublicationSettingsService().lire(token);
+      if (mounted) setState(() => _parametres = p);
+    } catch (e) {
+      // Sans ces réglages le formulaire fonctionne : il n'affiche simplement
+      // pas le gain. Bloquer la publication pour un conseil serait absurde.
+      debugPrint("Conseil de prix indisponible : $e");
+    }
   }
 
   Future<void> _loadCurrentUser() async {
@@ -631,7 +729,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         icon: Icons.money,
         keyboardType: TextInputType.number,
         enabled: !_isFree,
+        onChanged: (_) => setState(() {}),
       ),
+      _conseilDePrix(),
       const SizedBox(height: 8),
       CheckboxListTile(
         value: _isFree,

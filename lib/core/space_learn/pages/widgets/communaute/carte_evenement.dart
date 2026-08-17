@@ -94,8 +94,41 @@ class CarteEvenement extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // Badge visio : indique d'un coup d'œil que la rencontre est en ligne.
-                if (evenement.lienVisio != null &&
+                // « Terminé » : l'événement a eu lieu.
+                //
+                // Sans cette mention, une rencontre passée et une rencontre à
+                // venir se ressemblent trait pour trait — seule la date les
+                // distingue, et il faut la lire puis la comparer à celle du
+                // jour. Le serveur les range maintenant en bas de liste ; ceci
+                // dit pourquoi.
+                if (evenement.passe) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.textHint.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusXs,
+                      ),
+                    ),
+                    child: Text(
+                      "Terminé",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                // Badge visio : indique d'un coup d'œil que la rencontre est en
+                // ligne. Inutile une fois la rencontre passée : le lien ne mène
+                // plus nulle part.
+                if (!evenement.passe &&
+                    evenement.lienVisio != null &&
                     evenement.lienVisio!.isNotEmpty) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(

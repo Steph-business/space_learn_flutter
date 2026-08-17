@@ -217,6 +217,63 @@ class BookCacheService {
     }
   }
 
+  /// Les livres réellement présents sur l'appareil.
+  ///
+  /// L'écran « Téléchargements » n'avait aucun moyen de savoir ce qui était
+  /// stocké : il affichait trois titres écrits en dur — dont un ouvrage d'un
+  /// certain « Albert E. » — et son bouton de suppression annonçait « Livre
+  /// supprimé de l'appareil » sans rien effacer.
+  ///
+  /// Le nom du fichier porte l'identifiant du livre ; c'est lui qui permet de
+  /// retrouver le titre dans la bibliothèque du lecteur.
+  Future<List<LivreEnCache>> listerCache() async {
+    if (kIsWeb) return const [];
+    try {
+      final booksDir = await _getBooksDir();
+      if (!await booksDir.exists()) return const [];
+
+      final entrees = <LivreEnCache>[];
+      await for (final entity in booksDir.list()) {
+        if (entity is! File) continue;
+        final nom = entity.path.split(RegExp(r'[/\\]')).last;
+        final point = nom.lastIndexOf('.');
+        final id = point > 0 ? nom.substring(0, point) : nom;
+        if (id.isEmpty) continue;
+
+        entrees.add(LivreEnCache(
+          livreId: id,
+          chemin: entity.path,
+          octets: await entity.length(),
+          modifieLe: await entity.lastModified(),
+        ));
+      }
+
+      // Le plus récemment ouvert d'abord : c'est celui qu'on cherche.
+      entrees.sort((a, b) => b.modifieLe.compareTo(a.modifieLe));
+      return entrees;
+    } catch (e) {
+      debugPrint('Erreur listage du cache: $e');
+      return const [];
+    }
+  }
+
+  /// Supprime un fichier du cache par son chemin.
+  ///
+  /// Le pendant de [listerCache] : l'écran connaît le chemin, il n'a pas à
+  /// reconstruire l'URL d'origine pour effacer.
+  Future<bool> supprimerParChemin(String chemin) async {
+    if (kIsWeb) return false;
+    try {
+      final f = File(chemin);
+      if (!await f.exists()) return false;
+      await f.delete();
+      return true;
+    } catch (e) {
+      debugPrint('Erreur suppression du fichier en cache: $e');
+      return false;
+    }
+  }
+
   /// Retourne la taille totale du cache en octets.
   Future<int> getCacheSize() async {
     if (kIsWeb) return 0;
@@ -247,5 +304,32 @@ class BookCacheService {
     } catch (e) {
       debugPrint('Erreur vidage cache: $e');
     }
+  }
+}
+
+/// Un livre présent sur l'appareil.
+///
+/// Le nom du fichier porte l'identifiant du livre ; le titre, lui, vit dans la
+/// bibliothèque du lecteur et se recoupe à l'affichage.
+class LivreEnCache {
+  const LivreEnCache({
+    required this.livreId,
+    required this.chemin,
+    required this.octets,
+    required this.modifieLe,
+  });
+
+  final String livreId;
+  final String chemin;
+  final int octets;
+  final DateTime modifieLe;
+
+  /// La taille, telle qu'on l'écrit à quelqu'un.
+  String get taille {
+    if (octets >= 1024 * 1024) {
+      return '${(octets / (1024 * 1024)).toStringAsFixed(1)} Mo';
+    }
+    if (octets >= 1024) return '${(octets / 1024).toStringAsFixed(0)} Ko';
+    return '$octets octets';
   }
 }

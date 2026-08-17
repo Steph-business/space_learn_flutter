@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/publication_settings_service.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class PublicationSettingsPage extends StatefulWidget {
   const PublicationSettingsPage({super.key});
@@ -14,10 +15,20 @@ class PublicationSettingsPage extends StatefulWidget {
 }
 
 class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
+  final PublicationSettingsService _service = PublicationSettingsService();
+
   bool _defaultPublic = true;
   String _defaultLicense = "Tous droits réservés";
   String _defaultCurrency = "FCFA";
-  final _royaltyController = TextEditingController(text: "70");
+
+  /// La part de l'auteur, telle que le serveur la calcule. Affichée, jamais
+  /// saisie : le taux appartient à la plateforme.
+  double _partAuteur = 0;
+  double _commission = 0;
+
+  bool _chargement = true;
+  bool _enregistrement = false;
+  String? _erreur;
 
   final List<String> _licenses = [
     "Tous droits réservés",
@@ -35,23 +46,83 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
   }
 
   Future<void> _loadPublicationSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
+    setState(() {
+      _chargement = true;
+      _erreur = null;
+    });
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception("Reconnectez-vous pour accéder à vos préférences.");
+      }
+      final p = await _service.lire(token);
+      if (!mounted) return;
       setState(() {
-        _defaultPublic = prefs.getBool('pref_pub_default_public') ?? true;
-        _defaultLicense =
-            prefs.getString('pref_pub_default_license') ??
-            "Tous droits réservés";
-        _defaultCurrency =
-            prefs.getString('pref_pub_default_currency') ?? "FCFA";
+        _defaultPublic = p.visibiliteParDefaut;
+        _defaultLicense = _licenses.contains(p.licenceParDefaut)
+            ? p.licenceParDefaut
+            : _licenses.first;
+        _defaultCurrency = _currencies.contains(p.deviseParDefaut)
+            ? p.deviseParDefaut
+            : _currencies.first;
+        _partAuteur = p.partAuteurPourcent;
+        _commission = p.commissionPourcent;
+        _chargement = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _erreur = _lisible(e);
+        _chargement = false;
       });
     }
   }
 
-  Future<void> _savePubSetting(String key, dynamic value) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (value is bool) await prefs.setBool(key, value);
-    if (value is String) await prefs.setString(key, value);
+  /// Enregistre les trois choix, d'un seul envoi.
+  ///
+  /// Chaque bascule écrivait auparavant dans les préférences du téléphone, et
+  /// le bouton « Enregistrer » réécrivait les mêmes clés : rien ne quittait
+  /// l'appareil, et rien n'agissait sur les livres.
+  Future<void> _enregistrer() async {
+    setState(() => _enregistrement = true);
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception("Reconnectez-vous pour enregistrer vos préférences.");
+      }
+      final p = await _service.enregistrer(
+        token,
+        visibiliteParDefaut: _defaultPublic,
+        licenceParDefaut: _defaultLicense,
+        deviseParDefaut: _defaultCurrency,
+      );
+      if (!mounted) return;
+      setState(() {
+        _partAuteur = p.partAuteurPourcent;
+        _commission = p.commissionPourcent;
+        _enregistrement = false;
+      });
+      AppNotifications.showSnackBar(
+        context,
+        message: "Préférences de publication enregistrées.",
+        isSuccess: true,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _enregistrement = false);
+      AppNotifications.showSnackBar(
+        context,
+        message: _lisible(e),
+        isError: true,
+      );
+    }
+  }
+
+  static String _lisible(Object erreur) {
+    var t = erreur.toString();
+    if (t.startsWith('Exception: ')) t = t.substring('Exception: '.length);
+    return t.trim().isEmpty ? "L'opération a échoué." : t;
   }
 
   @override
@@ -78,7 +149,9 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
           ),
         ),
       ),
-      body: ListView(
+      body: _chargement
+          ? Center(child: CircularProgressIndicator(color: AppColors.accentInk))
+          : ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
@@ -126,12 +199,6 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
                   activeColor: AppColors.primary,
                   onChanged: (val) {
                     setState(() => _defaultPublic = val);
-                    _savePubSetting('pref_pub_default_public', val);
-                    AppNotifications.showSnackBar(
-                      context,
-                      message: "Visibilité par défaut mise à jour.",
-                      isSuccess: true,
-                    );
                   },
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16),
@@ -193,20 +260,52 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
             ),
           ),
           SizedBox(height: 12),
-          TextFormField(
-            controller: _royaltyController,
-            keyboardType: TextInputType.number,
-            style: GoogleFonts.poppins(color: AppColors.textPrimary),
-            decoration: InputDecoration(
-              labelText: "Part de l'auteur (%)",
-              labelStyle: GoogleFonts.poppins(
-                color: isDark ? AppColors.textHint : Colors.black54,
+          // La part de l'auteur se lit, elle ne se saisit pas.
+          //
+          // C'était un champ libre. On pouvait y taper 95, lire « Paramètres
+          // enregistrés ! », et croire qu'on toucherait 95 % de ses ventes. Le
+          // taux appartient à la plateforme : le serveur le calcule et le
+          // renvoie, l'écran l'affiche.
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+              border: Border.all(
+                color: AppColors.textHint.withValues(alpha: 0.25),
               ),
-              filled: true,
-              fillColor: AppColors.cardBackground,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.percent_rounded, color: AppColors.accentInk, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Vous percevez ${_partAuteur.toStringAsFixed(0)} % de chaque vente",
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Space Learn retient ${_commission.toStringAsFixed(0)} % "
+                        "au titre des frais de plateforme et de paiement.",
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(height: 32),
@@ -215,17 +314,12 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: () {
-                _savePubSetting('pref_pub_default_public', _defaultPublic);
-                _savePubSetting('pref_pub_default_license', _defaultLicense);
-                _savePubSetting('pref_pub_default_currency', _defaultCurrency);
-                AppNotifications.showSnackBar(
-                  context,
-                  message: "Paramètres de publication enregistrés !",
-                  isSuccess: true,
-                );
-                Navigator.of(context).pop();
-              },
+              onPressed: _enregistrement
+                  ? null
+                  : () async {
+                      await _enregistrer();
+                      if (mounted && _erreur == null) Navigator.of(context).pop();
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
@@ -250,7 +344,6 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
   }
 
   void _showLicenseSelector() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.cardBackground,
@@ -272,7 +365,6 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
                   : null,
               onTap: () {
                 setState(() => _defaultLicense = license);
-                _savePubSetting('pref_pub_default_license', license);
                 Navigator.of(context).pop();
               },
             );
@@ -283,7 +375,6 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
   }
 
   void _showCurrencySelector() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.cardBackground,
@@ -305,7 +396,6 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
                   : null,
               onTap: () {
                 setState(() => _defaultCurrency = currency);
-                _savePubSetting('pref_pub_default_currency', currency);
                 Navigator.of(context).pop();
               },
             );

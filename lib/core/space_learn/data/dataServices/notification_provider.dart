@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:space_learn_flutter/core/utils/preferences_notifications.dart';
 import 'package:flutter/foundation.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'notificationService.dart';
@@ -147,12 +148,24 @@ class NotificationProvider extends ChangeNotifier {
               _groupedNotifications[assignedRole] = [taggedNotif, ...list];
             }
 
-            // Afficher l'alerte locale
-            NotificationService.showLocalNotification(
-              id: taggedNotif.id,
-              title: taggedNotif.type,
-              body: taggedNotif.contenu,
-            );
+            // L'alerte système, si le lecteur l'a acceptée.
+            //
+            // Elle partait sans condition : les interrupteurs de l'écran
+            // « Notifications » enregistraient leur état sur l'appareil et
+            // personne ne les relisait. Couper « Rappels de lecture »
+            // n'empêchait aucun rappel d'arriver.
+            //
+            // La notification reste ajoutée à la liste dans tous les cas : le
+            // réglage porte sur l'interruption — la bannière qui s'affiche par
+            // dessus ce qu'on fait — pas sur le droit d'être informé.
+            PreferencesNotifications.doitAfficher(taggedNotif.type).then((ok) {
+              if (!ok) return;
+              NotificationService.showLocalNotification(
+                id: taggedNotif.id,
+                title: taggedNotif.type,
+                body: taggedNotif.contenu,
+              );
+            });
 
             notifyListeners();
           },

@@ -28,7 +28,7 @@ class HelpFaqPage extends StatelessWidget {
         title: Text(
           "Aide & FAQ",
           style: GoogleFonts.poppins(
-            color: isDark ? Colors.white : AppColors.accentInk,
+            color: AppColors.accentInk,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -70,11 +70,11 @@ class HelpFaqPage extends StatelessWidget {
 
           // Manuel & Guide Utilisateur
           Card(
-            color: isDark ? const Color(0xFF1A2238) : const Color(0xFFEFF6FF),
+            color: AppColors.accentInk.withValues(alpha: 0.10),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               side: BorderSide(
-                color: const Color(0xFF3B82F6).withOpacity(0.35),
+                color: AppColors.accentInk.withValues(alpha: 0.35),
                 width: 1.2,
               ),
             ),
@@ -84,12 +84,12 @@ class HelpFaqPage extends StatelessWidget {
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6).withOpacity(0.15),
+                  color: AppColors.accentInk.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.menu_book_rounded,
-                  color: Color(0xFF3B82F6),
+                  color: AppColors.accentInk,
                   size: 24,
                 ),
               ),
@@ -108,9 +108,9 @@ class HelpFaqPage extends StatelessWidget {
                   fontSize: 12.5,
                 ),
               ),
-              trailing: const Icon(
+              trailing: Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: Color(0xFF3B82F6),
+                color: AppColors.accentInk,
                 size: 20,
               ),
               onTap: () {
@@ -127,7 +127,7 @@ class HelpFaqPage extends StatelessWidget {
 
           // Guide interactif
           Card(
-            color: isDark ? const Color(0xFF1E1E34) : const Color(0xFFF3F0FF),
+            color: AppColors.accentInk.withValues(alpha: 0.08),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               side: BorderSide(
@@ -144,9 +144,9 @@ class HelpFaqPage extends StatelessWidget {
                   color: AppColors.purple.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.explore_outlined,
-                  color: AppColors.purple,
+                  color: AppColors.accentInk,
                   size: 24,
                 ),
               ),
@@ -165,9 +165,9 @@ class HelpFaqPage extends StatelessWidget {
                   fontSize: 12.5,
                 ),
               ),
-              trailing: const Icon(
+              trailing: Icon(
                 Icons.play_circle_fill,
-                color: AppColors.purple,
+                color: AppColors.accentInk,
                 size: 28,
               ),
               onTap: () async {
@@ -232,7 +232,6 @@ class HelpFaqPage extends StatelessWidget {
   }
 
   Widget _buildFaqItem(BuildContext context, String question, String answer) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       color: AppColors.cardBackground,
       margin: const EdgeInsets.only(bottom: 12),
@@ -249,7 +248,7 @@ class HelpFaqPage extends StatelessWidget {
           ),
         ),
         iconColor: AppColors.primary,
-        collapsedIconColor: isDark ? AppColors.textHint : Colors.black38,
+        collapsedIconColor: AppColors.textHint,
         childrenPadding: const EdgeInsets.all(16),
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         children: [

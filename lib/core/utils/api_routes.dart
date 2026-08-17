@@ -95,6 +95,12 @@ class ApiRoutes {
   static const String readingSettings =
       "$baseUrlsGin/api/user/settings/reading";
 
+  /// Préférences de publication d'un auteur : visibilité, licence, devise.
+  /// La réponse porte aussi sa part réelle sur chaque vente, calculée par le
+  /// serveur — l'écran l'affichait auparavant dans un champ libre.
+  static const String publicationSettings =
+      "$baseUrlsGin/api/user/settings/publication";
+
   // Reading activity routes
   static const String readingActivity = "$baseUrlsGin/api/reading/activity";
   static const String readingActivities = "$baseUrlsGin/api/reading/activities";

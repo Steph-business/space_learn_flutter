@@ -28,7 +28,6 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/download_manager_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/notification_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/terms_of_use_page.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/user_guide_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -244,32 +243,12 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
 
         // Section Support
+        //
+        // Le guide d'utilisation a quitté cet écran : il est désormais sous
+        // l'icône « ? » de l'en-tête, présente sur toutes les pages. On a
+        // besoin d'un mode d'emploi au moment où l'on ne sait pas quoi faire,
+        // pas au moment où l'on règle ses préférences.
         SettingSectionHeader(title: "Support", accentColor: AppColors.primary),
-        SettingItemTile(
-          icon: Icons.menu_book_outlined,
-          title: "Guide de l'utilisateur",
-          subtitle: "Parcours de lecture, mode audio, astuces",
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    const UserGuidePage(initialIsAuthor: false),
-              ),
-            );
-          },
-        ),
-        SettingItemTile(
-          icon: Icons.help_outline,
-          title: "Aide & FAQ",
-          subtitle: "Trouver des réponses",
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const HelpFaqPage()),
-            );
-          },
-        ),
         SettingItemTile(
           icon: Icons.contact_support_outlined,
           title: "Contacter le support",
