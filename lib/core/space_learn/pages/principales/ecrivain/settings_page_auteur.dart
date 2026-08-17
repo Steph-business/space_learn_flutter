@@ -23,6 +23,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/publication_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/sales_report_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/terms_of_use_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/user_guide_page.dart';
 
 class SettingsPageAuteur extends StatelessWidget {
   const SettingsPageAuteur({super.key});
@@ -160,6 +161,20 @@ class SettingsPageAuteur extends StatelessWidget {
         SettingSectionHeader(
           title: "Support",
           accentColor: AppColors.secondaryVariant,
+        ),
+        SettingItemTile(
+          icon: Icons.auto_stories_outlined,
+          title: "Guide de l'auteur",
+          subtitle: "Publication, ventes, royalties, conseils",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    const UserGuidePage(initialIsAuthor: true),
+              ),
+            );
+          },
         ),
         SettingItemTile(
           icon: Icons.help_outline,

@@ -1,4 +1,5 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/recherche_page.dart';
@@ -30,7 +31,7 @@ class CustomSearchBar extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E2128) : const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         border: Border.all(
           color: isDark ? Colors.white10 : Colors.black.withOpacity(0.03),
           width: 1,

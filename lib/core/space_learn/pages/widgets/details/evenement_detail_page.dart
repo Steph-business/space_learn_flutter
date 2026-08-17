@@ -425,7 +425,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                         height: 16,
                         decoration: BoxDecoration(
                           color: brandColor,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                         ),
                       ),
                       const SizedBox(width: 8),

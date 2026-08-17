@@ -324,6 +324,10 @@ class _CommentairesRecentsSectionState
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
+        // Le builder n'est pas un build() : il s'exécute dans son propre
+        // élément, plus tard. Sans cet abonnement, la feuille garde la palette
+        // en vigueur à son ouverture et ne suit pas une bascule clair/sombre.
+        AppColors.suivreLeTheme(ctx);
         return StatefulBuilder(
           builder: (ctx, setModalState) {
             return Padding(
@@ -364,7 +368,7 @@ class _CommentairesRecentsSectionState
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.surfaceVariant.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                         ),
                         child: Text(
                           '"${comment.commentaire}"',
@@ -387,7 +391,7 @@ class _CommentairesRecentsSectionState
                         filled: true,
                         fillColor: AppColors.scaffoldBackground,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -414,7 +418,7 @@ class _CommentairesRecentsSectionState
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(color: AppColors.secondaryVariant),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                                 ),
                               ),
                               child: Text(
@@ -466,7 +470,7 @@ class _CommentairesRecentsSectionState
                               backgroundColor: AppColors.secondaryVariant,
                               foregroundColor: AppColors.onAccent,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                               ),
                             ),
                             child: isSending
@@ -475,7 +479,7 @@ class _CommentairesRecentsSectionState
                                     height: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: AppColors.onAccent,
                                     ),
                                   )
                                 : Text(

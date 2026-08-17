@@ -42,6 +42,25 @@ const _objetsDeStyle = {
   'IconThemeData',
 };
 
+/// Widgets dont le paramètre `color` peint l'objet lui-même, et non un fond
+/// derrière du texte.
+///
+/// La couleur d'un RefreshIndicator est celle de son arc. La règle la lisait
+/// comme un aplat, puis inspectait tout ce que l'indicateur contient — donc la
+/// page entière — et signalait chaque encre qui s'y trouvait. Deux titres de la
+/// page communauté étaient accusés de reposer sur un fond qui n'existe pas.
+const _couleursDObjet = {
+  'RefreshIndicator',
+  'CircularProgressIndicator',
+  'LinearProgressIndicator',
+  'Icon',
+  'Divider',
+  'VerticalDivider',
+  'TextStyle',
+  'poppins',
+  'inter',
+};
+
 List<File> _fichiersDart() {
   final dossier = Directory(_racine);
   if (!dossier.existsSync()) {
@@ -124,6 +143,10 @@ void main() {
 
           var (ouv, ctor) = _ouvrePortee(texte, fond.start);
           if (ouv == null) continue;
+          // `color:` peint parfois l'objet et non le fond derrière lui.
+          if (fond.group(1) == 'color' && _couleursDObjet.contains(ctor)) {
+            continue;
+          }
           if (_objetsDeStyle.contains(ctor)) {
             final (parent, _) = _ouvrePortee(texte, ouv);
             if (parent != null) ouv = parent;

@@ -59,6 +59,10 @@ class AuthService {
       // ✅ On sauvegarde le token après la connexion
       await TokenStorage.saveToken(tokenUser.token);
       await TokenStorage.saveUserName(tokenUser.user.nomComplet);
+      // Le temps de lecture, la série de jours et les badges sont rangés par
+      // compte : sans cet identifiant ils se mélangeaient entre les personnes
+      // qui se connectent sur un même téléphone.
+      await TokenStorage.saveUserId(tokenUser.user.id);
       return tokenUser;
     } else {
       String errorMessage = "Erreur de connexion inconnue.";
@@ -96,6 +100,10 @@ class AuthService {
       final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
       await TokenStorage.saveToken(tokenUser.token);
       await TokenStorage.saveUserName(tokenUser.user.nomComplet);
+      // Le temps de lecture, la série de jours et les badges sont rangés par
+      // compte : sans cet identifiant ils se mélangeaient entre les personnes
+      // qui se connectent sur un même téléphone.
+      await TokenStorage.saveUserId(tokenUser.user.id);
       return tokenUser;
     }
 
@@ -170,6 +178,10 @@ class AuthService {
       final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
       await TokenStorage.saveToken(tokenUser.token);
       await TokenStorage.saveUserName(tokenUser.user.nomComplet);
+      // Le temps de lecture, la série de jours et les badges sont rangés par
+      // compte : sans cet identifiant ils se mélangeaient entre les personnes
+      // qui se connectent sur un même téléphone.
+      await TokenStorage.saveUserId(tokenUser.user.id);
       return tokenUser;
     } else {
       String errorMessage = "Erreur de validation de l'inscription.";
@@ -320,18 +332,39 @@ class AuthService {
     }
   }
 
-  /// ✅ Modifier le mot de passe d'un utilisateur connecté
+  /// Modifier le mot de passe d'un utilisateur connecté.
+  ///
+  /// La route porte l'identifiant du compte et se demande en POST. Elle était
+  /// appelée en PUT sur `/utilisateurs/change-password` : comme `PUT /:id`
+  /// existe, la requête tombait sur la modification de profil avec
+  /// « change-password » pour identifiant, et le serveur répondait
+  /// « Identifiant utilisateur invalide ». Le changement de mot de passe
+  /// n'avait jamais pu aboutir.
+  ///
+  /// Les deux champs sont ceux du serveur, et eux seuls. Les envoyer sous six
+  /// noms différents en espérant qu'un tombe juste multipliait les copies du
+  /// mot de passe en clair dans la requête, dans les journaux du proxy et dans
+  /// ceux du serveur, sans jamais dire lequel était le bon.
   Future<bool> changePassword({
     required String currentPassword,
     required String newPassword,
   }) async {
     final currentToken = await TokenStorage.getToken();
     if (currentToken == null) {
-      throw Exception("Vous devez être connecté pour modifier votre mot de passe.");
+      throw Exception(
+        "Vous devez être connecté pour modifier votre mot de passe.",
+      );
     }
 
-    final url = Uri.parse(ApiRoutes.changePassword);
-    final response = await http.put(
+    final userId = await TokenStorage.getUserId();
+    if (userId == null || userId.isEmpty) {
+      throw Exception(
+        "Session incomplète. Reconnectez-vous puis réessayez.",
+      );
+    }
+
+    final url = Uri.parse(ApiRoutes.changePassword(userId));
+    final response = await http.post(
       url,
       headers: {
         "Content-Type": "application/json",
@@ -339,11 +372,7 @@ class AuthService {
       },
       body: jsonEncode({
         "current_password": currentPassword,
-        "old_password": currentPassword,
-        "ancien_mot_de_passe": currentPassword,
         "new_password": newPassword,
-        "nouveau_mot_de_passe": newPassword,
-        "password": newPassword,
       }),
     );
 

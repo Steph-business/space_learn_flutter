@@ -12,6 +12,13 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- Depuis Android 13, une notification ne s'affiche pas sans cette
+         permission. Or c'est la notification qui porte les commandes de
+         lecture sur l'ecran verrouille : sans elle, le lecteur qui range son
+         telephone dans sa poche n'a plus aucun moyen de mettre en pause, et
+         c'est precisement l'usage que la lecture en arriere-plan sert. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
     <application
         android:label="space_learn_flutter"

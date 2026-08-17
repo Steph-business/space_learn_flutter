@@ -140,7 +140,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
                         width: 24,
                         height: 24,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: AppColors.onAccent,
                           strokeWidth: 2.5,
                         ),
                       )

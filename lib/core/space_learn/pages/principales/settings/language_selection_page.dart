@@ -160,7 +160,7 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: Colors.amber.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
               ),
               child: Text(
                 "Bientôt",

@@ -93,6 +93,7 @@ class _NavBarAllState extends State<NavBarAll> {
         if (token != null) {
           final user = await _authService.getUser(token);
           if (user != null && mounted) {
+            TokenStorage.saveUserId(user.id);
             setState(() {
               if (user.nomComplet.isNotEmpty) {
                 _displayName = user.nomComplet;

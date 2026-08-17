@@ -19,6 +19,18 @@ fun localProperties(): Properties {
 val flutterVersionCode = localProperties().getProperty("flutter.versionCode") ?: "1"
 val flutterVersionName = localProperties().getProperty("flutter.versionName") ?: "1.0"
 
+// Clé de signature de production, lue dans android/key.properties.
+//
+// Ce fichier ne doit jamais entrer dans le dépôt : il porte les mots de passe
+// du magasin de clés. Il est ignoré par .gitignore, et chaque machine qui
+// publie en garde sa propre copie.
+val keystoreProperties = Properties()
+val keystorePropertiesFile = project.rootProject.file("key.properties")
+val keystoreConfigure = keystorePropertiesFile.exists()
+if (keystoreConfigure) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.example.space_learn_flutter"
     compileSdk = 36  
@@ -48,6 +60,17 @@ android {
         versionName = flutterVersionName
     }
 
+    signingConfigs {
+        if (keystoreConfigure) {
+            create("release") {
+                storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -55,7 +78,28 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+
+            // La clé de débogage est la même sur toutes les machines Android,
+            // et son mot de passe est public. Un APK signé avec elle peut être
+            // décompilé, modifié, re-signé à l'identique : le téléphone du
+            // lecteur accepte alors la version trafiquée comme une mise à jour
+            // légitime. Google Play refuse d'ailleurs ces paquets.
+            //
+            // Tant qu'aucune vraie clé n'est fournie on continue de compiler —
+            // sinon plus personne ne peut produire d'APK de test — mais on le
+            // dit à chaque compilation plutôt que de le laisser passer.
+            if (keystoreConfigure) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+                logger.warn(
+                    "\n" +
+                    "  ⚠  APK DE PRODUCTION SIGNÉ AVEC LA CLÉ DE DÉBOGAGE\n" +
+                    "     android/key.properties est absent.\n" +
+                    "     Ce paquet ne doit pas être distribué : n'importe qui\n" +
+                    "     peut le modifier et le re-signer à l'identique.\n"
+                )
+            }
         }
     }
 }

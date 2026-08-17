@@ -1,0 +1,20 @@
+# Modele du fichier de signature de production.
+#
+# Copiez-le en `android/key.properties` et renseignez vos valeurs. Le vrai
+# fichier est ignore par git : il porte les mots de passe du magasin de cles,
+# et une cle publiee est une cle perdue — c'est elle qui prouve a Android que
+# la mise a jour vient bien de vous.
+#
+# Pour creer le magasin de cles (a lancer une seule fois, gardez-en une
+# sauvegarde hors du poste de travail) :
+#
+#   keytool -genkey -v -keystore %USERPROFILE%\space-learn-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias space-learn
+#
+# storeFile accepte un chemin absolu ; sous Windows, doublez les antislashs
+# ou utilisez des barres obliques.
+
+storeFile=C:/Users/<vous>/space-learn-release.jks
+storePassword=<le mot de passe du magasin>
+keyAlias=space-learn
+keyPassword=<le mot de passe de la cle>

@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/relationModel.dart';
@@ -189,12 +190,9 @@ class _AbonnesPageState extends State<AbonnesPage> {
           ),
           TextButton(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("Profil de $name"),
-                  backgroundColor: AppColors.secondaryVariant,
-                  duration: const Duration(seconds: 2),
-                ),
+              AppNotifications.showSnackBar(
+                context,
+                message: "Profil de $name",
               );
             },
             child: Text(

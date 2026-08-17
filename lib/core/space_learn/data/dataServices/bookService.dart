@@ -19,7 +19,7 @@ class BookService {
       'argumentaire_partage': book.argumentairePartage,
       'image_couverture': book.imageCouverture,
       'fichier_url': book.fichierUrl,
-      'extrait_url': book.extraitUrl,
+      'fichier_extrait_url': book.extraitUrl,
       'format': book.format,
       'prix': book.prix,
       'stock': book.stock,

@@ -104,7 +104,7 @@ class CarteEvenement extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

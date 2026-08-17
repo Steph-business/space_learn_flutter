@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import '../model/goalModel.dart';
 
 class ReadingSessionModel {
@@ -64,11 +65,27 @@ class ReadingTimeStorage {
   static const String _keyPrefixReminderTime = 'reading_reminder_time_';
   static const String _keyPrefixReminderEnabled = 'reading_reminder_enabled_';
 
-  static String _resolveUserId(String? userId) {
+  /// À qui appartiennent ces minutes.
+  ///
+  /// L'identifiant vient du compte connecté, jamais de l'appelant. Trois
+  /// écrans passaient trois valeurs différentes — chaîne vide côté lecture,
+  /// identifiant du compte côté accueil, identifiant du *profil* côté badges —
+  /// si bien que ce que la lecture écrivait, aucun écran ne le relisait, et
+  /// que tous affichaient zéro.
+  ///
+  /// La valeur fournie ne sert plus que de repli, et seulement si elle
+  /// ressemble à un identifiant de compte.
+  static Future<String> _resolveUserId(String? userId) async {
+    final connecte = await TokenStorage.getUserId();
+    if (connecte != null && connecte.isNotEmpty) return connecte;
+
     if (userId != null && userId.trim().isNotEmpty && userId != '0') {
       return userId.trim();
     }
-    return 'default_user';
+
+    // Personne d'identifié : les minutes sont comptées, mais dans un seau
+    // qu'une déconnexion vide.
+    return 'invite';
   }
 
   static String _dateKey(String uid, DateTime dt) {
@@ -82,7 +99,7 @@ class ReadingTimeStorage {
 
   /// Record elapsed reading seconds for a user session
   static Future<void> addReadingSeconds({
-    required String? userId,
+    String? userId,
     String? bookId,
     required int seconds,
   }) async {
@@ -90,7 +107,7 @@ class ReadingTimeStorage {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
 
       // 1. Total seconds
       final totalKey = '$_keyPrefixTotal$uid';
@@ -113,7 +130,7 @@ class ReadingTimeStorage {
 
   /// Record a completed reading session with timestamp and book title
   static Future<void> recordSession({
-    required String? userId,
+    String? userId,
     required String bookId,
     required String bookTitle,
     required int durationSeconds,
@@ -122,7 +139,7 @@ class ReadingTimeStorage {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       final sessionsKey = '$_keyPrefixSessions$uid';
 
       final existingRaw = prefs.getStringList(sessionsKey) ?? [];
@@ -162,7 +179,7 @@ class ReadingTimeStorage {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       final sessionsKey = '$_keyPrefixSessions$uid';
 
       final existingRaw = prefs.getStringList(sessionsKey) ?? [];
@@ -187,7 +204,7 @@ class ReadingTimeStorage {
   static Future<int> getTotalReadingMinutes(String? userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       final totalSeconds = prefs.getInt('$_keyPrefixTotal$uid') ?? 0;
       return totalSeconds ~/ 60;
     } catch (_) {
@@ -199,7 +216,7 @@ class ReadingTimeStorage {
   static Future<int> getTodayReadingMinutes(String? userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       final todaySeconds = prefs.getInt(_todayKey(uid)) ?? 0;
       return todaySeconds ~/ 60;
     } catch (_) {
@@ -213,7 +230,7 @@ class ReadingTimeStorage {
   ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       final now = DateTime.now();
 
       final List<DailyReadingPoint> points = [];
@@ -256,7 +273,7 @@ class ReadingTimeStorage {
   static Future<int> getReadingStreak(String? userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       final now = DateTime.now();
 
       int streak = 0;
@@ -288,7 +305,7 @@ class ReadingTimeStorage {
   static Future<int> getDailyGoalMinutes(String? userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       return prefs.getInt('$_keyPrefixGoal$uid') ?? 15;
     } catch (_) {
       return 15;
@@ -298,7 +315,7 @@ class ReadingTimeStorage {
   static Future<void> setDailyGoalMinutes(String? userId, int minutes) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       await prefs.setInt('$_keyPrefixGoal$uid', minutes);
     } catch (_) {}
   }
@@ -307,7 +324,7 @@ class ReadingTimeStorage {
   static Future<String> getDailyReminderTime(String? userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       return prefs.getString('$_keyPrefixReminderTime$uid') ?? '20:30';
     } catch (_) {
       return '20:30';
@@ -317,7 +334,7 @@ class ReadingTimeStorage {
   static Future<void> setDailyReminderTime(String? userId, String time) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       await prefs.setString('$_keyPrefixReminderTime$uid', time);
     } catch (_) {}
   }
@@ -325,7 +342,7 @@ class ReadingTimeStorage {
   static Future<bool> getDailyReminderEnabled(String? userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       return prefs.getBool('$_keyPrefixReminderEnabled$uid') ?? true;
     } catch (_) {
       return true;
@@ -338,7 +355,7 @@ class ReadingTimeStorage {
   ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final uid = _resolveUserId(userId);
+      final uid = await _resolveUserId(userId);
       await prefs.setBool('$_keyPrefixReminderEnabled$uid', enabled);
     } catch (_) {}
   }

@@ -98,6 +98,27 @@ class TtsService extends ChangeNotifier {
   int _segmentCourant = 0;
   bool _arretDemande = false;
 
+  /// Numéro de la boucle de lecture en cours.
+  ///
+  /// `_dire()` s'attend à être seul. Or trois chemins le relancent alors qu'une
+  /// boucle tourne déjà — un changement de voix, un saut de segment, une
+  /// reprise. `_arretDemande` ne suffit pas à congédier l'ancienne : la
+  /// nouvelle boucle commence par le remettre à faux, si bien que l'ancienne,
+  /// réveillée entre-temps par le `stop()`, ne voyait plus aucune raison de
+  /// s'arrêter. Deux boucles avançaient alors sur leurs propres compteurs, et
+  /// comme `speak()` travaille en QUEUE_FLUSH, chacune coupait la phrase de
+  /// l'autre indéfiniment.
+  ///
+  /// Chaque boucle retient son numéro. Dès qu'un autre lui succède, elle sort.
+  int _generation = 0;
+
+  /// Vrai quand ce qui est dit est un échantillon de voix, pas le livre.
+  ///
+  /// La fin d'une lecture tourne la page. Sans cette distinction, écouter
+  /// quatre voix dans les réglages faisait avancer le livre de quatre pages,
+  /// position enregistrée au passage.
+  bool _apercu = false;
+
   TtsState get state => _state;
   bool get isPlaying => _state == TtsState.playing;
   bool get isPaused => _state == TtsState.paused;
@@ -177,6 +198,8 @@ class TtsService extends ChangeNotifier {
     }
 
     await _lireLaPlageDeVitesse();
+    // Après la plage : l'écrêtage dépend du plafond de l'appareil.
+    await _relireLaVitesse();
     await _resoudreVoixFrancaise();
 
     try {
@@ -296,17 +319,43 @@ class TtsService extends ChangeNotifier {
     final ok = await _appliquerVoix(voix);
     if (!ok) return false;
 
+    // Une voix qui s'applique est une voix française en place.
+    //
+    // L'état restait sur `absente` quand la résolution du démarrage avait
+    // échoué : le lecteur choisissait une voix, entendait son échantillon, et
+    // le bouton de lecture continuait de refuser en affichant « aucune voix
+    // française installée ». Rien dans l'application ne permettait d'en sortir.
+    _etatVoix = EtatVoix.ok;
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_cleVoix, voix['name'] ?? '');
 
     if (_state == TtsState.playing && _segments.isNotEmpty) {
       final reprise = _segmentCourant;
+      // Congédier la boucle en cours avant d'en ouvrir une autre. Sans ce
+      // drapeau, l'ancienne repartait sur le segment suivant pendant que la
+      // nouvelle reprenait le courant.
+      _arretDemande = true;
       await _flutterTts.stop();
       _segmentCourant = reprise;
       await _dire();
     }
     notifyListeners();
     return true;
+  }
+
+  /// Réexamine les voix installées sur l'appareil.
+  ///
+  /// La résolution n'avait lieu qu'une fois, dans le constructeur du singleton.
+  /// Le lecteur à qui l'application conseillait d'installer une voix française
+  /// l'installait, revenait — et lisait le même message : il fallait tuer
+  /// l'application pour que la nouvelle voix soit vue. Même chose après une
+  /// mise à jour du moteur, ou quand `getVoices` avait dépassé son délai de
+  /// cinq secondes au démarrage d'un appareil lent, ce qui condamnait la
+  /// lecture pour toute la session sur un verdict provisoire.
+  Future<void> reexaminerLesVoix() async {
+    await _resoudreVoixFrancaise();
+    notifyListeners();
   }
 
   bool _estFrancaiseEtInstallee(Map<String, String> v) {
@@ -342,11 +391,13 @@ class TtsService extends ChangeNotifier {
   /// Le texte est découpé, puis dit segment par segment. Un `stop()` explicite
   /// précède la lecture : c'est ce qui la distingue d'une reprise, laquelle
   /// ne doit surtout pas arrêter le moteur.
-  Future<void> speak(String text) async {
+  /// [apercu] : un échantillon de voix, qui ne doit pas faire tourner la page.
+  Future<void> speak(String text, {bool apercu = false}) async {
     if (text.trim().isEmpty) return;
     if (_etatVoix == EtatVoix.moteurIndisponible) return;
 
     await stop();
+    _apercu = apercu;
     _segments = decouperPourLecture(text, maxCaracteres: _tailleSegmentVisee);
     _segmentCourant = 0;
     if (_segments.isEmpty) return;
@@ -356,29 +407,38 @@ class TtsService extends ChangeNotifier {
 
   /// Enchaîne les segments à partir de [_segmentCourant].
   Future<void> _dire() async {
+    final moi = ++_generation;
     _arretDemande = false;
     _state = TtsState.playing;
     notifyListeners();
 
     for (var i = _segmentCourant; i < _segments.length; i++) {
-      if (_arretDemande) return;
+      // Deux raisons de sortir : on a demandé l'arrêt, ou une autre boucle a
+      // pris la suite. La seconde n'était pas testée, et laissait deux voix
+      // se disputer le moteur.
+      if (_arretDemande || moi != _generation) return;
       _segmentCourant = i;
       try {
         await _flutterTts.speak(_segments[i]);
       } catch (e) {
         debugPrint("Lecture du segment $i impossible : $e");
+        if (moi != _generation) return;
         _state = TtsState.stopped;
         notifyListeners();
         return;
       }
-      if (_arretDemande) return;
+      if (_arretDemande || moi != _generation) return;
     }
 
+    if (moi != _generation) return;
+
+    final cetaitUnApercu = _apercu;
     _state = TtsState.stopped;
     _segments = const [];
     _segmentCourant = 0;
+    _apercu = false;
     notifyListeners();
-    onCompletion?.call();
+    if (!cetaitUnApercu) onCompletion?.call();
   }
 
   /// Suspend la lecture sans perdre la position.
@@ -462,7 +522,29 @@ class TtsService extends ChangeNotifier {
     } catch (e) {
       debugPrint("Réglage de la vitesse refusé : $e");
     }
+    // La voix choisie était retenue, la vitesse non : le lecteur qui trouve la
+    // lecture trop rapide refaisait le réglage à chaque ouverture de livre.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_cleVitesse, _speechRate);
+    } catch (e) {
+      debugPrint("Vitesse non mémorisée : $e");
+    }
     notifyListeners();
+  }
+
+  static const String _cleVitesse = 'tts_vitesse';
+
+  Future<void> _relireLaVitesse() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final memorisee = prefs.getDouble(_cleVitesse);
+      if (memorisee != null && memorisee > 0) {
+        _speechRate = memorisee.clamp(0.1, _vitesseMax);
+      }
+    } catch (e) {
+      debugPrint("Vitesse mémorisée illisible : $e");
+    }
   }
 
   Future<void> setPitch(double pitch) async {

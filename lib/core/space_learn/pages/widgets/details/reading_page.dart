@@ -149,15 +149,14 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Future<void> _loadBookFile() async {
-    // Pour un extrait, on essaie d'abord une URL d'extrait dédiée, puis le
-    // manuscrit complet (le backend peut autoriser l'accès aux premières pages
-    // sans que le lecteur possède le livre).
-    String? pdfUrl =
-        widget.book['extrait_url'] ??
-        widget.book['extraitUrl'] ??
-        widget.book['extract_url'] ??
-        widget.book['fichier_url'] ??
-        widget.book['fichierUrl'];
+    // Une seule adresse à lire : `fichier_url`.
+    //
+    // C'est le serveur qui décide ce qu'elle contient — le manuscrit entier
+    // pour qui possède le livre, l'aperçu pour les autres — et lui seul la
+    // signe. L'adresse de l'extrait voyage bien dans la réponse, mais brute :
+    // la préférer ici menait à un 400, et faisait ouvrir l'aperçu de deux pages
+    // à un lecteur qui venait d'acheter l'ouvrage.
+    String? pdfUrl = widget.book['fichier_url'] ?? widget.book['fichierUrl'];
     final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
 
     // Si le lien du fichier est absent de l'objet initial (ex: livre venant d'être acheté),
@@ -416,6 +415,14 @@ class _ReadingPageState extends State<ReadingPage> {
     } catch (e) {}
   }
 
+  /// Secondes déjà comptées localement mais pas encore déclarées au serveur.
+  ///
+  /// Le serveur compte en minutes. Le battement local est plus rapide que ça —
+  /// il l'est pour que quitter la lecture au bout de vingt secondes laisse une
+  /// trace — donc on accumule ici et on n'appelle le serveur qu'une fois la
+  /// minute atteinte.
+  int _secondesEnAttenteServeur = 0;
+
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
@@ -425,23 +432,32 @@ class _ReadingPageState extends State<ReadingPage> {
           : 15;
       _lastHeartbeatTick = now;
 
-      final bookId =
-          (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
-      final userId =
-          (widget.book['utilisateur_id'] ?? widget.book['UtilisateurId'] ?? '')
-              .toString();
+      final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
 
       if (elapsedSec > 0) {
         ReadingTimeStorage.addReadingSeconds(
-          userId: userId.isNotEmpty ? userId : null,
           bookId: bookId.isNotEmpty ? bookId : null,
           seconds: elapsedSec,
         );
         if (bookId.isNotEmpty) {
-          _statsService.recordReadingTime(bookId);
+          _declarerAuServeur(bookId, elapsedSec);
         }
       }
     });
+  }
+
+  /// Déclare le temps de lecture au serveur, en minutes entières.
+  ///
+  /// Le battement est passé de soixante à quinze secondes sans que le corps de
+  /// la requête change : l'application annonçait « une minute » quatre fois par
+  /// minute, et le temps de lecture de chaque livre était multiplié par quatre
+  /// dans les statistiques de l'auteur.
+  void _declarerAuServeur(String bookId, int secondes) {
+    _secondesEnAttenteServeur += secondes;
+    final minutes = _secondesEnAttenteServeur ~/ 60;
+    if (minutes <= 0) return;
+    _secondesEnAttenteServeur -= minutes * 60;
+    _statsService.recordReadingTime(bookId, minutes: minutes);
   }
 
   void _onPageChanged(int page) {
@@ -466,8 +482,15 @@ class _ReadingPageState extends State<ReadingPage> {
       _saveProgress(page);
     });
 
-    if (_ttsService.isPlaying) {
+    if (_ttsService.isPlaying || _enchainerSurLaPageSuivante) {
+      _enchainerSurLaPageSuivante = false;
       _speakCurrentPage();
+    } else if (_ttsService.isPaused) {
+      // Le lecteur a mis en pause, puis tourné la page à la main. Les segments
+      // gardés par le service sont ceux de la page qu'il vient de quitter :
+      // reprendre lui relirait la page précédente. On repart donc de zéro, et
+      // le bouton lecture dira la page qu'il a sous les yeux.
+      _ttsService.stop();
     }
   }
 
@@ -692,39 +715,29 @@ class _ReadingPageState extends State<ReadingPage> {
       _saveProgress(_currentPage);
     }
     final now = DateTime.now();
+    final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
     if (_lastHeartbeatTick != null) {
       final elapsedSec = now.difference(_lastHeartbeatTick!).inSeconds;
       if (elapsedSec > 0) {
-        final bookId =
-            (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
-        final userId =
-            (widget.book['utilisateur_id'] ?? widget.book['UtilisateurId'] ?? '')
-                .toString();
         ReadingTimeStorage.addReadingSeconds(
-          userId: userId.isNotEmpty ? userId : null,
           bookId: bookId.isNotEmpty ? bookId : null,
           seconds: elapsedSec,
         );
         if (bookId.isNotEmpty) {
-          _statsService.recordReadingTime(bookId);
+          _declarerAuServeur(bookId, elapsedSec);
         }
       }
     }
     if (_sessionStartTime != null) {
       final totalSessionSec = now.difference(_sessionStartTime!).inSeconds;
       if (totalSessionSec >= 5) {
-        final bookId =
-            (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
-        final userId =
-            (widget.book['utilisateur_id'] ?? widget.book['UtilisateurId'] ?? '')
+        final bookTitle =
+            (widget.book['titre'] ??
+                    widget.book['Titre'] ??
+                    widget.book['title'] ??
+                    'Livre')
                 .toString();
-        final bookTitle = (widget.book['titre'] ??
-                widget.book['Titre'] ??
-                widget.book['title'] ??
-                'Livre')
-            .toString();
         ReadingTimeStorage.recordSession(
-          userId: userId.isNotEmpty ? userId : null,
           bookId: bookId,
           bookTitle: bookTitle,
           durationSeconds: totalSessionSec,
@@ -736,6 +749,10 @@ class _ReadingPageState extends State<ReadingPage> {
     _pdfViewerController.dispose();
     _epubController?.dispose();
     _ttsService.removeListener(_onTtsStateChanged);
+    // Le service est un singleton : le rappel posé en initState lui survit et
+    // resterait branché sur un écran détruit, dont il piloterait le contrôleur
+    // de PDF déjà libéré.
+    _ttsService.onCompletion = null;
     _ttsService.stop();
     // Rendre l'ecran a son comportement normal.
     WakelockPlus.disable();
@@ -759,8 +776,20 @@ class _ReadingPageState extends State<ReadingPage> {
     }
   }
 
+  /// Vrai entre la fin d'une page et le début de la suivante, en lecture suivie.
+  ///
+  /// Sans lui, la lecture automatique tournait la page puis se taisait. La
+  /// raison tient à l'ordre des opérations dans le service : `_dire()` remet
+  /// l'état à `stopped` AVANT d'appeler `onCompletion`. Quand la page changeait
+  /// et que `_onPageChanged` demandait « le service lit-il encore ? », la
+  /// réponse était non, et personne ne relançait la voix. Le lecteur devait
+  /// rappuyer sur lecture à chaque page — c'est-à-dire renoncer à écouter son
+  /// livre sans toucher l'écran, qui est tout l'objet de la fonction.
+  bool _enchainerSurLaPageSuivante = false;
+
   void _onTtsCompletion() {
     if (_autoplayNextPage && _currentPage < _totalPages) {
+      _enchainerSurLaPageSuivante = true;
       _pdfViewerController.nextPage();
     } else {
       _ttsService.stop();
@@ -875,9 +904,19 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Widget _buildTtsPlayerPanel() {
-    final bool isDark = _backgroundColor.computeLuminance() < 0.5;
-    final Color panelBg = AppColors.cardBackground.withOpacity(0.95);
-    final Color itemColor = isDark ? Colors.white : AppColors.readingBrown;
+    // Le panneau flotte AU-DESSUS de la page, il n'est pas dedans : son encre
+    // doit venir de sa propre surface.
+    //
+    // Elle venait de la luminance de _backgroundColor — le fond du livre,
+    // réglé séparément par « Fond de page ». Les deux référentiels n'ont aucun
+    // rapport, et se croisaient dans les deux configurations les plus
+    // courantes. Thème sombre avec le fond parchemin, qui est le réglage par
+    // défaut : encre readingBrown #4A3728 sur panneau cardDark #1A1A1A, soit
+    // 1,42:1. Thème clair avec le fond « Nuit » : blanc sur cardLight #FFFFFF,
+    // soit 1:1. Le panneau s'affichait bien, entièrement illisible — d'où
+    // « je ne vois pas la partie audio ».
+    final Color panelBg = AppColors.cardBackground.withValues(alpha: 0.95);
+    final Color itemColor = AppColors.textPrimary;
 
     return Positioned(
       bottom: 24,
@@ -885,13 +924,23 @@ class _ReadingPageState extends State<ReadingPage> {
       right: 24,
       child: Container(
         padding: const EdgeInsets.all(16),
+        // En paysage, ou chez un lecteur ayant grossi la police du système, le
+        // panneau dépassait la hauteur disponible. Le Stack le rognait par le
+        // haut, sans bandes de débordement et sans rien dire — et ce qui
+        // disparaissait en premier était l'explication « aucune voix française
+        // installée », c'est-à-dire le message destiné à la seule personne qui
+        // en avait besoin. Il défile maintenant à l'intérieur de sa carte.
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
         decoration: BoxDecoration(
           color: panelBg,
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // L'etat de la voix, quand il empeche de lire.
             //
             // Le service resolvait deja une voix francaise au demarrage et
@@ -1141,9 +1190,10 @@ class _ReadingPageState extends State<ReadingPage> {
                     }
                   },
                 ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1250,10 +1300,16 @@ class _ReadingPageState extends State<ReadingPage> {
             _buildBottomControls(),
 
           // Panneau de contrôle Audio (TTS)
+          //
+          // Il ne dépend plus de _showControls tant qu'une voix parle. Une tape
+          // sur la page — pour tourner, ou par simple prise en main — effaçait
+          // la barre d'outils et, avec elle, le panneau : la lecture continuait
+          // et il ne restait plus rien à l'écran pour la mettre en pause. Une
+          // lecture en cours est un état du livre, pas du mobilier d'interface.
           if (!_showCover &&
-              _showControls &&
               _isDocumentLoaded &&
-              _showTtsPanel)
+              _showTtsPanel &&
+              (_showControls || !_ttsService.isStopped))
             _buildTtsPlayerPanel(),
 
           // Close button if no cover
@@ -1874,8 +1930,14 @@ class _ReadingPageState extends State<ReadingPage> {
                                 setModalState(() {});
                                 setState(() {});
                                 if (!_ttsService.isPlaying) {
+                                  // `apercu` empêche la fin de l'échantillon de
+                                  // déclencher le passage à la page suivante :
+                                  // écouter quatre voix faisait avancer le
+                                  // livre de quatre pages, position enregistrée
+                                  // au passage.
                                   await _ttsService.speak(
                                     "Voici ma voix pour la lecture de vos livres.",
+                                    apercu: true,
                                   );
                                 }
                               },

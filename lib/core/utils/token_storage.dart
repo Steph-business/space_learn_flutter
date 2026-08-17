@@ -14,6 +14,17 @@ class TokenStorage {
   static const String _tokenKey = "auth_token";
   static const String _userNameKey = "user_name";
 
+  /// Identifiant du compte connecté.
+  ///
+  /// Les statistiques de lecture sont rangées par utilisateur, et chaque écran
+  /// les rangeait sous une clé différente : la page de lecture sous une chaîne
+  /// vide, la page d'accueil sous l'identifiant du compte, les badges sous
+  /// celui du *profil* — c'est-à-dire la même valeur pour tous les lecteurs de
+  /// l'application. Ce qu'on écrivait, personne ne le relisait.
+  ///
+  /// Une seule source, ici, à côté du jeton dont il est issu.
+  static const String _userIdKey = "user_id";
+
   // Chiffrement par défaut de la plateforme : Keystore sur Android,
   // Keychain sur iOS.
   static const FlutterSecureStorage _secure = FlutterSecureStorage();
@@ -48,6 +59,24 @@ class TokenStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey); // résidu d'une version antérieure
     await prefs.remove(_userNameKey);
+    // Sans cela, le lecteur suivant sur le même téléphone héritait du temps de
+    // lecture, de la série de jours et des titres lus par le précédent.
+    await prefs.remove(_userIdKey);
+  }
+
+  /// Sauvegarder l'identifiant du compte connecté.
+  static Future<void> saveUserId(String id) async {
+    if (id.trim().isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userIdKey, id.trim());
+  }
+
+  /// Récupérer l'identifiant du compte connecté.
+  static Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString(_userIdKey);
+    if (id == null || id.trim().isEmpty) return null;
+    return id.trim();
   }
 
   /// Vérifier si connecté

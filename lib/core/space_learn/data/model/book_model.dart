@@ -15,7 +15,21 @@ class BookModel {
   final String argumentairePartage;
   final String? imageCouverture;
   final String? fichierUrl;
+
+  /// Adresse de l'aperçu gratuit.
+  ///
+  /// Le serveur nomme ce champ `fichier_extrait_url`. Le modèle en cherchait
+  /// quatre autres — `extrait_url`, `extraitUrl`, `extract_url`, `extractUrl` —
+  /// et jamais celui-là : l'adresse arrivait à chaque réponse et repartait
+  /// toujours nulle.
   final String? extraitUrl;
+
+  /// Nombre de pages contenues dans l'aperçu, tel que le serveur l'a découpé.
+  ///
+  /// Zéro quand aucun extrait n'existe. La page de détail supposait dix, un
+  /// nombre sans rapport avec le fichier produit : elle annonçait « extrait
+  /// gratuit » sur des chapitres que l'aperçu ne contient pas.
+  final int nbPagesExtrait;
 
   /// Vrai quand un manuscrit est déjà déposé.
   ///
@@ -26,7 +40,8 @@ class BookModel {
   final bool aUnFichier;
 
   /// Vrai quand un extrait gratuit est disponible pour ce livre.
-  final bool aUnExtrait;
+  bool get aUnExtrait =>
+      nbPagesExtrait > 0 || (extraitUrl != null && extraitUrl!.isNotEmpty);
 
   /// Le manuscrit est enregistre mais illisible cote serveur.
   ///
@@ -68,8 +83,8 @@ class BookModel {
     this.imageCouverture,
     this.fichierUrl,
     this.extraitUrl,
+    this.nbPagesExtrait = 0,
     this.aUnFichier = false,
-    this.aUnExtrait = false,
     this.fichierIndisponible = false,
     required this.format,
     required this.prix,
@@ -175,26 +190,24 @@ class BookModel {
         useGin: true,
       ),
       fichierUrl: _sanitizeImageUrl(json['fichier_url'], useGin: true),
+      // `fichier_extrait_url` est le nom que porte le champ côté serveur. Les
+      // autres formes restent acceptées : elles ne coûtent rien et couvrent le
+      // JSON que l'application se renvoie à elle-même via toJson().
       extraitUrl: _sanitizeImageUrl(
-        json['extrait_url'] ??
+        json['fichier_extrait_url'] ??
+            json['extrait_url'] ??
             json['extraitUrl'] ??
             json['extract_url'] ??
             json['extractUrl'],
         useGin: true,
       ),
+      nbPagesExtrait: _entier(json['nb_pages_extrait'] ?? json['nbPagesExtrait']),
       fichierIndisponible: json['fichier_indisponible'] == true,
       aUnFichier:
           json['a_un_fichier'] == true ||
           // Repli pour un serveur antérieur au drapeau : si l'URL est là,
           // le fichier l'est aussi.
           (json['fichier_url']?.toString().isNotEmpty ?? false),
-      aUnExtrait:
-          json['a_un_extrait'] == true ||
-          json['aUnExtrait'] == true ||
-          (json['extrait_url']?.toString().isNotEmpty ?? false) ||
-          (json['extraitUrl']?.toString().isNotEmpty ?? false) ||
-          (json['extract_url']?.toString().isNotEmpty ?? false) ||
-          (json['extractUrl']?.toString().isNotEmpty ?? false),
       format: json['format'] ?? '',
       prix: (json['prix'] ?? json['price'] ?? 0) is num
           ? (json['prix'] ?? json['price'] ?? 0).toInt()
@@ -257,8 +270,10 @@ class BookModel {
                 .map((i) => ReviewModel.fromJson(i))
                 .toList()
           : null,
+      // `as` lie plus fort que `??` : sans parenthèses, la conversion ne
+      // portait que sur la seconde branche.
       progressions: ((json['Progressions'] ?? json['progressions']) is List)
-          ? (json['Progressions'] ?? json['progressions'] as List)
+          ? ((json['Progressions'] ?? json['progressions']) as List)
                 .map((i) => ReadingActivityModel.fromJson(i))
                 .toList()
           : (json['Progression'] != null || json['progression'] != null)
@@ -281,6 +296,13 @@ class BookModel {
     return ApiRoutes.sanitizeImageUrl(url, useGin: useGin);
   }
 
+  /// Lit un entier quelle que soit la forme reçue : nombre, chaîne, ou absent.
+  static int _entier(dynamic valeur) {
+    if (valeur == null) return 0;
+    if (valeur is num) return valeur.toInt();
+    return int.tryParse(valeur.toString()) ?? 0;
+  }
+
   String get authorName => (auteur != null && auteur!.nomComplet.isNotEmpty)
       ? auteur!.nomComplet
       : 'Auteur inconnu';
@@ -293,8 +315,8 @@ class BookModel {
     String? imageCouverture,
     String? fichierUrl,
     String? extraitUrl,
+    int? nbPagesExtrait,
     bool? aUnFichier,
-    bool? aUnExtrait,
     String? format,
     int? prix,
     int? stock,
@@ -320,8 +342,8 @@ class BookModel {
       imageCouverture: imageCouverture ?? this.imageCouverture,
       fichierUrl: fichierUrl ?? this.fichierUrl,
       extraitUrl: extraitUrl ?? this.extraitUrl,
+      nbPagesExtrait: nbPagesExtrait ?? this.nbPagesExtrait,
       aUnFichier: aUnFichier ?? this.aUnFichier,
-      aUnExtrait: aUnExtrait ?? this.aUnExtrait,
       format: format ?? this.format,
       prix: prix ?? this.prix,
       stock: stock ?? this.stock,
@@ -350,7 +372,8 @@ class BookModel {
       'argumentaire_partage': argumentairePartage,
       'image_couverture': imageCouverture,
       'fichier_url': fichierUrl,
-      'extrait_url': extraitUrl,
+      'fichier_extrait_url': extraitUrl,
+      'nb_pages_extrait': nbPagesExtrait,
       // Le drapeau doit ressortir comme il est entre.
       //
       // Il etait lu depuis le serveur, garde dans le modele, et perdu a la
@@ -359,7 +382,6 @@ class BookModel {
       // manuscrit n'a ete depose » et « vous ne possedez pas encore ce livre »,
       // le serveur masquant l'adresse dans le second cas.
       'a_un_fichier': aUnFichier,
-      'a_un_extrait': aUnExtrait,
       'fichier_indisponible': fichierIndisponible,
       'format': format,
       'prix': prix,

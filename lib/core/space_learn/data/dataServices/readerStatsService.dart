@@ -51,7 +51,14 @@ class ReaderStatsService {
     }
   }
 
-  Future<bool> recordReadingTime(String livreId) async {
+  /// Déclare [minutes] minutes de lecture sur un livre.
+  ///
+  /// Le nombre de minutes est un paramètre, et non plus la constante 1 : la
+  /// page de lecture appelait cette méthode toutes les quinze secondes en
+  /// annonçant chaque fois une minute, ce qui quadruplait le temps de lecture
+  /// affiché à l'auteur.
+  Future<bool> recordReadingTime(String livreId, {int minutes = 1}) async {
+    if (minutes <= 0) return false;
     try {
       final token = await TokenStorage.getToken();
       final headers = <String, String>{
@@ -64,11 +71,10 @@ class ReaderStatsService {
         ApiRoutes.updateDetailedStats.replaceFirst(':livre_id', livreId),
       );
 
-      // We send 1 minute of reading time
       final response = await client.put(
         uri,
         headers: headers,
-        body: jsonEncode({'reading_time_increment': 1}),
+        body: jsonEncode({'reading_time_increment': minutes}),
       );
 
       return response.statusCode == 200;

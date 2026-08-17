@@ -48,6 +48,8 @@ import '../../../data/model/relationModel.dart';
 import '../../../data/dataServices/citation_service.dart';
 import '../../../data/model/citation_model.dart';
 import 'temps_lecture_page.dart';
+import 'package:space_learn_flutter/core/services/onboarding_guide_service.dart';
+import 'package:space_learn_flutter/core/widgets/guides/space_learn_tour.dart';
 
 class HomePageLecteur extends StatefulWidget {
   final String profileId;
@@ -76,6 +78,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   final BadgeService _badgeService = BadgeService();
   final CitationService _citationService = CitationService();
   final ReadingProgressService _progressService = ReadingProgressService();
+
+  final GlobalKey _searchBarKey = GlobalKey();
+  final GlobalKey _dailyGoalKey = GlobalKey();
+  final GlobalKey _featuredBooksKey = GlobalKey();
 
   GoalModel? _dailyGoal;
   CitationModel? _dailyCitation;
@@ -148,6 +154,25 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     _loadData();
   }
 
+  Future<void> _checkAndShowTour() async {
+    final shouldShow = await OnboardingGuideService.shouldShowHomeTour();
+    if (shouldShow && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 650), () {
+          if (mounted) {
+            SpaceLearnTour.startHomeTour(
+              context: context,
+              searchBarKey: _searchBarKey,
+              dailyGoalKey: _dailyGoal != null ? _dailyGoalKey : null,
+              featuredBooksKey:
+                  _featuredBooks.isNotEmpty ? _featuredBooksKey : null,
+            );
+          }
+        });
+      });
+    }
+  }
+
   Future<void> _initDisplayName() async {
     final savedName = await TokenStorage.getUserName();
     if (savedName != null && mounted && _displayName == widget.userName) {
@@ -172,6 +197,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       if (user != null && mounted) {
         setState(() {
           _currentUserId = user.id;
+          // Rattrape les sessions ouvertes avant que l'identifiant soit
+          // enregistré à la connexion.
+          TokenStorage.saveUserId(user.id);
           if (user.nomComplet.isNotEmpty) {
             _displayName = user.nomComplet;
             TokenStorage.saveUserName(user.nomComplet); // Sync storage
@@ -524,6 +552,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           setState(() {
             _isLoading = false;
           });
+          _checkAndShowTour();
         }
       }
     } catch (e) {
@@ -579,6 +608,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
   Widget _buildSearchBar() {
     return Padding(
+      key: _searchBarKey,
       padding: const EdgeInsets.fromLTRB(24, 4, 16, 2),
       child: Row(
         children: [
@@ -688,6 +718,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   if (_dailyGoal != null) ...[
                     SizedBox(height: 16),
                     GestureDetector(
+                      key: _dailyGoalKey,
                       onTap: () async {
                         await Navigator.push(
                           context,
@@ -707,24 +738,32 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 // Nouveautés
                 if (_selectedSection == "Tout" ||
                     _selectedSection == "Nouveautés") ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Container(
+                    key: _featuredBooksKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Nouveautés", style: AppTextStyles.sectionTitle),
-                        GestureDetector(
-                          onTap: () {
-                            MainNavBar.mainNavBarKey.currentState
-                                ?.navigateToMarketplace();
-                          },
-                          child: Text("Voir plus", style: AppTextStyles.link),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("Nouveautés", style: AppTextStyles.sectionTitle),
+                              GestureDetector(
+                                onTap: () {
+                                  MainNavBar.mainNavBarKey.currentState
+                                      ?.navigateToMarketplace();
+                                },
+                                child: Text("Voir plus", style: AppTextStyles.link),
+                              ),
+                            ],
+                          ),
                         ),
+                        SizedBox(height: 16),
+                        _buildFeaturedHorizontalList(),
                       ],
                     ),
                   ),
-                  SizedBox(height: 16),
-                  _buildFeaturedHorizontalList(),
                   SizedBox(height: 20),
                 ],
 

@@ -3,6 +3,9 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/services/onboarding_guide_service.dart';
+import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/user_guide_page.dart';
 
 class HelpFaqPage extends StatelessWidget {
   const HelpFaqPage({super.key});
@@ -63,7 +66,125 @@ class HelpFaqPage extends StatelessWidget {
             "Quels sont les moyens de paiement acceptés ?",
             "Nous intégrons actuellement le service de paiement CinetPay qui accepte les cartes bancaires ainsi que les paiements par Mobile Money (Orange, MTN, Moov, Wave, etc.) selon votre pays de résidence.",
           ),
-          SizedBox(height: 40),
+          const SizedBox(height: 28),
+
+          // Manuel & Guide Utilisateur
+          Card(
+            color: isDark ? const Color(0xFF1A2238) : const Color(0xFFEFF6FF),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+              side: BorderSide(
+                color: const Color(0xFF3B82F6).withOpacity(0.35),
+                width: 1.2,
+              ),
+            ),
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  color: Color(0xFF3B82F6),
+                  size: 24,
+                ),
+              ),
+              title: Text(
+                "Guide & Manuel d'utilisation",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              subtitle: Text(
+                "Consulter le guide complet pour les lecteurs et les auteurs.",
+                style: GoogleFonts.poppins(
+                  color: AppColors.textSecondary,
+                  fontSize: 12.5,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Color(0xFF3B82F6),
+                size: 20,
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UserGuidePage(),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Guide interactif
+          Card(
+            color: isDark ? const Color(0xFF1E1E34) : const Color(0xFFF3F0FF),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+              side: BorderSide(
+                color: AppColors.purple.withOpacity(0.35),
+                width: 1.2,
+              ),
+            ),
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.purple.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.explore_outlined,
+                  color: AppColors.purple,
+                  size: 24,
+                ),
+              ),
+              title: Text(
+                "Visite guidée de l'application",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              subtitle: Text(
+                "Revoir le tutoriel interactif pour redécouvrir les fonctionnalités clés.",
+                style: GoogleFonts.poppins(
+                  color: AppColors.textSecondary,
+                  fontSize: 12.5,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.play_circle_fill,
+                color: AppColors.purple,
+                size: 28,
+              ),
+              onTap: () async {
+                await OnboardingGuideService.resetHomeTour();
+                if (context.mounted) {
+                  AppNotifications.showSnackBar(
+                    context,
+                    message: "Visite guidée réactivée ! Redirection...",
+                    isSuccess: true,
+                  );
+                  Navigator.of(context).pop();
+                  MainNavBar.mainNavBarKey.currentState?.goHome();
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 32),
           Text(
             "Vous ne trouvez pas de réponse ?",
             style: GoogleFonts.poppins(

@@ -149,6 +149,10 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
         ),
       ),
       builder: (ctx) {
+        // Le builder n'est pas un build() : il s'exécute dans son propre
+        // élément, plus tard. Sans cet abonnement, la feuille garde la palette
+        // en vigueur à son ouverture et ne suit pas une bascule clair/sombre.
+        AppColors.suivreLeTheme(ctx);
         return StatefulBuilder(
           builder: (context, setModalState) {
             final totalCalculated = (selectedHours * 60) + selectedMins;

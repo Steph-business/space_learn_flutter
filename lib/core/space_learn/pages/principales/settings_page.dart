@@ -28,6 +28,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/download_manager_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/notification_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/terms_of_use_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/user_guide_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -244,6 +245,20 @@ class _SettingsPageState extends State<SettingsPage> {
 
         // Section Support
         SettingSectionHeader(title: "Support", accentColor: AppColors.primary),
+        SettingItemTile(
+          icon: Icons.menu_book_outlined,
+          title: "Guide de l'utilisateur",
+          subtitle: "Parcours de lecture, mode audio, astuces",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    const UserGuidePage(initialIsAuthor: false),
+              ),
+            );
+          },
+        ),
         SettingItemTile(
           icon: Icons.help_outline,
           title: "Aide & FAQ",

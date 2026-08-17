@@ -292,24 +292,43 @@ class _BookDetailPageState extends State<BookDetailPage> {
   bool _hasExtraitAvailable(BookModel book) {
     if (_isAuthorOfThisBook || book.prix <= 0) return true;
     if (book.aUnExtrait) return true;
-    if (book.extraitUrl != null && book.extraitUrl!.isNotEmpty) return true;
+    // Sur le détail d'un livre non possédé, le serveur place l'adresse de
+    // l'extrait dans `fichier_url` : une adresse présente veut donc dire qu'il
+    // y a quelque chose à lire librement.
     if (book.fichierUrl != null && book.fichierUrl!.isNotEmpty) return true;
     return false;
   }
 
-  /// Détermine dynamiquement si un chapitre fait partie de l'extrait gratuit.
-  /// Se base sur la gratuité explicite (ch.estGratuit) ou la page de départ (<= 10 pages).
+  /// Dernière page comprise dans l'aperçu gratuit.
+  ///
+  /// Le serveur dit combien de pages il a découpées. Faute de cette réponse —
+  /// un livre publié avant que le champ existe — on retient une valeur basse :
+  /// annoncer moins que la réalité déçoit moins qu'annoncer un chapitre qui
+  /// s'arrête au milieu.
+  int _dernierePageDeLExtrait(BookModel book) {
+    if (book.nbPagesExtrait > 0) return book.nbPagesExtrait;
+    return 2;
+  }
+
+  /// Détermine si un chapitre fait partie de l'extrait gratuit.
+  ///
+  /// La limite était écrite en dur — page dix — sans rapport avec le fichier
+  /// réellement découpé. Sur un livre court dont l'aperçu fait deux pages, la
+  /// page annonçait « extrait gratuit » sur quatre chapitres, et le lecteur qui
+  /// en ouvrait un tombait sur la fin de l'extrait.
   bool _isChapterInExtrait(
     ChapitreModel ch,
     int index, {
     bool hasExtrait = true,
+    required int dernierePage,
   }) {
     if (!hasExtrait) return false;
     if (ch.estGratuit) return true;
     if (ch.pageDepart > 0) {
-      return ch.pageDepart <= 10;
+      return ch.pageDepart <= dernierePage;
     }
-    return index < 2;
+    // Sans pagination connue, seul le premier chapitre est présumé lisible.
+    return index < 1;
   }
 
   /// Formate le prix proprement avec espace des milliers pour prévenir tout décalage
@@ -412,6 +431,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               ch,
                               index,
                               hasExtrait: hasExtrait,
+                              dernierePage: _dernierePageDeLExtrait(book),
                             );
                         final isLocked = !isOwned && !isExtraitGratuit;
                         final numStr = ch.numero < 10
@@ -672,9 +692,21 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 Navigator.pop(ctx);
                 _archiverLivre(context, book);
               },
-              icon: Icon(Icons.archive_outlined, size: 16, color: Colors.white),
-              label: Text('Archiver le livre', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryVariant),
+              icon: Icon(
+                Icons.archive_outlined,
+                size: 16,
+                color: AppColors.onAccent,
+              ),
+              label: Text(
+                'Archiver le livre',
+                style: GoogleFonts.poppins(
+                  color: AppColors.onAccent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secondaryVariant,
+              ),
             ),
           ],
         ),
@@ -1141,6 +1173,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 ch,
                                 index,
                                 hasExtrait: hasExtrait,
+                                dernierePage: _dernierePageDeLExtrait(book),
                               );
                           final isLocked = !isOwned && !isExtraitGratuit;
                           final numStr = ch.numero < 10
