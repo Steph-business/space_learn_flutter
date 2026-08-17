@@ -18,8 +18,10 @@ class BookService {
       'description': book.description,
       'argumentaire_partage': book.argumentairePartage,
       'image_couverture': book.imageCouverture,
-      'fichier_url': book.fichierUrl,
-      'fichier_extrait_url': book.extraitUrl,
+      // Ni fichier_url ni fichier_extrait_url : le serveur les refuse en
+      // entrée depuis que le contrôle de doublon vit dans le téléversement.
+      // Les envoyer quand même n'était que du poids mort, et laissait croire
+      // que le client décidait de l'emplacement des fichiers.
       'format': book.format,
       'prix': book.prix,
       'stock': book.stock,
@@ -46,7 +48,7 @@ class BookService {
       final Map<String, dynamic> data = jsonDecode(response.body);
       return BookModel.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to create book: ${response.body}');
+      throw Exception(_messageServeur(response, "Impossible de créer ce livre."));
     }
   }
 
@@ -131,9 +133,33 @@ class BookService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return BookModel.fromJson(responseData['data'] ?? responseData);
-    } else {
-      throw Exception('Failed to update book');
     }
+    throw Exception(_messageServeur(response, "Impossible d'enregistrer ce livre."));
+  }
+
+  /// Le message du serveur, quand il en donne un.
+  ///
+  /// « Failed to update book » ne dit rien à personne. Le serveur, lui, répond
+  /// des phrases utilisables : « ce manuscrit est trop court pour être publié :
+  /// 4 page(s) déposée(s), 10 au minimum », ou « ce manuscrit est déjà publié
+  /// sous le titre "X" ». Les jeter pour une chaîne générique laissait l'auteur
+  /// devant un échec sans cause et sans remède.
+  static String _messageServeur(http.Response reponse, String repli) {
+    try {
+      final corps = jsonDecode(reponse.body);
+      if (corps is Map) {
+        final message = corps['error'] ?? corps['message'];
+        if (message is String && message.trim().isNotEmpty) return message;
+      }
+    } catch (_) {}
+
+    return switch (reponse.statusCode) {
+      401 => 'Session expirée, reconnectez-vous.',
+      403 => "Vous n'êtes pas l'auteur de ce livre.",
+      404 => 'Livre introuvable.',
+      503 => 'Service momentanément indisponible. Réessayez dans un instant.',
+      _ => '$repli (${reponse.statusCode})',
+    };
   }
 
   Future<void> deleteBook(String id, String authToken) async {
@@ -144,7 +170,7 @@ class BookService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete book');
+      throw Exception(_messageServeur(response, "Impossible de supprimer ce livre."));
     }
   }
 

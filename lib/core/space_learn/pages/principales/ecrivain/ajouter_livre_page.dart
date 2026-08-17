@@ -294,7 +294,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       // Le serveur remplace l'intégralité des champs à chaque mise à jour :
       // un envoi partiel effacerait ceux qu'on omet. On compose donc toujours
       // la charge complète, en y injectant les fichiers téléversés.
-      Map<String, dynamic> champs(String statut, {String? cover, String? file}) {
+      Map<String, dynamic> champs(String statut, {String? cover}) {
         final data = <String, dynamic>{
           'titre': _titreController.text.trim(),
           'description': _descriptionController.text.trim(),
@@ -307,12 +307,14 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         };
         final c = cover ?? widget.book?.imageCouverture;
         if (c != null && c.isNotEmpty) data['image_couverture'] = c;
-        final f = file ?? widget.book?.fichierUrl;
-        if (f != null && f.isNotEmpty) data['fichier_url'] = f;
-        // L'extrait n'est pas dans cette charge : c'est le serveur qui le
-        // fabrique à la réception du manuscrit, et qui en enregistre l'adresse.
-        // L'application en envoyait un de son côté, sous un nom de champ que le
-        // serveur ignorait.
+        // Aucune adresse de fichier ici.
+        //
+        // Le serveur ne les accepte plus en entrée : c'est le téléversement,
+        // et lui seul, qui les écrit — après avoir vérifié que le manuscrit
+        // n'est pas déjà vendu sous un autre titre. Les envoyer quand même
+        // laissait croire que le client décidait de l'emplacement des
+        // fichiers, alors qu'il ne fait que répéter ce que le serveur lui a
+        // dit.
         return data;
       }
 
@@ -359,7 +361,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       }
 
       String? uploadedCoverPath;
-      String? uploadedFilePath;
 
       // Téléversement des fichiers si modifiés/fournis
       if (_selectedCoverPath != null || _selectedCoverBytes != null) {
@@ -374,7 +375,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       }
 
       if (_selectedFilePath != null || _selectedFileBytes != null) {
-        uploadedFilePath = await UploadService.envoyer(
+        await UploadService.envoyer(
           authToken: token,
           livreId: livreId,
           type: TypeFichier.manuscrit,
@@ -393,11 +394,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       // Mise à jour / publication effective avec les chemins de fichiers définitifs
       await _bookService.updateBook(
         livreId,
-        champs(
-          isDraft ? 'brouillon' : 'publie',
-          cover: uploadedCoverPath,
-          file: uploadedFilePath,
-        ),
+        champs(isDraft ? 'brouillon' : 'publie', cover: uploadedCoverPath),
         token,
       );
 
@@ -411,7 +408,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Échec de l'opération : $e",
+          message: _lisible(e),
           isError: true,
         );
       }
@@ -422,6 +419,25 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         });
       }
     }
+  }
+
+  /// Le message d'une erreur, débarrassé de sa tuyauterie.
+  ///
+  /// `"$e"` sur une Exception rend « Exception: ... » : l'auteur lisait donc
+  /// « Échec de l'opération : Exception: ce manuscrit est trop court ». Le
+  /// serveur écrit maintenant des phrases utilisables — trop court, déjà
+  /// publié sous un autre titre — et elles doivent arriver telles quelles.
+  static String _lisible(Object erreur) {
+    var texte = erreur.toString();
+    for (final prefixe in ['Exception: ', 'HttpException: ', 'FormatException: ']) {
+      if (texte.startsWith(prefixe)) {
+        texte = texte.substring(prefixe.length);
+        break;
+      }
+    }
+    texte = texte.trim();
+    if (texte.isEmpty) return "L'opération a échoué. Réessayez.";
+    return texte[0].toUpperCase() + texte.substring(1);
   }
 
   void _showSuccessDialog({
