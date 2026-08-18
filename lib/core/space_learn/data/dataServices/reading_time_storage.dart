@@ -379,13 +379,34 @@ class ReadingTimeStorage {
   }
 
   /// Generate dynamic smart goals based on real activity
+  /// Le prochain palier d'une suite, et non un plafond.
+  ///
+  /// « Cumuler 1 heure de lecture » se termine une fois et ne dit plus rien
+  /// ensuite : le lecteur reste devant un objectif atteint pour toujours. Un
+  /// palier qui avance donne toujours une marche suivante — c'est la différence
+  /// entre une case cochée et une progression.
+  static int _prochainPalier(int valeur, List<int> paliers) {
+    for (final p in paliers) {
+      if (valeur < p) return p;
+    }
+    // Au-delà de la table, on continue par multiples du dernier palier.
+    final dernier = paliers.last;
+    return ((valeur ~/ dernier) + 1) * dernier;
+  }
+
   static List<GoalModel> computeSmartGoals({
     required int booksRead,
     required int totalMinutes,
     required int todayMinutes,
     required int libraryCount,
+    int serieJours = 0,
     int dailyGoalTarget = 15,
   }) {
+    // Paliers de temps : 1 h, 5 h, 10 h, 25 h, 50 h, 100 h.
+    final cibleTemps = _prochainPalier(totalMinutes, const [60, 300, 600, 1500, 3000, 6000]);
+    final cibleLivres = _prochainPalier(booksRead, const [1, 3, 5, 10, 25, 50]);
+    final cibleSerie = _prochainPalier(serieJours, const [3, 7, 14, 30, 100, 365]);
+
     return [
       GoalModel(
         id: 'goal_daily_reading',
@@ -396,14 +417,34 @@ class ReadingTimeStorage {
         valeurActuelle: todayMinutes,
         estTermine: todayMinutes >= dailyGoalTarget,
       ),
+      // La série de jours : le ressort le plus fort d'une application de
+      // lecture, et le seul qui donne une raison de rouvrir demain. Elle était
+      // déjà calculée par getReadingStreak et n'était affichée nulle part —
+      // donc inexistante pour le lecteur.
+      GoalModel(
+        id: 'goal_serie',
+        titre: serieJours >= 2
+            ? 'Série de $serieJours jours'
+            : 'Prendre le rythme',
+        description: serieJours >= 2
+            ? 'Encore ${cibleSerie - serieJours} jour(s) pour atteindre $cibleSerie jours d\'affilée'
+            : 'Lire $cibleSerie jours d\'affilée',
+        type: 'DAILY',
+        valeurCible: cibleSerie,
+        valeurActuelle: serieJours,
+        // Jamais « terminé » : une série se poursuit ou se rompt.
+        estTermine: false,
+      ),
       GoalModel(
         id: 'goal_first_book',
-        titre: 'Premier chef-d\'œuvre',
-        description: 'Terminer la lecture d\'un premier livre',
+        titre: booksRead == 0 ? 'Premier chef-d\'œuvre' : 'Livres terminés',
+        description: booksRead == 0
+            ? 'Terminer la lecture d\'un premier livre'
+            : 'Atteindre $cibleLivres livres — $booksRead déjà lu(s)',
         type: 'CHALLENGE',
-        valeurCible: 1,
+        valeurCible: cibleLivres,
         valeurActuelle: booksRead,
-        estTermine: booksRead >= 1,
+        estTermine: false,
       ),
       GoalModel(
         id: 'goal_library_collection',
@@ -417,11 +458,12 @@ class ReadingTimeStorage {
       GoalModel(
         id: 'goal_hour_reader',
         titre: 'Grand Lecteur',
-        description: 'Cumuler 1 heure totale de lecture',
+        description: 'Cumuler ${formatMinutes(cibleTemps)} de lecture — '
+            '${formatMinutes(totalMinutes)} au compteur',
         type: 'CHALLENGE',
-        valeurCible: 60,
+        valeurCible: cibleTemps,
         valeurActuelle: totalMinutes,
-        estTermine: totalMinutes >= 60,
+        estTermine: false,
       ),
     ];
   }

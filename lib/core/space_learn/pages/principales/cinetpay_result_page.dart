@@ -27,6 +27,22 @@ class CinetpayResultPage extends StatelessWidget {
   bool get isAccepted => status.toUpperCase() == 'ACCEPTED';
   bool get isRefused => status.toUpperCase() == 'REFUSED';
 
+  /// La couleur de l'issue du paiement, prise dans la palette.
+  ///
+  /// L'écran utilisait `Colors.green`, `Colors.red` et `Colors.orange` — les
+  /// teintes de Material, étrangères à la charte et identiques en clair comme
+  /// en sombre, là où `success`, `error` et `warning` sont calibrées sur les
+  /// deux fonds. C'est l'écran qui annonce à un lecteur qu'il vient de payer :
+  /// il ne peut pas être le seul à ne pas ressembler à l'application.
+  ///
+  /// Une seule définition, appelée trois fois — la teinte du fond, celle du
+  /// liseré et celle de l'icône ne peuvent plus diverger.
+  static Color _couleurEtat(bool accepte, bool refuse) {
+    if (accepte) return AppColors.success;
+    if (refuse) return AppColors.error;
+    return AppColors.warning;
+  }
+
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
@@ -51,17 +67,12 @@ class CinetpayResultPage extends StatelessWidget {
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isAccepted
-                        ? Colors.green.withValues(alpha: 0.15)
-                        : isRefused
-                        ? Colors.red.withValues(alpha: 0.15)
-                        : Colors.orange.withValues(alpha: 0.15),
+                    color: _couleurEtat(
+                      isAccepted,
+                      isRefused,
+                    ).withValues(alpha: 0.15),
                     border: Border.all(
-                      color: isAccepted
-                          ? Colors.green
-                          : isRefused
-                          ? Colors.red
-                          : Colors.orange,
+                      color: _couleurEtat(isAccepted, isRefused),
                       width: 2,
                     ),
                   ),
@@ -72,11 +83,7 @@ class CinetpayResultPage extends StatelessWidget {
                         ? Icons.cancel_outlined
                         : Icons.hourglass_top_rounded,
                     size: 52,
-                    color: isAccepted
-                        ? Colors.green
-                        : isRefused
-                        ? Colors.red
-                        : Colors.orange,
+                    color: _couleurEtat(isAccepted, isRefused),
                   ),
                 ),
               ),
@@ -161,8 +168,8 @@ class CinetpayResultPage extends StatelessWidget {
                           final freshBook = await BookService().getBookById(bookId, authToken: token);
                           bookToOpen = freshBook.toJson();
                         }
-                      } catch (e) {
-                        debugPrint("Erreur récupération livre après paiement : $e");
+                      } catch (_) {
+                        // Fallback silencieux vers les métadonnées du livre disponibles
                       }
                       if (context.mounted) {
                         Navigator.of(context).pushReplacement(

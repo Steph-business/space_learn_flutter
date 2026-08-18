@@ -194,21 +194,10 @@ class PaymentService {
     }
   }
 
-  Future<Map<String, dynamic>> getMomoStatus(
-    String referenceId,
-    String authToken,
-  ) async {
-    final url = ApiRoutes.momoStatus.replaceFirst(':referenceId', referenceId);
-    final response = await client.get(
-      Uri.parse(url),
-      headers: {'Authorization': 'Bearer $authToken'},
-    );
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return responseData['data'] ?? responseData;
-    } else {
-      throw Exception('Failed to get MoMo status: ${response.body}');
-    }
-  }
+  // getMomoStatus a été retiré avec l'intégration MTN MoMo directe.
+  //
+  // Tout achat passe par CinetPay, qui affiche lui-même Orange Money, MTN,
+  // Moov, Wave et les cartes : la passerelle connaît la disponibilité réelle de
+  // chaque opérateur, pas nous. Le statut se lit désormais par
+  // getCinetpayStatus, et la route serveur correspondante n'existe plus.
 }

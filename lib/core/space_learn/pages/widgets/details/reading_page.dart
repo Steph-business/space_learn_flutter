@@ -458,6 +458,10 @@ class _ReadingPageState extends State<ReadingPage> {
     if (minutes <= 0) return;
     _secondesEnAttenteServeur -= minutes * 60;
     _statsService.recordReadingTime(bookId, minutes: minutes);
+    // Deux destinations, deux usages : par livre pour les statistiques de
+    // l'auteur, par lecteur pour son temps cumulé et sa série de jours. La
+    // seconde manquait, et la série vivait donc dans le seul téléphone.
+    _statsService.declarerMinutes(minutes);
   }
 
   void _onPageChanged(int page) {

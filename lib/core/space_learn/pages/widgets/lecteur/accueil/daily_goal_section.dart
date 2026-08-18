@@ -25,7 +25,6 @@ class DailyGoalSection extends StatelessWidget {
 
     final progress = goal!.progress;
     final message = _getMotivationalMessage(progress);
-    final isCompleted = goal!.estTermine;
 
     return Container(
       padding: EdgeInsets.all(20),
@@ -86,10 +85,12 @@ class DailyGoalSection extends StatelessWidget {
                   horizontal: 12,
                   vertical: 6,
                 ),
+                // Cette pastille porte un pourcentage, pas un mot d'état : une
+                // quantité, donc l'accent. Le vert de `success` reste à ce qui
+                // confirme — « Terminé », un paiement accepté — sinon il ne
+                // veut plus rien dire là où il compte.
                 decoration: BoxDecoration(
-                  color: isCompleted
-                      ? AppColors.success.withOpacity(0.15)
-                      : AppColors.primary.withOpacity(0.15),
+                  color: AppColors.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                 ),
                 child: Text(
@@ -97,9 +98,7 @@ class DailyGoalSection extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: isCompleted
-                        ? AppColors.success
-                        : AppColors.accentInk,
+                    color: AppColors.accentInk,
                   ),
                 ),
               ),
@@ -123,10 +122,10 @@ class DailyGoalSection extends StatelessWidget {
                 child: Container(
                   height: 10,
                   decoration: BoxDecoration(
+                    // Le même dégradé ambre, atteint ou non : `success` est la
+                    // couleur de la confirmation, pas un décor de progression.
                     gradient: LinearGradient(
-                      colors: isCompleted
-                          ? [AppColors.success, AppColors.success]
-                          : [AppColors.primaryDark, AppColors.primary],
+                      colors: [AppColors.primaryDark, AppColors.primary],
                     ),
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusSmall,

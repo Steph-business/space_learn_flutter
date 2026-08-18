@@ -90,6 +90,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   String? _error;
   ReaderStatsModel? _stats;
 
+  /// Jours de lecture consécutifs, tenus par le serveur quand il les connaît.
+  int _serieJours = 0;
+
   List<BookModel> _featuredBooks = [];
   List<BookModel> _recommendations = [];
   List<BookModel> _allBooks = [];
@@ -261,6 +264,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         }),
       ]);
 
+      // Le bilan tenu par le serveur, lu avant d'entrer dans setState : celui-ci
+      // est synchrone et n'attend rien.
+      final bilan = await _statsService.lireBilan();
+      final serveurRenseigne = (bilan?['total'] ?? 0) > 0;
+      final serieLocale =
+          await ReadingTimeStorage.getReadingStreak(widget.profileId);
+
       if (mounted) {
         context
             .read<NotificationProvider>()
@@ -365,18 +375,17 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             libraryCount: library.length,
           );
 
-          final List<GoalModel> finalGoals =
-              backendGoals.isNotEmpty ? backendGoals : smartGoals;
-          int goalsAchievedCount =
-              finalGoals.where((g) => g.estTermine).length;
-
-          if (backendBadges.isNotEmpty) {
-            final unlockedBadges =
-                backendBadges.where((b) => b.debloqueLe != null).length;
-            if (unlockedBadges > goalsAchievedCount) {
-              goalsAchievedCount = unlockedBadges;
-            }
-          }
+          // Les deux origines se complètent, elles ne se remplacent pas.
+          //
+          // Le « l'un OU l'autre » faisait disparaître la série et l'objectif
+          // du jour dès que le serveur répondait quoi que ce soit — il ne sait
+          // calculer ni l'un ni l'autre. Même règle que sur la page des
+          // statistiques : clé de l'objectif, le serveur l'emporte.
+          final clesServeur = backendGoals.map((g) => g.id).toSet();
+          final List<GoalModel> finalGoals = [
+            ...backendGoals,
+            ...smartGoals.where((g) => !clesServeur.contains(g.id)),
+          ];
 
           if (finalGoals.isNotEmpty) {
             _dailyGoal = finalGoals.firstWhere(
@@ -385,10 +394,21 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             );
           }
 
+          // La série remplace l'ancien décompte d'objectifs sur la troisième
+          // tuile. Le serveur fait foi dès qu'il a enregistré quelque chose ;
+          // sinon le comptage local reste la seule source. `??` ne suffirait
+          // pas : une table encore vide renvoie 0, pas null.
+          _serieJours = serveurRenseigne ? (bilan?['serie'] ?? 0) : serieLocale;
+
           _stats = ReaderStatsModel(
             booksRead: displayedBooksRead,
-            totalTime: formattedTime,
-            goalsAchieved: goalsAchievedCount,
+            totalTime: serveurRenseigne
+                ? ReadingTimeStorage.formatMinutes(bilan!['total']!)
+                : formattedTime,
+            // Conservé pour le modèle, mais plus affiché : il valait
+            // `max(objectifs terminés, badges débloqués)`, deux grandeurs sans
+            // rapport. Les badges se comptent sur leur propre écran.
+            goalsAchieved: backendBadges.where((b) => b.debloqueLe != null).length,
           );
 
           // 1. Build a comprehensive Author Map from all available sources
@@ -1675,10 +1695,23 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               },
             ),
             _buildStatSeparator(),
+            // La série de jours, à la place d'un décompte d'objectifs.
+            //
+            // Cette tuile affichait `max(objectifs terminés, badges débloqués)`
+            // sous l'étiquette « Objectifs » : deux grandeurs sans rapport,
+            // réunies par une comparaison. Et depuis que les paliers ouvrent
+            // toujours la marche suivante, aucun objectif n'est jamais
+            // « terminé » — le maximum ne pouvait plus retenir que les badges.
+            //
+            // La série dit quelque chose qu'aucune des deux autres tuiles ne
+            // dit : elle change chaque jour, et c'est la seule qu'on puisse
+            // perdre. C'est ce qui donne une raison de revenir demain.
             _buildStatItem(
-              "${_stats!.goalsAchieved}",
-              "Objectifs",
-              Icons.emoji_events,
+              "$_serieJours",
+              _serieJours > 1 ? "Jours d'affilée" : "Jour d'affilée",
+              _serieJours > 0
+                  ? Icons.local_fire_department
+                  : Icons.local_fire_department_outlined,
               onTap: () async {
                 await Navigator.push(
                   context,

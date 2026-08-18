@@ -21,7 +21,12 @@ class GoalModel {
 
   factory GoalModel.fromJson(Map<String, dynamic> json) {
     return GoalModel(
-      id: json['id'] ?? '',
+      // `code` d'abord : c'est la clé stable, partagée avec les objectifs
+      // calculés localement. L'`id` est l'identifiant d'une ligne en base, qui
+      // ne dit rien de la métrique mesurée — et un objectif calculé n'en a pas.
+      id: (json['code'] is String && (json['code'] as String).isNotEmpty)
+          ? json['code']
+          : (json['id'] ?? ''),
       titre: json['titre'] ?? '',
       description: json['description'] ?? '',
       type: json['type'] ?? 'CHALLENGE',

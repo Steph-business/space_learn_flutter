@@ -6,6 +6,7 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import '../../../../utils/token_storage.dart';
 import '../../../data/dataServices/badgeService.dart';
 import '../../../data/dataServices/libraryService.dart';
+import '../../../data/dataServices/readerStatsService.dart';
 import '../../../data/dataServices/readingProgressService.dart';
 import '../../../data/dataServices/reading_time_storage.dart';
 import '../../../data/model/badgeModel.dart';
@@ -28,9 +29,11 @@ class _BadgesPageState extends State<BadgesPage>
   final LibraryService _libraryService = LibraryService();
 
   List<BadgeModel> _badges = [];
+
+  /// Jours de lecture consécutifs. Zéro si la série est rompue.
+  int _serieJours = 0;
   List<GoalModel> _goals = [];
   int _totalReadingMinutes = 0;
-  int _todayReadingMinutes = 0;
   bool _isLoading = true;
   late TabController _tabController;
 
@@ -50,10 +53,12 @@ class _BadgesPageState extends State<BadgesPage>
   Future<void> _loadAllData() async {
     try {
       final token = await TokenStorage.getToken();
-      final totalMin =
-          await ReadingTimeStorage.getTotalReadingMinutes(widget.userId);
-      final todayMin =
-          await ReadingTimeStorage.getTodayReadingMinutes(widget.userId);
+      final totalMin = await ReadingTimeStorage.getTotalReadingMinutes(
+        widget.userId,
+      );
+      final todayMin = await ReadingTimeStorage.getTodayReadingMinutes(
+        widget.userId,
+      );
 
       List<ReadingActivityModel> allProgress = [];
       int libraryCount = 0;
@@ -76,49 +81,74 @@ class _BadgesPageState extends State<BadgesPage>
       final backendBadges = await _badgeService.getUserBadges();
       final backendGoals = await _badgeService.getGoals();
 
+      // Le serveur fait foi quand il répond : son compte suit le lecteur d'un
+      // appareil à l'autre. Le comptage local reste tenu en parallèle et sert
+      // de repli hors ligne — c'est le seul cas où il décide encore.
+      // Le serveur fait foi DÈS QU'IL A QUELQUE CHOSE À DIRE.
+      //
+      // `??` ne se déclenche que sur null : une table `jours_de_lecture` encore
+      // vide renvoie 0, et zéro l'emportait alors sur les 72 minutes comptées
+      // par le téléphone. L'écran des badges affichait « 0m » et « 0 jour »
+      // pendant que l'accueil affichait « 1h12m » — deux écrans, deux vérités.
+      //
+      // Tant que le serveur n'a rien enregistré, le comptage local reste la
+      // seule source ; il devient un simple cache dès qu'il en a.
+      final bilan = await ReaderStatsService().lireBilan();
+      final serveurRenseigne = (bilan?['total'] ?? 0) > 0;
+
+      final serieLocale = await ReadingTimeStorage.getReadingStreak(
+        widget.userId,
+      );
+      final serie = serveurRenseigne ? (bilan?['serie'] ?? 0) : serieLocale;
+      final totalMinutes = serveurRenseigne ? bilan!['total']! : totalMin;
+      final minutesJour = serveurRenseigne ? bilan!['jour']! : todayMin;
+
       final smartGoals = ReadingTimeStorage.computeSmartGoals(
         booksRead: finishedBooks,
-        totalMinutes: totalMin,
-        todayMinutes: todayMin,
+        totalMinutes: totalMinutes,
+        todayMinutes: minutesJour,
         libraryCount: libraryCount,
+        serieJours: serie,
       );
 
-      final List<GoalModel> finalGoals =
-          backendGoals.isNotEmpty ? backendGoals : smartGoals;
+      // Les deux origines se complètent, elles ne se remplacent pas.
+      //
+      // Le serveur sait ce qu'il possède : livres terminés, taille de la
+      // bibliothèque — et il le sait quel que soit l'appareil. Il ne sait pas
+      // le temps de lecture ni la série de jours, que seul le téléphone
+      // enregistre. L'ancien « l'un OU l'autre » faisait donc disparaître la
+      // série dès que le serveur répondait quoi que ce soit.
+      // Une seule valeur par métrique, et c'est le serveur qui l'emporte.
+      //
+      // Le dédoublonnage se faisait par TITRE : or le serveur écrit « Livres
+      // terminés » quand il en compte six, et le calcul local « Premier
+      // chef-d'œuvre » quand il en compte zéro. Deux titres, donc deux cartes,
+      // qui se contredisaient sur le même écran — 60 % d'un côté, 0 % de
+      // l'autre. La clé est désormais l'identifiant de l'objectif, partagé
+      // entre les deux origines.
+      final clesServeur = backendGoals.map((g) => g.id).toSet();
+      final List<GoalModel> finalGoals = [
+        ...backendGoals,
+        ...smartGoals.where((g) => !clesServeur.contains(g.id)),
+      ];
 
-      // Update badge unlock states dynamically based on real activity
-      final updatedBadges = backendBadges.map((b) {
-        bool isUnlocked = b.debloqueLe != null;
-        if (!isUnlocked) {
-          if (b.code == 'FIRST_STEP' &&
-              (totalMin > 0 || allProgress.isNotEmpty)) {
-            isUnlocked = true;
-          } else if (b.code == 'FIRST_BOOK' && finishedBooks >= 1) {
-            isUnlocked = true;
-          } else if (b.code == 'DAILY_15MIN' && todayMin >= 15) {
-            isUnlocked = true;
-          } else if (b.code == 'COLLECTION_2' && libraryCount >= 2) {
-            isUnlocked = true;
-          } else if (b.code == 'READ_60MIN' && totalMin >= 60) {
-            isUnlocked = true;
-          }
-        }
-        return BadgeModel(
-          id: b.id,
-          utilisateurId: b.utilisateurId,
-          debloqueLe: isUnlocked ? (b.debloqueLe ?? DateTime.now()) : null,
-          name: b.name,
-          description: b.description,
-          iconUrl: b.iconUrl,
-          code: b.code,
-        );
-      }).toList();
-
+      // Les badges viennent du serveur, et de lui seul.
+      //
+      // L'écran rejouait ici ses propres règles par-dessus la réponse :
+      // « FIRST_STEP si totalMin > 0 », « COLLECTION_2 si libraryCount >= 2 ».
+      // Des codes que le serveur ne connaissait pas, des seuils choisis à part.
+      // Deux jeux de règles pour une même collection : le téléphone déverrouillait
+      // ce que le serveur laissait fermé, et l'écran suivant, qui lisait le
+      // serveur, retirait le badge sans explication.
+      //
+      // Le serveur évalue désormais tout le catalogue à chaque appel — c'est
+      // même ce qui déclenche les badges d'assiduité, qui n'ont aucun autre
+      // moment pour se débloquer.
       if (mounted) {
         setState(() {
-          _totalReadingMinutes = totalMin;
-          _todayReadingMinutes = todayMin;
-          _badges = updatedBadges;
+          _totalReadingMinutes = totalMinutes;
+          _serieJours = serie;
+          _badges = backendBadges;
           _goals = finalGoals;
           _isLoading = false;
         });
@@ -136,8 +166,9 @@ class _BadgesPageState extends State<BadgesPage>
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
     final unlockedCount = _badges.where((b) => b.debloqueLe != null).length;
-    final formattedTime =
-        ReadingTimeStorage.formatMinutes(_totalReadingMinutes);
+    final formattedTime = ReadingTimeStorage.formatMinutes(
+      _totalReadingMinutes,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
@@ -167,7 +198,9 @@ class _BadgesPageState extends State<BadgesPage>
           ),
           tabs: const [
             Tab(text: "Objectifs & Défis"),
-            Tab(text: "Badges Débloqués"),
+            // « Badges Débloqués » décrivait un onglet qui ne montrait que les
+            // trophées obtenus. Il montre désormais la collection entière.
+            Tab(text: "Collection"),
           ],
         ),
       ),
@@ -206,58 +239,85 @@ class _BadgesPageState extends State<BadgesPage>
           ),
         ],
       ),
+      // Trois chiffres, trois colonnes flexibles.
+      //
+      // Elles étaient deux, libres de leur largeur. À trois, « Temps de
+      // lecture », « Jours d'affilée » et « Badges obtenus » ne tiennent plus
+      // côte à côte sur un écran de 320 px : une Row non contrainte déborde en
+      // rayures jaunes au lieu de réduire. Expanded partage la largeur, et le
+      // libellé s'ellipse plutôt que de pousser.
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Column(
-            children: [
-              Icon(Icons.timer_outlined, color: AppColors.onAccent, size: 24),
-              const SizedBox(height: 6),
-              Text(
-                formattedTime,
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onAccent,
-                ),
-              ),
-              Text(
-                "Temps de lecture",
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: AppColors.onAccent.withOpacity(0.8),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          _statistique(
+            icone: Icons.timer_outlined,
+            valeur: formattedTime,
+            libelle: "Temps de lecture",
           ),
-          Container(
-            height: 40,
-            width: 1,
-            color: AppColors.onAccent.withOpacity(0.25),
+          _separateur(),
+          // La série, au milieu, et ce n'est pas un hasard.
+          //
+          // Le temps cumulé dit ce qui a été fait, les badges ce qui a été
+          // atteint ; ni l'un ni l'autre ne donne de raison de revenir demain.
+          // La série, si — c'est la seule des trois qu'on puisse perdre.
+          _statistique(
+            icone: _serieJours > 0
+                ? Icons.local_fire_department_rounded
+                : Icons.local_fire_department_outlined,
+            valeur: "$_serieJours",
+            libelle: _serieJours > 1 ? "Jours d'affilée" : "Jour d'affilée",
           ),
-          Column(
-            children: [
-              Icon(Icons.emoji_events_outlined,
-                  color: AppColors.onAccent, size: 24),
-              const SizedBox(height: 6),
-              Text(
-                "$unlockedCount / ${_badges.length}",
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onAccent,
-                ),
-              ),
-              Text(
-                "Badges obtenus",
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: AppColors.onAccent.withOpacity(0.8),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          _separateur(),
+          _statistique(
+            icone: Icons.emoji_events_outlined,
+            valeur: "$unlockedCount / ${_badges.length}",
+            libelle: "Badges obtenus",
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _separateur() => Container(
+    height: 40,
+    width: 1,
+    color: AppColors.onAccent.withOpacity(0.25),
+  );
+
+  /// Une colonne de l'en-tête : icône, chiffre, libellé.
+  ///
+  /// Les trois blocs étaient recopiés à l'identique ; une retouche sur l'un ne
+  /// suivait pas sur les autres.
+  Widget _statistique({
+    required IconData icone,
+    required String valeur,
+    required String libelle,
+  }) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icone, color: AppColors.onAccent, size: 24),
+          const SizedBox(height: 6),
+          Text(
+            valeur,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.onAccent,
+            ),
+          ),
+          Text(
+            libelle,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              color: AppColors.onAccent.withOpacity(0.8),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -286,9 +346,12 @@ class _BadgesPageState extends State<BadgesPage>
           decoration: BoxDecoration(
             color: AppColors.cardBackground,
             borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+            // Le liseré souligne, il ne confirme pas : il suit donc l'accent,
+            // comme la barre. Seule la pastille « Terminé » garde le vert, qui
+            // y énonce un fait plutôt que d'orner.
             border: Border.all(
               color: isCompleted
-                  ? AppColors.success.withOpacity(0.4)
+                  ? AppColors.primary.withOpacity(0.4)
                   : AppColors.textPrimary.withOpacity(0.05),
             ),
           ),
@@ -346,15 +409,19 @@ class _BadgesPageState extends State<BadgesPage>
               ),
               const SizedBox(height: 10),
               ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.radiusXs),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 6,
                   backgroundColor: AppColors.textHint.withOpacity(0.15),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isCompleted ? AppColors.success : AppColors.primary,
-                  ),
+                  // Une barre pleine reste ambre.
+                  //
+                  // `success` est la couleur de la confirmation — celle d'un
+                  // paiement accepté, d'un enregistrement réussi. L'employer en
+                  // décor lui retire son sens partout ailleurs : quand un vrai
+                  // succès s'affiche, il ne se distingue plus de rien. La barre
+                  // pleine et l'étiquette « Terminé » disent déjà l'atteinte.
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
               ),
             ],
@@ -364,18 +431,102 @@ class _BadgesPageState extends State<BadgesPage>
     );
   }
 
+  /// Les badges, rangés par famille.
+  ///
+  /// Une grille à plat de dix-huit trophées ne se lit pas : rien n'y dit qu'un
+  /// lecteur qui ne termine jamais de livre peut quand même en décrocher par
+  /// l'assiduité ou la communauté. Les familles rendent visibles les chemins.
+  ///
+  /// La première section fait exception : elle rassemble les badges obtenus,
+  /// toutes familles confondues. C'est celle qu'on vient voir.
   Widget _buildBadgesTab() {
     if (_badges.isEmpty) return _buildEmptyState();
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.85,
+
+    final obtenus = _badges.where((b) => b.estDebloque).toList();
+    final restants = _badges.where((b) => !b.estDebloque).toList();
+
+    // L'ordre du serveur fait foi : il place les plus proches en tête.
+    final familles = <String, List<BadgeModel>>{};
+    for (final badge in restants) {
+      final nom = badge.famille.isEmpty ? 'À décrocher' : badge.famille;
+      familles.putIfAbsent(nom, () => []).add(badge);
+    }
+
+    return CustomScrollView(
+      slivers: [
+        if (obtenus.isNotEmpty) ...[
+          _titreSection(
+            "Vos trophées",
+            "${obtenus.length} sur ${_badges.length}",
+          ),
+          _grilleBadges(obtenus),
+        ],
+        for (final entree in familles.entries) ...[
+          _titreSection(entree.key, _resteAFaire(entree.value)),
+          _grilleBadges(entree.value),
+        ],
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+      ],
+    );
+  }
+
+  /// « Plus que 1 annotation » vaut mieux que « 0 sur 25 » : on annonce la
+  /// marche la plus proche, pas le retard cumulé.
+  String _resteAFaire(List<BadgeModel> badges) {
+    final proche = badges.first;
+    final reste = proche.cible - proche.progression;
+    if (reste <= 0 || proche.cible <= 0) return "";
+    return "Plus que $reste";
+  }
+
+  SliverToBoxAdapter _titreSection(String titre, String indication) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                titre,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            if (indication.isNotEmpty)
+              Text(
+                indication,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textHint,
+                ),
+              ),
+          ],
+        ),
       ),
-      itemCount: _badges.length,
-      itemBuilder: (context, index) => _buildBadgeCard(_badges[index]),
+    );
+  }
+
+  SliverPadding _grilleBadges(List<BadgeModel> badges) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          // Une barre d'avancement et son compteur s'ajoutent sous la
+          // description : à 0.85, les cartes débordaient en rayures jaunes.
+          childAspectRatio: 0.74,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => _buildBadgeCard(badges[index]),
+          childCount: badges.length,
+        ),
+      ),
     );
   }
 
@@ -390,13 +541,13 @@ class _BadgesPageState extends State<BadgesPage>
             color: AppColors.textHint,
           ),
           SizedBox(height: 16),
-          Text("Aucun badge débloqué", style: AppTextStyles.bodyFaded16),
+          // La liste vide ne signifie plus « rien de débloqué » — le serveur
+          // renvoie tout le catalogue, verrouillés compris. Elle signifie qu'on
+          // n'a pas pu le joindre, et qu'aucune version n'a encore été reçue.
+          Text("Collection indisponible", style: AppTextStyles.bodyFaded16),
           Text(
-            "Continuez à lire pour en obtenir !",
-            style: GoogleFonts.poppins(
-              color: AppColors.textHint,
-              fontSize: 12,
-            ),
+            "Reconnectez-vous pour retrouver vos badges.",
+            style: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 12),
           ),
         ],
       ),
@@ -457,10 +608,18 @@ class _BadgesPageState extends State<BadgesPage>
                 Text(
                   badge.name,
                   textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: isUnlocked ? Colors.white : AppColors.textHint,
+                    // `Colors.white` était écrit en dur sur `cardBackground` :
+                    // en thème clair, le nom du badge disparaissait sur fond
+                    // blanc dès qu'il était débloqué — la récompense s'effaçait
+                    // au moment précis où elle était méritée.
+                    color: isUnlocked
+                        ? AppColors.textPrimary
+                        : AppColors.textHint,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -474,6 +633,10 @@ class _BadgesPageState extends State<BadgesPage>
                     color: AppColors.textHint,
                   ),
                 ),
+                if (!isUnlocked && badge.cible > 0) ...[
+                  const SizedBox(height: 10),
+                  _avancementBadge(badge),
+                ],
               ],
             ),
           ),
@@ -490,7 +653,10 @@ class _BadgesPageState extends State<BadgesPage>
                 child: Icon(
                   Icons.check,
                   size: 10,
-                  color: AppColors.textPrimary,
+                  // Sur un aplat de couleur, c'est `onAccent` qui garantit le
+                  // contraste : `textPrimary` suit le fond de page, et virait
+                  // au sombre sur le vert en thème clair.
+                  color: AppColors.onAccent,
                 ),
               ),
             ),
@@ -499,18 +665,90 @@ class _BadgesPageState extends State<BadgesPage>
     );
   }
 
+  /// La distance qui reste, sous la carte d'un badge verrouillé.
+  ///
+  /// Sans elle, « Plume dans la marge » à 24 annotations sur 25 ressemblait
+  /// exactement à « Cinquante heures » à zéro : deux carrés gris.
+  Widget _avancementBadge(BadgeModel badge) {
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+          child: LinearProgressIndicator(
+            value: badge.avancement,
+            minHeight: 4,
+            backgroundColor: AppColors.textHint.withOpacity(0.15),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "${badge.progression} / ${badge.cible}",
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textHint,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Le nom d'icône envoyé par le serveur, traduit en icône Material.
+  ///
+  /// La table n'en connaissait que cinq ; toutes les autres retombaient sur la
+  /// coupe générique, si bien que les badges se ressemblaient tous. Elle suit
+  /// maintenant le catalogue du serveur, famille par famille.
   IconData _getIconData(String? name) {
     switch (name) {
-      case 'stars':
-        return Icons.stars;
-      case 'auto_stories':
-        return Icons.auto_stories;
+      // Premiers pas
+      case 'waving_hand':
+        return Icons.waving_hand;
+      case 'directions_walk':
+        return Icons.directions_walk;
+
+      // Assiduité
+      case 'local_fire_department':
+        return Icons.local_fire_department;
+      case 'event_available':
+        return Icons.event_available;
+      case 'hourglass_bottom':
+        return Icons.hourglass_bottom;
       case 'timer':
         return Icons.timer;
-      case 'rate_review':
-        return Icons.rate_review;
+
+      // Lecture
+      case 'auto_stories':
+        return Icons.auto_stories;
+      case 'menu_book':
+        return Icons.menu_book;
+      case 'local_library':
+        return Icons.local_library;
+      case 'fitness_center':
+        return Icons.fitness_center;
+
+      // Curiosité
+      case 'explore':
+        return Icons.explore;
       case 'inventory_2':
         return Icons.inventory_2;
+      case 'favorite':
+        return Icons.favorite;
+
+      // Traces de lecture
+      case 'edit_note':
+        return Icons.edit_note;
+
+      // Communauté
+      case 'rate_review':
+        return Icons.rate_review;
+      case 'reviews':
+        return Icons.reviews;
+      case 'forum':
+        return Icons.forum;
+
+      case 'stars':
+        return Icons.stars;
       default:
         return Icons.emoji_events;
     }

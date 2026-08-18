@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 
 import '../../../themes/app_colors.dart';
-import '../../../themes/app_text_styles.dart';
 import '../../data/dataServices/favoriteService.dart';
 import '../../data/dataServices/profileService.dart';
 import '../../data/dataServices/authServices.dart';

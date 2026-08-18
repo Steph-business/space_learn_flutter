@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   file_selector_windows
   flutter_secure_storage_windows
+  flutter_timezone
   flutter_tts
   share_plus
   smart_auth

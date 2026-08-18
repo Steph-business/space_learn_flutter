@@ -277,30 +277,20 @@ class SettingsPageAuteur extends StatelessWidget {
         }
       }
 
-      if (photoUrl != null) {
-        final token = await TokenStorage.getToken();
-        if (token != null) {
-          final authService = AuthService();
-          final user = await authService.getUser(token);
-          if (user != null) {
-            final updatedUser = await authService.updateProfileDetails(
-              userId: user.id,
-              profilePhoto: photoUrl,
-            );
-            if (updatedUser != null) {
-              AppNotifications.showSnackBar(
-                context,
-                message: "Photo de profil mise à jour !",
-                isSuccess: true,
-              );
-            } else {
-              AppNotifications.showSnackBar(
-                context,
-                message: "Erreur lors de la mise à jour.",
-                isError: true,
-              );
-            }
-          }
+      final token = await TokenStorage.getToken();
+      if (token != null) {
+        final authService = AuthService();
+        final user = await authService.getUser(token);
+        if (user != null) {
+          await authService.updateProfileDetails(
+            userId: user.id,
+            profilePhoto: photoUrl,
+          );
+          AppNotifications.showSnackBar(
+            context,
+            message: "Photo de profil mise à jour !",
+            isSuccess: true,
+          );
         }
       }
     } catch (e) {
@@ -381,7 +371,6 @@ class SettingsPageAuteur extends StatelessWidget {
     ThemeProvider themeProvider,
   ) {
     final isSelected = themeProvider.themeMode == mode;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
       leading: Icon(
         icon,

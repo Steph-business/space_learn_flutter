@@ -65,6 +65,8 @@ dependencies:
   wakelock_plus: ^1.4.0
   audio_service: ^0.18.19
   tutorial_coach_mark: ^1.2.11
+  timezone: ^0.10.1
+  flutter_timezone: ^5.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

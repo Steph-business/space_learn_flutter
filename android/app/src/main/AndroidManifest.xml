@@ -19,6 +19,18 @@
          telephone dans sa poche n'a plus aucun moyen de mettre en pause, et
          c'est precisement l'usage que la lecture en arriere-plan sert. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Les rappels de lecture sont programmes a l'avance, jour par jour.
+         Android efface toutes les alarmes programmees a l'extinction : sans
+         cette permission et le recepteur declare plus bas, un simple
+         redemarrage supprimerait silencieusement les creneaux du lecteur, qui
+         n'aurait aucun moyen de s'en apercevoir avant de constater qu'il ne
+         recoit plus rien.
+
+         Nous n'utilisons PAS SCHEDULE_EXACT_ALARM : un rappel de lecture n'a
+         pas besoin d'etre a la seconde, et cette permission est restreinte
+         depuis Android 14. Le mode inexact suffit et ne demande rien. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     
     <application
         android:label="space_learn_flutter"
@@ -102,6 +114,24 @@
             tools:ignore="Instantiatable">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Rappels de lecture : celui qui les affiche a l'heure dite... -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+
+        <!-- ...et celui qui les reprogramme apres un redemarrage du telephone,
+             sans lequel ils disparaitraient a la premiere extinction. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
     </application>

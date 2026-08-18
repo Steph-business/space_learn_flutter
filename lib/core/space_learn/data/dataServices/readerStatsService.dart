@@ -86,4 +86,60 @@ class ReaderStatsService {
   ReaderStatsModel _getMockStats() {
     return ReaderStatsModel(booksRead: 0, totalTime: '0m', goalsAchieved: 0);
   }
+
+  /// Le bilan de lecture tenu par le serveur : total, journée, série.
+  ///
+  /// Rend null quand le serveur ne répond pas — l'appelant retombe alors sur
+  /// le comptage local, qui reste tenu en parallèle comme cache hors ligne.
+  Future<Map<String, int>?> lireBilan() async {
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) return null;
+
+      final reponse = await client.get(
+        Uri.parse(ApiRoutes.readingBilan),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (reponse.statusCode != 200) return null;
+
+      final corps = jsonDecode(reponse.body);
+      final d = (corps is Map ? (corps['data'] ?? corps) : null);
+      if (d is! Map) return null;
+
+      int lire(String cle) {
+        final v = d[cle];
+        if (v is num) return v.toInt();
+        return int.tryParse('${v ?? ''}') ?? 0;
+      }
+
+      return {
+        'total': lire('total_minutes'),
+        'jour': lire('minutes_jour'),
+        'serie': lire('serie_jours'),
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Déclare des minutes de lecture au compte du lecteur.
+  Future<void> declarerMinutes(int minutes) async {
+    if (minutes <= 0) return;
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) return;
+
+      await client.post(
+        Uri.parse(ApiRoutes.readingTemps),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'minutes': minutes}),
+      );
+    } catch (_) {
+      // Le comptage local a déjà eu lieu : une minute perdue côté serveur ne
+      // doit pas interrompre la lecture.
+    }
+  }
 }

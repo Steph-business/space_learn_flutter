@@ -7,6 +7,8 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import '../../../data/dataServices/reading_time_storage.dart';
 import '../../../data/dataServices/readerStatsService.dart';
 import '../../../../utils/token_storage.dart';
+import 'package:space_learn_flutter/core/services/rappels_lecture.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 class TempsLecturePage extends StatefulWidget {
   final String userId;
@@ -24,8 +26,12 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
   int _todayMinutes = 0;
   int _streakDays = 0;
   int _dailyGoalMinutes = 15;
-  String _reminderTime = '20:30';
-  bool _reminderEnabled = true;
+  /// Les créneaux de lecture, avec leurs jours.
+  ///
+  /// Remplacent l'heure unique `_reminderTime` et sa bascule : une seule heure,
+  /// la même sept jours sur sept, et surtout aucune notification jamais
+  /// programmée.
+  List<CreneauLecture> _creneaux = [];
   List<DailyReadingPoint> _weeklyPoints = [];
   List<ReadingSessionModel> _recentSessions = [];
   bool _isLoading = true;
@@ -47,10 +53,10 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
           await ReadingTimeStorage.getTodayReadingMinutes(widget.userId);
       final streak = await ReadingTimeStorage.getReadingStreak(widget.userId);
       final goal = await ReadingTimeStorage.getDailyGoalMinutes(widget.userId);
-      final reminderT =
-          await ReadingTimeStorage.getDailyReminderTime(widget.userId);
-      final reminderEn =
-          await ReadingTimeStorage.getDailyReminderEnabled(widget.userId);
+      // Synchronise plutôt que de simplement lire : le serveur porte les
+      // créneaux du compte, et cet appareil les reprogramme au passage. C'est
+      // ce qui fait qu'une réinstallation ne fait pas disparaître les rappels.
+      final creneaux = await RappelsLecture.synchroniser();
       final points =
           await ReadingTimeStorage.getWeeklyReadingPoints(widget.userId);
       final sessions =
@@ -69,8 +75,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
           _todayMinutes = todayMin;
           _streakDays = streak;
           _dailyGoalMinutes = goal;
-          _reminderTime = reminderT;
-          _reminderEnabled = reminderEn;
+          _creneaux = creneaux;
           _weeklyPoints = points;
           _recentSessions = sessions;
           _isLoading = false;
@@ -90,50 +95,6 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
       _dailyGoalMinutes = targetMin;
     });
     await ReadingTimeStorage.setDailyGoalMinutes(widget.userId, targetMin);
-  }
-
-  Future<void> _toggleReminder(bool enabled) async {
-    setState(() {
-      _reminderEnabled = enabled;
-    });
-    await ReadingTimeStorage.setDailyReminderEnabled(widget.userId, enabled);
-  }
-
-  Future<void> _setExactReminderTime(String timeStr) async {
-    setState(() {
-      _reminderTime = timeStr;
-    });
-    await ReadingTimeStorage.setDailyReminderTime(widget.userId, timeStr);
-  }
-
-  Future<void> _pickReminderTime() async {
-    final parts = _reminderTime.split(':');
-    final initialHour = int.tryParse(parts.first) ?? 20;
-    final initialMinute = int.tryParse(parts.last) ?? 30;
-
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: initialHour, minute: initialMinute),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: AppColors.primary,
-              surface: AppColors.cardBackground,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      final hourStr = picked.hour.toString().padLeft(2, '0');
-      final minuteStr = picked.minute.toString().padLeft(2, '0');
-      final timeStr = '$hourStr:$minuteStr';
-      await _setExactReminderTime(timeStr);
-    }
   }
 
   void _showCustomGoalDialog() {
@@ -547,11 +508,11 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                     value: todayProgress,
                     minHeight: 8,
                     backgroundColor: AppColors.onAccent.withOpacity(0.15),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      _todayMinutes >= _dailyGoalMinutes
-                          ? AppColors.success
-                          : AppColors.onAccent,
-                    ),
+                    // La barre est posée sur un aplat d'accent : son encre vient
+                    // de `onAccent`, atteinte ou non. Le vert de `success` est
+                    // réservé à la confirmation ; en décor, il cesse de vouloir
+                    // dire quoi que ce soit là où il compte vraiment.
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.onAccent),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -896,49 +857,38 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
     );
   }
 
+  /// Les créneaux de lecture du lecteur.
+  ///
+  /// L'écran n'offrait qu'une heure unique, la même sept jours sur sept — et
+  /// surtout, il ne programmait rien : le code n'appelait que `show()`, un
+  /// affichage immédiat. Le lecteur croyait recevoir un rappel à 20 h 30 ; rien
+  /// ne partait, jamais.
+  ///
+  /// On ne lit pas à la même heure un mardi et un dimanche. Chaque créneau
+  /// porte donc son heure ET ses jours, et plusieurs peuvent coexister.
   Widget _buildDailyReminderCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        border: Border.all(
-          color: _reminderEnabled
-              ? AppColors.primary.withOpacity(0.35)
-              : AppColors.textPrimary.withOpacity(0.06),
-        ),
-        boxShadow: _reminderEnabled
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
+        border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: _reminderEnabled
-                      ? AppColors.primary.withOpacity(0.15)
-                      : AppColors.textHint.withOpacity(0.1),
-                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                 ),
                 child: Icon(
-                  _reminderEnabled
-                      ? Icons.notifications_active_rounded
-                      : Icons.notifications_off_outlined,
-                  color: _reminderEnabled
-                      ? AppColors.accentInk
-                      : AppColors.textHint,
-                  size: 22,
+                  Icons.notifications_active_outlined,
+                  color: AppColors.accentInk,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 12),
@@ -947,185 +897,278 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Rappel quotidien de lecture",
+                      "Vos créneaux de lecture",
                       style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
-                      _reminderEnabled
-                          ? "Notification programmée chaque jour"
-                          : "Recevoir un rappel pour garder le rythme",
+                      _creneaux.isEmpty
+                          ? "Aucun rappel programmé"
+                          : "${_creneaux.length} créneau(x) programmé(s)",
                       style: GoogleFonts.poppins(
-                        fontSize: 11,
+                        fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Transform.scale(
-                scale: 0.9,
-                child: Switch(
-                  value: _reminderEnabled,
-                  activeColor: AppColors.primary,
-                  activeTrackColor: AppColors.primary.withOpacity(0.4),
-                  inactiveThumbColor: AppColors.textHint,
-                  inactiveTrackColor: AppColors.textHint.withOpacity(0.2),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  onChanged: _toggleReminder,
-                ),
-              ),
             ],
           ),
-          if (_reminderEnabled) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.scaffoldBackground,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-                border: Border.all(
-                  color: AppColors.primary.withOpacity(0.25),
+          const SizedBox(height: 16),
+
+          if (_creneaux.isEmpty)
+            _proposerPremiersCreneaux()
+          else
+            ..._creneaux.asMap().entries.map(
+              (e) => _carteCreneau(e.key, e.value),
+            ),
+
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _ajouterCreneau,
+              icon: Icon(Icons.add_rounded, size: 18, color: AppColors.accentInk),
+              label: Text(
+                "Ajouter un créneau",
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.accentInk,
                 ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusXs,
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.alarm_rounded,
-                          size: 20,
-                          color: AppColors.accentInk,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Heure du rappel",
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          Text(
-                            _reminderTime,
-                            style: GoogleFonts.poppins(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.accentInk,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _pickReminderTime,
-                    icon: const Icon(Icons.access_time_rounded, size: 16),
-                    label: const Text("Modifier"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.onAccent,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      textStyle: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusPill),
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Text(
-                  "Créneaux rapides :",
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildQuickTimeChip("08:00", "Matin"),
-                        const SizedBox(width: 6),
-                        _buildQuickTimeChip("13:00", "Midi"),
-                        const SizedBox(width: 6),
-                        _buildQuickTimeChip("20:30", "Soir"),
-                        const SizedBox(width: 6),
-                        _buildQuickTimeChip("22:00", "Nuit"),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickTimeChip(String timeStr, String label) {
-    final isSelected = _reminderTime == timeStr;
-    return InkWell(
-      onTap: () => _setExactReminderTime(timeStr),
-      borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary
-              : AppColors.scaffoldBackground,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primary
-                : AppColors.textHint.withOpacity(0.2),
+  /// Trois départs courants, pour ne pas laisser l'écran vide.
+  ///
+  /// Un lecteur qui découvre la fonction ne sait pas quoi choisir : proposer
+  /// « en semaine », « tous les jours » et « le week-end » évite la page blanche
+  /// et dit du même coup ce que l'on peut régler.
+  Widget _proposerPremiersCreneaux() {
+    final propositions = <String, CreneauLecture>{
+      "En semaine à 7h": const CreneauLecture(
+        heure: 7,
+        minute: 0,
+        jours: {1, 2, 3, 4, 5},
+      ),
+      "Tous les jours à 20h30": const CreneauLecture(
+        heure: 20,
+        minute: 30,
+        jours: {1, 2, 3, 4, 5, 6, 7},
+      ),
+      "Le week-end à 10h": const CreneauLecture(
+        heure: 10,
+        minute: 0,
+        jours: {6, 7},
+      ),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Choisissez un moment, ou composez le vôtre :",
+          style: GoogleFonts.poppins(
+            fontSize: 12.5,
+            color: AppColors.textSecondary,
           ),
         ),
-        child: Text(
-          "$label ($timeStr)",
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? AppColors.onAccent : AppColors.textPrimary,
-          ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: propositions.entries.map((e) {
+            return ActionChip(
+              label: Text(
+                e.key,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.accentInk,
+                ),
+              ),
+              backgroundColor: AppColors.primary.withOpacity(0.12),
+              side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+              onPressed: () => _enregistrerCreneaux([..._creneaux, e.value]),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _carteCreneau(int index, CreneauLecture creneau) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.scaffoldBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+        border: Border.all(
+          color: creneau.actif
+              ? AppColors.primary.withOpacity(0.3)
+              : AppColors.textHint.withOpacity(0.2),
         ),
       ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              InkWell(
+                onTap: () => _choisirHeure(index, creneau),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    creneau.libelleHeure,
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: creneau.actif
+                          ? AppColors.accentInk
+                          : AppColors.textHint,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  creneau.libelleJours,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              Switch(
+                value: creneau.actif,
+                onChanged: (v) => _majCreneau(index, creneau.copyWith(actif: v)),
+              ),
+              IconButton(
+                tooltip: "Supprimer ce créneau",
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 20,
+                  color: AppColors.textHint,
+                ),
+                onPressed: () {
+                  final restants = [..._creneaux]..removeAt(index);
+                  _enregistrerCreneaux(restants);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (i) {
+              final jour = i + 1;
+              const noms = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+              final choisi = creneau.jours.contains(jour);
+              return GestureDetector(
+                onTap: () {
+                  final jours = {...creneau.jours};
+                  // Un créneau sans aucun jour ne programme rien : on garde
+                  // toujours au moins un jour coché plutôt que de laisser une
+                  // ligne inerte que le lecteur croirait active.
+                  if (choisi && jours.length == 1) return;
+                  if (choisi) {
+                    jours.remove(jour);
+                  } else {
+                    jours.add(jour);
+                  }
+                  _majCreneau(index, creneau.copyWith(jours: jours));
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: choisi
+                        ? AppColors.primary
+                        : AppColors.textHint.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    noms[i],
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: choisi
+                          ? AppColors.onAccent
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _choisirHeure(int index, CreneauLecture creneau) async {
+    final choisi = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: creneau.heure, minute: creneau.minute),
+    );
+    if (choisi == null) return;
+    _majCreneau(
+      index,
+      creneau.copyWith(heure: choisi.hour, minute: choisi.minute),
+    );
+  }
+
+  Future<void> _ajouterCreneau() async {
+    final choisi = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 20, minute: 30),
+    );
+    if (choisi == null) return;
+    _enregistrerCreneaux([
+      ..._creneaux,
+      CreneauLecture(
+        heure: choisi.hour,
+        minute: choisi.minute,
+        jours: const {1, 2, 3, 4, 5, 6, 7},
+      ),
+    ]);
+  }
+
+  void _majCreneau(int index, CreneauLecture creneau) {
+    final liste = [..._creneaux];
+    liste[index] = creneau;
+    _enregistrerCreneaux(liste);
+  }
+
+  /// Enregistre ET reprogramme : les deux sont indissociables. Un créneau
+  /// enregistré sans être programmé est exactement le défaut qu'on corrige.
+  Future<void> _enregistrerCreneaux(List<CreneauLecture> liste) async {
+    setState(() => _creneaux = liste);
+    await RappelsLecture.enregistrer(liste);
+    if (!mounted) return;
+    AppNotifications.showSnackBar(
+      context,
+      message: liste.isEmpty
+          ? "Rappels désactivés"
+          : "Rappels programmés — ${liste.length} créneau(x)",
+      isSuccess: true,
     );
   }
 

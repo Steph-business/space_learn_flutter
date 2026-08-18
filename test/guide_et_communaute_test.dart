@@ -98,6 +98,8 @@ void main() {
         reason: 'La voix doit se taire quand on quitte le guide.');
   });
 
+  _paliersEtSerie();
+
   // ── Un événement passé se voit ──────────────────────────────────────────
   group('Événements passés', () {
     Evenement depuisJson(Map<String, dynamic> json) => Evenement.fromJson(json);
@@ -153,5 +155,50 @@ void main() {
       });
       expect(a.passe, isFalse);
     });
+  });
+}
+
+/// Les paliers de progression des objectifs.
+///
+/// « Cumuler 1 heure de lecture » se terminait une fois et ne disait plus rien :
+/// le lecteur restait devant un objectif atteint pour toujours, à 100 %. Un
+/// palier qui avance donne toujours une marche suivante.
+void _paliersEtSerie() {
+  test("un objectif atteint ouvre le palier suivant", () {
+    final source = File(
+      'lib/core/space_learn/data/dataServices/reading_time_storage.dart',
+    ).readAsStringSync();
+
+    expect(source.contains('_prochainPalier'), isTrue,
+        reason: 'Les objectifs doivent progresser, pas plafonner.');
+    expect(source.contains('serieJours'), isTrue,
+        reason: 'La série de jours doit alimenter les objectifs.');
+  });
+
+  test("la série de jours est affichée au lecteur", () {
+    final page = File(
+      'lib/core/space_learn/pages/principales/lecteur/badges_page.dart',
+    ).readAsStringSync();
+
+    expect(page.contains('getReadingStreak'), isTrue,
+        reason: 'La série était calculée et jamais lue.');
+    expect(page.contains('local_fire_department'), isTrue,
+        reason: "La série doit avoir sa place dans l'en-tête.");
+  });
+
+  test("les trois statistiques ne débordent pas sur un écran étroit", () {
+    final page = File(
+      'lib/core/space_learn/pages/principales/lecteur/badges_page.dart',
+    ).readAsStringSync();
+
+    // Une Row de trois colonnes non contraintes déborde en rayures jaunes sur
+    // un 320 px : chaque colonne doit partager la largeur et s'ellipser.
+    expect(page.contains('Widget _statistique('), isTrue);
+    expect(page.contains('overflow: TextOverflow.ellipsis'), isTrue);
+    expect(
+      RegExp(r'Widget _statistique\([\s\S]{0,400}?return Expanded\(').hasMatch(page),
+      isTrue,
+      reason: 'Chaque statistique doit être Expanded pour partager la largeur.',
+    );
   });
 }

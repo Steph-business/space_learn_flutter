@@ -54,8 +54,6 @@ class ApiRoutes {
   // Payment routes
   static const String payments = "$baseUrlsGin/api/payments";
   static const String paymentById = "$baseUrlsGin/api/payments/:id";
-  static const String momoStatus =
-      "$baseUrlsGin/api/payments/momo/status/:referenceId";
   static const String cinetpayStatus =
       "$baseUrlsGin/api/payments/cinetpay/status/:transactionId";
   static const String cinetpayWebhook =
@@ -103,6 +101,16 @@ class ApiRoutes {
 
   // Reading activity routes
   static const String readingActivity = "$baseUrlsGin/api/reading/activity";
+
+  /// Temps de lecture du LECTEUR, par journée — distinct de detailed-stats,
+  /// qui compte par livre pour l'auteur. C'est ce qui fait vivre le temps
+  /// cumulé et la série de jours hors du téléphone.
+  static const String readingTemps = "$baseUrlsGin/api/reading/temps";
+  static const String readingBilan = "$baseUrlsGin/api/reading/bilan";
+
+  /// Créneaux de lecture. Le RÉGLAGE suit le compte ; la notification, elle,
+  /// reste programmée sur l'appareil — c'est sa nature.
+  static const String readingCreneaux = "$baseUrlsGin/api/reading/creneaux";
   static const String readingActivities = "$baseUrlsGin/api/reading/activities";
   static const String readingProgress =
       "$baseUrlsGin/api/library/progress/:livre_id";

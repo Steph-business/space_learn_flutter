@@ -130,7 +130,9 @@ class _PaymentPageState extends State<PaymentPage> {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
-                      foregroundColor: Colors.white,
+                      // L'encre des aplats vient de la palette, jamais de
+                      // Colors.white : elle doit tenir sur les deux thèmes.
+                      foregroundColor: AppColors.onAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusCard,
