@@ -125,6 +125,13 @@ class ReadingTimeStorage {
         final currentBook = prefs.getInt(bookKey) ?? 0;
         await prefs.setInt(bookKey, currentBook + seconds);
       }
+
+      // La déclaration au serveur n'a PAS sa place ici.
+      //
+      // `reading_page.dart` la fait déjà, sur son propre compteur de secondes
+      // en attente. L'ajouter ici enverrait les mêmes minutes deux fois, et
+      // gonflerait le temps cumulé comme le battement à quinze secondes l'avait
+      // gonflé d'un facteur quatre.
     } catch (_) {}
   }
 
@@ -403,9 +410,23 @@ class ReadingTimeStorage {
     int dailyGoalTarget = 15,
   }) {
     // Paliers de temps : 1 h, 5 h, 10 h, 25 h, 50 h, 100 h.
-    final cibleTemps = _prochainPalier(totalMinutes, const [60, 300, 600, 1500, 3000, 6000]);
+    final cibleTemps = _prochainPalier(totalMinutes, const [
+      60,
+      300,
+      600,
+      1500,
+      3000,
+      6000,
+    ]);
     final cibleLivres = _prochainPalier(booksRead, const [1, 3, 5, 10, 25, 50]);
-    final cibleSerie = _prochainPalier(serieJours, const [3, 7, 14, 30, 100, 365]);
+    final cibleSerie = _prochainPalier(serieJours, const [
+      3,
+      7,
+      14,
+      30,
+      100,
+      365,
+    ]);
 
     return [
       GoalModel(
@@ -458,7 +479,8 @@ class ReadingTimeStorage {
       GoalModel(
         id: 'goal_hour_reader',
         titre: 'Grand Lecteur',
-        description: 'Cumuler ${formatMinutes(cibleTemps)} de lecture — '
+        description:
+            'Cumuler ${formatMinutes(cibleTemps)} de lecture — '
             '${formatMinutes(totalMinutes)} au compteur',
         type: 'CHALLENGE',
         valeurCible: cibleTemps,
