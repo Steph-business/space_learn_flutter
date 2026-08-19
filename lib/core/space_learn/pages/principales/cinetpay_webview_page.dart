@@ -231,7 +231,7 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
                   ),
                   const Spacer(),
                   Text(
-                    '${widget.montant.toStringAsFixed(0)} XOF',
+                    '${widget.montant.toStringAsFixed(0)} FCFA',
                     style: GoogleFonts.poppins(
                       color: AppColors.accentInk,
                       fontSize: 14,

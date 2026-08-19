@@ -104,10 +104,10 @@ class CinetpayResultPage extends StatelessWidget {
               SizedBox(height: 12),
               Text(
                 isAccepted
-                    ? 'Votre paiement de ${montant.toStringAsFixed(0)} XOF a été validé.\n"${book['titre'] ?? 'Livre inconnu'}" a été ajouté à votre bibliothèque.'
+                    ? 'Votre paiement de ${montant.toStringAsFixed(0)} FCFA a été validé.\n"${book['titre'] ?? 'Livre inconnu'}" a été ajouté à votre bibliothèque.'
                     : isRefused
-                    ? 'Votre paiement de ${montant.toStringAsFixed(0)} XOF a été refusé.\nVeuillez réessayer avec un autre moyen de paiement.'
-                    : 'Votre paiement de ${montant.toStringAsFixed(0)} XOF est en cours de traitement.\nVous serez notifié dès sa validation.',
+                    ? 'Votre paiement de ${montant.toStringAsFixed(0)} FCFA a été refusé.\nVeuillez réessayer avec un autre moyen de paiement.'
+                    : 'Votre paiement de ${montant.toStringAsFixed(0)} FCFA est en cours de traitement.\nVous serez notifié dès sa validation.',
                 style: GoogleFonts.poppins(
                   color: AppColors.textHint,
                   fontSize: 14,
@@ -136,7 +136,7 @@ class CinetpayResultPage extends StatelessWidget {
                     SizedBox(height: 8),
                     _buildDetailRow(
                       'Montant',
-                      '${montant.toStringAsFixed(0)} XOF',
+                      '${montant.toStringAsFixed(0)} FCFA',
                     ),
                     if (paymentMethod != null) ...[
                       SizedBox(height: 8),
