@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
+import '../../../utils/message_erreur.dart';
 import '../../../utils/token_storage.dart';
 
 /// Statistiques et revenus de l'auteur connecté.
@@ -12,6 +12,12 @@ import '../../../utils/token_storage.dart';
 /// Ces deux routes exposent le chiffre d'affaires : elles exigent désormais un
 /// jeton et n'acceptent que l'auteur lui-même. Le jeton est lu ici par défaut
 /// pour que les écrans appelants n'aient pas à le transmettre.
+///
+/// Un échec lève, et ne rend plus un objet vide. Le rendre revenait à dire
+/// « zéro » : le tableau de bord affichait 0 vente et 0 F CFA, sans que
+/// l'auteur puisse distinguer un mois sans lecteur d'un appel refusé. Un
+/// chiffre d'affaires faux est pire qu'un chiffre absent — il se croit, et on
+/// prend des décisions dessus.
 class AuthorStatsService {
   final http.Client client;
 
@@ -56,31 +62,22 @@ class AuthorStatsService {
       url,
     ).replace(queryParameters: period.isEmpty ? null : {'period': period});
 
-    try {
-      final response = await client.get(
-        uri,
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-        },
-      );
+    final response = await client.get(
+      uri,
+      headers: {
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+    );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return (data['data'] as Map<String, dynamic>?) ?? {};
-      }
-
-      // Un échec renvoyait auparavant un objet vide sans le moindre signal :
-      // le tableau de bord affichait 0 sans qu'on puisse distinguer « aucune
-      // vente » de « appel refusé ».
-      debugPrint(
-        'AuthorStatsService: échec du chargement des $libelle '
-        '(${response.statusCode}) — ${response.body}',
-      );
-    } catch (e) {
-      debugPrint('AuthorStatsService: erreur réseau sur les $libelle — $e');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return (data['data'] as Map<String, dynamic>?) ?? {};
     }
 
-    return {};
+    // Une panne réseau lève d'elle-même : rien à rattraper ici, l'écran
+    // appelant traduit les deux cas de la même façon.
+    throw Exception(
+      messageDeLaReponse(response, repli: "Les $libelle sont indisponibles."),
+    );
   }
 }

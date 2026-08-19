@@ -240,7 +240,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             goalsAchieved: 0,
           );
         }),
-        _bookService.getAllBooks(authToken: token).catchError((e) {
+        // L'accueil presente une selection, pas le catalogue : une page
+        // suffit. Charger davantage serait telecharger des livres que
+        // personne ne verra.
+        _bookService.getBooksPage(authToken: token).catchError((e) {
           return <BookModel>[];
         }),
         _lectureService.getAllReviews(token).catchError((e) {

@@ -85,7 +85,20 @@ class _SalesReportPageState extends State<SalesReportPage> {
   /// pour que l'historique soit lisible.
   Future<Map<String, String>> _chargerTitres(String token) async {
     try {
-      final livres = await _bookService.getAllBooks(authToken: token);
+      // Les livres de CET auteur, et non le catalogue entier.
+      //
+      // L'appel ne portait aucun filtre : il telechargeait tous les livres de
+      // la plateforme pour retrouver quelques titres. Sans identifiant, on ne
+      // resout rien — mieux vaut un historique sans titres qu'un catalogue
+      // entier sur le reseau d'un telephone.
+      final auteurId = await TokenStorage.getUserId();
+      if (auteurId == null || auteurId.isEmpty) return {};
+
+      final livres = await _bookService.getAllBooks(
+        auteurId: auteurId,
+        authToken: token,
+        maximum: 1000,
+      );
       return {for (final BookModel l in livres) l.id: l.titre};
     } catch (_) {
       return {};

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,8 @@ import 'package:space_learn_flutter/core/space_learn/data/model/library_model.da
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/categorie_service.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/categorie.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class MarketplacePage extends StatefulWidget {
@@ -25,9 +29,11 @@ class _MarketplacePageState extends State<MarketplacePage> {
   final BookService _bookService = BookService();
   final LibraryService _libraryService = LibraryService();
   final ReviewService _reviewService = ReviewService();
+  final CategorieService _categorieService = CategorieService();
   List<BookModel> _books = [];
-  List<String> _categories = [];
+  List<Categorie> _categories = [];
   Set<String> _ownedBookIds = {};
+  Map<String, double> _notesDuLecteur = {};
   bool _isLoading = true;
   String? _error;
 
@@ -37,29 +43,95 @@ class _MarketplacePageState extends State<MarketplacePage> {
   final TextEditingController _searchController = TextEditingController();
   bool _isGridView = true;
 
+  /// La pagination du catalogue.
+  ///
+  /// La boutique telechargeait le catalogue entier puis filtrait en memoire.
+  /// Categorie et recherche etaient exactes, mais leur cout croissait avec le
+  /// catalogue au lieu de croitre avec ce qui est affiche : a dix mille
+  /// livres, ouvrir la boutique les aurait tous telecharges pour en montrer
+  /// vingt.
+  ///
+  /// Le serveur filtre et decoupe desormais ; l'ecran demande la suite quand
+  /// le lecteur approche du bas.
+  final ScrollController _defilement = ScrollController();
+  int _page = 1;
+  bool _chargeLaSuite = false;
+  bool _finDuCatalogue = false;
+
+  /// Frappe au clavier : on attend une pause avant d'interroger le serveur.
+  ///
+  /// Sans cela, « quantique » declenche neuf recherches, dont huit sont
+  /// perimees avant d'arriver.
+  Timer? _attenteSaisie;
+
   @override
   void initState() {
     super.initState();
+    _defilement.addListener(_auDefilement);
     _loadBooks();
   }
 
   @override
   void dispose() {
+    _attenteSaisie?.cancel();
+    _defilement.removeListener(_auDefilement);
+    _defilement.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadBooks() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+  /// Demande la suite avant d'avoir atteint le bas.
+  ///
+  /// Six cents pixels d'avance : le temps que la page arrive, le lecteur y
+  /// est. Attendre le bas exact ferait apparaitre un vide a chaque palier.
+  void _auDefilement() {
+    if (!_defilement.hasClients) return;
+    final reste =
+        _defilement.position.maxScrollExtent - _defilement.position.pixels;
+    if (reste < 600) _chargerLaSuite();
+  }
 
+  /// L'identifiant de la categorie choisie, ou null pour « Tout ».
+  ///
+  /// Le serveur filtre sur l'identifiant, l'ecran affiche un nom : la
+  /// correspondance se fait ici, et une categorie inconnue vaut « Tout »
+  /// plutot qu'un catalogue vide.
+  String? get _categorieChoisie {
+    if (_selectedCategory == "Tout") return null;
+    for (final c in _categories) {
+      if (c.nom == _selectedCategory) return c.id;
+    }
+    return null;
+  }
+
+  /// Premiere page du catalogue, selon le filtre courant.
+  ///
+  /// Recharge tout : c'est le point d'entree de l'ecran, du tirer-pour-
+  /// rafraichir, d'un changement de categorie et d'une nouvelle recherche.
+  Future<void> _loadBooks() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _page = 1;
+      _finDuCatalogue = false;
+    });
+
+    try {
       final token = await TokenStorage.getToken();
 
-      final results = await Future.wait([
-        _bookService.getAllBooks(statut: 'publie', authToken: token),
+      final resultats = await Future.wait([
+        _bookService.getBooksPage(
+          statut: 'publie',
+          authToken: token,
+          categorieId: _categorieChoisie,
+          recherche: _searchQuery,
+          page: 1,
+        ),
+        _categorieService.getCategories(),
+        // La bibliotheque sert ici de test d'appartenance : elle dit quelles
+        // cartes portent « Deja acquis ». Elle n'est pas paginee — elle
+        // grandit avec ce qu'un lecteur possede, pas avec le catalogue — mais
+        // c'est une liste complete de plus, a surveiller.
         token != null
             ? _libraryService.getUserLibrary(token)
             : Future.value(<LibraryModel>[]),
@@ -68,52 +140,23 @@ class _MarketplacePageState extends State<MarketplacePage> {
             : Future.value(<ReviewModel>[]),
       ]);
 
-      List<BookModel> books = results[0] as List<BookModel>;
-      final library = results[1] as List<LibraryModel>;
-      final userReviews = results[2] as List<ReviewModel>;
+      if (!mounted) return;
 
-      if (mounted) {
-        setState(() {
-          _ownedBookIds = library.map((e) => e.livreId).toSet();
+      final categories = resultats[1] as List<Categorie>;
+      final bibliotheque = resultats[2] as List<LibraryModel>;
+      final avis = resultats[3] as List<ReviewModel>;
 
-          // Enrichment: Update books with data from library and user's own ratings
-          final Map<String, BookModel> libraryBooks = {};
-          for (var item in library) {
-            if (item.livre != null) {
-              libraryBooks[item.livreId] = item.livre!;
-            }
-          }
-
-          final Map<String, double> userRatings = {};
-          for (var review in userReviews) {
-            userRatings[review.livreId] = review.note.toDouble();
-          }
-
-          books = books.map((b) {
-            var updatedBook = libraryBooks[b.id] ?? b;
-            if (userRatings.containsKey(b.id)) {
-              // Create a copy with the user's specific rating if they reviewed it
-              updatedBook = updatedBook.copyWith(
-                noteMoyenne: userRatings[b.id],
-              );
-            }
-            return updatedBook;
-          }).toList();
-
-          _books = books;
-
-          // Extract unique categories (excluding "Tout")
-          final Set<String> categorySet = {};
-          for (var book in books) {
-            if (book.categorie != null && book.categorie!.nom.isNotEmpty) {
-              categorySet.add(book.categorie!.nom);
-            }
-          }
-          _categories = categorySet.toList()..sort();
-
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _categories = categories;
+        _ownedBookIds = bibliotheque.map((e) => e.livreId).toSet();
+        _notesDuLecteur = {
+          for (final a in avis) a.livreId: a.note.toDouble(),
+        };
+        _books = _enrichir(resultats[0] as List<BookModel>);
+        _finDuCatalogue = (resultats[0] as List<BookModel>).length <
+            BookService.taillePage;
+        _isLoading = false;
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -122,6 +165,55 @@ class _MarketplacePageState extends State<MarketplacePage> {
         });
       }
     }
+  }
+
+  /// La page suivante, ajoutee a la suite.
+  ///
+  /// Un echec n'efface pas ce qui est deja affiche : le lecteur garde sa
+  /// liste, et le prochain defilement retentera.
+  Future<void> _chargerLaSuite() async {
+    if (_chargeLaSuite || _finDuCatalogue || _isLoading) return;
+    setState(() => _chargeLaSuite = true);
+
+    try {
+      final token = await TokenStorage.getToken();
+      final suite = await _bookService.getBooksPage(
+        statut: 'publie',
+        authToken: token,
+        categorieId: _categorieChoisie,
+        recherche: _searchQuery,
+        page: _page + 1,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _page += 1;
+        _books = [..._books, ..._enrichir(suite)];
+        // Page incomplete : il n'y a plus rien derriere. La reponse ne porte
+        // pas de compteur total, c'est le seul signal de fin disponible.
+        _finDuCatalogue = suite.length < BookService.taillePage;
+        _chargeLaSuite = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _chargeLaSuite = false);
+    }
+  }
+
+  /// Applique au livre ce que le lecteur en sait deja : sa propre note.
+  List<BookModel> _enrichir(List<BookModel> livres) {
+    return livres.map((b) {
+      final note = _notesDuLecteur[b.id];
+      return note == null ? b : b.copyWith(noteMoyenne: note);
+    }).toList();
+  }
+
+  /// Nouvelle recherche, apres une pause dans la frappe.
+  void _surRecherche(String valeur) {
+    _attenteSaisie?.cancel();
+    setState(() => _searchQuery = valeur);
+    _attenteSaisie = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) _loadBooks();
+    });
   }
 
   /// Recherche ou filtre sans resultat.
@@ -169,9 +261,11 @@ class _MarketplacePageState extends State<MarketplacePage> {
   }
 
   void _onCategorySelected(String category) {
-    setState(() {
-      _selectedCategory = category;
-    });
+    if (category == _selectedCategory) return;
+    setState(() => _selectedCategory = category);
+    // Le filtre est applique par le serveur : changer de categorie repart de
+    // la premiere page, sinon on filtrerait les seules pages deja chargees.
+    _loadBooks();
   }
 
   Widget _buildBody(BuildContext context) {
@@ -211,7 +305,12 @@ class _MarketplacePageState extends State<MarketplacePage> {
           ),
         ),
       );
-    } else if (_books.isEmpty) {
+    } else if (_books.isEmpty &&
+        _searchQuery.isEmpty &&
+        _selectedCategory == "Tout") {
+      // Catalogue reellement vide. Le cas « aucun resultat » passe par la
+      // suite : sortir ici emporterait la barre de recherche et les
+      // categories, laissant le lecteur sans moyen d'effacer ce qu'il a tape.
       return Container(
         height: 200,
         alignment: Alignment.center,
@@ -221,16 +320,11 @@ class _MarketplacePageState extends State<MarketplacePage> {
         ),
       );
     } else {
-      // Filter books based on category and search
-      final filteredBooks = _books.where((b) {
-        final matchesCategory =
-            _selectedCategory == "Tout" ||
-            b.categorie?.nom == _selectedCategory;
-        final matchesSearch =
-            _searchQuery.isEmpty ||
-            b.titre.toLowerCase().contains(_searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
-      }).toList();
+      // La liste est celle rendue par le serveur : categorie et recherche y
+      // ont deja ete appliquees. Le filtrage en memoire qui se trouvait ici
+      // ne pouvait porter que sur les pages deja telechargees — il aurait
+      // donc cache des resultats presents plus loin dans le catalogue.
+      final filteredBooks = _books;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,11 +341,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                     Expanded(
                       child: CustomSearchBar(
                         controller: _searchController,
-                        onChanged: (value) {
-                          setState(() {
-                            _searchQuery = value;
-                          });
-                        },
+                        onChanged: _surRecherche,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -285,7 +375,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                 ),
                 SizedBox(height: 22),
                 SelectCategorie(
-                  categories: ["Tout", ..._categories],
+                  categories: ["Tout", ..._categories.map((c) => c.nom)],
                   selectedCategory: _selectedCategory,
                   onCategorySelected: _onCategorySelected,
                 ),
@@ -372,6 +462,35 @@ class _MarketplacePageState extends State<MarketplacePage> {
                 },
               ),
             ),
+          if (_chargeLaSuite)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: AppColors.accentInk,
+                  ),
+                ),
+              ),
+            )
+          else if (_finDuCatalogue && _books.length > BookService.taillePage)
+            // Dire que la liste est complete evite de continuer a defiler en
+            // esperant qu'il en vienne d'autres.
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  "Vous avez vu tous les livres.",
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textHint,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ),
+            ),
           SizedBox(height: 100),
         ],
       );
@@ -392,6 +511,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
               color: AppColors.accentInk,
               backgroundColor: AppColors.cardBackground,
               child: SingleChildScrollView(
+                controller: _defilement,
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.zero,
                 child: Column(

@@ -13,6 +13,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookServi
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 
@@ -42,6 +43,13 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
   Map<String, dynamic> _stats = {};
   bool _isLoading = true;
 
+  /// Ce qui a empêché les statistiques d'arriver, s'il y a lieu.
+  ///
+  /// Sans lui, un appel refusé et un mois sans vente donnaient le même écran :
+  /// des zéros. Le reste du tableau de bord — livres, abonnés — n'a pas à en
+  /// souffrir, d'où un état séparé plutôt qu'une erreur pour toute la page.
+  String? _echecStats;
+
   @override
   void initState() {
     super.initState();
@@ -59,14 +67,28 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
 
       final authorId = user.id;
       final books = await _bookService.getBooksByAuthorId(authorId);
-      final stats = await _authorStatsService.getAuthorStats(authorId, "");
       final followers = await _relationService.getFollowers(authorId);
+
+      // Les statistiques à part : elles échouent seules, et leur échec ne doit
+      // pas emporter les livres et les abonnés déjà obtenus. Enchaînées avec
+      // le reste, une erreur ici vidait tout le tableau de bord.
+      var stats = <String, dynamic>{};
+      String? echecStats;
+      try {
+        stats = await _authorStatsService.getAuthorStats(authorId, "");
+      } catch (e) {
+        echecStats = messageLisible(
+          e,
+          repli: "Vos statistiques n'ont pas pu être chargées.",
+        );
+      }
 
       if (mounted) {
         setState(() {
           _authorId = authorId;
           _books = books;
           _stats = stats;
+          _echecStats = echecStats;
           _followers = followers;
           _isLoading = false;
         });
@@ -92,6 +114,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 10),
+                  if (_echecStats != null) _bandeauEchecStats(_echecStats!),
                   Statistique(stats: _stats),
 
                   Padding(
@@ -177,6 +200,34 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Dit que les chiffres affichés en dessous ne sont pas les vrais.
+  ///
+  /// Placé au-dessus des statistiques et non à la place : les zéros restent
+  /// visibles — les masquer laisserait un trou incompréhensible — mais plus
+  /// personne ne peut les prendre pour un résultat.
+  Widget _bandeauEchecStats(String message) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.error.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.error_outline_rounded, size: 20, color: AppColors.error),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message, style: AppTextStyles.greyMedium14)),
+            TextButton(onPressed: _loadData, child: const Text("Réessayer")),
+          ],
+        ),
+      ),
     );
   }
 }

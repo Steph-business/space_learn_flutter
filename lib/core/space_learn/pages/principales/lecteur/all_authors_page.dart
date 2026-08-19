@@ -49,7 +49,13 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
       final token = await TokenStorage.getToken();
       final libraryService = LibraryService();
 
-      final List<Future<dynamic>> futures = [_bookService.getAllBooks()];
+      // Les auteurs sont deduits des livres charges : l'ecran ne peut donc
+      // en montrer que ceux qui apparaissent dans les deux cents premiers
+      // titres. C'est une borne assumee, faute d'une route dediee aux
+      // auteurs — sans elle, cet ecran telechargerait le catalogue entier.
+      final List<Future<dynamic>> futures = [
+        _bookService.getAllBooks(maximum: 200),
+      ];
 
       UserModel? currentUser;
       if (token != null) {

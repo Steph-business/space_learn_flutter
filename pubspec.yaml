@@ -93,27 +93,52 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
+  # Seulement ce qui est affiché à l'exécution : « asset/ » en entier embarquait
+  # aussi les carrés qui ne servent qu'à la génération des icônes.
+  #
+  # splash_icon.png est le carré que le splash natif affiche déjà ; le
+  # SplashScreen Dart reprend ce fichier-là pour que les deux écrans présentent
+  # la même image au même endroit.
+  #
+  # sp_logo.png (le logo avec « Space Learn ») n'est plus affiché nulle part
+  # depuis que les pages sont passées au logo seul ; il reste déclaré pour que
+  # revenir en arrière ne demande qu'un changement de chemin.
   assets:
-    - asset/
-    - asset/logo_space_learn.png
+    - asset/logo_sp.png
+    - asset/sp_logo.png
+    - asset/splash_icon.png
+
+# Les images ci-dessous sont dérivées de asset/logo_sp.png (le logo sans
+# écriture), recadrées puis centrées dans un carré : Android et iOS attendent
+# des sources carrées, et l'icône adaptative comme le splash Android 12
+# rognent jusqu'à un tiers du bord — d'où la marge sur les variantes
+# « foreground » et « splash ». À régénérer avec « python
+# tool/generer_icones.py » quand le logo change.
 
 flutter_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "asset/logo_space_learn.png"
+  image_path: "asset/app_icon.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "asset/logo_space_learn.png"
+  adaptive_icon_foreground: "asset/app_icon_foreground.png"
   min_sdk_android: 21
   remove_alpha_ios: true
 
 
+# Les couleurs sont celles de AppColors.scaffoldLight et scaffoldDark, pas un
+# blanc et un noir de circonstance : le splash natif, le SplashScreen Dart et la
+# page de bienvenue doivent présenter le même fond. Sans « color_dark », le
+# lancement en mode sombre commençait par un plein écran blanc.
 flutter_native_splash:
-  color: "#FFFFFF"
-  image: asset/logo_space_learn.png
+  color: "#F5F7F9"
+  color_dark: "#000000"
+  image: asset/splash_icon.png
+  image_dark: asset/splash_icon.png
   android_12:
-    color: "#FFFFFF"
-    image: asset/logo_space_learn.png
+    color: "#F5F7F9"
+    color_dark: "#000000"
+    image: asset/splash_logo.png
+    image_dark: asset/splash_logo.png
 
 
 

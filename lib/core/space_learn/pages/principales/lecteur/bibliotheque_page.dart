@@ -14,6 +14,7 @@ import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/readingProgressService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/readingActivityModel.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:space_learn_flutter/core/services/lecture_audio_livre.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
@@ -64,6 +65,24 @@ class _BibliothequePageState extends State<BibliothequePage> {
 
   void _surEcoute() {
     if (!mounted) return;
+
+    // Une notification peut tomber en pleine frame.
+    //
+    // Le notificateur est unique et partage : n'importe quel ecran peut
+    // appeler arreter() ou basculer() depuis son initState, et ces methodes
+    // ne rencontrent pas toujours un await avant de notifier. setState et
+    // showSnackBar levent tous les deux dans cette phase — ce dernier ecouteur
+    // est donc le seul endroit ou une notification egaree peut se transformer
+    // en plantage, et le seul endroit ou s'en premunir a un sens.
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase != SchedulerPhase.idle &&
+        phase != SchedulerPhase.postFrameCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _surEcoute();
+      });
+      return;
+    }
+
     setState(() {});
 
     // Une erreur d'ecoute se dit une fois, puis se retire : la garder

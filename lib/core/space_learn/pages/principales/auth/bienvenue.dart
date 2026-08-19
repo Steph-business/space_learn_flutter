@@ -30,14 +30,12 @@ class BienvenuePage extends StatelessWidget {
             const marge = AppDimensions.spaceXl;
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(marge, marge, marge, marge),
-              // Spacer exige une hauteur bornée, ce qu'une zone défilante ne
-              // donne pas. IntrinsicHeight la fixe à la hauteur de l'écran
-              // quand le contenu tient, et le laisse défiler sinon : la page
-              // reste équilibrée sur un grand écran sans rien tronquer sur un
-              // petit.
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: contraintes.maxHeight - marge * 2,
+                  minHeight: (contraintes.maxHeight - marge * 2).clamp(
+                    0.0,
+                    double.infinity,
+                  ),
                 ),
                 child: IntrinsicHeight(
                   child: Column(
@@ -45,73 +43,98 @@ class BienvenuePage extends StatelessWidget {
                     children: [
                       const Spacer(flex: 2),
 
-                      const _MarqueAvecHalo(),
+                      // ── Logo ──────────────────────────────────────────────
+                      Center(
+                        child: Image.asset(
+                          'asset/logo_sp.png',
+                          width: 130,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
 
-                      const SizedBox(height: AppDimensions.spaceXl),
+                      const SizedBox(height: 20),
 
+                      // ── Accroche ──────────────────────────────────────────
                       Text(
-                        'La bibliothèque des auteurs africains,\ndans votre poche.',
+                        'La bibliothèque des auteurs\nafricains, dans votre poche.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          fontSize: 15.5,
-                          height: 1.5,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          height: 1.45,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        'Lisez, publiez et payez en toute simplicité.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          height: 1.4,
                           color: AppColors.textSecondary,
                         ),
                       ),
 
                       const Spacer(flex: 2),
 
-                      // Trois promesses, pas un argumentaire. Ce que quelqu'un
-                      // qui découvre l'application a besoin de savoir avant de
-                      // décider s'il crée un compte.
+                      // ── Promesses ─────────────────────────────────────────
                       const _Promesse(
-                        icone: Icons.download_done_outlined,
+                        icone: Icons.download_done_rounded,
                         titre: 'Lisez partout',
                         detail: 'Vos livres restent lisibles hors connexion',
                       ),
-                      const SizedBox(height: AppDimensions.spaceLg),
+                      const SizedBox(height: 12),
                       const _Promesse(
-                        icone: Icons.auto_stories_outlined,
+                        icone: Icons.auto_stories_rounded,
                         titre: 'Publiez vos œuvres',
                         detail:
                             'Suivez vos ventes et vos lecteurs au jour le jour',
                       ),
-                      const SizedBox(height: AppDimensions.spaceLg),
+                      const SizedBox(height: 12),
                       const _Promesse(
-                        icone: Icons.verified_user_outlined,
+                        icone: Icons.verified_user_rounded,
                         titre: 'Payez en toute sécurité',
                         detail: 'Orange Money, MTN, Moov et Wave',
                       ),
 
                       const Spacer(flex: 3),
 
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const LoginPage()),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          elevation: 3,
-                          shadowColor: AppColors.primary.withValues(
-                            alpha: 0.45,
+                      // ── Bouton connexion ──────────────────────────────────
+                      SizedBox(
+                        height: 54,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const LoginPage(),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          'Se connecter',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.onAccent,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.onAccent,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Se connecter',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: AppDimensions.spaceLg),
+                      const SizedBox(height: 14),
 
-                      // Créer un compte n'est plus un bouton : deux boutons de
-                      // même poids obligent à choisir entre deux inconnues.
-                      // Celui qui a un compte trouve son bouton, celui qui n'en
-                      // a pas trouve sa phrase.
+                      // ── Lien inscription ──────────────────────────────────
                       Center(
                         child: TextButton(
                           onPressed: () => Navigator.of(context).push(
@@ -119,12 +142,16 @@ class BienvenuePage extends StatelessWidget {
                               builder: (_) => const ProfilPage(),
                             ),
                           ),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                           child: Text.rich(
                             textAlign: TextAlign.center,
                             TextSpan(
                               children: [
                                 TextSpan(
-                                  text: "Vous n'avez pas de compte ? ",
+                                  text: "Pas encore de compte ? ",
                                   style: GoogleFonts.poppins(
                                     fontSize: 13.5,
                                     color: AppColors.textSecondary,
@@ -150,7 +177,7 @@ class BienvenuePage extends StatelessWidget {
                         "En continuant, vous acceptez nos conditions d'utilisation.",
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          fontSize: 11.5,
+                          fontSize: 11,
                           height: 1.4,
                           color: AppColors.textHint,
                         ),
@@ -167,77 +194,8 @@ class BienvenuePage extends StatelessWidget {
   }
 }
 
-/// Le logo posé sur un halo de la couleur de la marque.
-///
-/// Sur un fond uni, le logo seul flottait sans ancrage. Le halo lui donne une
-/// assise sans rien ajouter à charger — c'est un dégradé, pas une image.
-class _MarqueAvecHalo extends StatelessWidget {
-  const _MarqueAvecHalo();
+// ── Widget promesse ────────────────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
-    AppColors.suivreLeTheme(context);
-    return Column(
-      children: [
-        Container(
-          width: 132,
-          height: 132,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                AppColors.primary.withValues(alpha: 0.22),
-                AppColors.primary.withValues(alpha: 0.06),
-                AppColors.primary.withValues(alpha: 0.0),
-              ],
-              stops: const [0.0, 0.6, 1.0],
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Image.asset(
-            'asset/logo_space_learn.png',
-            width: 88,
-            height: 88,
-            fit: BoxFit.contain,
-          ),
-        ),
-        const SizedBox(height: AppDimensions.spaceLg),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text.rich(
-            textAlign: TextAlign.center,
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Space',
-                  style: GoogleFonts.poppins(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -1,
-                    color: AppColors.textPrimary,
-                    height: 1.05,
-                  ),
-                ),
-                TextSpan(
-                  text: 'Learn',
-                  style: GoogleFonts.poppins(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -1,
-                    color: AppColors.accentInk,
-                    height: 1.05,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Une promesse : une icône posée sur une pastille teintée, un titre, un détail.
 class _Promesse extends StatelessWidget {
   final IconData icone;
   final String titre;
@@ -252,46 +210,63 @@ class _Promesse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-          ),
-          alignment: Alignment.center,
-          child: Icon(icone, size: 21, color: AppColors.accentInk),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        border: Border.all(
+          color: AppColors.textPrimary.withValues(alpha: 0.07),
+          width: 1,
         ),
-        const SizedBox(width: AppDimensions.spaceLg),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                titre,
-                style: GoogleFonts.poppins(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
-                  height: 1.3,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                detail,
-                style: GoogleFonts.poppins(
-                  fontSize: 12.5,
-                  height: 1.4,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-      ],
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+            ),
+            alignment: Alignment.center,
+            child: Icon(icone, size: 22, color: AppColors.accentInk),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titre,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -13,6 +13,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/librarySe
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class RecherchePage extends StatefulWidget {
@@ -31,6 +32,15 @@ class _RecherchePageState extends State<RecherchePage> {
   bool _isLoading = false;
   String _query = "";
 
+  /// Ce qui a empêché la dernière recherche d'aboutir.
+  ///
+  /// La méthode enchaînait `try` et `finally` sans `catch` : l'indicateur se
+  /// remettait bien à zéro, donc pas d'écran figé, mais l'exception partait
+  /// dans le vide et la liste restait vide. Une recherche en échec se
+  /// présentait exactement comme une recherche sans résultat — « Aucun
+  /// résultat trouvé pour "X" » alors que le serveur n'avait rien dit.
+  String? _erreur;
+
   void _onSearch(String value) async {
     if (value.trim().isEmpty) {
       setState(() {
@@ -43,12 +53,18 @@ class _RecherchePageState extends State<RecherchePage> {
     setState(() {
       _isLoading = true;
       _query = value;
+      _erreur = null;
     });
 
     try {
       final token = await TokenStorage.getToken();
       final futures = [
-        _bookService.getAllBooks(),
+        // La recherche est faite par le serveur. L'ecran chargeait le
+        // catalogue entier puis filtrait en memoire : exact, mais le cout
+        // suivait la taille du catalogue au lieu de suivre le nombre de
+        // resultats. Le serveur cherche dans le titre ET le nom de l'auteur,
+        // comme le faisait le filtre remplace.
+        _bookService.getBooksPage(recherche: value),
         if (token != null)
           _libraryService.getUserLibrary(token)
         else
@@ -107,6 +123,10 @@ class _RecherchePageState extends State<RecherchePage> {
         });
       }
 
+      // Le filtre en memoire qui se trouvait ici portait sur le titre, le nom
+      // de l'auteur et l'identifiant de l'auteur. Les deux premiers sont
+      // desormais appliques par le serveur ; la recherche par identifiant
+      // d'auteur, elle, disparait — un lecteur ne tape pas un UUID.
       final filtered = enrichedBooks.where((book) {
         final titleMatch = book.titre.toLowerCase().contains(
           value.toLowerCase(),
@@ -120,8 +140,14 @@ class _RecherchePageState extends State<RecherchePage> {
       setState(() {
         _searchResults = filtered;
       });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _searchResults = [];
+        _erreur = messageLisible(e, repli: "La recherche n'a pas abouti.");
+      });
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -159,6 +185,8 @@ class _RecherchePageState extends State<RecherchePage> {
           ? _buildEmptyState(
               "Saisissez quelque chose pour commencer la recherche",
             )
+          : _erreur != null
+          ? _buildErrorState(_erreur!)
           : _searchResults.isEmpty
           ? _buildEmptyState("Aucun résultat trouvé pour \"$_query\"")
           : ListView.builder(
@@ -189,6 +217,36 @@ class _RecherchePageState extends State<RecherchePage> {
             style: AppTextStyles.greyMedium14,
           ),
         ],
+      ),
+    );
+  }
+
+  /// Un échec se dit, et se rejoue.
+  ///
+  /// L'icône et le bouton distinguent ce cas du « aucun résultat » : la
+  /// personne sait qu'il ne s'agit pas de son mot-clé, et qu'insister a un
+  /// sens ici, contrairement à une recherche qui n'a rien trouvé.
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _onSearch(_query),
+              child: const Text("Réessayer"),
+            ),
+          ],
+        ),
       ),
     );
   }

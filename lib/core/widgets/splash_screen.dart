@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 
+/// L'écran d'attente pendant que l'application relit la session.
+///
+/// Il prend la suite du splash natif, qui affiche déjà le logo. Le passage de
+/// l'un à l'autre ne doit pas se voir : même fond, même logo, même taille, au
+/// même endroit. Le logo n'est donc ni animé ni redimensionné ici — il l'était,
+/// et on le voyait pâlir puis grossir de moitié au démarrage. Seul l'indicateur
+/// de chargement apparaît, puisque lui n'existait pas avant.
+///
+/// D'où l'image affichée : splash_icon.png, le carré que le splash natif montre
+/// déjà, plutôt que logo_sp.png. Le logo livré porte un tiers de bordure
+/// transparente, si bien qu'une largeur donnée en Dart n'était pas celle du
+/// dessin ; en reprenant le même carré, les 176 dp ci-dessous rendent les
+/// 150 dp de logo du splash natif, au pixel près (cf. tool/generer_icones.py).
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -13,7 +25,6 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -23,16 +34,10 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 600),
     );
 
-    // Démarre à 0.4 pour éviter la phase entièrement noire
-    _fadeAnimation = Tween<double>(
-      begin: 0.4,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.92,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    );
 
     _controller.forward();
   }
@@ -46,110 +51,40 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark
-        ? const Color(0xFF12141D)
-        : AppColors.scaffoldBackground;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      // Le même fond que le splash natif (cf. flutter_native_splash dans
+      // pubspec.yaml) et que la page qui suit.
+      backgroundColor: AppColors.scaffoldBackground,
       body: Stack(
         children: [
-          // Main centered content
-          Align(
-            alignment: const Alignment(
-              0,
-              -0.15,
-            ), // Décale légèrement vers le haut
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Brand Logo
-                      Image.asset(
-                        'asset/logo_space_learn.png',
-                        width: 220,
-                        height: 220,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // App Title Branding
-                      RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Space',
-                              style: GoogleFonts.poppins(
-                                fontSize: 34,
-                                fontWeight: FontWeight.w900,
-                                color: isDark
-                                    ? Colors.white
-                                    : AppColors.textPrimary,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            TextSpan(
-                              text: 'Learn',
-                              style: GoogleFonts.poppins(
-                                fontSize: 34,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.accentInk,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Tagline / Subtitle
-                      Text(
-                        'Votre bibliothèque numérique intelligente',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          color: (isDark ? Colors.white : AppColors.textPrimary)
-                              .withValues(alpha: 0.7),
-                          letterSpacing: 0.3,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          // Centré, comme le logo du splash natif : décalé de 0,15 vers le
+          // haut, il sautait à l'écran suivant.
+          Center(
+            child: Image.asset(
+              'asset/splash_icon.png',
+              width: 176,
+              fit: BoxFit.contain,
             ),
           ),
 
-          // Bottom Loading Indicator
           Positioned(
             bottom: 60,
             left: 0,
             right: 0,
             child: FadeTransition(
               opacity: _fadeAnimation,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3.0,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.primary,
-                      ),
+              child: Center(
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3.0,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),

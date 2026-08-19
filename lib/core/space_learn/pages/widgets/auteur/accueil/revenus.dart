@@ -6,6 +6,8 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorStatsService.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class PeriodOption {
   final String key;
@@ -91,6 +93,18 @@ class _RevenusState extends State<Revenus> {
       } catch (e) {
         if (mounted) {
           setState(() => _isLoadingPeriodData = false);
+          // Sans ce message, changer de période sur un appel refusé laissait
+          // les chiffres de la période précédente sous le nouveau libellé :
+          // l'auteur lisait « ce mois-ci » au-dessus des montants de l'an
+          // dernier.
+          AppNotifications.showSnackBar(
+            context,
+            message: messageLisible(
+              e,
+              repli: "Les chiffres de cette période sont indisponibles.",
+            ),
+            isError: true,
+          );
         }
       }
     } else {

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/services/book_cache_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/reading_page.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
@@ -138,6 +139,39 @@ class _DownloadManagerPageState extends State<DownloadManagerPage> {
     await _charger();
   }
 
+  /// Ouvre le livre, depuis le fichier posé sur l'appareil.
+  ///
+  /// L'écran listait ce qui était téléchargé sans permettre de l'ouvrir : le
+  /// seul geste possible était la suppression. Or c'est ici qu'on se trouve
+  /// quand on n'a pas de réseau, et le lecteur consulte le disque avant de
+  /// réclamer quoi que ce soit au serveur — l'ouverture aboutit donc même hors
+  /// connexion.
+  Future<void> _ouvrir(LivreEnCache entree) async {
+    final connu = _parLivreId[entree.livreId]?.livre;
+
+    // Sans réseau, la bibliothèque n'a pas pu être chargée et le titre reste
+    // inconnu. Ce n'est pas une raison pour refuser d'ouvrir : l'identifiant et
+    // le format suffisent au lecteur, qui trouve le reste sur le disque.
+    final Map<String, dynamic> livre =
+        connu?.toJson() ??
+        <String, dynamic>{
+          'id': entree.livreId,
+          'titre': _titreDe(entree),
+          'format': entree.chemin.toLowerCase().endsWith('.epub')
+              ? 'epub'
+              : 'pdf',
+        };
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ReadingPage(book: livre)),
+    );
+    if (!mounted) return;
+    // La lecture remonte le livre en tête de liste : l'éviction du cache se
+    // fait du moins récemment lu au plus récent.
+    await _charger();
+  }
+
   String _titreDe(LivreEnCache entree) {
     final connu = _parLivreId[entree.livreId];
     final titre = connu?.livre?.titre;
@@ -259,6 +293,7 @@ class _DownloadManagerPageState extends State<DownloadManagerPage> {
             side: BorderSide(color: AppColors.textHint.withValues(alpha: 0.2)),
           ),
           child: ListTile(
+            onTap: () => _ouvrir(entree),
             leading: Icon(
               estEpub ? Icons.menu_book_rounded : Icons.picture_as_pdf,
               color: AppColors.accentInk,

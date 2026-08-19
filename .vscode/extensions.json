@@ -1,5 +1,7 @@
 {
     "recommendations": [
-        "gornivv.vscode-flutter-files"
+        "gornivv.vscode-flutter-files",
+        "streetsidesoftware.code-spell-checker",
+        "streetsidesoftware.code-spell-checker-french"
     ]
 }

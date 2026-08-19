@@ -12,9 +12,9 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 /// débordait dès le quatrième champ et le bouton passait sous la ligne de
 /// flottaison — on ne voyait pas ce qu'on remplissait.
 ///
-/// Le logo et la marque tiennent désormais sur une seule ligne. L'en-tête
-/// occupe une centaine de pixels, et les cinq écrans partagent la même
-/// composition.
+/// Le logo porte la marque : un seul bloc de 62 px remplace l'empilement.
+/// L'en-tête occupe une centaine de pixels, et les cinq écrans partagent la
+/// même composition.
 class EnTeteAuth extends StatelessWidget {
   /// Ce que l'écran demande à l'utilisateur, en une phrase.
   final String accroche;
@@ -31,53 +31,12 @@ class EnTeteAuth extends StatelessWidget {
     AppColors.suivreLeTheme(context);
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Image.asset(
-              'asset/logo_space_learn.png',
-              width: 46,
-              height: 46,
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(width: AppDimensions.spaceMd),
-            // Sur un écran de 320 px, la marque en 26 px ne tient pas à côté
-            // du logo : elle débordait de 54 px. FittedBox la réduit au lieu
-            // de la laisser dépasser, et ne fait rien tant que la place est
-            // suffisante.
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'Space',
-                        style: GoogleFonts.poppins(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
-                          height: 1.1,
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'Learn',
-                        style: GoogleFonts.poppins(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.accentInk,
-                          height: 1.1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+        // Le nom de la marque n'est plus composé en Poppins à côté du logo :
+        // il s'affichait alors dans une typographie qui n'est pas celle du
+        // logo. Attention, logo_sp.png ne porte pas d'écriture — l'en-tête ne
+        // dit donc plus « Space Learn » ; c'est asset/sp_logo.png qui le
+        // porte.
+        Image.asset('asset/logo_sp.png', height: 90, fit: BoxFit.contain),
         if (titre != null) ...[
           const SizedBox(height: AppDimensions.spaceMd),
           Text(

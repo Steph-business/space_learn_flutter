@@ -62,6 +62,21 @@ class ApiClient extends http.BaseClient {
   /// plusieurs requêtes en parallèle et qu'elles échouent toutes.
   bool _handlingUnauthorized = false;
 
+  /// Ce qu'une requête ordinaire a le droit de faire attendre.
+  ///
+  /// Sur les cent trente-six requêtes de l'application, cinq portaient un
+  /// délai. Or une requête qui n'aboutit jamais ne lève rien : aucun `catch`
+  /// ne se déclenche, aucun message ne s'affiche, et l'écran reste sur son
+  /// indicateur de chargement, indéfiniment et sans recours. `messageLisible`
+  /// a pourtant une phrase toute prête pour `TimeoutException` — que presque
+  /// rien ne pouvait déclencher.
+  ///
+  /// Le délai s'applique deux fois : à l'obtention de la réponse, puis entre
+  /// deux morceaux du corps. Ne borner que la première laisserait passer un
+  /// serveur qui envoie ses en-têtes puis se tait — un portail captif fait
+  /// exactement cela.
+  static const Duration delaiRequete = Duration(seconds: 30);
+
   /// Le renouvellement en cours, s'il y en a un.
   ///
   /// Un écran d'accueil lance une dizaine de requêtes d'un coup. Passé l'heure,
@@ -103,7 +118,7 @@ class ApiClient extends http.BaseClient {
       await _poserLeJeton(request);
     }
 
-    var reponse = await _inner.send(request);
+    var reponse = await _envoyer(request);
 
     if (reponse.statusCode != 401 || estRouteAuth) return reponse;
 
@@ -141,7 +156,7 @@ class ApiClient extends http.BaseClient {
       // rejeu présente exactement ce que le serveur vient de refuser.
       seconde.headers.remove('Authorization');
       await _poserLeJeton(seconde);
-      reponse = await _inner.send(seconde);
+      reponse = await _envoyer(seconde);
 
       // Un second 401 avec un jeton tout neuf n'est plus une question de
       // session : l'accès est réellement refusé.
@@ -160,6 +175,39 @@ class ApiClient extends http.BaseClient {
     // Session renouvelée mais requête non rejouable : rien à déconnecter,
     // l'appelant reçoit son échec et pourra recommencer.
     return reponse;
+  }
+
+  /// Cette requête-ci est-elle bornée dans le temps ?
+  ///
+  /// Non pour les envois de fichiers. Un dépôt de manuscrit part en
+  /// `StreamedRequest` et peut légitimement durer plusieurs minutes sur un
+  /// réseau lent : lui imposer le délai d'une requête ordinaire couperait
+  /// l'envoi en cours de route, et l'auteur perdrait son fichier à chaque
+  /// fois. C'est la même frontière que [_peutEtreRejouee] — seules les
+  /// requêtes au corps entièrement connu sont bornées.
+  ///
+  /// Publique pour la même raison que [verdictDuServeur] : une règle qu'un
+  /// test recopie à la main est une règle qui finira par diverger du code.
+  static bool estBornee(http.BaseRequest requete) => requete is http.Request;
+
+  /// Envoie en bornant l'attente, selon [estBornee].
+  ///
+  /// Le flux de notifications n'entre jamais ici : il ouvre son propre
+  /// `HttpClient`.
+  Future<http.StreamedResponse> _envoyer(http.BaseRequest request) async {
+    if (!estBornee(request)) return _inner.send(request);
+
+    final reponse = await _inner.send(request).timeout(delaiRequete);
+    return http.StreamedResponse(
+      reponse.stream.timeout(delaiRequete),
+      reponse.statusCode,
+      contentLength: reponse.contentLength,
+      request: reponse.request,
+      headers: reponse.headers,
+      isRedirect: reponse.isRedirect,
+      persistentConnection: reponse.persistentConnection,
+      reasonPhrase: reponse.reasonPhrase,
+    );
   }
 
   Future<void> _poserLeJeton(http.BaseRequest request) async {

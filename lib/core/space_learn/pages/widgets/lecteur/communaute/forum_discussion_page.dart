@@ -9,6 +9,7 @@ import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'forum_messages_page.dart';
 import 'salon_noms.dart';
@@ -167,9 +168,14 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       }
     } catch (e) {
       if (!mounted) return;
+      // messageLisible et non « $e » : l'exception porte le nom de sa classe,
+      // parfois le corps JSON du serveur, et personne ne lit cela.
       AppNotifications.showSnackBar(
         context,
-        message: 'Erreur : $e',
+        message: messageLisible(
+          e,
+          repli: "La discussion n'a pas pu être créée.",
+        ),
         isError: true,
       );
     }

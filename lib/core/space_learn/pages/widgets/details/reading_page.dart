@@ -106,6 +106,13 @@ class _ReadingPageState extends State<ReadingPage> {
   double _downloadProgress = 0.0;
   EpubController? _epubController;
 
+  /// Le format du fichier ouvert, tel qu'il a été chargé.
+  ///
+  /// Il se déduisait de l'adresse du fichier, laquelle manque dès qu'on ouvre
+  /// un livre déjà téléchargé sans réseau : l'écran concluait alors qu'aucun
+  /// fichier n'était disponible, sur un manuscrit pourtant en mémoire.
+  bool _estEpub = false;
+
   @override
   void initState() {
     super.initState();
@@ -142,7 +149,18 @@ class _ReadingPageState extends State<ReadingPage> {
     // Les deux ecrans partagent le meme TtsService, qui est unique : sans
     // cela, l'ecoute lancee depuis la bibliotheque continuerait de tourner
     // par-dessus celle du lecteur, deux voix sur le meme telephone.
-    unawaited(LectureAudioLivre.instance.arreter());
+    //
+    // Apres la frame, et non pendant : arreter() ne rencontre un await que si
+    // une ecoute est reellement en cours. Sinon il va jusqu'a notifyListeners
+    // sans rendre la main, donc ici, dans la pile de initState — c'est-a-dire
+    // en pleine construction du widget. La bibliotheque, encore montee sous
+    // cette page, ecoute ce notificateur et appelle setState : Flutter leve
+    // « setState() or markNeedsBuild() called during build », et ChangeNotifier
+    // rapporte l'exception sous « The LectureAudioLivre sending notification
+    // was ».
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(LectureAudioLivre.instance.arreter());
+    });
 
     // Initialisation TTS
     _ttsService.onCompletion = _onTtsCompletion;
@@ -167,6 +185,18 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Future<void> _loadBookFile() async {
+    final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
+
+    // Le disque d'abord, le réseau ensuite.
+    //
+    // L'ordre inverse faisait dépendre du réseau la lecture d'un livre déjà
+    // téléchargé : `fichier_url` est signée pour quinze minutes, donc absente
+    // ou périmée à l'ouverture suivante, et il fallait la redemander au serveur
+    // avant même de regarder si le manuscrit était là. Sans couverture, un
+    // ouvrage posé sur l'appareil s'annonçait « pas encore dans votre
+    // bibliothèque ».
+    if (bookId.isNotEmpty && await _ouvrirDepuisLeCache(bookId)) return;
+
     // Une seule adresse à lire : `fichier_url`.
     //
     // C'est le serveur qui décide ce qu'elle contient — le manuscrit entier
@@ -175,7 +205,6 @@ class _ReadingPageState extends State<ReadingPage> {
     // la préférer ici menait à un 400, et faisait ouvrir l'aperçu de deux pages
     // à un lecteur qui venait d'acheter l'ouvrage.
     String? pdfUrl = widget.book['fichier_url'] ?? widget.book['fichierUrl'];
-    final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
 
     // Si le lien du fichier est absent de l'objet initial (ex: livre venant d'être acheté),
     // on interroge le serveur avec le jeton d'authentification pour obtenir l'URL débloquée.
@@ -241,27 +270,10 @@ class _ReadingPageState extends State<ReadingPage> {
         format == 'epub' || pdfUrl.toLowerCase().endsWith('.epub');
 
     try {
-      final isCached = await _bookCacheService.isBookCached(bookId, pdfUrl);
-      if (isCached) {
-        final bytes = await _bookCacheService.getCachedBookBytes(
-          bookId,
-          pdfUrl,
-        );
-        if (bytes != null) {
-          setState(() {
-            _cachedBookBytes = bytes;
-            _isDownloading = false;
-          });
-          if (isEpub) {
-            _epubController = EpubController(
-              document: EpubDocument.openData(bytes),
-            );
-          }
-          return;
-        }
-      }
-
-      // Not cached, download it
+      // Rien sur le disque : l'aperçu et le manuscrit portent le même
+      // identifiant de livre, d'où la distinction `extrait` — sans elle ils
+      // s'écrasent l'un l'autre, et le lecteur qui vient d'acheter se voit
+      // resservir les deux pages de l'aperçu.
       setState(() {
         _isDownloading = true;
         _downloadProgress = 0.0;
@@ -270,6 +282,7 @@ class _ReadingPageState extends State<ReadingPage> {
       final bytes = await _bookCacheService.downloadAndCache(
         bookId,
         pdfUrl,
+        extrait: widget.isExtrait,
         onProgress: (progress) {
           setState(() {
             _downloadProgress = progress;
@@ -280,6 +293,7 @@ class _ReadingPageState extends State<ReadingPage> {
       if (bytes != null) {
         setState(() {
           _cachedBookBytes = bytes;
+          _estEpub = isEpub;
           _isDownloading = false;
         });
         if (isEpub) {
@@ -302,6 +316,44 @@ class _ReadingPageState extends State<ReadingPage> {
         _isDownloading = false;
       });
     }
+  }
+
+  /// Ouvre le livre déjà présent sur l'appareil. Rend `false` s'il n'y est pas.
+  ///
+  /// Aucun appel réseau : c'est tout l'intérêt. Le format se lit sur le fichier
+  /// lui-même — son extension — et non sur une adresse qu'on n'a peut-être pas.
+  Future<bool> _ouvrirDepuisLeCache(String bookId) async {
+    final fichier = await _bookCacheService.fichierEnCache(
+      bookId,
+      extrait: widget.isExtrait,
+    );
+    if (fichier == null) return false;
+
+    final bytes = await _bookCacheService.getCachedBookBytes(
+      bookId,
+      '',
+      extrait: widget.isExtrait,
+    );
+    // Le fichier était là mais illisible : getCachedBookBytes vient de
+    // l'effacer. On laisse le téléchargement reprendre la main.
+    if (bytes == null) return false;
+
+    final bool isEpub =
+        fichier.path.toLowerCase().endsWith('.epub') ||
+        (widget.book['format'] ?? '').toString().toLowerCase() == 'epub';
+
+    if (!mounted) return true;
+    setState(() {
+      _cachedBookBytes = bytes;
+      _estEpub = isEpub;
+      _isLoadingFile = false;
+      _isDownloading = false;
+    });
+
+    if (isEpub) {
+      _epubController = EpubController(document: EpubDocument.openData(bytes));
+    }
+    return true;
   }
 
   Future<void> _loadSettings() async {
@@ -1564,26 +1616,32 @@ class _ReadingPageState extends State<ReadingPage> {
       return _buildErrorView(_loadError!);
     }
 
-    if (pdfUrl == null || pdfUrl.isEmpty) {
-      return _buildErrorView("Aucun fichier disponible pour ce livre.");
-    }
-
-    final String format = (widget.book['format'] ?? '')
-        .toString()
-        .toLowerCase();
-    final bool isEpub =
-        format == 'epub' || pdfUrl.toLowerCase().endsWith('.epub');
-
-    if (!isPdf && !isEpub) {
-      // For demonstration of the UI if not a PDF, we show dummy text that looks like the mockup
-      return _buildMockEbookContent();
-    }
-
+    // Le fichier chargé fait foi, pas son adresse.
+    //
+    // `fichier_url` est signée pour quinze minutes : elle manque dès qu'on
+    // ouvre un livre sans réseau. Cette méthode refusait alors d'afficher un
+    // manuscrit pourtant déjà en mémoire, et annonçait « Aucun fichier
+    // disponible pour ce livre » sur un ouvrage posé sur l'appareil.
     if (_cachedBookBytes == null) {
-      return Center(child: CircularProgressIndicator());
+      if (pdfUrl == null || pdfUrl.isEmpty) {
+        return _buildErrorView("Aucun fichier disponible pour ce livre.");
+      }
+
+      final String format = (widget.book['format'] ?? '')
+          .toString()
+          .toLowerCase();
+      final bool isEpub =
+          format == 'epub' || pdfUrl.toLowerCase().endsWith('.epub');
+
+      if (!isPdf && !isEpub) {
+        // For demonstration of the UI if not a PDF, we show dummy text that looks like the mockup
+        return _buildMockEbookContent();
+      }
+
+      return const Center(child: CircularProgressIndicator());
     }
 
-    if (isEpub) {
+    if (_estEpub) {
       if (_epubController == null) {
         return Center(child: CircularProgressIndicator());
       }
@@ -2623,7 +2681,7 @@ class _ReadingPageState extends State<ReadingPage> {
           Container(
             padding: const EdgeInsets.all(20),
             child: Image.asset(
-              'assets/images/logo.png', // Fallback if exists
+              'asset/logo_sp.png',
               height: 30,
               errorBuilder: (context, error, stackTrace) => Text(
                 "SPACE LEARN",

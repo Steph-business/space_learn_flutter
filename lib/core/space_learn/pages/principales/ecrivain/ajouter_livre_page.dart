@@ -122,7 +122,6 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
 
     final p = _parametres!;
     final gain = p.gainPour(prix);
-    final dansLaFourchette = p.dansLaFourchette(prix);
 
     // Sous le plancher, il n'y a rien à conseiller : le serveur refusera. On
     // le dit tout de suite, et on s'arrête là — afficher « vous percevez
@@ -153,68 +152,26 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       );
     }
 
-    final ventesAvantRetrait = p.ventesAvantRetrait(prix);
-
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.account_balance_wallet_outlined,
-                size: 15,
+          Icon(
+            Icons.account_balance_wallet_outlined,
+            size: 15,
+            color: AppColors.accentInk,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              "Vous percevez ${_enFrancs(gain)} FCFA par vente",
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
                 color: AppColors.accentInk,
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  "Vous percevez ${_enFrancs(gain)} FCFA par vente "
-                  "(${p.partAuteurPourcent.toStringAsFixed(0)} %)",
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.accentInk,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          // Les deux seuils vont ensemble : un prix ne se juge pas seulement à
-          // ce qu'il rapporte par vente, mais à ce qu'il faut vendre pour
-          // toucher quelque chose.
-          if (ventesAvantRetrait > 0) ...[
-            const SizedBox(height: 4),
-            Text(
-              "$ventesAvantRetrait vente${ventesAvantRetrait > 1 ? 's' : ''} "
-              "pour atteindre le retrait minimum "
-              "(${_enFrancs(p.retraitMinimum)} FCFA).",
-              style: GoogleFonts.poppins(
-                fontSize: 11.5,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-          ],
-          if (!dansLaFourchette) ...[
-            const SizedBox(height: 6),
-            Text(
-              prix > p.prixConseilleMax
-                  ? "Au-dessus de la fourchette conseillée "
-                        "(${_enFrancs(p.prixConseilleMin)} à "
-                        "${_enFrancs(p.prixConseilleMax)} FCFA). Un prix élevé "
-                        "se vend rarement sur ce marché."
-                  : "En dessous de la fourchette conseillée "
-                        "(${_enFrancs(p.prixConseilleMin)} à "
-                        "${_enFrancs(p.prixConseilleMax)} FCFA).",
-              style: GoogleFonts.poppins(
-                fontSize: 11.5,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-          ],
         ],
       ),
     );

@@ -1,4 +1,6 @@
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
@@ -55,14 +57,103 @@ class BookService {
     }
   }
 
+  /// Taille d'une page, alignée sur le plafond du serveur.
+  ///
+  /// `utils.LimiteMax` vaut 100 côté serveur : demander davantage ne rend pas
+  /// davantage, cela consomme seulement une requête pour rien.
+  static const int taillePage = 100;
+
+  /// Ce qu'un écran peut réclamer d'un coup sans le dire.
+  ///
+  /// Une version précédente enchaînait les pages jusqu'à recevoir la dernière.
+  /// Correct sur un catalogue de trois livres, intenable ensuite : l'accueil
+  /// aurait téléchargé le catalogue entier à chaque ouverture. Un chargement
+  /// s'arrête maintenant à un nombre d'éléments annoncé — et le dit quand il
+  /// s'arrête, plutôt que de laisser croire que la liste est complète.
+  static const int maximumParDefaut = 200;
+
+  /// Une page précise du catalogue, et elle seule.
+  ///
+  /// C'est ce qu'utilisent les écrans qui chargent la suite au défilement.
+  /// [page] commence à 1.
+  Future<List<BookModel>> getBooksPage({
+    String? auteurId,
+    String? statut,
+    String? authToken,
+    String? categorieId,
+    String? recherche,
+    int page = 1,
+    int limit = taillePage,
+  }) {
+    return _pageDeLivres(
+      auteurId: auteurId,
+      statut: statut,
+      authToken: authToken,
+      categorieId: categorieId,
+      recherche: recherche,
+      limit: limit,
+      page: page,
+    );
+  }
+
+  /// Un ensemble borné de livres, en enchaînant les pages si nécessaire.
+  ///
+  /// Réservé aux ensembles dont on sait qu'ils sont petits — les livres d'un
+  /// auteur, par exemple. [maximum] est un plafond ferme : atteint, la liste
+  /// est incomplète et le journal le signale. Pour parcourir un catalogue,
+  /// utiliser [getBooksPage] et charger la suite au défilement.
   Future<List<BookModel>> getAllBooks({
     String? auteurId,
     String? statut,
     String? authToken,
+    int maximum = maximumParDefaut,
   }) async {
-    final queryParameters = <String, String>{};
+    final tous = <BookModel>[];
+
+    for (var p = 1; tous.length < maximum; p++) {
+      final reste = maximum - tous.length;
+      final lot = await _pageDeLivres(
+        auteurId: auteurId,
+        statut: statut,
+        authToken: authToken,
+        limit: reste < taillePage ? reste : taillePage,
+        page: p,
+      );
+      tous.addAll(lot);
+
+      // Page incomplète : il n'y a plus rien derrière. C'est le seul signal de
+      // fin dont on dispose, la réponse ne portant pas de compteur total.
+      if (lot.length < taillePage) return tous;
+    }
+
+    debugPrint(
+      'Catalogue : arrêt à $maximum livres. La liste affichée est incomplète.',
+    );
+    return tous;
+  }
+
+  /// Une page, un appel.
+  Future<List<BookModel>> _pageDeLivres({
+    String? auteurId,
+    String? statut,
+    String? authToken,
+    String? categorieId,
+    String? recherche,
+    required int limit,
+    required int page,
+  }) async {
+    final queryParameters = <String, String>{
+      'limit': '$limit',
+      'page': '$page',
+    };
     if (auteurId != null) queryParameters['auteur_id'] = auteurId;
     if (statut != null) queryParameters['statut'] = statut;
+    if (categorieId != null) queryParameters['categorie_id'] = categorieId;
+    // Le serveur ignore une recherche de moins de deux caracteres : une lettre
+    // seule ne restreint rien et lui coute un parcours complet.
+    if (recherche != null && recherche.trim().length >= 2) {
+      queryParameters['q'] = recherche.trim();
+    }
 
     final uri = Uri.parse(
       ApiRoutes.books,
@@ -83,12 +174,25 @@ class BookService {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data'] ?? [];
         return data.map((json) => BookModel.fromJson(json)).toList();
-      } else if (response.statusCode == 404 && queryParameters.isNotEmpty) {
-        // Fallback: if filtered query fails with 404, try getting all books
+      }
 
-        return getAllBooks(authToken: authToken);
-      } else {}
-    } catch (e) {}
+      // Un filtre inconnu du serveur : on retente sans lui plutôt que de
+      // rendre une liste vide sans explication.
+      if (response.statusCode == 404 &&
+          (auteurId != null || statut != null)) {
+        return _pageDeLivres(authToken: authToken, limit: limit, page: page);
+      }
+
+      // Le silence était total ici : trois branches vides, et un catalogue
+      // vide à l'écran sans que rien ne dise pourquoi — 429 du limiteur de
+      // débit compris.
+      debugPrint(
+        'Catalogue : HTTP ${response.statusCode} sur $uri '
+        '— ${messageDeLaReponse(response, repli: 'sans détail')}',
+      );
+    } catch (e) {
+      debugPrint('Catalogue : $uri injoignable — $e');
+    }
 
     return [];
   }
