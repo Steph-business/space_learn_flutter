@@ -153,8 +153,7 @@ class _DownloadManagerPageState extends State<DownloadManagerPage> {
     return (nom != null && nom.trim().isNotEmpty) ? nom : null;
   }
 
-  int get _totalOctets =>
-      _fichiers.fold(0, (somme, f) => somme + f.octets);
+  int get _totalOctets => _fichiers.fold(0, (somme, f) => somme + f.octets);
 
   String get _totalLisible {
     final o = _totalOctets;
@@ -257,9 +256,7 @@ class _DownloadManagerPageState extends State<DownloadManagerPage> {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-            side: BorderSide(
-              color: AppColors.textHint.withValues(alpha: 0.2),
-            ),
+            side: BorderSide(color: AppColors.textHint.withValues(alpha: 0.2)),
           ),
           child: ListTile(
             leading: Icon(

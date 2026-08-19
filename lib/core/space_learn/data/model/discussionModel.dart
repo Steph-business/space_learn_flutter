@@ -37,6 +37,22 @@ class Discussion {
   /// Sans cette information, le coeur ne peut etre que creux : l'application
   /// ne saurait pas distinguer « personne n'a aime » de « moi j'ai aime ».
   final bool aimeParMoi;
+
+  /// Est-ce que je reponds de ce salon ?
+  ///
+  /// Le droit ne se devine pas ici : il vaut pour qui a ouvert le sujet, mais
+  /// aussi pour l'auteur du livre autour duquel le club s'est forme — un lien
+  /// que seul le serveur connait.
+  final bool peutGerer;
+
+  /// Est-ce que je peux RENOMMER ce sujet ?
+  ///
+  /// Plus etroit que [peutGerer], et c'est voulu : le titre et la description
+  /// sont l'ouvrage de celui qui a ouvert la salle. L'auteur du livre peut
+  /// fermer le club forme autour de son ouvrage, il n'a pas a le renommer —
+  /// moderer, c'est retirer, jamais reecrire au nom d'un autre.
+  final bool peutModifier;
+
   final DateTime? dernierMessageLe;
 
   Discussion({
@@ -56,6 +72,8 @@ class Discussion {
     this.messagesCount,
     this.likesCount,
     this.aimeParMoi = false,
+    this.peutGerer = false,
+    this.peutModifier = false,
     this.dernierMessageLe,
   });
 
@@ -125,6 +143,8 @@ class Discussion {
       messagesCount: calculatedCount,
       likesCount: calculatedLikes,
       aimeParMoi: json['aime_par_moi'] == true,
+      peutGerer: json['peut_gerer'] == true,
+      peutModifier: json['peut_modifier'] == true,
       dernierMessageLe: json['dernier_message_le'] != null
           ? DateTime.tryParse(json['dernier_message_le'])
           : null,
@@ -133,23 +153,11 @@ class Discussion {
     // Ensure messagesCount is at least messages.length
     if ((d.messagesCount == null || d.messagesCount == 0) &&
         d.messages.isNotEmpty) {
-      return Discussion(
-        id: d.id,
-        creePar: d.creePar,
-        type: d.type,
-        description: d.description,
-        imageBanniere: d.imageBanniere,
-        auteurId: d.auteurId,
-        livreId: d.livreId,
-        titre: d.titre,
-        creeLe: d.creeLe,
-        livre: d.livre,
-        messages: d.messages,
-        messagesCount: d.messages.length,
-        likesCount: d.likesCount,
-        aimeParMoi: d.aimeParMoi,
-        dernierMessageLe: d.dernierMessageLe,
-      );
+      // Le piège que le commentaire de `copyWith` décrit, à l'œuvre juste ici :
+      // cette recopie perdait `nomUtilisateur`, et aurait perdu `peutGerer` —
+      // le geste de gestion aurait alors disparu des seuls salons qui ont des
+      // messages, c'est-à-dire de tous ceux qui comptent.
+      return d.copyWith(messagesCount: d.messages.length);
     }
 
     return d;
@@ -160,24 +168,32 @@ class Discussion {
   /// Recopier la liste des champs a chaque endroit qui modifie un sujet est un
   /// piege : le jour ou l'on ajoute un champ au modele, chaque copie oubliee
   /// le perd sans bruit. Ici, un seul endroit a tenir a jour.
-  Discussion copyWith({int? likesCount, bool? aimeParMoi}) {
+  Discussion copyWith({
+    int? likesCount,
+    bool? aimeParMoi,
+    String? titre,
+    String? description,
+    int? messagesCount,
+  }) {
     return Discussion(
       id: id,
       creePar: creePar,
       nomUtilisateur: nomUtilisateur,
       type: type,
       categorie: categorie,
-      description: description,
+      description: description ?? this.description,
       imageBanniere: imageBanniere,
       auteurId: auteurId,
       livreId: livreId,
-      titre: titre,
+      titre: titre ?? this.titre,
       creeLe: creeLe,
       livre: livre,
       messages: messages,
-      messagesCount: messagesCount,
+      messagesCount: messagesCount ?? this.messagesCount,
       likesCount: likesCount ?? this.likesCount,
       aimeParMoi: aimeParMoi ?? this.aimeParMoi,
+      peutGerer: peutGerer,
+      peutModifier: peutModifier,
       dernierMessageLe: dernierMessageLe,
     );
   }

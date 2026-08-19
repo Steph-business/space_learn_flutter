@@ -115,7 +115,11 @@ class NavBarAuteur extends StatelessWidget {
                   child: Icon(
                     isActive ? activeIcon : icon,
                     size: 20,
-                    color: AppColors.textPrimary,
+                    // Le bouton central est un aplat : son encre lui appartient,
+                    // et ne suit pas le fond de la page. `textPrimary` s'y
+                    // inversait avec le thème et effaçait l'icône en mode
+                    // sombre. Trouvé par la règle du dégradé, pas à l'œil.
+                    color: AppColors.onAccent,
                   ),
                 )
               else

@@ -54,7 +54,8 @@ void main() {
     expect(
       formulaire.validate(),
       isTrue,
-      reason: "un argumentaire vide ne doit pas invalider le formulaire : "
+      reason:
+          "un argumentaire vide ne doit pas invalider le formulaire : "
           "le champ est annoncé facultatif",
     );
   });

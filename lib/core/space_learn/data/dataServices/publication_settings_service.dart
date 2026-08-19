@@ -19,6 +19,8 @@ class ParametresPublication {
     required this.commissionPourcent,
     required this.prixConseilleMin,
     required this.prixConseilleMax,
+    required this.prixMinimum,
+    required this.retraitMinimum,
   });
 
   final bool visibiliteParDefaut;
@@ -39,11 +41,40 @@ class ParametresPublication {
   final double prixConseilleMin;
   final double prixConseilleMax;
 
+  /// Le prix plancher d'un livre payant, en francs CFA.
+  ///
+  /// Celui-ci n'est pas un conseil : sous ce montant, le serveur refuse la
+  /// vente. Il vient du serveur pour qu'il n'existe qu'une seule valeur — une
+  /// constante recopiée ici aurait fini par diverger, et l'auteur aurait
+  /// rempli toute sa fiche avant d'être refusé.
+  final double prixMinimum;
+
+  /// Ce qu'il faut avoir gagné avant de pouvoir demander un virement.
+  ///
+  /// L'auteur fixe son prix en connaissant les deux bornes : ce qu'une vente
+  /// doit rapporter au minimum, et ce qu'il faut cumuler pour toucher.
+  final double retraitMinimum;
+
   /// Ce que l'auteur perçoit sur une vente à [prix].
   double gainPour(double prix) => prix * partAuteurPourcent / 100;
 
   bool dansLaFourchette(double prix) =>
       prix >= prixConseilleMin && prix <= prixConseilleMax;
+
+  /// Un prix que le serveur refusera. Zéro n'en est pas un : la gratuité suit
+  /// un autre chemin, et l'auteur la choisit explicitement.
+  bool sousLePlancher(double prix) =>
+      prixMinimum > 0 && prix > 0 && prix < prixMinimum;
+
+  /// Combien de ventes à ce prix avant de pouvoir demander un virement.
+  ///
+  /// Rend zéro quand la question n'a pas de sens — livre gratuit, ou bornes
+  /// non renseignées par un serveur d'une version antérieure.
+  int ventesAvantRetrait(double prix) {
+    final gain = gainPour(prix);
+    if (gain <= 0 || retraitMinimum <= 0) return 0;
+    return (retraitMinimum / gain).ceil();
+  }
 
   factory ParametresPublication.fromJson(Map<String, dynamic> json) {
     double nombre(dynamic v, double defaut) {
@@ -63,8 +94,15 @@ class ParametresPublication {
           : 'FCFA',
       partAuteurPourcent: nombre(json['part_auteur_pourcent'], 80),
       commissionPourcent: nombre(json['commission_pourcent'], 20),
-      prixConseilleMin: nombre(json['prix_conseille_min'], 1000),
+      prixConseilleMin: nombre(json['prix_conseille_min'], 2000),
       prixConseilleMax: nombre(json['prix_conseille_max'], 5000),
+      // Les replis correspondent aux valeurs du serveur : un serveur d'une
+      // version antérieure n'envoie pas encore ces deux bornes.
+      prixMinimum: nombre(json['prix_minimum'], 2000),
+      // Le seuil à partir duquel l'auteur peut demander un virement. Ce n'est
+      // plus le seuil de gratuité — les virements sont gratuits — mais le
+      // plancher en dessous duquel un transfert n'a pas de sens.
+      retraitMinimum: nombre(json['retrait_minimum_absolu'], 1000),
     );
   }
 }

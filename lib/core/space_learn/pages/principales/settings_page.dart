@@ -13,12 +13,14 @@ import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/readerStatsService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/readingPreferencesPage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/base_settings_layout.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart' as ecrivainHome;
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
+    as ecrivainHome;
 
 // Nouvelles pages de paramètres
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/password_change_page.dart';
@@ -38,8 +40,30 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   int _favoritesCount = 0;
+
+  /// Nombre de livres possédés. Ce n'est PAS le nombre de livres lus.
   int _libraryCount = 0;
+
+  /// Livres réellement terminés, tels que le serveur les compte.
+  int _livresLus = 0;
   int _inProgressCount = 0;
+
+  /// Repli hors ligne : compter depuis la bibliothèque déjà chargée.
+  ///
+  /// La règle est celle du serveur — un livre possédé ET dont la progression
+  /// atteint 100 %. La bibliothèque ne contient que des livres possédés, la
+  /// jointure est donc implicite ici.
+  int _compterLocalement(List<LibraryModel> livres, {required bool termines}) {
+    return livres.where((b) {
+      final progressions = b.livre?.progressions;
+      if (progressions == null || progressions.isEmpty) return false;
+      final pourcentage = progressions.first.pourcentage;
+      return termines
+          ? pourcentage >= 100
+          : pourcentage > 0 && pourcentage < 100;
+    }).length;
+  }
+
   bool _isLoadingStats = true;
 
   @override
@@ -61,23 +85,28 @@ class _SettingsPageState extends State<SettingsPage> {
           libBooks = await libService.getUserLibrary(token);
         } catch (_) {}
 
+        // Le serveur compte les livres lus et en cours ; c'est lui qui fait foi.
+        //
+        // Cet écran affichait `libBooks.length` sous le libellé « Livres lus ».
+        // C'est la TAILLE DE LA BIBLIOTHÈQUE : deux livres possédés, un seul
+        // terminé — d'où « 1 » sur l'accueil et « 2 » ici, le même jour, pour
+        // le même lecteur.
+        //
+        // « En cours » était pire encore : quand aucun livre n'était en cours,
+        // on en affichait un quand même (`if (inProgress == 0) inProgress = 1`).
+        // Un chiffre inventé est plus grave qu'un chiffre absent — il ne se
+        // corrige jamais, puisque rien ne signale qu'il est faux.
+        final bilan = await ReaderStatsService().lireBilan();
+
         if (mounted) {
           setState(() {
             _favoritesCount = favs.length;
             _libraryCount = libBooks.length;
-
-            int inProgress = libBooks.where((b) {
-              final progressions = b.livre?.progressions;
-              if (progressions != null && progressions.isNotEmpty) {
-                final percentage = progressions.first.pourcentage;
-                return percentage > 0 && percentage < 100;
-              }
-              return false;
-            }).length;
-            if (_libraryCount > 0 && inProgress == 0) {
-              inProgress = 1;
-            }
-            _inProgressCount = inProgress;
+            _livresLus =
+                bilan?['lus'] ?? _compterLocalement(libBooks, termines: true);
+            _inProgressCount =
+                bilan?['en_cours'] ??
+                _compterLocalement(libBooks, termines: false);
             _isLoadingStats = false;
           });
         }
@@ -404,7 +433,7 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatCol("Livres lus", "$_libraryCount"),
+          _buildStatCol("Livres lus", "$_livresLus"),
           _buildStatCol("En cours", "$_inProgressCount"),
           _buildStatCol("Favoris", "$_favoritesCount"),
         ],

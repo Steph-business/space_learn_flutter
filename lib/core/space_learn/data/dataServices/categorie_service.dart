@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/categorie.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class CategorieService {
   final http.Client client;
@@ -18,7 +19,12 @@ class CategorieService {
       final List<dynamic> categoriesJson = data['data'] ?? [];
       return categoriesJson.map((json) => Categorie.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch categories');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les catégories.",
+        ),
+      );
     }
   }
 
@@ -30,7 +36,9 @@ class CategorieService {
       final Map<String, dynamic> data = jsonDecode(response.body);
       return Categorie.fromJson(data['data']);
     } else {
-      throw Exception('Failed to fetch category');
+      throw Exception(
+        messageDeLaReponse(response, repli: "Cette catégorie est introuvable."),
+      );
     }
   }
 
@@ -51,7 +59,12 @@ class CategorieService {
       final Map<String, dynamic> data = jsonDecode(response.body);
       return Categorie.fromJson(data['data']);
     } else {
-      throw Exception('Failed to create category');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Cette catégorie n'a pas pu être créée.",
+        ),
+      );
     }
   }
 
@@ -74,7 +87,12 @@ class CategorieService {
       final Map<String, dynamic> data = jsonDecode(response.body);
       return Categorie.fromJson(data['data']);
     } else {
-      throw Exception('Failed to update category');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Cette catégorie n'a pas pu être modifiée.",
+        ),
+      );
     }
   }
 
@@ -86,7 +104,12 @@ class CategorieService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete category');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Cette catégorie n'a pas pu être supprimée.",
+        ),
+      );
     }
   }
 }

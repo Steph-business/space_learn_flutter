@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class SupabaseService {
   static final client = Supabase.instance.client;
@@ -95,7 +96,9 @@ class SupabaseService {
           final publicUrl = getPublicUrl(bucket, path);
           return publicUrl;
         } catch (retryError) {
-          throw Exception('Failed to create bucket and upload: $retryError');
+          throw Exception(
+            messageLisible(retryError, repli: "L'envoi du fichier a échoué."),
+          );
         }
       }
 
@@ -144,7 +147,9 @@ class SupabaseService {
               );
           return getPublicUrl(bucket, path);
         } catch (retryError) {
-          throw Exception('Failed to create bucket and upload: $retryError');
+          throw Exception(
+            messageLisible(retryError, repli: "L'envoi du fichier a échoué."),
+          );
         }
       }
       throw Exception('Supabase uploadBytes error: $e');

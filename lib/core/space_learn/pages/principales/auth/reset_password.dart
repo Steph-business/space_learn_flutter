@@ -9,6 +9,7 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
@@ -76,13 +77,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     });
 
     try {
-      final success = await _authService.resetPassword(
-        widget.email,
-        widget.otp,
-        password,
-      );
+      // Un refus lève, avec sa raison : mot de passe trop faible, code
+      // expiré, adresse inconnue. Toutes ces réponses s'affichaient sous la
+      // même phrase, qui ne disait pas ce qu'il fallait corriger.
+      await _authService.resetPassword(widget.email, widget.otp, password);
 
-      if (success && mounted) {
+      if (mounted) {
         AppNotifications.showPremiumDialog(
           context,
           title: "Mot de passe réinitialisé",
@@ -101,18 +101,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             }
           },
         );
-      } else if (mounted) {
-        AppNotifications.showSnackBar(
-          context,
-          message: "Impossible de réinitialiser le mot de passe.",
-          isError: true,
-        );
       }
     } catch (e) {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur : ${e.toString().replaceAll("Exception: ", "")}",
+          message: messageLisible(e, repli: "Réinitialisation impossible."),
           isError: true,
         );
       }

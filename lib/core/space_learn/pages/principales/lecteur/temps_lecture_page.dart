@@ -26,6 +26,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
   int _todayMinutes = 0;
   int _streakDays = 0;
   int _dailyGoalMinutes = 15;
+
   /// Les créneaux de lecture, avec leurs jours.
   ///
   /// Remplacent l'heure unique `_reminderTime` et sa bascule : une seule heure,
@@ -47,20 +48,24 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
 
   Future<void> _loadReadingAnalytics() async {
     try {
-      final totalMin =
-          await ReadingTimeStorage.getTotalReadingMinutes(widget.userId);
-      final todayMin =
-          await ReadingTimeStorage.getTodayReadingMinutes(widget.userId);
+      final totalMin = await ReadingTimeStorage.getTotalReadingMinutes(
+        widget.userId,
+      );
+      final todayMin = await ReadingTimeStorage.getTodayReadingMinutes(
+        widget.userId,
+      );
       final streak = await ReadingTimeStorage.getReadingStreak(widget.userId);
       final goal = await ReadingTimeStorage.getDailyGoalMinutes(widget.userId);
       // Synchronise plutôt que de simplement lire : le serveur porte les
       // créneaux du compte, et cet appareil les reprogramme au passage. C'est
       // ce qui fait qu'une réinstallation ne fait pas disparaître les rappels.
       final creneaux = await RappelsLecture.synchroniser();
-      final points =
-          await ReadingTimeStorage.getWeeklyReadingPoints(widget.userId);
-      final sessions =
-          await ReadingTimeStorage.getRecentSessions(widget.userId);
+      final points = await ReadingTimeStorage.getWeeklyReadingPoints(
+        widget.userId,
+      );
+      final sessions = await ReadingTimeStorage.getRecentSessions(
+        widget.userId,
+      );
 
       try {
         final token = await TokenStorage.getToken();
@@ -157,8 +162,9 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.12),
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusPill),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusPill,
+                        ),
                         border: Border.all(
                           color: AppColors.primary.withOpacity(0.3),
                         ),
@@ -194,13 +200,13 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                               max: 8,
                               divisions: 8,
                               activeColor: AppColors.primary,
-                              inactiveColor:
-                                  AppColors.textHint.withOpacity(0.2),
+                              inactiveColor: AppColors.textHint.withOpacity(
+                                0.2,
+                              ),
                               onChanged: (val) {
                                 setModalState(() {
                                   selectedHours = val.round();
-                                  if (selectedHours == 0 &&
-                                      selectedMins == 0) {
+                                  if (selectedHours == 0 && selectedMins == 0) {
                                     selectedMins = 5;
                                   }
                                 });
@@ -228,13 +234,13 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                               max: 55,
                               divisions: 11,
                               activeColor: AppColors.primary,
-                              inactiveColor:
-                                  AppColors.textHint.withOpacity(0.2),
+                              inactiveColor: AppColors.textHint.withOpacity(
+                                0.2,
+                              ),
                               onChanged: (val) {
                                 setModalState(() {
                                   selectedMins = val.round();
-                                  if (selectedHours == 0 &&
-                                      selectedMins == 0) {
+                                  if (selectedHours == 0 && selectedMins == 0) {
                                     selectedMins = 5;
                                   }
                                 });
@@ -251,8 +257,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                     height: 48,
                     child: ElevatedButton(
                       onPressed: () {
-                        final finalMin =
-                            (selectedHours * 60) + selectedMins;
+                        final finalMin = (selectedHours * 60) + selectedMins;
                         _updateDailyGoal(finalMin > 0 ? finalMin : 15);
                         Navigator.pop(ctx);
                       },
@@ -260,8 +265,9 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.onAccent,
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppDimensions.radiusPill),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusPill,
+                          ),
                         ),
                         elevation: 0,
                       ),
@@ -345,11 +351,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
         ),
       ),
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primary,
-              ),
-            )
+          ? Center(child: CircularProgressIndicator(color: AppColors.primary))
           : RefreshIndicator(
               color: AppColors.primary,
               onRefresh: _loadReadingAnalytics,
@@ -382,8 +384,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
   }
 
   Widget _buildHeroOverview() {
-    final formattedTotal =
-        ReadingTimeStorage.formatMinutesFull(_totalMinutes);
+    final formattedTotal = ReadingTimeStorage.formatMinutesFull(_totalMinutes);
     final todayProgress = _dailyGoalMinutes > 0
         ? (_todayMinutes / _dailyGoalMinutes).clamp(0.0, 1.0)
         : 0.0;
@@ -394,10 +395,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.primaryDark,
-            AppColors.primary,
-          ],
+          colors: [AppColors.primaryDark, AppColors.primary],
         ),
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
         boxShadow: [
@@ -443,8 +441,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.onAccent.withOpacity(0.12),
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusPill),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
                   border: Border.all(
                     color: AppColors.onAccent.withOpacity(0.2),
                   ),
@@ -502,8 +499,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                 ),
                 const SizedBox(height: 10),
                 ClipRRect(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusXs),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                   child: LinearProgressIndicator(
                     value: todayProgress,
                     minHeight: 8,
@@ -512,7 +508,9 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                     // de `onAccent`, atteinte ou non. Le vert de `success` est
                     // réservé à la confirmation ; en décor, il cesse de vouloir
                     // dire quoi que ce soit là où il compte vraiment.
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.onAccent),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.onAccent,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -548,9 +546,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        border: Border.all(
-          color: AppColors.textPrimary.withOpacity(0.06),
-        ),
+        border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -591,8 +587,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: _weeklyPoints.map((point) {
-                final heightFactor =
-                    (point.minutes / maxMin).clamp(0.05, 1.0);
+                final heightFactor = (point.minutes / maxMin).clamp(0.05, 1.0);
                 return _buildBarColumn(point, heightFactor);
               }).toList(),
             ),
@@ -662,9 +657,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        border: Border.all(
-          color: AppColors.textPrimary.withOpacity(0.06),
-        ),
+        border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,8 +667,11 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.tune_rounded,
-                      color: AppColors.accentInk, size: 20),
+                  Icon(
+                    Icons.tune_rounded,
+                    color: AppColors.accentInk,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     "Personnaliser mon objectif",
@@ -694,8 +690,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.15),
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusPill),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
                 ),
                 child: Text(
                   _formatGoalDuration(_dailyGoalMinutes),
@@ -733,15 +728,15 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                   backgroundColor: AppColors.scaffoldBackground,
                   labelStyle: GoogleFonts.poppins(
                     fontSize: 12,
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                     color: isSelected
                         ? AppColors.onAccent
                         : AppColors.textPrimary,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusPill),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusPill,
+                    ),
                     side: BorderSide(
                       color: isSelected
                           ? AppColors.primary
@@ -776,8 +771,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                     ? AppColors.primary
                     : AppColors.scaffoldBackground,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusPill),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
                   side: BorderSide(
                     color: !isPresetSelected
                         ? AppColors.primary
@@ -829,10 +823,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.scaffoldBackground,
               borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
@@ -883,7 +874,9 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
+                  ),
                 ),
                 child: Icon(
                   Icons.notifications_active_outlined,
@@ -932,7 +925,11 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               onPressed: _ajouterCreneau,
-              icon: Icon(Icons.add_rounded, size: 18, color: AppColors.accentInk),
+              icon: Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: AppColors.accentInk,
+              ),
               label: Text(
                 "Ajouter un créneau",
                 style: GoogleFonts.poppins(
@@ -1057,7 +1054,8 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
               ),
               Switch(
                 value: creneau.actif,
-                onChanged: (v) => _majCreneau(index, creneau.copyWith(actif: v)),
+                onChanged: (v) =>
+                    _majCreneau(index, creneau.copyWith(actif: v)),
               ),
               IconButton(
                 tooltip: "Supprimer ce créneau",
@@ -1178,17 +1176,14 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        border: Border.all(
-          color: AppColors.textPrimary.withOpacity(0.06),
-        ),
+        border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.history_rounded,
-                  color: AppColors.accentInk, size: 20),
+              Icon(Icons.history_rounded, color: AppColors.accentInk, size: 20),
               const SizedBox(width: 8),
               Text(
                 "Sessions de lecture récentes",
@@ -1239,10 +1234,13 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
               separatorBuilder: (_, __) => const Divider(height: 16),
               itemBuilder: (context, index) {
                 final session = _recentSessions[index];
-                final dateStr = DateFormat('dd MMM à HH:mm', 'fr_FR')
-                    .format(session.timestamp);
-                final durationStr =
-                    ReadingTimeStorage.formatMinutes(session.durationMinutes);
+                final dateStr = DateFormat(
+                  'dd MMM à HH:mm',
+                  'fr_FR',
+                ).format(session.timestamp);
+                final durationStr = ReadingTimeStorage.formatMinutes(
+                  session.durationMinutes,
+                );
 
                 return Row(
                   children: [
@@ -1290,8 +1288,9 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.12),
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusPill),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusPill,
+                        ),
                       ),
                       child: Text(
                         durationStr,
@@ -1317,9 +1316,7 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

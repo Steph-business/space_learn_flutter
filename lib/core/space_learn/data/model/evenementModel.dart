@@ -54,7 +54,8 @@ class Evenement {
           ? DateTime.tryParse(json['date_evenement'])
           : null,
       auteurId: json['auteur_id'] ?? '',
-      nomAuteur: json['nom_auteur'] ?? json['auteur_nom'] ?? json['nom_complet'],
+      nomAuteur:
+          json['nom_auteur'] ?? json['auteur_nom'] ?? json['nom_complet'],
       creeLe: json['cree_le'] != null
           ? DateTime.tryParse(json['cree_le'])
           : null,

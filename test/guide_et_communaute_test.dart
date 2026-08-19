@@ -19,7 +19,8 @@ void main() {
   const guide =
       'lib/core/space_learn/pages/principales/settings/user_guide_page.dart';
   const visite = 'lib/core/widgets/guides/space_learn_tour.dart';
-  const faq = 'lib/core/space_learn/pages/principales/settings/help_faq_page.dart';
+  const faq =
+      'lib/core/space_learn/pages/principales/settings/help_faq_page.dart';
 
   // ── Un lecteur ne voit pas le mode d'emploi de l'auteur ─────────────────
   //
@@ -40,21 +41,33 @@ void main() {
       isFalse,
       reason: "Le drapeau d'onglet initial a été remplacé par un vrai rôle.",
     );
-    expect(source.contains('length: widget.estAuteur ? 2 : 1'), isTrue,
-        reason: 'Un lecteur n\'a qu\'un onglet.');
-    expect(source.contains('if (widget.estAuteur) _buildAuthorGuide'), isTrue,
-        reason: 'Le parcours auteur ne doit pas être construit pour un lecteur.');
+    expect(
+      source.contains('length: widget.estAuteur ? 2 : 1'),
+      isTrue,
+      reason: 'Un lecteur n\'a qu\'un onglet.',
+    );
+    expect(
+      source.contains('if (widget.estAuteur) _buildAuthorGuide'),
+      isTrue,
+      reason: 'Le parcours auteur ne doit pas être construit pour un lecteur.',
+    );
   });
 
   // ── Le guide est atteignable depuis l'en-tête ───────────────────────────
   test("l'en-tête porte l'accès au guide, avec un point d'interrogation", () {
     final entete = lire('lib/core/themes/layout/nav_bar_all.dart');
 
-    expect(entete.contains('Icons.help_outline_rounded'), isTrue,
-        reason: "L'icône d'aide doit être un point d'interrogation.");
+    expect(
+      entete.contains('Icons.help_outline_rounded'),
+      isTrue,
+      reason: "L'icône d'aide doit être un point d'interrogation.",
+    );
     expect(entete.contains('UserGuidePage('), isTrue);
-    expect(entete.contains("estAuteur: widget.role == 'auteur'"), isTrue,
-        reason: "Le rôle de l'en-tête décide de ce qui s'ouvre.");
+    expect(
+      entete.contains("estAuteur: widget.role == 'auteur'"),
+      isTrue,
+      reason: "Le rôle de l'en-tête décide de ce qui s'ouvre.",
+    );
   });
 
   // ── Le guide et la visite suivent la palette ────────────────────────────
@@ -90,12 +103,21 @@ void main() {
     final source = lire(guide);
 
     expect(source.contains('TtsService'), isTrue);
-    expect(source.contains('apercu: true'), isTrue,
-        reason: "Lire une section ne doit pas tourner la page d'un livre.");
-    expect(source.contains('_tts.removeListener'), isTrue,
-        reason: 'Le service est un singleton : son écouteur doit être retiré.');
-    expect(source.contains('_tts.stop();'), isTrue,
-        reason: 'La voix doit se taire quand on quitte le guide.');
+    expect(
+      source.contains('apercu: true'),
+      isTrue,
+      reason: "Lire une section ne doit pas tourner la page d'un livre.",
+    );
+    expect(
+      source.contains('_tts.removeListener'),
+      isTrue,
+      reason: 'Le service est un singleton : son écouteur doit être retiré.',
+    );
+    expect(
+      source.contains('_tts.stop();'),
+      isTrue,
+      reason: 'La voix doit se taire quand on quitte le guide.',
+    );
   });
 
   _paliersEtSerie();
@@ -126,9 +148,13 @@ void main() {
         'auteur_id': 'a1',
         'date_evenement': vieux.toIso8601String(),
       });
-      expect(e.passe, isTrue,
-          reason: 'Un serveur antérieur au drapeau ne doit pas tout donner '
-              'pour à venir.');
+      expect(
+        e.passe,
+        isTrue,
+        reason:
+            'Un serveur antérieur au drapeau ne doit pas tout donner '
+            'pour à venir.',
+      );
     });
 
     test("un événement du jour n'est pas passé", () {
@@ -140,9 +166,13 @@ void main() {
         'auteur_id': 'a1',
         'date_evenement': DateTime.now().toIso8601String(),
       });
-      expect(e.passe, isFalse,
-          reason: 'La journée entière compte : sinon une rencontre en cours '
-              'serait donnée pour terminée.');
+      expect(
+        e.passe,
+        isFalse,
+        reason:
+            'La journée entière compte : sinon une rencontre en cours '
+            'serait donnée pour terminée.',
+      );
     });
 
     test("une annonce sans date n'est jamais passée", () {
@@ -169,10 +199,16 @@ void _paliersEtSerie() {
       'lib/core/space_learn/data/dataServices/reading_time_storage.dart',
     ).readAsStringSync();
 
-    expect(source.contains('_prochainPalier'), isTrue,
-        reason: 'Les objectifs doivent progresser, pas plafonner.');
-    expect(source.contains('serieJours'), isTrue,
-        reason: 'La série de jours doit alimenter les objectifs.');
+    expect(
+      source.contains('_prochainPalier'),
+      isTrue,
+      reason: 'Les objectifs doivent progresser, pas plafonner.',
+    );
+    expect(
+      source.contains('serieJours'),
+      isTrue,
+      reason: 'La série de jours doit alimenter les objectifs.',
+    );
   });
 
   test("la série de jours est affichée au lecteur", () {
@@ -180,10 +216,16 @@ void _paliersEtSerie() {
       'lib/core/space_learn/pages/principales/lecteur/badges_page.dart',
     ).readAsStringSync();
 
-    expect(page.contains('getReadingStreak'), isTrue,
-        reason: 'La série était calculée et jamais lue.');
-    expect(page.contains('local_fire_department'), isTrue,
-        reason: "La série doit avoir sa place dans l'en-tête.");
+    expect(
+      page.contains('getReadingStreak'),
+      isTrue,
+      reason: 'La série était calculée et jamais lue.',
+    );
+    expect(
+      page.contains('local_fire_department'),
+      isTrue,
+      reason: "La série doit avoir sa place dans l'en-tête.",
+    );
   });
 
   test("les trois statistiques ne débordent pas sur un écran étroit", () {
@@ -196,7 +238,9 @@ void _paliersEtSerie() {
     expect(page.contains('Widget _statistique('), isTrue);
     expect(page.contains('overflow: TextOverflow.ellipsis'), isTrue);
     expect(
-      RegExp(r'Widget _statistique\([\s\S]{0,400}?return Expanded\(').hasMatch(page),
+      RegExp(
+        r'Widget _statistique\([\s\S]{0,400}?return Expanded\(',
+      ).hasMatch(page),
       isTrue,
       reason: 'Chaque statistique doit être Expanded pour partager la largeur.',
     );

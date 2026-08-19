@@ -10,6 +10,7 @@ import '../../data/dataServices/favoriteService.dart';
 import '../../data/dataServices/profileService.dart';
 import '../../data/dataServices/authServices.dart';
 import '../../data/dataServices/libraryService.dart';
+import '../../data/dataServices/readerStatsService.dart';
 import '../../data/model/user_model.dart';
 import '../../data/model/profilModel.dart';
 import '../../data/model/library_model.dart';
@@ -22,6 +23,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/a
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class ProfilePage extends StatefulWidget {
   final bool forceComplete;
@@ -35,8 +37,28 @@ class _ProfilePageState extends State<ProfilePage> {
   UserModel? _user;
   bool _isLoading = true;
   int _favoritesCount = 0;
+
+  /// Nombre de livres possédés. Ce n'est PAS le nombre de livres lus.
   int _libraryCount = 0;
+
+  /// Livres réellement terminés, tels que le serveur les compte.
+  int _livresLus = 0;
   int _inProgressCount = 0;
+
+  /// Repli hors ligne, avec la règle du serveur : un livre possédé dont la
+  /// progression atteint 100 %. La bibliothèque ne contient que des livres
+  /// possédés, la jointure est donc implicite.
+  int _compterLocalement(List<LibraryModel> livres, {required bool termines}) {
+    return livres.where((b) {
+      final progressions = b.livre?.progressions;
+      if (progressions == null || progressions.isEmpty) return false;
+      final pourcentage = progressions.first.pourcentage;
+      return termines
+          ? pourcentage >= 100
+          : pourcentage > 0 && pourcentage < 100;
+    }).length;
+  }
+
   List<ProfilModel> _profilesCache = [];
   final FavoriteService _favoriteService = FavoriteService();
   final ProfileService _profileService = ProfileService();
@@ -188,7 +210,6 @@ class _ProfilePageState extends State<ProfilePage> {
             SizedBox(height: 30),
 
             // Formulaire
-
             _buildTextField(
               controller: _nameController,
               label: "Nom complet",
@@ -218,7 +239,6 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.link,
             ),
             SizedBox(height: 20),
-
 
             _buildTextField(
               controller: _phoneController,
@@ -319,7 +339,7 @@ class _ProfilePageState extends State<ProfilePage> {
               },
             ),
             SizedBox(height: 20),
-            
+
             _buildTextField(
               controller: _walletAddressController,
               label: "Adresse portefeuille",
@@ -999,7 +1019,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem("Livres lus", "$_libraryCount"),
+              _buildStatItem("Livres lus", "$_livresLus"),
               _buildStatItem("En cours", "$_inProgressCount"),
               _buildStatItem(
                 "Favoris",
@@ -1282,7 +1302,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur: ${e.toString().replaceAll("Exception: ", "")}",
+          message: messageLisible(e, repli: "Changement de profil impossible."),
           isError: true,
         );
         setState(() => _isLoading = false);
@@ -1308,6 +1328,10 @@ class _ProfilePageState extends State<ProfilePage> {
         try {
           profils = await _profileService.getProfils();
         } catch (_) {}
+
+        // Lu AVANT le setState : une attente à l'intérieur ne s'attend pas, et
+        // l'écran s'afficherait sur les valeurs précédentes.
+        final bilan = await ReaderStatsService().lireBilan();
 
         if (user != null && mounted) {
           setState(() {
@@ -1341,18 +1365,15 @@ class _ProfilePageState extends State<ProfilePage> {
             _favoritesCount = favs.length;
             _libraryCount = libBooks.length;
 
-            int inProgress = libBooks.where((b) {
-              final progressions = b.livre?.progressions;
-              if (progressions != null && progressions.isNotEmpty) {
-                final percentage = progressions.first.pourcentage;
-                return percentage > 0 && percentage < 100;
-              }
-              return false;
-            }).length;
-            if (_libraryCount > 0 && inProgress == 0) {
-              inProgress = 1;
-            }
-            _inProgressCount = inProgress;
+            // Même correction que sur l'écran des paramètres : « Livres lus »
+            // affichait la TAILLE DE LA BIBLIOTHÈQUE, et « En cours » était
+            // arrondi à 1 dès qu'on possédait un livre, même sans lecture
+            // entamée. Le serveur compte les deux ; il fait foi.
+            _livresLus =
+                bilan?['lus'] ?? _compterLocalement(libBooks, termines: true);
+            _inProgressCount =
+                bilan?['en_cours'] ??
+                _compterLocalement(libBooks, termines: false);
 
             _isLoading = false;
           });

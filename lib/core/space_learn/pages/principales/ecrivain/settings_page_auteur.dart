@@ -13,7 +13,8 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServi
 import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/base_settings_layout.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart' as lecteurHome;
+import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
+    as lecteurHome;
 
 // Nouvelles pages de paramètres
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/password_change_page.dart';

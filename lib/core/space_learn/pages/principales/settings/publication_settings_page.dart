@@ -152,194 +152,203 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
       body: _chargement
           ? Center(child: CircularProgressIndicator(color: AppColors.accentInk))
           : ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            "Paramètres de publication",
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            "Configurez vos préférences par défaut pour vos futures œuvres.",
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          SizedBox(height: 28),
-
-          Card(
-            color: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-            ),
-            child: Column(
+              padding: const EdgeInsets.all(16),
               children: [
-                SwitchListTile(
-                  title: Text(
-                    "Visibilité publique par défaut",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                    ),
+                Text(
+                  "Paramètres de publication",
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
-                  subtitle: Text(
-                    "Les livres créés sont directement visibles en boutique.",
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  value: _defaultPublic,
-                  activeColor: AppColors.primary,
-                  onChanged: (val) {
-                    setState(() => _defaultPublic = val);
-                  },
                 ),
-                Divider(height: 1, indent: 16, endIndent: 16),
-
-                // Licence
-                ListTile(
-                  title: Text(
-                    "Licence par défaut",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                    ),
+                SizedBox(height: 8),
+                Text(
+                  "Configurez vos préférences par défaut pour vos futures œuvres.",
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
                   ),
-                  subtitle: Text(
-                    _defaultLicense,
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  trailing: Icon(Icons.arrow_forward_ios, size: 14),
-                  onTap: _showLicenseSelector,
                 ),
-                Divider(height: 1, indent: 16, endIndent: 16),
+                SizedBox(height: 28),
 
-                // Devise
-                ListTile(
-                  title: Text(
-                    "Devise de vente",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
+                Card(
+                  color: AppColors.cardBackground,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusCard,
                     ),
                   ),
-                  subtitle: Text(
-                    _defaultCurrency,
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  trailing: Icon(Icons.arrow_forward_ios, size: 14),
-                  onTap: _showCurrencySelector,
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 24),
-
-          // Royalties / Prix
-          Text(
-            "Droits d'auteur & Rémunération",
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          SizedBox(height: 12),
-          // La part de l'auteur se lit, elle ne se saisit pas.
-          //
-          // C'était un champ libre. On pouvait y taper 95, lire « Paramètres
-          // enregistrés ! », et croire qu'on toucherait 95 % de ses ventes. Le
-          // taux appartient à la plateforme : le serveur le calcule et le
-          // renvoie, l'écran l'affiche.
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-              border: Border.all(
-                color: AppColors.textHint.withValues(alpha: 0.25),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.percent_rounded, color: AppColors.accentInk, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Vous percevez ${_partAuteur.toStringAsFixed(0)} % de chaque vente",
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                      SwitchListTile(
+                        title: Text(
+                          "Visibilité publique par défaut",
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
                         ),
+                        subtitle: Text(
+                          "Les livres créés sont directement visibles en boutique.",
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        value: _defaultPublic,
+                        activeColor: AppColors.primary,
+                        onChanged: (val) {
+                          setState(() => _defaultPublic = val);
+                        },
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Space Learn retient ${_commission.toStringAsFixed(0)} % "
-                        "au titre des frais de plateforme et de paiement.",
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          height: 1.4,
+                      Divider(height: 1, indent: 16, endIndent: 16),
+
+                      // Licence
+                      ListTile(
+                        title: Text(
+                          "Licence par défaut",
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: Text(
+                          _defaultLicense,
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        trailing: Icon(Icons.arrow_forward_ios, size: 14),
+                        onTap: _showLicenseSelector,
+                      ),
+                      Divider(height: 1, indent: 16, endIndent: 16),
+
+                      // Devise
+                      ListTile(
+                        title: Text(
+                          "Devise de vente",
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: Text(
+                          _defaultCurrency,
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        trailing: Icon(Icons.arrow_forward_ios, size: 14),
+                        onTap: _showCurrencySelector,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 24),
+
+                // Royalties / Prix
+                Text(
+                  "Droits d'auteur & Rémunération",
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 12),
+                // La part de l'auteur se lit, elle ne se saisit pas.
+                //
+                // C'était un champ libre. On pouvait y taper 95, lire « Paramètres
+                // enregistrés ! », et croire qu'on toucherait 95 % de ses ventes. Le
+                // taux appartient à la plateforme : le serveur le calcule et le
+                // renvoie, l'écran l'affiche.
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
+                    border: Border.all(
+                      color: AppColors.textHint.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.percent_rounded,
+                        color: AppColors.accentInk,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Vous percevez ${_partAuteur.toStringAsFixed(0)} % de chaque vente",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Space Learn retient ${_commission.toStringAsFixed(0)} % "
+                              "au titre des frais de plateforme et de paiement.",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          SizedBox(height: 32),
+                SizedBox(height: 32),
 
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _enregistrement
-                  ? null
-                  : () async {
-                      await _enregistrer();
-                      if (mounted && _erreur == null) Navigator.of(context).pop();
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusInner,
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _enregistrement
+                        ? null
+                        : () async {
+                            await _enregistrer();
+                            if (mounted && _erreur == null)
+                              Navigator.of(context).pop();
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      "Enregistrer les préférences",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.onAccent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              child: Text(
-                "Enregistrer les préférences",
-                style: GoogleFonts.poppins(
-                  color: AppColors.onAccent,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -29,6 +29,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart'
 import 'all_reviews_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/statistiques_livre_page.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class BookDetailPage extends StatefulWidget {
   final BookModel book;
@@ -620,7 +621,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
       if (!mounted) return;
       AppNotifications.showSnackBar(
         context,
-        message: 'Impossible de publier : $e',
+        message: messageLisible(e, repli: "Impossible de publier ce livre."),
         isError: true,
       );
     }
@@ -634,7 +635,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
       if (!mounted) return;
       AppNotifications.showSnackBar(
         context,
-        message: '"${book.titre}" a été archivé. Il reste accessible à ses acheteurs.',
+        message:
+            '"${book.titre}" a été archivé. Il reste accessible à ses acheteurs.',
         isSuccess: true,
       );
       setState(() {});
@@ -642,7 +644,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
       if (!mounted) return;
       AppNotifications.showSnackBar(
         context,
-        message: 'Impossible d\'archiver : $e',
+        message: messageLisible(e, repli: "Impossible d'archiver ce livre."),
         isError: true,
       );
     }
@@ -663,7 +665,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
           ),
           title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 24),
+              Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.warning,
+                size: 24,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -680,12 +686,18 @@ class _BookDetailPageState extends State<BookDetailPage> {
           content: Text(
             'Ce livre a déjà été acheté / lu par ${book.telechargements} lecteur(s).\n\n'
             'Pour préserver l\'accès des acheteurs à leur bibliothèque, vous ne pouvez pas le supprimer définitivement. Vous pouvez plutôt l\'archiver pour le retirer de la boutique.',
-            style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+            style: GoogleFonts.poppins(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Annuler', style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+              child: Text(
+                'Annuler',
+                style: GoogleFonts.poppins(color: AppColors.textSecondary),
+              ),
             ),
             ElevatedButton.icon(
               onPressed: () {
@@ -730,17 +742,29 @@ class _BookDetailPageState extends State<BookDetailPage> {
         ),
         content: Text(
           '"${book.titre}" sera supprimé définitivement. Cette action est irréversible.',
-          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Annuler', style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+            child: Text(
+              'Annuler',
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text('Supprimer', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+            child: Text(
+              'Supprimer',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -763,7 +787,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
       if (!mounted) return;
       AppNotifications.showSnackBar(
         context,
-        message: 'Impossible de supprimer : $e',
+        message: messageLisible(e, repli: "Impossible de supprimer ce livre."),
         isError: true,
       );
     }
@@ -831,10 +855,16 @@ class _BookDetailPageState extends State<BookDetailPage> {
             PopupMenuButton<String>(
               color: AppColors.cardBackground,
               padding: EdgeInsets.zero,
-              icon: Icon(Icons.more_vert, color: AppColors.textPrimary, size: 22),
+              icon: Icon(
+                Icons.more_vert,
+                color: AppColors.textPrimary,
+                size: 22,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-                side: BorderSide(color: AppColors.textPrimary.withValues(alpha: 0.08)),
+                side: BorderSide(
+                  color: AppColors.textPrimary.withValues(alpha: 0.08),
+                ),
               ),
               onSelected: (value) async {
                 switch (value) {
@@ -875,50 +905,113 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   PopupMenuItem(
                     value: 'edit',
                     height: 40,
-                    child: Row(children: [
-                      Icon(Icons.edit_outlined, color: AppColors.secondaryVariant, size: 18),
-                      const SizedBox(width: 12),
-                      Text('Modifier', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
-                    ]),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.edit_outlined,
+                          color: AppColors.secondaryVariant,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Modifier',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   PopupMenuItem(
                     value: 'stats',
                     height: 40,
-                    child: Row(children: [
-                      Icon(Icons.insights, color: AppColors.accentInk, size: 18),
-                      const SizedBox(width: 12),
-                      Text('Statistiques', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
-                    ]),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.insights,
+                          color: AppColors.accentInk,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Statistiques',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   if (!isPublished)
                     PopupMenuItem(
                       value: 'publish',
                       height: 40,
-                      child: Row(children: [
-                        Icon(Icons.publish_rounded, color: AppColors.success, size: 18),
-                        const SizedBox(width: 12),
-                        Text('Publier', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.success)),
-                      ]),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.publish_rounded,
+                            color: AppColors.success,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Publier',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.success,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   if (!isArchived)
                     PopupMenuItem(
                       value: 'archive',
                       height: 40,
-                      child: Row(children: [
-                        Icon(Icons.archive_outlined, color: AppColors.textSecondary, size: 18),
-                        const SizedBox(width: 12),
-                        Text('Archiver', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
-                      ]),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.archive_outlined,
+                            color: AppColors.textSecondary,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Archiver',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   const PopupMenuDivider(),
                   PopupMenuItem(
                     value: 'delete',
                     height: 40,
-                    child: Row(children: [
-                      Icon(Icons.delete_outline, color: AppColors.error, size: 18),
-                      const SizedBox(width: 12),
-                      Text('Supprimer', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.error)),
-                    ]),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          color: AppColors.error,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Supprimer',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ];
               },
@@ -1293,9 +1386,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     await Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => ReadingPage(
-                                          book: book.toJson(),
-                                        ),
+                                        builder: (context) =>
+                                            ReadingPage(book: book.toJson()),
                                       ),
                                     );
                                     if (mounted && _isOwned) {
@@ -1789,15 +1881,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               onPressed: () async {
                                 final lastPage =
                                     (_readingProgress?.lastPage != null &&
-                                            _readingProgress!.lastPage > 0)
-                                        ? _readingProgress!.lastPage
-                                        : (_readingProgress?.chapitreCourant !=
-                                                    null &&
-                                                _readingProgress!
-                                                        .chapitreCourant >
-                                                    0)
-                                            ? _readingProgress!.chapitreCourant
-                                            : null;
+                                        _readingProgress!.lastPage > 0)
+                                    ? _readingProgress!.lastPage
+                                    : (_readingProgress?.chapitreCourant !=
+                                              null &&
+                                          _readingProgress!.chapitreCourant > 0)
+                                    ? _readingProgress!.chapitreCourant
+                                    : null;
                                 await Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -1830,10 +1920,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                     _isAuthorOfThisBook
                                         ? 'Lire mon ouvrage'
                                         : (_progressionPourcentage >= 100
-                                            ? 'Relire l\'ouvrage'
-                                            : (_progressionPourcentage > 0
-                                                ? 'Continuer la lecture'
-                                                : 'Commencer la lecture')),
+                                              ? 'Relire l\'ouvrage'
+                                              : (_progressionPourcentage > 0
+                                                    ? 'Continuer la lecture'
+                                                    : 'Commencer la lecture')),
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -2113,7 +2203,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur lors de l'initialisation du paiement : $e",
+          message: messageLisible(
+            e,
+            repli: "Le paiement n'a pas pu être lancé.",
+          ),
           isError: true,
         );
       }

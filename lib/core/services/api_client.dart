@@ -1,20 +1,48 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:space_learn_flutter/core/utils/api_routes.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+
+/// Ce qu'une tentative de renouvellement apprend sur la session.
+///
+/// Trois issues, et non deux. La distinction porte tout : « le serveur a dit
+/// non » finit la session, « je n'ai pas pu lui demander » n'apprend rien.
+/// Le code ne connaissait que `true` et `false`, et `false` déconnectait — si
+/// bien qu'une session parfaitement valide tombait dès que la demande ne
+/// passait pas. Sur un réseau mobile ivoirien, ce n'est pas un cas limite.
+enum Renouvellement {
+  /// La session repart : un jeton neuf est en réserve.
+  reussi,
+
+  /// Le serveur a refusé. Le jeton de rafraîchissement ne vaut plus rien —
+  /// périmé, révoqué, rejoué — ou le compte lui-même est fermé. C'est la
+  /// SEULE issue qui ramène à l'écran de connexion.
+  refuse,
+
+  /// On n'a pas pu demander : réseau coupé, délai dépassé, serveur en panne,
+  /// quota du limiteur atteint. La session est peut-être intacte ; on ne
+  /// déconnecte personne sur une supposition.
+  indisponible,
+}
 
 /// Client HTTP partagé par tous les services de l'application.
 ///
-/// Il porte deux responsabilités, l'une et l'autre parce qu'elles n'ont de sens
-/// qu'en un seul endroit.
+/// Il porte trois responsabilités, toutes parce qu'elles n'ont de sens qu'en un
+/// seul endroit.
 ///
-/// D'abord la réaction aux réponses `401 Unauthorized` : le JWT émis par le
-/// backend expire au bout de 24 h, et sans ce point unique chaque écran
-/// échouait silencieusement au lieu de ramener l'utilisateur à la connexion.
-///
-/// Ensuite la pose du jeton. Chaque service composait ses en-têtes à la main,
+/// D'abord la pose du jeton. Chaque service composait ses en-têtes à la main,
 /// et plusieurs lectures partaient donc sans jeton — celle du salon global
-/// notamment. Tant que le serveur laissait lire sans authentification, cela ne
-/// se voyait pas ; le jour où il a cessé de le faire, il aurait fallu retrouver
-/// chaque appel oublié. Le poser ici le pose partout, une fois.
+/// notamment. Le poser ici le pose partout, une fois.
+///
+/// Ensuite le renouvellement de la session. Le jeton d'accès ne vit plus qu'une
+/// heure : sans ce point unique, le lecteur serait renvoyé à l'écran de
+/// connexion en pleine lecture, toutes les heures.
+///
+/// Enfin la réaction à une session vraiment finie : purger et ramener à la
+/// connexion, quelle que soit la page d'où partait la requête.
 ///
 /// Usage : les services prennent `ApiClient.instance` par défaut et acceptent
 /// toujours un client injecté pour les tests.
@@ -34,33 +62,189 @@ class ApiClient extends http.BaseClient {
   /// plusieurs requêtes en parallèle et qu'elles échouent toutes.
   bool _handlingUnauthorized = false;
 
+  /// Le renouvellement en cours, s'il y en a un.
+  ///
+  /// Un écran d'accueil lance une dizaine de requêtes d'un coup. Passé l'heure,
+  /// les dix reviennent en 401 en même temps. Sans ce partage, dix
+  /// renouvellements partiraient de front : le premier ferait tourner le jeton,
+  /// les neuf autres présenteraient un jeton déjà consommé — et le serveur,
+  /// qui voit là un rejeu, fermerait la session entière. La protection contre
+  /// le vol deviendrait une déconnexion à chaque ouverture.
+  Future<Renouvellement>? _renouvellementEnCours;
+
+  /// Ce qu'un code de réponse de `/auth/refresh` dit de la session.
+  ///
+  /// Publique, et c'est délibéré : la règle était jusqu'ici recopiée à la main
+  /// dans les tests, qui vérifiaient donc l'intention et non le code. Les deux
+  /// avaient divergé sans que rien ne le signale.
+  static Renouvellement verdictDuServeur(int codeHttp) {
+    if (codeHttp == 200) return Renouvellement.reussi;
+
+    // 401 : le jeton présenté ne vaut plus rien. 403 : le compte est fermé —
+    // archivé, suspendu, supprimé. Les deux sont définitifs, et réessayer
+    // n'y changera rien.
+    if (codeHttp == 401 || codeHttp == 403) return Renouvellement.refuse;
+
+    // Tout le reste est passager : le 429 du limiteur derrière une adresse
+    // partagée par des milliers d'abonnés, un 5xx, une passerelle qui répond
+    // de travers. Rien de tout cela ne dit que la session est finie.
+    return Renouvellement.indisponible;
+  }
+
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     // Les routes d'authentification renvoient légitimement 401 (mauvais mot de
     // passe, OTP invalide) : ce n'est pas une session expirée. Elles n'ont pas
     // non plus besoin qu'on leur pose un jeton.
-    final isAuthRoute = request.url.path.contains('/auth/');
+    final estRouteAuth = request.url.path.contains('/auth/');
 
-    // Un en-tête déjà posé par l'appelant l'emporte : certains services
-    // transmettent un jeton précis, et on ne le remplace pas par celui de la
-    // session courante.
-    if (!isAuthRoute && !request.headers.containsKey('Authorization')) {
-      final token = await TokenStorage.getToken();
-      if (token != null && token.isNotEmpty) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
+    final posePar = request.headers.containsKey('Authorization');
+    if (!estRouteAuth && !posePar) {
+      await _poserLeJeton(request);
     }
 
-    final response = await _inner.send(request);
+    var reponse = await _inner.send(request);
 
-    if (response.statusCode == 401 && !isAuthRoute) {
-      _triggerUnauthorized();
+    if (reponse.statusCode != 401 || estRouteAuth) return reponse;
+
+    // Le jeton porté par la requête est-il celui de la session ?
+    //
+    // Presque tous les services de l'application prennent un `token` en
+    // paramètre et posent l'en-tête eux-mêmes — ce jeton, ils l'ont lu dans le
+    // même coffre. Les écarter au motif qu'ils « ont choisi leur jeton »
+    // revenait à ne jamais rejouer aucune requête métier : passé une heure, la
+    // première action dans un salon, une bibliothèque ou un paiement échouait,
+    // la session se renouvelait en coulisses, et il fallait recommencer pour
+    // que ça passe. Un échec sur deux, invisible à l'analyse et systématique à
+    // l'usage.
+    //
+    // La lecture se fait AVANT le renouvellement : après, le jeton en réserve
+    // est déjà le nouveau et la comparaison ne dirait plus rien.
+    final ancienJeton = await TokenStorage.getToken();
+    final porteLeJetonDeSession =
+        !posePar || request.headers['Authorization'] == 'Bearer $ancienJeton';
+
+    // On tente TOUJOURS de renouveler, même quand cette requête-ci ne pourra
+    // pas être rejouée. Ne pas le faire déconnecterait un auteur pour un dépôt
+    // de manuscrit tombé à la mauvaise minute, alors que sa session est
+    // parfaitement valide et que la requête suivante passerait.
+    final verdict = await _renouvelerLaSession();
+
+    // Un appelant qui porte un AUTRE jeton que celui de la session a
+    // véritablement choisi une identité : celui-là, on ne le remplace pas.
+    if (verdict == Renouvellement.reussi &&
+        porteLeJetonDeSession &&
+        _peutEtreRejouee(request)) {
+      // Le corps a été consommé par le premier envoi : on reconstruit.
+      final seconde = _copier(request as http.Request);
+      // L'en-tête recopié porte le jeton mort : il faut l'écraser, sinon le
+      // rejeu présente exactement ce que le serveur vient de refuser.
+      seconde.headers.remove('Authorization');
+      await _poserLeJeton(seconde);
+      reponse = await _inner.send(seconde);
+
+      // Un second 401 avec un jeton tout neuf n'est plus une question de
+      // session : l'accès est réellement refusé.
+      if (reponse.statusCode == 401) _declencherDeconnexion();
+      return reponse;
     }
 
-    return response;
+    // Seul un refus explicite du serveur ferme la session.
+    //
+    // Une panne, un quota dépassé ou un réseau coupé laissent simplement
+    // l'appelant recevoir son échec : il réessaiera, et la session sera
+    // toujours là. C'est la différence entre « on vous a déconnecté » et
+    // « ça n'est pas passé », et elle se voit à l'écran.
+    if (verdict == Renouvellement.refuse) _declencherDeconnexion();
+
+    // Session renouvelée mais requête non rejouable : rien à déconnecter,
+    // l'appelant reçoit son échec et pourra recommencer.
+    return reponse;
   }
 
-  void _triggerUnauthorized() {
+  Future<void> _poserLeJeton(http.BaseRequest request) async {
+    final token = await TokenStorage.getToken();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+  }
+
+  /// Une requête ne se rejoue que si son corps est encore disponible.
+  ///
+  /// `StreamedRequest` — le dépôt d'un manuscrit — envoie son corps au fil de
+  /// l'eau : une fois parti, il n'est plus là. Le rejouer enverrait un fichier
+  /// vide. Ces requêtes-là échouent donc franchement, et l'auteur recommence.
+  bool _peutEtreRejouee(http.BaseRequest request) => request is http.Request;
+
+  http.Request _copier(http.Request origine) {
+    final copie = http.Request(origine.method, origine.url)
+      ..headers.addAll(origine.headers)
+      ..followRedirects = origine.followRedirects
+      ..maxRedirects = origine.maxRedirects
+      ..persistentConnection = origine.persistentConnection
+      ..bodyBytes = origine.bodyBytes;
+    return copie;
+  }
+
+  /// Renouvelle la session à la demande.
+  ///
+  /// Pour ce qui ne passe pas par `send` : le flux de notifications est une
+  /// connexion HTTP longue, ouverte à la main avec `HttpClient`. L'intercepteur
+  /// ne peut rien pour elle — une fois la connexion établie, il n'y a plus de
+  /// requête à rejouer. Elle doit donc pouvoir demander un jeton neuf
+  /// elle-même, et profite du même appel unique partagé.
+  Future<Renouvellement> renouvelerSession() => _renouvelerLaSession();
+
+  /// Échange le jeton de rafraîchissement contre un couple neuf.
+  ///
+  /// Un seul appel à la fois, partagé par toutes les requêtes qui attendent.
+  Future<Renouvellement> _renouvelerLaSession() {
+    return _renouvellementEnCours ??= _renouveler().whenComplete(() {
+      _renouvellementEnCours = null;
+    });
+  }
+
+  Future<Renouvellement> _renouveler() async {
+    try {
+      final refresh = await TokenStorage.getRefreshToken();
+      // Rien à présenter : aucune requête ne ranimera cette session-là.
+      if (refresh == null || refresh.isEmpty) return Renouvellement.refuse;
+
+      // Volontairement `_inner` : passer par `send` relancerait ce même
+      // mécanisme sur son propre 401, indéfiniment.
+      final reponse = await _inner
+          .post(
+            Uri.parse(ApiRoutes.refresh),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refresh_token': refresh}),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      final verdict = verdictDuServeur(reponse.statusCode);
+      if (verdict != Renouvellement.reussi) return verdict;
+
+      // Un 200 illisible est une anomalie du serveur, pas une session finie :
+      // on ne met personne dehors sur une réponse qu'on n'a pas su lire.
+      final corps = jsonDecode(reponse.body);
+      if (corps is! Map) return Renouvellement.indisponible;
+
+      final nouveau = corps['token']?.toString();
+      if (nouveau == null || nouveau.isEmpty) {
+        return Renouvellement.indisponible;
+      }
+
+      await TokenStorage.saveToken(nouveau);
+      await TokenStorage.saveRefreshToken(corps['refresh_token']?.toString());
+      return Renouvellement.reussi;
+    } catch (e) {
+      // Coupure, délai dépassé, DNS injoignable : on n'a rien appris sur la
+      // session. C'était le cas qui déconnectait à tort.
+      debugPrint('Renouvellement de session impossible : $e');
+      return Renouvellement.indisponible;
+    }
+  }
+
+  void _declencherDeconnexion() {
     final handler = onUnauthorized;
     if (handler == null || _handlingUnauthorized) return;
 

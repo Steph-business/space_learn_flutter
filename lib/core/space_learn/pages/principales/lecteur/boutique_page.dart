@@ -37,7 +37,6 @@ class _MarketplacePageState extends State<MarketplacePage> {
   final TextEditingController _searchController = TextEditingController();
   bool _isGridView = true;
 
-
   @override
   void initState() {
     super.initState();

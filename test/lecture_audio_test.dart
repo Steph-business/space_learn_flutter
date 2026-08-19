@@ -11,7 +11,10 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   String lire(String chemin) {
     final f = File(chemin);
-    if (!f.existsSync()) fail('Fichier introuvable : $chemin — le test doit tourner à la racine du projet.');
+    if (!f.existsSync())
+      fail(
+        'Fichier introuvable : $chemin — le test doit tourner à la racine du projet.',
+      );
     return f.readAsStringSync();
   }
 

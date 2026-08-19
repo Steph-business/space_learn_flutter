@@ -9,6 +9,7 @@ import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import '../../../data/dataServices/profileService.dart';
 import 'register.dart';
 import 'widgets/en_tete_auth.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
@@ -43,7 +44,10 @@ class _ProfilPageState extends State<ProfilPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          error = e.toString();
+          error = messageLisible(
+            e,
+            repli: "Impossible de charger les profils.",
+          );
           isLoading = false;
         });
       }

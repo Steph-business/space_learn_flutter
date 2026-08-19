@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/activite_model.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class Lectureservice {
   final http.Client client;
@@ -32,7 +33,12 @@ class Lectureservice {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return ReviewModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to create review');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Votre avis n'a pas pu être publié.",
+        ),
+      );
     }
   }
 
@@ -45,7 +51,12 @@ class Lectureservice {
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => ReviewModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch reviews by book');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les avis sur ce livre.",
+        ),
+      );
     }
   }
 
@@ -60,7 +71,9 @@ class Lectureservice {
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => ReviewModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch reviews by user');
+      throw Exception(
+        messageDeLaReponse(response, repli: "Impossible de charger vos avis."),
+      );
     }
   }
 
@@ -83,7 +96,9 @@ class Lectureservice {
       // If the endpoint is not found or no reviews exist globally, return empty list gracefully
       return [];
     } else {
-      throw Exception('Failed to fetch all reviews: ${response.statusCode}');
+      throw Exception(
+        messageDeLaReponse(response, repli: "Impossible de charger les avis."),
+      );
     }
   }
 
@@ -112,7 +127,12 @@ class Lectureservice {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return ReviewModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to update review');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Votre avis n'a pas pu être modifié.",
+        ),
+      );
     }
   }
 
@@ -124,7 +144,12 @@ class Lectureservice {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete review');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Votre avis n'a pas pu être supprimé.",
+        ),
+      );
     }
   }
 }

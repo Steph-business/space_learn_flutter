@@ -9,6 +9,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenement
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class CreerEvenementPage extends StatefulWidget {
   final Evenement? initialEvenement;
@@ -116,8 +117,9 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
                 }
                 return Colors.transparent;
               }),
-              todayForegroundColor:
-                  WidgetStateProperty.all(AppColors.secondaryVariant),
+              todayForegroundColor: WidgetStateProperty.all(
+                AppColors.secondaryVariant,
+              ),
               todayBorder: BorderSide(color: AppColors.secondaryVariant),
               cancelButtonStyle: TextButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
@@ -284,7 +286,8 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
               const SizedBox(height: 12),
               _buildTextField(
                 controller: _customTypeController,
-                hint: "Saisir votre type d'événement personnalisé (ex: Webinaire, Masterclass...)",
+                hint:
+                    "Saisir votre type d'événement personnalisé (ex: Webinaire, Masterclass...)",
               ),
             ],
             const SizedBox(height: 20),
@@ -414,7 +417,8 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
             const SizedBox(height: 8),
             _buildTextField(
               controller: _descController,
-              hint: "Détails de l'événement (lieu, programme, comment participer…)",
+              hint:
+                  "Détails de l'événement (lieu, programme, comment participer…)",
               maxLines: 5,
             ),
             const SizedBox(height: 20),
@@ -559,7 +563,10 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur : ${e.toString()}",
+          message: messageLisible(
+            e,
+            repli: "Cet événement n'a pas pu être enregistré.",
+          ),
           isError: true,
         );
       }

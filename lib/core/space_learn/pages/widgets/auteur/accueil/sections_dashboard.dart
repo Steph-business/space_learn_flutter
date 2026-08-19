@@ -312,8 +312,14 @@ class _CommentairesRecentsSectionState
     );
   }
 
-  void _showReplyModal(BuildContext context, ReviewModel comment, BookModel book) {
-    final author = comment.nomUtilisateur != null && comment.nomUtilisateur!.trim().isNotEmpty
+  void _showReplyModal(
+    BuildContext context,
+    ReviewModel comment,
+    BookModel book,
+  ) {
+    final author =
+        comment.nomUtilisateur != null &&
+            comment.nomUtilisateur!.trim().isNotEmpty
         ? comment.nomUtilisateur!.trim()
         : "Lecteur";
     final textController = TextEditingController();
@@ -337,7 +343,9 @@ class _CommentairesRecentsSectionState
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
                 ),
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -356,19 +364,27 @@ class _CommentairesRecentsSectionState
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, color: AppColors.textSecondary),
+                          icon: Icon(
+                            Icons.close,
+                            color: AppColors.textSecondary,
+                          ),
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
                     ),
-                    if (comment.commentaire != null && comment.commentaire!.isNotEmpty) ...[
+                    if (comment.commentaire != null &&
+                        comment.commentaire!.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                          color: AppColors.surfaceVariant.withValues(
+                            alpha: 0.5,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusInner,
+                          ),
                         ),
                         child: Text(
                           '"${comment.commentaire}"',
@@ -387,11 +403,16 @@ class _CommentairesRecentsSectionState
                       style: GoogleFonts.poppins(color: AppColors.textPrimary),
                       decoration: InputDecoration(
                         hintText: "Rédigez votre réponse à $author...",
-                        hintStyle: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 13),
+                        hintStyle: GoogleFonts.poppins(
+                          color: AppColors.textHint,
+                          fontSize: 13,
+                        ),
                         filled: true,
                         fillColor: AppColors.scaffoldBackground,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusInner,
+                          ),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -416,14 +437,21 @@ class _CommentairesRecentsSectionState
                                 );
                               },
                               style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: AppColors.secondaryVariant),
+                                side: BorderSide(
+                                  color: AppColors.secondaryVariant,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusInner,
+                                  ),
                                 ),
                               ),
                               child: Text(
                                 "Voir livre",
-                                style: GoogleFonts.poppins(color: AppColors.secondaryVariant, fontSize: 12),
+                                style: GoogleFonts.poppins(
+                                  color: AppColors.secondaryVariant,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -433,11 +461,13 @@ class _CommentairesRecentsSectionState
                             onPressed: isSending
                                 ? null
                                 : () async {
-                                    final replyText = textController.text.trim();
+                                    final replyText = textController.text
+                                        .trim();
                                     if (replyText.isEmpty) return;
                                     setModalState(() => isSending = true);
                                     try {
-                                      final token = await TokenStorage.getToken();
+                                      final token =
+                                          await TokenStorage.getToken();
                                       if (token != null && book.id.isNotEmpty) {
                                         await _reviewService.addReview(
                                           livreId: book.id,
@@ -470,7 +500,9 @@ class _CommentairesRecentsSectionState
                               backgroundColor: AppColors.secondaryVariant,
                               foregroundColor: AppColors.onAccent,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusInner,
+                                ),
                               ),
                             ),
                             child: isSending
@@ -484,7 +516,10 @@ class _CommentairesRecentsSectionState
                                   )
                                 : Text(
                                     "Envoyer",
-                                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12),
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
                                   ),
                           ),
                         ),
@@ -500,11 +535,16 @@ class _CommentairesRecentsSectionState
     );
   }
 
-  Widget _buildComment(BuildContext context, ReviewModel comment, BookModel book) {
+  Widget _buildComment(
+    BuildContext context,
+    ReviewModel comment,
+    BookModel book,
+  ) {
     final author =
-        comment.nomUtilisateur != null && comment.nomUtilisateur!.trim().isNotEmpty
-            ? comment.nomUtilisateur!.trim()
-            : "Lecteur";
+        comment.nomUtilisateur != null &&
+            comment.nomUtilisateur!.trim().isNotEmpty
+        ? comment.nomUtilisateur!.trim()
+        : "Lecteur";
     final text = comment.commentaire ?? "";
     final photo = comment.photoProfil;
     final initial = author.isNotEmpty ? author[0].toUpperCase() : "L";

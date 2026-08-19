@@ -5,6 +5,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/forgot_password.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class PasswordChangePage extends StatefulWidget {
   const PasswordChangePage({super.key});
@@ -128,7 +129,9 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
                 onPressed: _isLoading ? null : _handleSubmit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+                  disabledBackgroundColor: AppColors.primary.withValues(
+                    alpha: 0.6,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusInner,
@@ -273,7 +276,10 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: e.toString().replaceFirst("Exception: ", ""),
+          message: messageLisible(
+            e,
+            repli: "Changement de mot de passe impossible.",
+          ),
           isError: true,
         );
       }

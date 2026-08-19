@@ -181,7 +181,10 @@ class SpaceLearnTour {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.accentInk,
                   borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
@@ -199,7 +202,10 @@ class SpaceLearnTour {
                 onTap: () => controller.skip(),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: Text(
                     "Passer",
                     style: GoogleFonts.poppins(
@@ -250,7 +256,9 @@ class SpaceLearnTour {
                       color: AppColors.textHint.withValues(alpha: 0.4),
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusInner,
+                      ),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -282,7 +290,9 @@ class SpaceLearnTour {
                   elevation: 4,
                   shadowColor: AppColors.accentInk.withValues(alpha: 0.5),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 22,

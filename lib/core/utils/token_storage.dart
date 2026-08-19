@@ -14,6 +14,13 @@ class TokenStorage {
   static const String _tokenKey = "auth_token";
   static const String _userNameKey = "user_name";
 
+  /// Le jeton qui permet d'en obtenir un neuf sans redemander le mot de passe.
+  ///
+  /// Il vaut trente jours quand le jeton d'accès n'en vaut qu'une heure : c'est
+  /// donc lui, désormais, le vrai secret de la session. Il va au coffre, pas
+  /// dans les préférences.
+  static const String _refreshKey = "refresh_token";
+
   /// Identifiant du compte connecté.
   ///
   /// Les statistiques de lecture sont rangées par utilisateur, et chaque écran
@@ -52,9 +59,24 @@ class TokenStorage {
     return null;
   }
 
+  /// Sauvegarder le jeton de rafraîchissement.
+  ///
+  /// Une chaîne vide n'écrase pas ce qui est déjà là : un serveur d'une version
+  /// antérieure ne renvoie pas ce champ, et sa réponse ne doit pas effacer une
+  /// session valide.
+  static Future<void> saveRefreshToken(String? refresh) async {
+    if (refresh == null || refresh.isEmpty) return;
+    await _secure.write(key: _refreshKey, value: refresh);
+  }
+
+  static Future<String?> getRefreshToken() async {
+    return _secure.read(key: _refreshKey);
+  }
+
   /// Supprimer le token (logout)
   static Future<void> clearToken() async {
     await _secure.delete(key: _tokenKey);
+    await _secure.delete(key: _refreshKey);
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey); // résidu d'une version antérieure

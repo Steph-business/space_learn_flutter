@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../utils/api_routes.dart';
+import 'package:space_learn_flutter/core/services/api_client.dart';
 
 /// Nature du fichier envoyé, telle que l'attend le serveur.
 enum TypeFichier {
@@ -87,7 +88,10 @@ class UploadService {
       cancelOnError: true,
     );
 
-    final reponseFlux = await envoi.send();
+    // envoi.send() instancie son propre client : la requete ne traverserait
+    // pas l'intercepteur, et un 401 sur le depot d'un manuscrit ne purgerait
+    // jamais la session.
+    final reponseFlux = await ApiClient.instance.send(envoi);
     final reponse = await http.Response.fromStream(reponseFlux);
 
     if (reponse.statusCode != 200) {

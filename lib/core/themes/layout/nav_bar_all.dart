@@ -75,7 +75,8 @@ class _NavBarAllState extends State<NavBarAll> {
 
   Future<void> _resolveUserInfo() async {
     // Si des informations complètes ont déjà été fournies par le parent, les conserver
-    final isGeneric = _displayName.isEmpty ||
+    final isGeneric =
+        _displayName.isEmpty ||
         _displayName == 'Lecteur' ||
         _displayName == 'Auteur';
 
@@ -148,12 +149,15 @@ class _NavBarAllState extends State<NavBarAll> {
                     height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: _profilePhoto != null && _profilePhoto!.isNotEmpty
+                      gradient:
+                          _profilePhoto != null && _profilePhoto!.isNotEmpty
                           ? null
                           : LinearGradient(
                               colors: [
                                 AppColors.secondaryVariant,
-                                AppColors.secondaryVariant.withValues(alpha: 0.85),
+                                AppColors.secondaryVariant.withValues(
+                                  alpha: 0.85,
+                                ),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -162,12 +166,16 @@ class _NavBarAllState extends State<NavBarAll> {
                           ? AppColors.cardBackground
                           : null,
                       border: Border.all(
-                        color: AppColors.secondaryVariant.withValues(alpha: 0.4),
+                        color: AppColors.secondaryVariant.withValues(
+                          alpha: 0.4,
+                        ),
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.secondaryVariant.withValues(alpha: 0.25),
+                          color: AppColors.secondaryVariant.withValues(
+                            alpha: 0.25,
+                          ),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -180,7 +188,7 @@ class _NavBarAllState extends State<NavBarAll> {
                         textStyle: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.onAccent,
                         ),
                         width: 44,
                         height: 44,
@@ -195,7 +203,8 @@ class _NavBarAllState extends State<NavBarAll> {
                     TextSpan(
                       children: [
                         TextSpan(
-                          text: "${widget.greeting ?? NavBarAll.getGreeting()}, ",
+                          text:
+                              "${widget.greeting ?? NavBarAll.getGreeting()}, ",
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             color: AppColors.textHint,
@@ -237,9 +246,8 @@ class _NavBarAllState extends State<NavBarAll> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => UserGuidePage(
-                        estAuteur: widget.role == 'auteur',
-                      ),
+                      builder: (context) =>
+                          UserGuidePage(estAuteur: widget.role == 'auteur'),
                     ),
                   );
                 },
@@ -272,7 +280,8 @@ class _NavBarAllState extends State<NavBarAll> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => NotificationPage(role: widget.role),
+                          builder: (context) =>
+                              NotificationPage(role: widget.role),
                         ),
                       );
                     },

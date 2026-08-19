@@ -9,6 +9,7 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/otp.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -45,8 +46,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
 
     try {
-      final success = await _authService.forgotPassword(email);
-      if (success && mounted) {
+      // Un échec lève désormais, avec le message du serveur : le `catch`
+      // ci-dessous l'affiche tel quel plutôt qu'une phrase générique.
+      await _authService.forgotPassword(email);
+      if (mounted) {
         AppNotifications.showPremiumDialog(
           context,
           title: "Code de récupération envoyé",
@@ -62,18 +65,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             }
           },
         );
-      } else if (mounted) {
-        AppNotifications.showSnackBar(
-          context,
-          message: "Impossible d'envoyer le code.",
-          isError: true,
-        );
       }
     } catch (e) {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur: ${e.toString().replaceAll("Exception: ", "")}",
+          message: messageLisible(e, repli: "Envoi impossible pour le moment."),
           isError: true,
         );
       }

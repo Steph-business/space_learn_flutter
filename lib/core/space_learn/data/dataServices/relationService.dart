@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/relationModel.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class RelationService {
   final http.Client client;
@@ -22,7 +23,7 @@ class RelationService {
       return RelationModel.fromJson(data['data'] ?? data);
     } else {
       throw Exception(
-        'Failed to follow user: ${response.statusCode} - ${response.body}',
+        messageDeLaReponse(response, repli: "Impossible de suivre cet auteur."),
       );
     }
   }
@@ -35,7 +36,12 @@ class RelationService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to unfollow user');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de ne plus suivre cet auteur.",
+        ),
+      );
     }
   }
 
@@ -51,7 +57,12 @@ class RelationService {
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => RelationModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch followers');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les abonnés.",
+        ),
+      );
     }
   }
 
@@ -67,7 +78,12 @@ class RelationService {
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => RelationModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch following users');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les abonnements.",
+        ),
+      );
     }
   }
 
@@ -81,7 +97,12 @@ class RelationService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return responseData['data'] ?? responseData;
     } else {
-      throw Exception('Failed to fetch community events');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les événements.",
+        ),
+      );
     }
   }
 }

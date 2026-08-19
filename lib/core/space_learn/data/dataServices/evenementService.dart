@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/evenementModel.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class EvenementService {
   final http.Client client;
@@ -49,7 +50,12 @@ class EvenementService {
       final Map<String, dynamic> data = json.decode(response.body);
       return Evenement.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to create evenement');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Cet événement n'a pas pu être créé.",
+        ),
+      );
     }
   }
 
@@ -64,7 +70,12 @@ class EvenementService {
       final List<dynamic> list = responseData['data'] ?? [];
       return list.map((json) => Evenement.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch global evenements');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les événements.",
+        ),
+      );
     }
   }
 
@@ -86,7 +97,12 @@ class EvenementService {
       final List<dynamic> list = responseData['data'] ?? [];
       return list.map((json) => Evenement.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch author evenements');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les événements de cet auteur.",
+        ),
+      );
     }
   }
 
@@ -130,7 +146,12 @@ class EvenementService {
       final Map<String, dynamic> data = json.decode(response.body);
       return Evenement.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to update evenement');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Cet événement n'a pas pu être modifié.",
+        ),
+      );
     }
   }
 
@@ -142,7 +163,12 @@ class EvenementService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception('Failed to delete evenement');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Cet événement n'a pas pu être supprimé.",
+        ),
+      );
     }
   }
 
@@ -157,7 +183,9 @@ class EvenementService {
       final Map<String, dynamic> data = json.decode(response.body);
       return Evenement.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to get evenement');
+      throw Exception(
+        messageDeLaReponse(response, repli: "Cet événement est introuvable."),
+      );
     }
   }
 }

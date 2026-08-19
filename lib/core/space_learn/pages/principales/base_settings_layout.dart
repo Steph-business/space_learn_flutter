@@ -222,7 +222,9 @@ class BaseSettingsLayout extends StatelessWidget {
                                         Navigator.of(dialogContext).pop();
                                       }
                                       if (parentContext.mounted) {
-                                        Navigator.of(parentContext).pushAndRemoveUntil(
+                                        Navigator.of(
+                                          parentContext,
+                                        ).pushAndRemoveUntil(
                                           MaterialPageRoute(
                                             builder: (_) => const LoginPage(),
                                           ),
@@ -246,9 +248,10 @@ class BaseSettingsLayout extends StatelessWidget {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : Text(

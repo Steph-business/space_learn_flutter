@@ -13,6 +13,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenement
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/communaute/nouvelle_annonce_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/communaute/creer_evenement_page.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class EvenementDetailPage extends StatefulWidget {
   final Evenement evenement;
@@ -126,7 +127,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
         if (mounted) {
           AppNotifications.showSnackBar(
             context,
-            message: "Erreur lors de la suppression: $e",
+            message: messageLisible(e, repli: "Suppression impossible."),
             isError: true,
           );
         }
@@ -206,11 +207,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                       color: brandColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Iconsax.edit,
-                      color: brandColor,
-                      size: 18,
-                    ),
+                    child: Icon(Iconsax.edit, color: brandColor, size: 18),
                   ),
                   onPressed: _editEvenement,
                 ),
@@ -319,11 +316,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                   // Metadata row (Date & Author)
                   Row(
                     children: [
-                      Icon(
-                        Iconsax.clock,
-                        size: 15,
-                        color: AppColors.textHint,
-                      ),
+                      Icon(Iconsax.clock, size: 15, color: AppColors.textHint),
                       const SizedBox(width: 6),
                       Text(
                         _evenement.creeLe != null
@@ -348,12 +341,8 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusCard,
-                  ),
-                  border: Border.all(
-                    color: brandColor.withValues(alpha: 0.25),
-                  ),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+                  border: Border.all(color: brandColor.withValues(alpha: 0.25)),
                 ),
                 child: Row(
                   children: [
@@ -387,8 +376,10 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            DateFormat('EEEE d MMMM yyyy à HH:mm', 'fr_FR')
-                                .format(_evenement.dateEvenement!),
+                            DateFormat(
+                              'EEEE d MMMM yyyy à HH:mm',
+                              'fr_FR',
+                            ).format(_evenement.dateEvenement!),
                             style: GoogleFonts.poppins(
                               color: AppColors.textPrimary,
                               fontSize: 15,
@@ -425,12 +416,16 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                         height: 16,
                         decoration: BoxDecoration(
                           color: brandColor,
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusXs,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        isAnnonce ? "DÉTAILS DE L'ANNONCE" : "PROGRAMME & DÉTAILS",
+                        isAnnonce
+                            ? "DÉTAILS DE L'ANNONCE"
+                            : "PROGRAMME & DÉTAILS",
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -483,8 +478,6 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                 ),
               ),
             ],
-
-
 
             const SizedBox(height: 60),
           ],

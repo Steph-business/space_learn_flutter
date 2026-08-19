@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/favoriteModel.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class FavoriteService {
   final http.Client client;
@@ -24,7 +25,12 @@ class FavoriteService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return FavoriteModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to add favorite');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Ce livre n'a pas pu être ajouté à vos favoris.",
+        ),
+      );
     }
   }
 
@@ -39,7 +45,12 @@ class FavoriteService {
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => FavoriteModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch favorites');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger vos favoris.",
+        ),
+      );
     }
   }
 
@@ -51,7 +62,12 @@ class FavoriteService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to remove favorite');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Ce livre n'a pas pu être retiré de vos favoris.",
+        ),
+      );
     }
   }
 }

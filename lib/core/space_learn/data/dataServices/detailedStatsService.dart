@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/detailedStatsModel.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class DetailedStatsService {
   final http.Client client;
@@ -37,7 +38,12 @@ class DetailedStatsService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return DetailedStatsModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to create detailed statistics');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible d'enregistrer ces statistiques.",
+        ),
+      );
     }
   }
 
@@ -52,7 +58,12 @@ class DetailedStatsService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return DetailedStatsModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to fetch detailed statistics for book');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les statistiques de ce livre.",
+        ),
+      );
     }
   }
 
@@ -91,7 +102,12 @@ class DetailedStatsService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return DetailedStatsModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to update detailed statistics');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de mettre à jour ces statistiques.",
+        ),
+      );
     }
   }
 }

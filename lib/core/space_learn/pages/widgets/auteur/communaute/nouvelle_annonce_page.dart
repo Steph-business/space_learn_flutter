@@ -10,6 +10,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenement
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class NouvelleAnnoncePage extends StatefulWidget {
   final Evenement? initialEvenement;
@@ -228,7 +229,10 @@ class _NouvelleAnnoncePageState extends State<NouvelleAnnoncePage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur : ${e.toString()}",
+          message: messageLisible(
+            e,
+            repli: "Cette annonce n'a pas pu être publiée.",
+          ),
           isError: true,
         );
       }

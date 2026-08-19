@@ -24,6 +24,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/a
     as lecteurHome;
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class LoginPage extends StatefulWidget {
   final String? initialEmail;
@@ -185,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: e.toString().replaceAll('Exception: ', ''),
+          message: messageLisible(e, repli: "Connexion Google impossible."),
           isError: true,
         );
       }
@@ -241,8 +242,10 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         AppNotifications.showSnackBar(
           context,
-          message:
-              "Erreur de connexion : ${e.toString().replaceAll("Exception: ", "")}",
+          message: messageLisible(
+            e,
+            repli: "Connexion impossible pour le moment.",
+          ),
           isError: true,
         );
       }

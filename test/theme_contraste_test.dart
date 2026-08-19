@@ -24,7 +24,9 @@ double _lineariser(double canal) => canal <= 0.03928
     : math.pow((canal + 0.055) / 1.055, 2.4).toDouble();
 
 double _luminance(Color c) =>
-    0.2126 * _lineariser(c.r) + 0.7152 * _lineariser(c.g) + 0.0722 * _lineariser(c.b);
+    0.2126 * _lineariser(c.r) +
+    0.7152 * _lineariser(c.g) +
+    0.0722 * _lineariser(c.b);
 
 double contraste(Color a, Color b) {
   final la = _luminance(a), lb = _luminance(b);
@@ -36,7 +38,8 @@ String _hex(Color c) =>
 
 /// Aplatit une couleur translucide sur son fond, sans quoi le calcul de
 /// contraste porte sur une couleur qui n'est jamais affichée telle quelle.
-Color _sur(Color premierPlan, Color fond) => Color.alphaBlend(premierPlan, fond);
+Color _sur(Color premierPlan, Color fond) =>
+    Color.alphaBlend(premierPlan, fond);
 
 void main() {
   for (final cas in [
@@ -50,14 +53,23 @@ void main() {
 
       void verifier(String quoi, Color encre, Color surface, double seuil) {
         final r = contraste(_sur(encre, surface), surface);
-        expect(r, greaterThanOrEqualTo(seuil),
-            reason: '$quoi : ${_hex(encre)} sur ${_hex(surface)} '
-                '= ${r.toStringAsFixed(2)}:1, seuil ${seuil.toStringAsFixed(1)}:1');
+        expect(
+          r,
+          greaterThanOrEqualTo(seuil),
+          reason:
+              '$quoi : ${_hex(encre)} sur ${_hex(surface)} '
+              '= ${r.toStringAsFixed(2)}:1, seuil ${seuil.toStringAsFixed(1)}:1',
+        );
       }
 
       test('paires du ColorScheme', () {
         verifier('onPrimary sur primary', cs.onPrimary, cs.primary, seuilTexte);
-        verifier('onSecondary sur secondary', cs.onSecondary, cs.secondary, seuilTexte);
+        verifier(
+          'onSecondary sur secondary',
+          cs.onSecondary,
+          cs.secondary,
+          seuilTexte,
+        );
         verifier('onSurface sur surface', cs.onSurface, cs.surface, seuilTexte);
         verifier('onError sur error', cs.onError, cs.error, seuilTexte);
       });
@@ -92,53 +104,106 @@ void main() {
 
       test('surfaces flottantes', () {
         final snack = t.snackBarTheme;
-        verifier('message du bandeau', snack.contentTextStyle!.color!,
-            snack.backgroundColor!, seuilTexte);
-        verifier('action du bandeau', snack.actionTextColor!,
-            snack.backgroundColor!, seuilTexte);
+        verifier(
+          'message du bandeau',
+          snack.contentTextStyle!.color!,
+          snack.backgroundColor!,
+          seuilTexte,
+        );
+        verifier(
+          'action du bandeau',
+          snack.actionTextColor!,
+          snack.backgroundColor!,
+          seuilTexte,
+        );
 
         final dialogue = t.dialogTheme;
-        verifier('titre du dialogue', dialogue.titleTextStyle!.color!,
-            dialogue.backgroundColor!, seuilTexte);
-        verifier('corps du dialogue', dialogue.contentTextStyle!.color!,
-            dialogue.backgroundColor!, seuilTexte);
+        verifier(
+          'titre du dialogue',
+          dialogue.titleTextStyle!.color!,
+          dialogue.backgroundColor!,
+          seuilTexte,
+        );
+        verifier(
+          'corps du dialogue',
+          dialogue.contentTextStyle!.color!,
+          dialogue.backgroundColor!,
+          seuilTexte,
+        );
 
-        verifier('menu contextuel', t.popupMenuTheme.textStyle!.color!,
-            t.popupMenuTheme.color!, seuilTexte);
+        verifier(
+          'menu contextuel',
+          t.popupMenuTheme.textStyle!.color!,
+          t.popupMenuTheme.color!,
+          seuilTexte,
+        );
       });
 
       test('champs de saisie', () {
         final champ = t.inputDecorationTheme;
-        verifier('libellé du champ', champ.labelStyle!.color!,
-            champ.fillColor!, seuilTexte);
-        verifier('bordure au repos',
-            (champ.enabledBorder! as OutlineInputBorder).borderSide.color,
-            champ.fillColor!, seuilElement);
-        verifier('bordure au focus',
-            (champ.focusedBorder! as OutlineInputBorder).borderSide.color,
-            champ.fillColor!, seuilElement);
+        verifier(
+          'libellé du champ',
+          champ.labelStyle!.color!,
+          champ.fillColor!,
+          seuilTexte,
+        );
+        verifier(
+          'bordure au repos',
+          (champ.enabledBorder! as OutlineInputBorder).borderSide.color,
+          champ.fillColor!,
+          seuilElement,
+        );
+        verifier(
+          'bordure au focus',
+          (champ.focusedBorder! as OutlineInputBorder).borderSide.color,
+          champ.fillColor!,
+          seuilElement,
+        );
       });
 
       test('éléments à état et indicateurs', () {
         const selectionne = {WidgetState.selected};
 
-        verifier('pastille de l\'interrupteur actif',
-            t.switchTheme.thumbColor!.resolve(selectionne)!,
-            t.switchTheme.trackColor!.resolve(selectionne)!, seuilElement);
-        verifier('piste de l\'interrupteur au repos',
-            t.switchTheme.trackColor!.resolve({})!, fond, seuilElement);
+        verifier(
+          'pastille de l\'interrupteur actif',
+          t.switchTheme.thumbColor!.resolve(selectionne)!,
+          t.switchTheme.trackColor!.resolve(selectionne)!,
+          seuilElement,
+        );
+        verifier(
+          'piste de l\'interrupteur au repos',
+          t.switchTheme.trackColor!.resolve({})!,
+          fond,
+          seuilElement,
+        );
 
-        verifier('coche de la case', t.checkboxTheme.checkColor!.resolve(selectionne)!,
-            t.checkboxTheme.fillColor!.resolve(selectionne)!, seuilElement);
+        verifier(
+          'coche de la case',
+          t.checkboxTheme.checkColor!.resolve(selectionne)!,
+          t.checkboxTheme.fillColor!.resolve(selectionne)!,
+          seuilElement,
+        );
 
-        verifier('indicateur de progression',
-            t.progressIndicatorTheme.color!, fond, seuilElement);
-        verifier('piste active du curseur',
-            t.sliderTheme.activeTrackColor!, fond, seuilElement);
+        verifier(
+          'indicateur de progression',
+          t.progressIndicatorTheme.color!,
+          fond,
+          seuilElement,
+        );
+        verifier(
+          'piste active du curseur',
+          t.sliderTheme.activeTrackColor!,
+          fond,
+          seuilElement,
+        );
 
         verifier('onglet actif', t.tabBarTheme.labelColor!, fond, seuilTexte);
-        verifier('élément de navigation actif',
-            t.bottomNavigationBarTheme.selectedItemColor!, fond, seuilTexte);
+        verifier(
+          'élément de navigation actif',
+          t.bottomNavigationBarTheme.selectedItemColor!,
+          fond,
+          seuilTexte,
+        );
       });
     });
   }
@@ -169,21 +234,32 @@ void main() {
         }.entries) {
           for (final surface in {'fond': fond, 'carte': carte}.entries) {
             final r = contraste(e.value, surface.value);
-            expect(r, greaterThanOrEqualTo(seuilTexte),
-                reason: '${e.key} sur ${surface.key} : ${_hex(e.value)} sur '
-                    '${_hex(surface.value)} = ${r.toStringAsFixed(2)}:1');
+            expect(
+              r,
+              greaterThanOrEqualTo(seuilTexte),
+              reason:
+                  '${e.key} sur ${surface.key} : ${_hex(e.value)} sur '
+                  '${_hex(surface.value)} = ${r.toStringAsFixed(2)}:1',
+            );
           }
         }
       });
 
       test('la carte se distingue du fond en mode $mode', () {
         AppColors.isDark = sombre;
-        final r = contraste(AppColors.cardBackground, AppColors.scaffoldBackground);
+        final r = contraste(
+          AppColors.cardBackground,
+          AppColors.scaffoldBackground,
+        );
         // Une carte n'est pas un texte : le seuil n'est pas celui de WCAG, mais
         // une carte à 1,05:1 est simplement invisible.
-        expect(r, greaterThanOrEqualTo(1.06),
-            reason: 'carte ${_hex(AppColors.cardBackground)} sur fond '
-                '${_hex(AppColors.scaffoldBackground)} = ${r.toStringAsFixed(3)}:1');
+        expect(
+          r,
+          greaterThanOrEqualTo(1.06),
+          reason:
+              'carte ${_hex(AppColors.cardBackground)} sur fond '
+              '${_hex(AppColors.scaffoldBackground)} = ${r.toStringAsFixed(3)}:1',
+        );
       });
     }
 
@@ -194,9 +270,13 @@ void main() {
   // Les deux thèmes doivent décrire des palettes distinctes : c'est le défaut
   // qui laissait le mode clair avec un fond noir.
   test('les deux thèmes ne partagent pas leurs surfaces', () {
-    expect(AppTheme.clair.scaffoldBackgroundColor,
-        isNot(AppTheme.sombre.scaffoldBackgroundColor));
-    expect(AppTheme.clair.colorScheme.onSurface,
-        isNot(AppTheme.sombre.colorScheme.onSurface));
+    expect(
+      AppTheme.clair.scaffoldBackgroundColor,
+      isNot(AppTheme.sombre.scaffoldBackgroundColor),
+    );
+    expect(
+      AppTheme.clair.colorScheme.onSurface,
+      isNot(AppTheme.sombre.colorScheme.onSurface),
+    );
   });
 }

@@ -154,19 +154,31 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
     }
   }
 
-  /// Navigate based on notification type and reference
+  /// Ouvrir la notification, PUIS la marquer lue.
+  ///
+  /// L'ordre était inverse, et il se voyait : le filtre par défaut de l'écran
+  /// est « non lues ». Marquer d'abord faisait sortir la notification de la
+  /// liste à l'instant du doigt — elle disparaissait sous les yeux — et la
+  /// navigation ne partait qu'ensuite. Quand elle échouait, il ne restait rien
+  /// du tout : ni la notification, ni l'écran promis.
+  ///
+  /// Naviguer d'abord garde la ligne en place jusqu'à ce que l'écran suivant
+  /// soit poussé. Et si la navigation ne mène nulle part, la notification
+  /// reste là, non lue : on peut réessayer, au lieu de perdre la trace de ce
+  /// qu'on n'a jamais vu.
   Future<void> _handleNotificationTap(
     BuildContext context,
     NotificationModel notif,
   ) async {
     final notifProvider = context.read<NotificationProvider>();
+
+    final ouverte = NotificationService.handleNotificationTap(notif);
+    if (!ouverte) return;
+
     final token = await TokenStorage.getToken();
     if (token != null && !notif.lu) {
       notifProvider.markAsRead(notif.id, token);
     }
-
-    // Use centralized logic from NotificationService
-    NotificationService.handleNotificationTap(notif);
   }
 
   @override
@@ -214,14 +226,6 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
                 color: AppColors.textPrimary.withOpacity(0.5),
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Revenez plus tard',
-              style: GoogleFonts.poppins(
-                color: AppColors.textPrimary.withOpacity(0.3),
-                fontSize: 12.5,
               ),
             ),
           ],

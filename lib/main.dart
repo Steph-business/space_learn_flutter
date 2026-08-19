@@ -23,7 +23,9 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/logi
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;
@@ -141,45 +143,107 @@ class _MyAppState extends State<MyApp> {
     _loadInitialData();
   }
 
+  /// Ce que l'application sait au démarrage.
+  ///
+  /// Toute exception ramenait ici à la page de bienvenue, c'est-à-dire à
+  /// « vous n'êtes pas connecté ». Or l'échec le plus courant n'est pas une
+  /// session finie : c'est un réseau coupé. Le lecteur qui ouvrait
+  /// l'application dans une zone mal couverte se croyait déconnecté et
+  /// ressaisissait son mot de passe, alors que sa session était intacte dans
+  /// le coffre.
+  ///
+  /// Une session réellement refusée par le serveur n'a pas besoin de ce
+  /// chemin : ApiClient la purge et ramène lui-même à la connexion.
   Future<void> _loadInitialData() async {
-    try {
-      final token = await TokenStorage.getToken();
+    final token = await TokenStorage.getToken();
 
-      if (token != null && token.isNotEmpty) {
-        final authService = AuthService();
-        final user = await authService.getUser(token);
-        if (user != null) {
-          final profile = await ProfileStorage.getSelectedProfile();
-          final role = await ProfileStorage.getSelectedProfileRole();
-          if (mounted) {
-            setState(() {
-              _user = user;
-              _selectedProfile = profile;
-              _selectedProfileRole = role;
-              _isLoading = false;
-            });
-          }
-          return;
-        }
-      }
-      if (mounted) {
-        setState(() {
-          _selectedProfile = null;
-          _selectedProfileRole = null;
-          _user = null;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _selectedProfile = null;
-          _selectedProfileRole = null;
-          _user = null;
-          _isLoading = false;
-        });
-      }
+    // Personne n'est connecté : il n'y a rien à relire.
+    if (token == null || token.isEmpty) {
+      _presenter(user: null, profile: null, role: null);
+      return;
     }
+
+    try {
+      final user = await AuthService().getUser(token);
+      final profile = await ProfileStorage.getSelectedProfile();
+      _presenter(
+        user: user,
+        profile: user?.profilId.isNotEmpty == true ? user!.profilId : profile,
+        role: await _roleAJour(user, profile),
+      );
+    } catch (e) {
+      // Le serveur n'a pas répondu. On garde la session et ce qu'on sait
+      // localement : l'application s'ouvre là où elle s'était fermée, et les
+      // écrans qui ont besoin du réseau afficheront leur propre échec.
+      debugPrint('Profil non relu au démarrage : $e');
+      _presenter(
+        user: await _profilLocal(),
+        profile: await ProfileStorage.getSelectedProfile(),
+        role: await ProfileStorage.getSelectedProfileRole(),
+      );
+    }
+  }
+
+  void _presenter({UserModel? user, String? profile, String? role}) {
+    if (!mounted) return;
+    setState(() {
+      _user = user;
+      _selectedProfile = profile;
+      _selectedProfileRole = role;
+      _isLoading = false;
+    });
+  }
+
+  /// Le rôle, relu du serveur quand le profil a changé.
+  ///
+  /// Il était toujours pris dans le stockage local, jamais dans la réponse qui
+  /// venait pourtant d'arriver : un profil modifié côté serveur — un lecteur
+  /// devenu auteur — n'était vu qu'à la reconnexion suivante.
+  ///
+  /// La résolution demande la liste des profils, donc un appel réseau : on ne
+  /// la fait que si le profil a effectivement bougé, et un échec laisse
+  /// simplement le rôle connu en place.
+  Future<String?> _roleAJour(UserModel? user, String? profilConnu) async {
+    final memorise = await ProfileStorage.getSelectedProfileRole();
+    if (user == null || user.profilId.isEmpty || user.profilId == profilConnu) {
+      return memorise;
+    }
+
+    try {
+      final profils = await ProfileService().getProfils();
+      final trouve = profils.firstWhere(
+        (p) => p.id.trim().toLowerCase() == user.profilId.trim().toLowerCase(),
+        orElse: () => ProfilModel(id: '', libelle: ''),
+      );
+      if (trouve.id.isEmpty) return memorise;
+
+      final role = trouve.libelle.toLowerCase();
+      await ProfileStorage.saveSelectedProfileRole(role);
+      await ProfileStorage.saveSelectedProfile(user.profilId);
+      return role;
+    } catch (e) {
+      debugPrint('Rôle non rafraîchi : $e');
+      return memorise;
+    }
+  }
+
+  /// Le peu qu'on sait du compte sans le serveur, pour ouvrir l'application.
+  ///
+  /// Rend `null` s'il n'y a même pas de nom mémorisé : sans rien à afficher,
+  /// mieux vaut la page de bienvenue qu'un écran d'accueil vide.
+  Future<UserModel?> _profilLocal() async {
+    final nom = await TokenStorage.getUserName();
+    final id = await TokenStorage.getUserId();
+    final profil = await ProfileStorage.getSelectedProfile();
+    if (nom == null || nom.isEmpty) return null;
+
+    return UserModel(
+      id: id ?? '',
+      profilId: profil ?? '',
+      nomComplet: nom,
+      email: '',
+      isProfileComplete: true,
+    );
   }
 
   @override

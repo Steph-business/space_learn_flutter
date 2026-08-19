@@ -53,10 +53,7 @@ class _RecherchePageState extends State<RecherchePage> {
           _libraryService.getUserLibrary(token)
         else
           Future.value(<LibraryModel>[]),
-        if (token != null)
-          AuthService().getUser(token)
-        else
-          Future.value(null),
+        if (token != null) AuthService().getUser(token) else Future.value(null),
       ];
 
       final results = await Future.wait(futures);
@@ -97,12 +94,14 @@ class _RecherchePageState extends State<RecherchePage> {
             ...library.map((e) => e.livreId),
             if (currentUser != null)
               ...allBooks
-                  .where((b) =>
-                      (b.auteurId.isNotEmpty &&
-                          b.auteurId == currentUser.id) ||
-                      (b.authorName.isNotEmpty &&
-                          b.authorName.trim().toLowerCase() ==
-                              currentUser.nomComplet.trim().toLowerCase()))
+                  .where(
+                    (b) =>
+                        (b.auteurId.isNotEmpty &&
+                            b.auteurId == currentUser.id) ||
+                        (b.authorName.isNotEmpty &&
+                            b.authorName.trim().toLowerCase() ==
+                                currentUser.nomComplet.trim().toLowerCase()),
+                  )
                   .map((b) => b.id),
           };
         });

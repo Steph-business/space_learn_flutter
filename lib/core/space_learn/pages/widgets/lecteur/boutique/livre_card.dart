@@ -160,7 +160,9 @@ class LivreCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            _estGratuit ? "Gratuit" : LivreCard.formatPrix(book.prix),
+                            _estGratuit
+                                ? "Gratuit"
+                                : LivreCard.formatPrix(book.prix),
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w800,
                               fontSize: 13,
@@ -261,11 +263,7 @@ class LivreListCard extends StatelessWidget {
   final BookModel book;
   final bool isOwned;
 
-  const LivreListCard({
-    super.key,
-    required this.book,
-    this.isOwned = false,
-  });
+  const LivreListCard({super.key, required this.book, this.isOwned = false});
 
   bool get _estGratuit => book.prix <= 0;
 
@@ -300,11 +298,7 @@ class LivreListCard extends StatelessWidget {
             // Couverture du livre
             ClipRRect(
               borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-              child: SizedBox(
-                width: 75,
-                height: 105,
-                child: _couverture(),
-              ),
+              child: SizedBox(width: 75, height: 105, child: _couverture()),
             ),
             const SizedBox(width: 14),
             // Détails du livre
@@ -334,7 +328,8 @@ class LivreListCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (book.categorie != null && book.categorie!.nom.isNotEmpty) ...[
+                  if (book.categorie != null &&
+                      book.categorie!.nom.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -362,7 +357,9 @@ class LivreListCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _estGratuit ? "Gratuit" : LivreCard.formatPrix(book.prix),
+                        _estGratuit
+                            ? "Gratuit"
+                            : LivreCard.formatPrix(book.prix),
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w800,
                           fontSize: 13,
@@ -454,4 +451,3 @@ class LivreListCard extends StatelessWidget {
     );
   }
 }
-

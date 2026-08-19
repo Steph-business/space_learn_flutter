@@ -12,6 +12,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileSe
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/otp.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class RegisterPage extends StatefulWidget {
   /// Profil retenu à l'écran précédent — « Lecteur », « Auteur »…
@@ -144,7 +145,7 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     } catch (e) {
       developer.log(
-        "Erreur lors de l'inscription: $e",
+        messageLisible(e, repli: "Inscription impossible pour le moment."),
         name: 'RegisterPage',
         error: e,
         level: 1000,
@@ -154,8 +155,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
       AppNotifications.showSnackBar(
         context,
-        message:
-            "Erreur d'inscription: ${e.toString().replaceAll("Exception: ", "")}",
+        message: messageLisible(
+          e,
+          repli: "Inscription impossible pour le moment.",
+        ),
         isError: true,
       );
     } finally {

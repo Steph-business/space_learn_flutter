@@ -84,9 +84,13 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
       List<LibraryModel> authorItems = [];
       if (currentUser != null && currentUser.id.isNotEmpty) {
         try {
-          final authorBooks = await _bookService.getBooksByAuthorId(currentUser.id);
+          final authorBooks = await _bookService.getBooksByAuthorId(
+            currentUser.id,
+          );
           for (final book in authorBooks) {
-            final alreadyInLib = libraryItems.any((item) => item.livre?.id == book.id);
+            final alreadyInLib = libraryItems.any(
+              (item) => item.livre?.id == book.id,
+            );
             if (!alreadyInLib) {
               authorItems.add(
                 LibraryModel(
@@ -165,10 +169,21 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
     if (_evenements.isEmpty) {
       return "$texteLivres · le café des lecteurs vous attend";
     }
-    final texteActu = _evenements.length == 1
-        ? "1 actualité de vos auteurs"
-        : "${_evenements.length} actualités de vos auteurs";
-    return "$texteLivres · $texteActu";
+    // Le compteur annonçait « 7 actualités » en comptant aussi les rendez-vous,
+    // passés compris. On ne compte plus que ce qui est réellement offert au
+    // regard : les rendez-vous devant nous, et les actualités vivantes.
+    final agenda = _rendezVousAVenir.length;
+    final actus = _actualites.length;
+
+    final morceaux = <String>[];
+    if (agenda > 0) {
+      morceaux.add(agenda == 1 ? "1 rendez-vous" : "$agenda rendez-vous");
+    }
+    if (actus > 0) {
+      morceaux.add(actus == 1 ? "1 actualité" : "$actus actualités");
+    }
+    if (morceaux.isEmpty) return texteLivres;
+    return "$texteLivres · ${morceaux.join(" · ")}";
   }
 
   @override
@@ -225,103 +240,104 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                           Padding(
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
                             child: Text(
-                      _prenom.isEmpty
-                          ? "Vos espaces d'échange"
-                          : "Vos lectures, $_prenom",
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                    child: Text(
-                      _phraseBibliotheque(),
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textSecondary,
-                        fontSize: 13.5,
-                        height: 1.45,
-                      ),
-                    ),
-                  ),
-
-                  // Salon Principal (Espace global)
-                  _buildGlobalSalonCard(),
-
-                  // Section Événements & Annonces
-                  if (_evenements.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 20.0,
-                        top: 30.0,
-                        bottom: 10.0,
-                      ),
-                      child: Text(
-                        "Annonces & Événements",
-                        style: GoogleFonts.poppins(
-                          color: AppColors.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    _buildEvenementsSection(),
-                  ],
-
-                  // Forums par Livre
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      "Clubs de lecture de votre bibliothèque (${_library.length})",
-                      style: AppTextStyles.subtitle,
-                    ),
-                  ),
-
-                  if (_library.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: Container(
-                        padding: EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusCard,
+                              _prenom.isEmpty
+                                  ? "Vos espaces d'échange"
+                                  : "Vos lectures, $_prenom",
+                              style: GoogleFonts.poppins(
+                                color: AppColors.textPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "Ajoutez des livres à votre bibliothèque pour rejoindre leurs forums de discussion.",
-                            style: TextStyle(color: AppColors.textHint),
-                            textAlign: TextAlign.center,
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                            child: Text(
+                              _phraseBibliotheque(),
+                              style: GoogleFonts.poppins(
+                                color: AppColors.textSecondary,
+                                fontSize: 13.5,
+                                height: 1.45,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    )
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: _library.length,
-                      itemBuilder: (context, index) {
-                        final libraryItem = _library[index];
-                        return _buildBookForumCard(libraryItem);
-                      },
-                    ),
 
-                  SizedBox(height: 100),
-                ],
-              ),
-            ),
+                          // Salon Principal (Espace global)
+                          _buildGlobalSalonCard(),
+
+                          // Deux sections, et non plus une.
+                          //
+                          // « Annonces & Événements » empilait deux objets qui
+                          // ne demandent pas la même chose. Un rendez-vous
+                          // porte un engagement — une date, parfois un lien à
+                          // rejoindre — et peut se MANQUER ; une actualité se
+                          // lit, ou pas. Mêlés, l'urgence du premier se diluait
+                          // dans le flux du second : une dédicace et une
+                          // nouvelle parution se ressemblaient trait pour trait.
+                          //
+                          // Le produit avait d'ailleurs déjà tranché — la page
+                          // complète propose un filtre « Tout · Annonces ·
+                          // Événements » depuis toujours. Seul l'aperçu de
+                          // l'accueil l'ignorait.
+                          ..._sectionAgenda(),
+                          ..._sectionActualites(),
+
+                          // Forums par Livre
+                          Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Text(
+                              "Clubs de lecture de votre bibliothèque (${_library.length})",
+                              style: AppTextStyles.subtitle,
+                            ),
+                          ),
+
+                          if (_library.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20.0,
+                              ),
+                              child: Container(
+                                padding: EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusCard,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    "Ajoutez des livres à votre bibliothèque pour rejoindre leurs forums de discussion.",
+                                    style: TextStyle(color: AppColors.textHint),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              itemCount: _library.length,
+                              itemBuilder: (context, index) {
+                                final libraryItem = _library[index];
+                                return _buildBookForumCard(libraryItem);
+                              },
+                            ),
+
+                          SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildGlobalSalonCard() {
     return GestureDetector(
@@ -364,7 +380,7 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                   Text(
                     SalonNoms.globalTitre,
                     style: GoogleFonts.poppins(
-                      color: AppColors.textPrimary,
+                      color: AppColors.onAccent,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -560,52 +576,94 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
     );
   }
 
-  Widget _buildEvenementsSection() {
-    final apercu = _evenements.take(_apercuEvenements).toList();
-    final reste = _evenements.length - apercu.length;
+  /// Les rendez-vous encore devant nous, le plus proche d'abord.
+  List<Evenement> get _rendezVousAVenir =>
+      _evenements.where((e) => e.dateEvenement != null && !e.passe).toList();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          for (var i = 0; i < apercu.length; i++)
-            Padding(
-              padding: EdgeInsets.only(bottom: i == apercu.length - 1 ? 0 : 12),
-              child: CarteEvenement(
-                evenement: apercu[i],
-                onTap: () => afficherEvenement(context, apercu[i]),
-              ),
-            ),
-          if (reste > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _ouvrirTousLesEvenements,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.accentInk,
-                    side: BorderSide(color: AppColors.border),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusCard,
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    reste == 1
-                        ? "Voir 1 autre publication"
-                        : "Voir les $reste autres publications",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
+  /// Les actualites : tout ce qui n'a pas de date de rendez-vous.
+  List<Evenement> get _actualites =>
+      _evenements.where((e) => e.dateEvenement == null).toList();
+
+  /// « Prochains rendez-vous » : ce qu'on peut manquer.
+  ///
+  /// Absente s'il n'y en a aucun. Un titre au-dessus du vide donne
+  /// l'impression d'un chargement qui n'aboutit pas.
+  List<Widget> _sectionAgenda() =>
+      _sectionPublications("Prochains rendez-vous", _rendezVousAVenir);
+
+  /// « Actualités de vos auteurs » : ce qui se lit.
+  List<Widget> _sectionActualites() =>
+      _sectionPublications("Actualités de vos auteurs", _actualites);
+
+  List<Widget> _sectionPublications(String titre, List<Evenement> membres) {
+    if (membres.isEmpty) return const [];
+
+    final apercu = membres.take(_apercuEvenements).toList();
+
+    return [
+      Padding(
+        padding: const EdgeInsets.only(left: 20, top: 30, bottom: 10),
+        child: Text(
+          titre,
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            for (var i = 0; i < apercu.length; i++)
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: i == apercu.length - 1 ? 0 : 12,
+                ),
+                child: CarteEvenement(
+                  evenement: apercu[i],
+                  onTap: () => afficherEvenement(context, apercu[i]),
                 ),
               ),
+          ],
+        ),
+      ),
+      // Un seul renvoi vers la liste complete, pose sous la derniere section :
+      // deux boutons « Voir tout » menant au meme ecran feraient croire a deux
+      // destinations.
+      if (identical(membres, _actualites) || _actualites.isEmpty)
+        _lienVersToutesLesPublications(),
+    ];
+  }
+
+  /// Le renvoi vers la liste complete, ou vit aussi le passe.
+  Widget _lienVersToutesLesPublications() {
+    final reste = _evenements.length;
+    if (reste == 0) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: _ouvrirTousLesEvenements,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.accentInk,
+            side: BorderSide(color: AppColors.border),
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
             ),
-        ],
+          ),
+          child: Text(
+            "Voir toutes les publications ($reste)",
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ),
       ),
     );
   }

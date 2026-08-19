@@ -7,6 +7,8 @@ import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.d
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
+import 'package:space_learn_flutter/core/services/rappel_evenement.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
 /// Une annonce ou un événement, tel qu'il apparaît dans une liste.
 ///
@@ -14,7 +16,7 @@ import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 /// dans celle de l'auteur, avec des divergences qui s'installaient à chaque
 /// retouche. Une troisième copie s'ajoutait avec la page listant tout : c'est
 /// le moment de n'en garder qu'une.
-class CarteEvenement extends StatelessWidget {
+class CarteEvenement extends StatefulWidget {
   const CarteEvenement({
     super.key,
     required this.evenement,
@@ -32,6 +34,74 @@ class CarteEvenement extends StatelessWidget {
   /// rien. Sans valeur, la ligne disparaît plutôt que de meubler.
   final String? signature;
 
+  @override
+  State<CarteEvenement> createState() => _CarteEvenementState();
+}
+
+class _CarteEvenementState extends State<CarteEvenement> {
+  /// Un rappel est-il posé pour ce rendez-vous ?
+  ///
+  /// L'état vit dans la carte plutôt que chez ses trois appelants : chacun
+  /// devrait sinon le charger, le suivre et le passer, et le jour où l'un
+  /// oublie, le bouton ment sur un seul écran.
+  bool _rappelPose = false;
+  bool _enCours = false;
+
+  Evenement get evenement => widget.evenement;
+  String? get signature => widget.signature;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_peutRappeler) _lireLEtatDuRappel();
+  }
+
+  /// Un rappel n'a de sens que pour un rendez-vous encore devant nous.
+  ///
+  /// C'est ce qui sépare un événement d'une annonce : une annonce se lit ou
+  /// pas, un rendez-vous se manque. Proposer le geste sur une annonce n'aurait
+  /// rien à rappeler ; le proposer sur un rendez-vous passé promettrait une
+  /// notification qui ne partirait jamais.
+  bool get _peutRappeler =>
+      !evenement.passe &&
+      RappelEvenement.encorePossible(evenement.dateEvenement);
+
+  Future<void> _lireLEtatDuRappel() async {
+    final pose = await RappelEvenement.estPose(evenement.id);
+    if (mounted && pose != _rappelPose) setState(() => _rappelPose = pose);
+  }
+
+  Future<void> _basculerLeRappel() async {
+    if (_enCours) return;
+    setState(() => _enCours = true);
+
+    try {
+      if (_rappelPose) {
+        await RappelEvenement.retirer(evenement.id);
+        if (mounted) setState(() => _rappelPose = false);
+        return;
+      }
+
+      final pose = await RappelEvenement.poser(
+        evenementId: evenement.id,
+        titre: evenement.titre,
+        dateEvenement: evenement.dateEvenement!,
+      );
+      if (!mounted) return;
+      setState(() => _rappelPose = pose);
+
+      AppNotifications.showSnackBar(
+        context,
+        message: pose
+            ? "Nous vous préviendrons la veille."
+            : "Ce rendez-vous est trop proche pour être rappelé.",
+        isError: !pose,
+      );
+    } finally {
+      if (mounted) setState(() => _enCours = false);
+    }
+  }
+
   bool get _estAnnonce =>
       evenement.typePublication.toLowerCase().trim() == 'annonce';
 
@@ -45,6 +115,53 @@ class CarteEvenement extends StatelessWidget {
     return evenement.typePublication.toUpperCase();
   }
 
+  /// Poser ou retirer le rappel.
+  ///
+  /// Un seul bouton pour les deux gestes, et son apparence dit lequel : cloche
+  /// creuse et texte discret quand rien n'est posé, cloche pleine et accent
+  /// quand le rappel existe. Sans ce contraste, on ne saurait pas si l'on
+  /// s'apprête à poser ou à retirer.
+  Widget _boutonRappel(Color accent) {
+    final couleur = _rappelPose ? accent : AppColors.textSecondary;
+
+    return InkWell(
+      onTap: _enCours ? null : _basculerLeRappel,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_enCours)
+              SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.6,
+                  color: couleur,
+                ),
+              )
+            else
+              Icon(
+                _rappelPose ? Iconsax.notification5 : Iconsax.notification,
+                size: 13,
+                color: couleur,
+              ),
+            const SizedBox(width: 4),
+            Text(
+              _rappelPose ? "Rappel posé" : "Me le rappeler",
+              style: GoogleFonts.poppins(
+                color: couleur,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
@@ -56,7 +173,7 @@ class CarteEvenement extends StatelessWidget {
     final icone = _estAnnonce ? Iconsax.notification : Iconsax.calendar;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -137,7 +254,9 @@ class CarteEvenement extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusXs,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -157,26 +276,59 @@ class CarteEvenement extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                 ],
+                // La date du RENDEZ-VOUS, et elle seule.
+                //
+                // Deux dates s'affichaient sans etiquette : celle-ci en haut,
+                // et « Publie le … » en bas. Pour une annonce — qui n'a pas de
+                // date d'evenement — la premiere retombait sur la date de
+                // publication : la meme date, ecrite deux fois sur la meme
+                // carte, l'une nue et l'autre nommee. Impossible de savoir ce
+                // que la premiere voulait dire, ni pourquoi elle differait
+                // parfois de la seconde.
+                //
+                // Une annonce n'a donc plus qu'une date, celle du bas. Un
+                // evenement en garde deux, mais celle-ci porte desormais son
+                // nom et se detache : c'est la seule qui engage le lecteur a
+                // se deplacer.
                 if (evenement.dateEvenement != null)
-                  Text(
-                    DateFormat(
-                      'd MMM yyyy',
-                      'fr_FR',
-                    ).format(evenement.dateEvenement!),
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textHint,
-                      fontSize: 10,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
                     ),
-                  )
-                else if (evenement.creeLe != null)
-                  Text(
-                    DateFormat(
-                      'd MMM yyyy',
-                      'fr_FR',
-                    ).format(evenement.creeLe!),
-                    style: GoogleFonts.poppins(
-                      color: AppColors.textHint,
-                      fontSize: 10,
+                    decoration: BoxDecoration(
+                      color: evenement.passe
+                          ? AppColors.textHint.withValues(alpha: 0.12)
+                          : accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusXs,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Iconsax.calendar_1,
+                          size: 10,
+                          color: evenement.passe
+                              ? AppColors.textSecondary
+                              : accent,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat(
+                            'd MMM yyyy',
+                            'fr_FR',
+                          ).format(evenement.dateEvenement!),
+                          style: GoogleFonts.poppins(
+                            color: evenement.passe
+                                ? AppColors.textSecondary
+                                : accent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
               ],
@@ -202,11 +354,12 @@ class CarteEvenement extends StatelessWidget {
             const SizedBox(height: 10),
             Builder(
               builder: (context) {
-                final nomAuteurEffectif = (signature != null && signature!.trim().isNotEmpty)
+                final nomAuteurEffectif =
+                    (signature != null && signature!.trim().isNotEmpty)
                     ? signature!.trim()
                     : (evenement.nomAuteur?.trim().isNotEmpty == true
-                        ? evenement.nomAuteur!.trim()
-                        : null);
+                          ? evenement.nomAuteur!.trim()
+                          : null);
 
                 final datePubStr = evenement.creeLe != null
                     ? "Publié le ${DateFormat('d MMM yyyy', 'fr_FR').format(evenement.creeLe!)}"
@@ -223,7 +376,11 @@ class CarteEvenement extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (hasAuthor) ...[
-                              Icon(Icons.person, size: 12, color: AppColors.textSecondary),
+                              Icon(
+                                Icons.person,
+                                size: 12,
+                                color: AppColors.textSecondary,
+                              ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
@@ -263,6 +420,13 @@ class CarteEvenement extends StatelessWidget {
                     else
                       const Spacer(),
                     const SizedBox(width: 8),
+                    // « Me le rappeler » passe AVANT « Lire » : c'est l'action
+                    // propre au rendez-vous, celle qu'on ne peut pas remettre
+                    // à plus tard sans risquer de l'oublier.
+                    if (_peutRappeler) ...[
+                      _boutonRappel(accent),
+                      const SizedBox(width: 10),
+                    ],
                     Text(
                       "Lire",
                       style: GoogleFonts.poppins(

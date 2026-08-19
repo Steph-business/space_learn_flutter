@@ -126,250 +126,254 @@ class _LivresPageState extends State<LivresPage> {
             child: Column(
               children: [
                 // ── Stats Sessions (Three individual cards) ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  _buildStatSession(
-                    "${_books.length}",
-                    "Total",
-                    Iconsax.book_1,
-                    AppColors.secondaryVariant,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                  SizedBox(width: 10),
-                  _buildStatSession(
-                    "${_books.where((b) => b.statut.toLowerCase() == 'publie').length}",
-                    "Publiés",
-                    Iconsax.verify,
-                    AppColors.success,
-                  ),
-                  SizedBox(width: 10),
-                  _buildStatSession(
-                    "${_books.fold<int>(0, (sum, b) => sum + b.telechargements)}",
-                    "Lectures",
-                    Iconsax.eye,
-                    AppColors.warning,
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Search + Filter ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  // Search bar (Sleek)
-                  CustomSearchBar(
-                    hintText: "Rechercher par titre...",
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value.toLowerCase();
-                      });
-                    },
-                  ),
-                  SizedBox(height: 12),
-
-                  // Filter chips
-                  SizedBox(
-                    height: 38,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _filters.length,
-                      separatorBuilder: (_, __) => SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final filter = _filters[index];
-                        final isSelected = _selectedFilter == filter;
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedFilter = filter),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: const BoxDecoration(),
-                            child: Center(
-                              child: Text(
-                                filter,
-                                style: GoogleFonts.poppins(
-                                  color: isSelected
-                                      ? AppColors.secondaryVariant
-                                      : AppColors.textHint,
-                                  fontSize: 12,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: 12),
-
-            // ── Books List ──
-            Expanded(
-              child: _isLoading
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.secondaryVariant,
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            "Chargement de vos livres...",
-                            style: GoogleFonts.poppins(
-                              color: AppColors.textPrimary.withOpacity(0.4),
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
+                  child: Row(
+                    children: [
+                      _buildStatSession(
+                        "${_books.length}",
+                        "Total",
+                        Iconsax.book_1,
+                        AppColors.secondaryVariant,
                       ),
-                    )
-                  : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Iconsax.warning_2,
-                            size: 48,
-                            color: AppColors.error.withOpacity(0.6),
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            _error!,
-                            style: GoogleFonts.poppins(
-                              color: AppColors.error,
-                              fontSize: 14,
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          GestureDetector(
-                            onTap: _loadBooks,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.secondaryVariant.withOpacity(
-                                  0.15,
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                  AppDimensions.radiusSmall,
-                                ),
-                              ),
-                              child: Text(
-                                "Réessayer",
-                                style: GoogleFonts.poppins(
-                                  color: AppColors.secondaryVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      SizedBox(width: 10),
+                      _buildStatSession(
+                        "${_books.where((b) => b.statut.toLowerCase() == 'publie').length}",
+                        "Publiés",
+                        Iconsax.verify,
+                        AppColors.success,
                       ),
-                    )
-                  : _filteredBooks.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Iconsax.book,
-                            size: 64,
-                            color: AppColors.textPrimary.withOpacity(0.1),
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            _searchQuery.isNotEmpty
-                                ? "Aucun résultat trouvé"
-                                : "Vous n'avez pas encore publié de livres.",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              color: AppColors.textPrimary.withOpacity(0.4),
-                            ),
-                          ),
-                          if (_searchQuery.isEmpty) ...[
-                            SizedBox(height: 20),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AjouterLivrePage(),
-                                  ),
-                                );
-                              },
-                              child: Container(
+                      SizedBox(width: 10),
+                      _buildStatSession(
+                        "${_books.fold<int>(0, (sum, b) => sum + b.telechargements)}",
+                        "Lectures",
+                        Iconsax.eye,
+                        AppColors.warning,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Search + Filter ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      // Search bar (Sleek)
+                      CustomSearchBar(
+                        hintText: "Rechercher par titre...",
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value.toLowerCase();
+                          });
+                        },
+                      ),
+                      SizedBox(height: 12),
+
+                      // Filter chips
+                      SizedBox(
+                        height: 38,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _filters.length,
+                          separatorBuilder: (_, __) => SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final filter = _filters[index];
+                            final isSelected = _selectedFilter == filter;
+                            return GestureDetector(
+                              onTap: () =>
+                                  setState(() => _selectedFilter = filter),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
+                                  horizontal: 16,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.secondaryVariant.withOpacity(
-                                    0.15,
-                                  ),
-                                  borderRadius: BorderRadius.circular(
-                                    AppDimensions.radiusInner,
-                                  ),
-                                  border: Border.all(
-                                    color: AppColors.secondaryVariant
-                                        .withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Iconsax.add_circle,
-                                      color: AppColors.secondaryVariant,
-                                      size: 18,
+                                decoration: const BoxDecoration(),
+                                child: Center(
+                                  child: Text(
+                                    filter,
+                                    style: GoogleFonts.poppins(
+                                      color: isSelected
+                                          ? AppColors.secondaryVariant
+                                          : AppColors.textHint,
+                                      fontSize: 12,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
                                     ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      "Publier mon premier livre",
-                                      style: GoogleFonts.poppins(
-                                        color: AppColors.secondaryVariant,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 12),
+
+                // ── Books List ──
+                Expanded(
+                  child: _isLoading
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.secondaryVariant,
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                "Chargement de vos livres...",
+                                style: GoogleFonts.poppins(
+                                  color: AppColors.textPrimary.withOpacity(0.4),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Iconsax.warning_2,
+                                size: 48,
+                                color: AppColors.error.withOpacity(0.6),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                _error!,
+                                style: GoogleFonts.poppins(
+                                  color: AppColors.error,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              GestureDetector(
+                                onTap: _loadBooks,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.secondaryVariant
+                                        .withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(
+                                      AppDimensions.radiusSmall,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    "Réessayer",
+                                    style: GoogleFonts.poppins(
+                                      color: AppColors.secondaryVariant,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _filteredBooks.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Iconsax.book,
+                                size: 64,
+                                color: AppColors.textPrimary.withOpacity(0.1),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                _searchQuery.isNotEmpty
+                                    ? "Aucun résultat trouvé"
+                                    : "Vous n'avez pas encore publié de livres.",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary.withOpacity(0.4),
+                                ),
+                              ),
+                              if (_searchQuery.isEmpty) ...[
+                                SizedBox(height: 20),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const AjouterLivrePage(),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.secondaryVariant
+                                          .withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(
+                                        AppDimensions.radiusInner,
+                                      ),
+                                      border: Border.all(
+                                        color: AppColors.secondaryVariant
+                                            .withOpacity(0.3),
                                       ),
                                     ),
-                                  ],
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Iconsax.add_circle,
+                                          color: AppColors.secondaryVariant,
+                                          size: 18,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          "Publier mon premier livre",
+                                          style: GoogleFonts.poppins(
+                                            color: AppColors.secondaryVariant,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          PublicationsList(
-                            books: _filteredBooks,
-                            authorName: _authorName,
-                            onBookUpdated: _loadBooks,
+                              ],
+                            ],
                           ),
-                          SizedBox(height: 100),
-                        ],
-                      ),
-                    ),
-            ),
+                        )
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              PublicationsList(
+                                books: _filteredBooks,
+                                authorName: _authorName,
+                                onBookUpdated: _loadBooks,
+                              ),
+                              SizedBox(height: 100),
+                            ],
+                          ),
+                        ),
+                ),
               ],
             ),
           ),

@@ -16,6 +16,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:epub_view/epub_view.dart' hide Image;
 import '../../../../utils/token_storage.dart';
 import '../../../data/dataServices/readingProgressService.dart';
+import '../../../data/dataServices/minutes_en_attente.dart';
 import '../../../data/dataServices/bookmarkService.dart';
 import '../../../data/model/bookmark_model.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
@@ -29,6 +30,9 @@ import '../../../data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
 import 'package:space_learn_flutter/core/services/lecture_audio_handler.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/services/lecture_audio_livre.dart';
+import 'package:space_learn_flutter/core/utils/api_routes.dart';
 
 class ReadingPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -115,6 +119,13 @@ class _ReadingPageState extends State<ReadingPage> {
     _sessionStartTime = DateTime.now();
     _startHeartbeat();
 
+    // Rattraper ce qu'une séance précédente n'a pas pu déclarer.
+    //
+    // On lit dans le métro, dans une cour sans réseau, en avion. Ces minutes-là
+    // attendent sur l'appareil ; l'ouverture d'un livre est le bon moment pour
+    // réessayer, le réseau est souvent revenu depuis.
+    unawaited(MinutesEnAttente.vider());
+
     // L'ecran ne doit pas s'eteindre pendant la lecture.
     //
     // Rien ne l'empechait : une page lue trente secondes sans toucher l'ecran
@@ -125,6 +136,13 @@ class _ReadingPageState extends State<ReadingPage> {
     // Le verrou est relache dans dispose : il ne doit pas survivre a la sortie
     // du lecteur, sous peine de vider la batterie sur toutes les autres pages.
     WakelockPlus.enable();
+
+    // Ouvrir un livre reprend la voix a la bibliotheque.
+    //
+    // Les deux ecrans partagent le meme TtsService, qui est unique : sans
+    // cela, l'ecoute lancee depuis la bibliotheque continuerait de tourner
+    // par-dessus celle du lecteur, deux voix sur le meme telephone.
+    unawaited(LectureAudioLivre.instance.arreter());
 
     // Initialisation TTS
     _ttsService.onCompletion = _onTtsCompletion;
@@ -165,8 +183,12 @@ class _ReadingPageState extends State<ReadingPage> {
       try {
         final token = await TokenStorage.getToken();
         if (token != null && token.isNotEmpty) {
-          final freshBook = await BookService().getBookById(bookId, authToken: token);
-          if (freshBook.fichierUrl != null && freshBook.fichierUrl!.isNotEmpty) {
+          final freshBook = await BookService().getBookById(
+            bookId,
+            authToken: token,
+          );
+          if (freshBook.fichierUrl != null &&
+              freshBook.fichierUrl!.isNotEmpty) {
             pdfUrl = freshBook.fichierUrl;
             widget.book['fichier_url'] = freshBook.fichierUrl;
             widget.book['format'] = freshBook.format;
@@ -199,7 +221,7 @@ class _ReadingPageState extends State<ReadingPage> {
           // d'abord acquérir le livre.
           _loadError = widget.isExtrait
               ? "Ce livre ne propose pas d'extrait gratuit. "
-                "Procurez-vous l'ouvrage pour accéder à la lecture complète."
+                    "Procurez-vous l'ouvrage pour accéder à la lecture complète."
               : "Ce livre n'est pas encore dans votre bibliothèque.";
         } else {
           _loadError = "Aucun fichier disponible pour ce livre.";
@@ -273,7 +295,10 @@ class _ReadingPageState extends State<ReadingPage> {
       }
     } catch (e) {
       setState(() {
-        _loadError = "Erreur lors de la préparation du fichier : $e";
+        _loadError = messageLisible(
+          e,
+          repli: "Ce livre n'a pas pu être ouvert.",
+        );
         _isDownloading = false;
       });
     }
@@ -371,6 +396,13 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Future<void> _loadProgress() async {
+    // Et un extrait n'en relit pas davantage.
+    //
+    // La progression appartient au livre entier ; l'appliquer a un extrait de
+    // dix pages fait sauter n'importe ou. Un extrait s'ouvre toujours a sa
+    // premiere page — c'est un debut de lecture, pas une reprise.
+    if (widget.isExtrait) return;
+
     // Si on a déjà une page initiale, on ne surcharge pas le réseau
     if (_savedPage != null && _savedPage! > 0) return;
 
@@ -417,11 +449,12 @@ class _ReadingPageState extends State<ReadingPage> {
 
   /// Secondes déjà comptées localement mais pas encore déclarées au serveur.
   ///
-  /// Le serveur compte en minutes. Le battement local est plus rapide que ça —
-  /// il l'est pour que quitter la lecture au bout de vingt secondes laisse une
-  /// trace — donc on accumule ici et on n'appelle le serveur qu'une fois la
-  /// minute atteinte.
-  int _secondesEnAttenteServeur = 0;
+  /// Le compteur de secondes en attente ne vit plus ici.
+  ///
+  /// C'était un champ d'instance : il mourait avec la page. Fermer un livre sur
+  /// quarante secondes en attente les effaçait, et une session lue sans réseau
+  /// était perdue en entier. [MinutesEnAttente] le garde sur l'appareil et le
+  /// renvoie tant que le serveur ne l'a pas accepté.
 
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
@@ -451,17 +484,13 @@ class _ReadingPageState extends State<ReadingPage> {
   /// Le battement est passé de soixante à quinze secondes sans que le corps de
   /// la requête change : l'application annonçait « une minute » quatre fois par
   /// minute, et le temps de lecture de chaque livre était multiplié par quatre
-  /// dans les statistiques de l'auteur.
+  /// dans les statistiques de l'auteur. D'où le passage par un solde.
+  ///
+  /// Deux destinations, deux usages : par livre pour les statistiques de
+  /// l'auteur, par lecteur pour son temps cumulé et sa série de jours. Chacune
+  /// a son propre solde — l'une peut échouer sans faire renvoyer l'autre.
   void _declarerAuServeur(String bookId, int secondes) {
-    _secondesEnAttenteServeur += secondes;
-    final minutes = _secondesEnAttenteServeur ~/ 60;
-    if (minutes <= 0) return;
-    _secondesEnAttenteServeur -= minutes * 60;
-    _statsService.recordReadingTime(bookId, minutes: minutes);
-    // Deux destinations, deux usages : par livre pour les statistiques de
-    // l'auteur, par lecteur pour son temps cumulé et sa série de jours. La
-    // seconde manquait, et la série vivait donc dans le seul téléphone.
-    _statsService.declarerMinutes(minutes);
+    unawaited(MinutesEnAttente.porter(livreId: bookId, secondes: secondes));
   }
 
   void _onPageChanged(int page) {
@@ -481,10 +510,24 @@ class _ReadingPageState extends State<ReadingPage> {
       _currentPage = page;
     });
     _proposerAchatSiFinDExtrait(page);
-    _saveTimer?.cancel();
-    _saveTimer = Timer(const Duration(seconds: 2), () {
-      _saveProgress(page);
-    });
+    // Un extrait n'ecrit JAMAIS de progression.
+    //
+    // Cette sauvegarde-ci n'etait pas gardee, alors que celle de la sortie
+    // l'etait. Lire les dix pages d'un extrait enregistrait donc « page 9 sur
+    // 10 » sur le LIVRE — dont les pages n'ont rien a voir. Deux consequences,
+    // et la seconde est pire :
+    //
+    //   - rouvrir l'extrait sautait directement a la page 9, celle ou la
+    //     proposition d'achat s'affiche ;
+    //   - le livre etait annonce lu a 90 %, pour quelqu'un qui ne l'a pas
+    //     achete. Le jour ou il l'achete, il s'ouvre a sa page 9 sur trois
+    //     cents.
+    if (!widget.isExtrait) {
+      _saveTimer?.cancel();
+      _saveTimer = Timer(const Duration(seconds: 2), () {
+        _saveProgress(page);
+      });
+    }
 
     if (_ttsService.isPlaying || _enchainerSurLaPageSuivante) {
       _enchainerSurLaPageSuivante = false;
@@ -682,7 +725,10 @@ class _ReadingPageState extends State<ReadingPage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur lors de l'initialisation du paiement : $e",
+          message: messageLisible(
+            e,
+            repli: "Le paiement n'a pas pu être lancé.",
+          ),
           isError: true,
         );
       }
@@ -945,255 +991,263 @@ class _ReadingPageState extends State<ReadingPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            // L'etat de la voix, quand il empeche de lire.
-            //
-            // Le service resolvait deja une voix francaise au demarrage et
-            // exposait le resultat, mais aucun ecran ne le lisait : sur un
-            // appareil sans voix francaise, appuyer sur lecture ne produisait
-            // rien du tout. Un silence n'apprend rien a celui qui attend.
-            if (_ttsService.etatVoix != EtatVoix.ok &&
-                _ttsService.etatVoix != EtatVoix.inconnu)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 18,
-                      color: AppColors.warning,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _ttsService.etatVoix == EtatVoix.moteurIndisponible
-                            ? "Votre appareil n'a pas de moteur de synthèse "
-                                  "vocale. La lecture à voix haute ne peut pas "
-                                  "fonctionner."
-                            : "Aucune voix française n'est installée sur votre "
-                                  "appareil. Ajoutez-la dans Paramètres › "
-                                  "Accessibilité › Synthèse vocale — un "
-                                  "téléchargement unique, de préférence en "
-                                  "Wi-Fi.",
-                        style: GoogleFonts.poppins(
-                          color: itemColor,
-                          fontSize: 12,
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
+              // L'etat de la voix, quand il empeche de lire.
+              //
+              // Le service resolvait deja une voix francaise au demarrage et
+              // exposait le resultat, mais aucun ecran ne le lisait : sur un
+              // appareil sans voix francaise, appuyer sur lecture ne produisait
+              // rien du tout. Un silence n'apprend rien a celui qui attend.
+              if (_ttsService.etatVoix != EtatVoix.ok &&
+                  _ttsService.etatVoix != EtatVoix.inconnu)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        _ttsService.isPlaying
-                            ? (_isPdf
-                                  ? "Lecture en cours - Page $_currentPage"
-                                  : "Lecture en cours - $_currentChapterTitle")
-                            : _ttsService.isPaused
-                            ? "Lecture en pause"
-                            : "Synthèse vocale prête",
-                        style: GoogleFonts.poppins(
-                          color: _ttsService.isPlaying
-                              ? AppColors.accentInk
-                              : itemColor.withOpacity(0.7),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: AppColors.warning,
                       ),
-                      SizedBox(height: 2),
-                      Text(
-                        _isExtractingText
-                            ? "Extraction du texte..."
-                            : widget.book['titre'] ?? "Livre",
-                        style: GoogleFonts.lora(
-                          color: itemColor,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _ttsService.etatVoix == EtatVoix.moteurIndisponible
+                              ? "Votre appareil n'a pas de moteur de synthèse "
+                                    "vocale. La lecture à voix haute ne peut pas "
+                                    "fonctionner."
+                              : "Aucune voix française n'est installée sur votre "
+                                    "appareil. Ajoutez-la dans Paramètres › "
+                                    "Accessibilité › Synthèse vocale — un "
+                                    "téléchargement unique, de préférence en "
+                                    "Wi-Fi.",
+                          style: GoogleFonts.poppins(
+                            color: itemColor,
+                            fontSize: 12,
+                            height: 1.45,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        _autoplayNextPage
-                            ? Icons.autorenew
-                            : Icons.play_disabled,
-                        color: _autoplayNextPage
-                            ? AppColors.accentInk
-                            : itemColor.withOpacity(0.4),
-                        size: 20,
-                      ),
-                      tooltip: "Lecture automatique",
-                      onPressed: () {
-                        setState(() {
-                          _autoplayNextPage = !_autoplayNextPage;
-                        });
-                      },
-                    ),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      // Les paliers etaient compares par egalite de nombres a
-                      // virgule — fragile — et codes en dur jusqu'a 1.0, ce
-                      // qui vaut le double de la vitesse normale sur Android
-                      // mais le plafond dur d'iOS, bien plus rapide encore.
-                      // On avance par index, et on s'arrete au plafond que
-                      // l'appareil declare.
-                      onPressed: () => _ttsService.setRate(_vitesseSuivante()),
-                      child: Text(
-                        _getSpeedLabel(_ttsService.speechRate),
-                        style: GoogleFonts.poppins(
-                          color: AppColors.accentInk,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            if (_ttsService.isPlaying)
-              Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: _TtsAudioWaveform(color: AppColors.accentInk),
-              ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.skip_previous, color: itemColor, size: 28),
-                  onPressed: () {
-                    if (_isPdf) {
-                      if (_currentPage > 1) {
-                        _pdfViewerController.previousPage();
-                      }
-                    } else if (_epubController != null) {
-                      final toc = _epubController!.tableOfContents();
-                      final currentChapterIdx =
-                          (_epubController!.currentValue?.chapterNumber ?? 1) -
-                          1;
-                      if (currentChapterIdx - 1 >= 0 &&
-                          currentChapterIdx - 1 < toc.length) {
-                        final prevChapter = toc[currentChapterIdx - 1];
-                        _epubController!.jumpTo(index: prevChapter.startIndex);
-                      }
-                    }
-                  },
-                ),
-                GestureDetector(
-                  onTap: () {
-                    // Sans voix utilisable, l'appui ne produisait rien : le
-                    // service sortait sans parler et sans rien dire. On
-                    // repete l'explication plutot que de laisser croire a une
-                    // panne.
-                    if (!_ttsService.voixFrancaiseDisponible) {
-                      AppNotifications.showSnackBar(
-                        context,
-                        message:
-                            _ttsService.etatVoix == EtatVoix.moteurIndisponible
-                            ? "Aucun moteur de synthèse vocale sur cet appareil."
-                            : "Installez une voix française dans les réglages "
-                                  "de votre appareil pour écouter les livres.",
-                        isError: true,
-                      );
-                      return;
-                    }
-
-                    // La reprise appelait _speakCurrentPage(), qui relisait
-                    // la page depuis le haut : le stop() en tete de speak()
-                    // effacait la position memorisee. resume() reprend au
-                    // segment en cours.
-                    if (_ttsService.isPlaying) {
-                      _ttsService.pause();
-                    } else if (_ttsService.isPaused) {
-                      _ttsService.resume();
-                    } else {
-                      _speakCurrentPage();
-                    }
-                  },
-                  child: Container(
-                    height: 56,
-                    width: 56,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: _isExtractingText
-                        ? Center(
-                            child: SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                color: AppColors.onAccent,
-                                strokeWidth: 2.5,
-                              ),
-                            ),
-                          )
-                        : Icon(
-                            _ttsService.isPlaying
-                                ? Icons.pause
-                                : Icons.play_arrow,
-                            color: AppColors.onAccent,
-                            size: 32,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _ttsService.isPlaying
+                              ? (_isPdf
+                                    ? "Lecture en cours - Page $_currentPage"
+                                    : "Lecture en cours - $_currentChapterTitle")
+                              : _ttsService.isPaused
+                              ? "Lecture en pause"
+                              : "Synthèse vocale prête",
+                          style: GoogleFonts.poppins(
+                            color: _ttsService.isPlaying
+                                ? AppColors.accentInk
+                                : itemColor.withOpacity(0.7),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
                           ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          _isExtractingText
+                              ? "Extraction du texte..."
+                              : widget.book['titre'] ?? "Livre",
+                          style: GoogleFonts.lora(
+                            color: itemColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.stop,
-                    color: _ttsService.isStopped
-                        ? itemColor.withOpacity(0.4)
-                        : itemColor,
-                    size: 28,
-                  ),
-                  onPressed: _ttsService.isStopped
-                      ? null
-                      : () {
-                          _ttsService.stop();
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _autoplayNextPage
+                              ? Icons.autorenew
+                              : Icons.play_disabled,
+                          color: _autoplayNextPage
+                              ? AppColors.accentInk
+                              : itemColor.withOpacity(0.4),
+                          size: 20,
+                        ),
+                        tooltip: "Lecture automatique",
+                        onPressed: () {
+                          setState(() {
+                            _autoplayNextPage = !_autoplayNextPage;
+                          });
                         },
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        // Les paliers etaient compares par egalite de nombres a
+                        // virgule — fragile — et codes en dur jusqu'a 1.0, ce
+                        // qui vaut le double de la vitesse normale sur Android
+                        // mais le plafond dur d'iOS, bien plus rapide encore.
+                        // On avance par index, et on s'arrete au plafond que
+                        // l'appareil declare.
+                        onPressed: () =>
+                            _ttsService.setRate(_vitesseSuivante()),
+                        child: Text(
+                          _getSpeedLabel(_ttsService.speechRate),
+                          style: GoogleFonts.poppins(
+                            color: AppColors.accentInk,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              if (_ttsService.isPlaying)
+                Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: _TtsAudioWaveform(color: AppColors.accentInk),
                 ),
-                IconButton(
-                  icon: Icon(Icons.skip_next, color: itemColor, size: 28),
-                  onPressed: () {
-                    if (_isPdf) {
-                      if (_currentPage < _totalPages) {
-                        _pdfViewerController.nextPage();
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.skip_previous, color: itemColor, size: 28),
+                    onPressed: () {
+                      if (_isPdf) {
+                        if (_currentPage > 1) {
+                          _pdfViewerController.previousPage();
+                        }
+                      } else if (_epubController != null) {
+                        final toc = _epubController!.tableOfContents();
+                        final currentChapterIdx =
+                            (_epubController!.currentValue?.chapterNumber ??
+                                1) -
+                            1;
+                        if (currentChapterIdx - 1 >= 0 &&
+                            currentChapterIdx - 1 < toc.length) {
+                          final prevChapter = toc[currentChapterIdx - 1];
+                          _epubController!.jumpTo(
+                            index: prevChapter.startIndex,
+                          );
+                        }
                       }
-                    } else if (_epubController != null) {
-                      final toc = _epubController!.tableOfContents();
-                      final currentChapterIdx =
-                          (_epubController!.currentValue?.chapterNumber ?? 1) -
-                          1;
-                      if (currentChapterIdx + 1 < toc.length) {
-                        final nextChapter = toc[currentChapterIdx + 1];
-                        _epubController!.jumpTo(index: nextChapter.startIndex);
+                    },
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      // Sans voix utilisable, l'appui ne produisait rien : le
+                      // service sortait sans parler et sans rien dire. On
+                      // repete l'explication plutot que de laisser croire a une
+                      // panne.
+                      if (!_ttsService.voixFrancaiseDisponible) {
+                        AppNotifications.showSnackBar(
+                          context,
+                          message:
+                              _ttsService.etatVoix ==
+                                  EtatVoix.moteurIndisponible
+                              ? "Aucun moteur de synthèse vocale sur cet appareil."
+                              : "Installez une voix française dans les réglages "
+                                    "de votre appareil pour écouter les livres.",
+                          isError: true,
+                        );
+                        return;
                       }
-                    }
-                  },
-                ),
+
+                      // La reprise appelait _speakCurrentPage(), qui relisait
+                      // la page depuis le haut : le stop() en tete de speak()
+                      // effacait la position memorisee. resume() reprend au
+                      // segment en cours.
+                      if (_ttsService.isPlaying) {
+                        _ttsService.pause();
+                      } else if (_ttsService.isPaused) {
+                        _ttsService.resume();
+                      } else {
+                        _speakCurrentPage();
+                      }
+                    },
+                    child: Container(
+                      height: 56,
+                      width: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: _isExtractingText
+                          ? Center(
+                              child: SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: AppColors.onAccent,
+                                  strokeWidth: 2.5,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              _ttsService.isPlaying
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              color: AppColors.onAccent,
+                              size: 32,
+                            ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.stop,
+                      color: _ttsService.isStopped
+                          ? itemColor.withOpacity(0.4)
+                          : itemColor,
+                      size: 28,
+                    ),
+                    onPressed: _ttsService.isStopped
+                        ? null
+                        : () {
+                            _ttsService.stop();
+                          },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.skip_next, color: itemColor, size: 28),
+                    onPressed: () {
+                      if (_isPdf) {
+                        if (_currentPage < _totalPages) {
+                          _pdfViewerController.nextPage();
+                        }
+                      } else if (_epubController != null) {
+                        final toc = _epubController!.tableOfContents();
+                        final currentChapterIdx =
+                            (_epubController!.currentValue?.chapterNumber ??
+                                1) -
+                            1;
+                        if (currentChapterIdx + 1 < toc.length) {
+                          final nextChapter = toc[currentChapterIdx + 1];
+                          _epubController!.jumpTo(
+                            index: nextChapter.startIndex,
+                          );
+                        }
+                      }
+                    },
+                  ),
                 ],
               ),
             ],
@@ -1341,40 +1395,169 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
-  Widget _buildBody(String? pdfUrl, String? imageUrl, bool isPdf) {
-    if (_isLoadingFile || _isDownloading) {
-      final isDark = _backgroundColor.computeLuminance() < 0.5;
-      final Color textColor = isDark ? Colors.white : AppColors.readingBrown;
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.cloud_download_outlined,
-                size: 64,
-                color: AppColors.accentInk,
-              ),
-              SizedBox(height: 24),
+  /// Ce qu'on regarde en attendant que le livre s'ouvre.
+  ///
+  /// L'ecran disait « Chargement du livre… » sous un nuage, et rien d'autre :
+  /// ni QUEL livre — on venait pourtant d'appuyer sur son titre — ni ou en
+  /// etait le telechargement, alors que le pourcentage est connu a chaque
+  /// octet. Une barre qui avance sans chiffre, sur un ecran anonyme, ne dit pas
+  /// si l'on attend trois secondes ou trois minutes.
+  ///
+  /// Il ne distinguait pas non plus les deux attentes. Ouvrir un livre deja
+  /// telecharge ne prend qu'un instant ; le rapatrier depuis le serveur peut
+  /// durer sur un forfait mobile. Les annoncer du meme mot fait redouter la
+  /// seconde a chaque fois qu'on ouvre un livre.
+  Widget _ecranDOuverture(String? imageUrl) {
+    final bool sombre = _backgroundColor.computeLuminance() < 0.5;
+    final Color couleurTexte = sombre ? Colors.white : AppColors.readingBrown;
+    final Color couleurDiscrete = couleurTexte.withValues(alpha: 0.6);
+
+    final String titre = (widget.book['titre'] ?? widget.book['title'] ?? '')
+        .toString()
+        .trim();
+    final String auteur =
+        (widget.book['auteur_nom'] ??
+                widget.book['auteurNom'] ??
+                widget.book['auteur'] ??
+                '')
+            .toString()
+            .trim();
+
+    final bool telechargement = _isDownloading;
+    final int pourcent = (_downloadProgress * 100).round();
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _couvertureEnAttente(imageUrl, titre, couleurTexte),
+            const SizedBox(height: 28),
+
+            if (titre.isNotEmpty)
               Text(
-                "Chargement du livre...",
+                titre,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: couleurTexte,
                 ),
               ),
-              SizedBox(height: 16),
-              LinearProgressIndicator(
-                value: _downloadProgress > 0 ? _downloadProgress : null,
-                backgroundColor: textColor.withValues(alpha: 0.15),
-                color: AppColors.accentInk,
+            if (auteur.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                auteur,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: couleurDiscrete,
+                ),
               ),
             ],
-          ),
+
+            const SizedBox(height: 28),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+              child: LinearProgressIndicator(
+                value: telechargement && _downloadProgress > 0
+                    ? _downloadProgress
+                    : null,
+                minHeight: 5,
+                backgroundColor: couleurTexte.withValues(alpha: 0.12),
+                color: AppColors.accentInk,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            Text(
+              telechargement
+                  ? (_downloadProgress > 0
+                        ? "Téléchargement… $pourcent %"
+                        : "Téléchargement…")
+                  : "Ouverture…",
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: couleurTexte,
+              ),
+            ),
+
+            // La promesse qui rend l'attente acceptable : elle n'aura lieu
+            // qu'une fois. Inutile de la faire quand le livre est deja la.
+            if (telechargement) ...[
+              const SizedBox(height: 6),
+              Text(
+                "Ce livre restera disponible hors connexion.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: couleurDiscrete,
+                ),
+              ),
+            ],
+          ],
         ),
-      );
+      ),
+    );
+  }
+
+  /// La couverture, ou un carton a son initiale.
+  Widget _couvertureEnAttente(
+    String? imageUrl,
+    String titre,
+    Color couleurTexte,
+  ) {
+    final adresse = ApiRoutes.sanitizeImageUrl(imageUrl, useGin: true);
+
+    return Container(
+      width: 118,
+      height: 168,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        color: AppColors.accentInk.withValues(alpha: 0.10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: adresse != null
+          ? Image.network(
+              adresse,
+              fit: BoxFit.cover,
+              // Une couverture qui ne se charge pas ne doit pas laisser un
+              // rectangle casse : le carton a l'initiale prend le relais.
+              errorBuilder: (_, _, _) => _cartonInitiale(titre, couleurTexte),
+            )
+          : _cartonInitiale(titre, couleurTexte),
+    );
+  }
+
+  Widget _cartonInitiale(String titre, Color couleurTexte) {
+    return Center(
+      child: Text(
+        titre.isNotEmpty ? titre.substring(0, 1).toUpperCase() : "?",
+        style: GoogleFonts.poppins(
+          fontSize: 44,
+          fontWeight: FontWeight.bold,
+          color: AppColors.accentInk,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(String? pdfUrl, String? imageUrl, bool isPdf) {
+    if (_isLoadingFile || _isDownloading) {
+      return _ecranDOuverture(imageUrl);
     }
 
     if (_loadError != null) {

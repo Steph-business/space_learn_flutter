@@ -14,6 +14,9 @@ import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/readingProgressService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/readingActivityModel.dart';
+import 'package:space_learn_flutter/core/services/lecture_audio_livre.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 
 class BibliothequePage extends StatefulWidget {
   const BibliothequePage({super.key});
@@ -37,16 +40,119 @@ class _BibliothequePageState extends State<BibliothequePage> {
   final TextEditingController _searchController = TextEditingController();
   bool _isGridView = false;
 
+  /// L'ecoute d'un livre, sans l'ouvrir.
+  ///
+  /// Le service est unique : un seul livre parle a la fois, et l'ecoute
+  /// survit a cet ecran — on peut ranger son telephone et continuer.
+  final LectureAudioLivre _audio = LectureAudioLivre.instance;
+
   @override
   void initState() {
     super.initState();
     _loadLibrary();
+    // La carte doit refleter l'etat de l'ecoute : fleche au repos, deux barres
+    // pendant, roue pendant la preparation du fichier.
+    _audio.addListener(_surEcoute);
   }
 
   @override
   void dispose() {
+    _audio.removeListener(_surEcoute);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _surEcoute() {
+    if (!mounted) return;
+    setState(() {});
+
+    // Une erreur d'ecoute se dit une fois, puis se retire : la garder
+    // afficherait un bandeau d'echec sur un ecran ou plus rien ne se passe.
+    final erreur = _audio.erreur;
+    if (erreur != null) {
+      AppNotifications.showSnackBar(context, message: erreur, isError: true);
+    }
+  }
+
+  /// Ce qui se joue, et comment l'arreter.
+  Widget _bandeauEcoute() {
+    return Material(
+      color: AppColors.cardBackground,
+      elevation: 8,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+          child: Row(
+            children: [
+              Icon(
+                Icons.headphones_rounded,
+                color: AppColors.accentInk,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _audio.titre,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      _audio.preparation
+                          ? 'Préparation…'
+                          : _audio.total > 0
+                          ? 'Page ${_audio.page} sur ${_audio.total}'
+                          : 'Écoute en cours',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: _audio.preparation
+                    ? null
+                    : () => _audio.enLecture
+                          ? _audio.pause()
+                          : _audio.reprendre(),
+                icon: Icon(
+                  _audio.enLecture
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                  color: AppColors.accentInk,
+                ),
+              ),
+              IconButton(
+                onPressed: _audio.arreter,
+                icon: Icon(Icons.close_rounded, color: AppColors.textHint),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _ecouter(BookModel livre) async {
+    await _audio.basculer({
+      'id': livre.id,
+      'titre': livre.titre,
+      'auteur_nom': livre.authorName,
+      'fichier_url': livre.fichierUrl,
+      'format': livre.format,
+      'image_couverture': livre.imageCouverture,
+    });
   }
 
   Future<void> _loadLibrary() async {
@@ -222,6 +328,12 @@ class _BibliothequePageState extends State<BibliothequePage> {
     AppColors.suivreLeTheme(context);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
+      // Le bandeau d'ecoute, en bas, tant qu'un livre parle.
+      //
+      // Sans lui, l'audio demarrerait sans aucun moyen de l'arreter : il
+      // faudrait ouvrir le livre pour trouver un bouton pause, alors que tout
+      // l'interet est justement de ne pas l'ouvrir.
+      bottomNavigationBar: _audio.actif ? _bandeauEcoute() : null,
       body: Column(
         children: [
           const NavBarAll(role: 'lecteur'),
@@ -392,6 +504,13 @@ class _BibliothequePageState extends State<BibliothequePage> {
                               ],
                               imageUrl: book.imageCouverture,
                               dateAcquisition: item.creeLe,
+                              enEcoute:
+                                  _audio.estLeLivre(book.id) &&
+                                  _audio.enLecture,
+                              enPreparation:
+                                  _audio.estLeLivre(book.id) &&
+                                  _audio.preparation,
+                              onEcouter: () => _ecouter(book),
                             ),
                           );
                         },

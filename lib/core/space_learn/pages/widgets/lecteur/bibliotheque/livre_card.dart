@@ -14,6 +14,17 @@ class LivreCard extends StatelessWidget {
   final String? imageUrl;
   final DateTime? dateAcquisition;
 
+  /// Ce que fait le bouton rond, a droite de la carte.
+  ///
+  /// Il n'etait qu'un dessin : un Container avec une icone, sans le moindre
+  /// geste attache. Appuyer dessus ouvrait la fiche du livre — le geste du
+  /// parent — alors que sa fleche promettait de lancer quelque chose.
+  final VoidCallback? onEcouter;
+
+  /// L'etat de l'ecoute pour CE livre : rien, en preparation, en cours.
+  final bool enEcoute;
+  final bool enPreparation;
+
   const LivreCard({
     super.key,
     required this.titre,
@@ -23,6 +34,9 @@ class LivreCard extends StatelessWidget {
     required this.couleurs,
     this.imageUrl,
     this.dateAcquisition,
+    this.onEcouter,
+    this.enEcoute = false,
+    this.enPreparation = false,
   });
 
   @override
@@ -201,16 +215,53 @@ class LivreCard extends StatelessWidget {
                           ),
                           SizedBox(width: 12),
                           // Action Icon
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.play_arrow_rounded,
-                              color: AppColors.accentInk,
-                              size: 20,
+                          // Ecouter le livre, sans l'ouvrir.
+                          //
+                          // La lecture a voix haute n'existait qu'a l'interieur
+                          // du lecteur : il fallait ouvrir l'ouvrage, attendre
+                          // le rendu du PDF, puis lancer l'audio, et garder
+                          // l'ecran sur cette page.
+                          //
+                          // L'icone suit l'etat : une fleche au repos, deux
+                          // barres pendant l'ecoute. Sans cela, rien ne dirait
+                          // qu'un second appui met en pause plutot que de tout
+                          // reprendre au debut.
+                          Material(
+                            color: Colors.transparent,
+                            shape: const CircleBorder(),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: onEcouter,
+                              child: Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: enEcoute
+                                      ? AppColors.primary
+                                      : AppColors.primary.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: enPreparation
+                                    ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.accentInk,
+                                        ),
+                                      )
+                                    : Icon(
+                                        enEcoute
+                                            ? Icons.pause_rounded
+                                            : Icons.play_arrow_rounded,
+                                        // Sur l'aplat plein de l'ecoute en
+                                        // cours, seul onAccent garantit le
+                                        // contraste dans les deux themes.
+                                        color: enEcoute
+                                            ? AppColors.onAccent
+                                            : AppColors.accentInk,
+                                        size: 20,
+                                      ),
+                              ),
                             ),
                           ),
                         ],
@@ -239,7 +290,7 @@ class LivreCard extends StatelessWidget {
         child: Text(
           titre.isNotEmpty ? titre[0].toUpperCase() : "?",
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: AppColors.onAccent,
             fontWeight: FontWeight.bold,
             fontSize: 32,
           ),
@@ -300,7 +351,7 @@ class LivreGridCard extends StatelessWidget {
                             child: Text(
                               titre.isNotEmpty ? titre[0].toUpperCase() : "?",
                               style: TextStyle(
-                                color: AppColors.textPrimary,
+                                color: AppColors.onAccent,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 32,
                               ),

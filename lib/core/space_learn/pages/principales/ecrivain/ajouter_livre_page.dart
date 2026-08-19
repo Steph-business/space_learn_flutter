@@ -20,6 +20,7 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class AjouterLivrePage extends StatefulWidget {
   final BookModel? book;
@@ -123,6 +124,37 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     final gain = p.gainPour(prix);
     final dansLaFourchette = p.dansLaFourchette(prix);
 
+    // Sous le plancher, il n'y a rien à conseiller : le serveur refusera. On
+    // le dit tout de suite, et on s'arrête là — afficher « vous percevez
+    // 160 FCFA par vente » sous un prix qui ne passera pas serait un mensonge.
+    if (p.sousLePlancher(prix)) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.error_outline, size: 15, color: AppColors.error),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                "Prix trop bas : ${_enFrancs(p.prixMinimum)} FCFA au minimum. "
+                "En dessous, la commission et les frais de l'opérateur ne "
+                "laissent presque rien pour vous.",
+                style: GoogleFonts.poppins(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.error,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final ventesAvantRetrait = p.ventesAvantRetrait(prix);
+
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: Column(
@@ -149,6 +181,22 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               ),
             ],
           ),
+          // Les deux seuils vont ensemble : un prix ne se juge pas seulement à
+          // ce qu'il rapporte par vente, mais à ce qu'il faut vendre pour
+          // toucher quelque chose.
+          if (ventesAvantRetrait > 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              "$ventesAvantRetrait vente${ventesAvantRetrait > 1 ? 's' : ''} "
+              "pour atteindre le retrait minimum "
+              "(${_enFrancs(p.retraitMinimum)} FCFA).",
+              style: GoogleFonts.poppins(
+                fontSize: 11.5,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ],
           if (!dansLaFourchette) ...[
             const SizedBox(height: 6),
             Text(
@@ -269,7 +317,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur lors de la sélection du fichier : $e",
+          message: messageLisible(
+            e,
+            repli: "Ce fichier n'a pas pu être ouvert.",
+          ),
           isError: true,
         );
       }
@@ -295,7 +346,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur lors de la sélection de l'image : $e",
+          message: messageLisible(
+            e,
+            repli: "Cette image n'a pas pu être ouverte.",
+          ),
           isError: true,
         );
       }
@@ -527,7 +581,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   /// publié sous un autre titre — et elles doivent arriver telles quelles.
   static String _lisible(Object erreur) {
     var texte = erreur.toString();
-    for (final prefixe in ['Exception: ', 'HttpException: ', 'FormatException: ']) {
+    for (final prefixe in [
+      'Exception: ',
+      'HttpException: ',
+      'FormatException: ',
+    ]) {
       if (texte.startsWith(prefixe)) {
         texte = texte.substring(prefixe.length);
         break;
@@ -725,7 +783,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       const SizedBox(height: 12),
       _buildTextField(
         controller: _prixController,
-        label: "Prix (FCFA)",
+        // Le plancher est annoncé dans l'étiquette du champ : l'auteur le lit
+        // avant de saisir, et non après avoir tout rempli.
+        label: _parametres != null && _parametres!.prixMinimum > 0
+            ? "Prix (FCFA) — minimum ${_enFrancs(_parametres!.prixMinimum)}"
+            : "Prix (FCFA)",
         icon: Icons.money,
         keyboardType: TextInputType.number,
         enabled: !_isFree,
@@ -1045,6 +1107,26 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         isError: true,
       );
       return false;
+    }
+
+    // Le prix plancher, dit ici plutôt qu'au retour du serveur.
+    //
+    // Le contrôle qui fait autorité est côté serveur — un formulaire ne
+    // protège rien. Mais sans ce garde-fou, l'auteur remplit tout, téléverse
+    // son manuscrit, et se voit refuser à la dernière étape.
+    final p = _parametres;
+    if (!_isFree && p != null) {
+      final prix = double.tryParse(_prixController.text.trim()) ?? 0;
+      if (p.sousLePlancher(prix)) {
+        AppNotifications.showSnackBar(
+          context,
+          message:
+              "Le prix minimum est de ${_enFrancs(p.prixMinimum)} FCFA. "
+              "Cochez « gratuitement » si vous ne souhaitez pas vendre ce livre.",
+          isError: true,
+        );
+        return false;
+      }
     }
     return true;
   }

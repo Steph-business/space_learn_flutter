@@ -1,4 +1,4 @@
-﻿import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
@@ -28,8 +28,19 @@ class PublicationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
     const mois = [
-      "", "jan", "fev", "mars", "avr", "mai", "juin",
-      "juil", "aout", "sept", "oct", "nov", "dec",
+      "",
+      "jan",
+      "fev",
+      "mars",
+      "avr",
+      "mai",
+      "juin",
+      "juil",
+      "aout",
+      "sept",
+      "oct",
+      "nov",
+      "dec",
     ];
     final String formattedDate = book.creeLe != null
         ? "${book.creeLe!.day} ${mois[book.creeLe!.month]} ${book.creeLe!.year}"
@@ -77,13 +88,15 @@ class PublicationCard extends StatelessWidget {
                 child: SizedBox(
                   width: 64,
                   height: 90,
-                  child: book.imageCouverture != null &&
+                  child:
+                      book.imageCouverture != null &&
                           book.imageCouverture!.isNotEmpty &&
                           !book.imageCouverture!.contains('example.com')
                       ? Image.network(
                           book.imageCouverture!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildPlaceholderCover(),
+                          errorBuilder: (_, __, ___) =>
+                              _buildPlaceholderCover(),
                         )
                       : _buildPlaceholderCover(),
                 ),
@@ -110,10 +123,15 @@ class PublicationCard extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                         ),
                         child: Text(
                           statusText,
@@ -167,7 +185,11 @@ class PublicationCard extends StatelessWidget {
                       ),
                       if (book.noteMoyenne > 0) ...[
                         const SizedBox(width: 8),
-                        Icon(Icons.star_rounded, size: 13, color: AppColors.warning),
+                        Icon(
+                          Icons.star_rounded,
+                          size: 13,
+                          color: AppColors.warning,
+                        ),
                         const SizedBox(width: 2),
                         Text(
                           "${book.noteMoyenne}",

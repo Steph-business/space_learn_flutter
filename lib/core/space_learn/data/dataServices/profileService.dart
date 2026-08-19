@@ -1,16 +1,15 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import 'package:http/http.dart' as http;
-
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
+import 'package:space_learn_flutter/core/services/api_client.dart';
 
 class ProfileService {
   /// ✅ Récupérer les profils disponibles (Lecteur, Auteur, etc.)
   Future<List<ProfilModel>> getProfils() async {
-    final response = await http.get(Uri.parse(ApiRoutes.profils));
+    final response = await ApiClient.instance.get(Uri.parse(ApiRoutes.profils));
     developer.log(
       'ProfileService.getProfils: status ${response.statusCode}',
       name: 'ProfileService',

@@ -4,6 +4,7 @@ import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/paymentModel.dart';
 import '../model/authorRevenueModel.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 /// Résultat du lancement d'un paiement CinetPay
 class CinetpayInitResult {
@@ -59,7 +60,12 @@ class PaymentService {
 
       return PaymentModel.fromJson(data);
     } else {
-      throw Exception('Failed to create payment: ${response.body}');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Le paiement n'a pas pu être lancé.",
+        ),
+      );
     }
   }
 
@@ -148,7 +154,12 @@ class PaymentService {
       }
       throw Exception('Format de statut CinetPay inattendu');
     } else {
-      throw Exception('Échec de la vérification CinetPay : ${response.body}');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de vérifier ce paiement.",
+        ),
+      );
     }
   }
 
@@ -163,7 +174,12 @@ class PaymentService {
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => PaymentModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch user payments');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger vos paiements.",
+        ),
+      );
     }
   }
 
@@ -178,7 +194,9 @@ class PaymentService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return PaymentModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to fetch payment');
+      throw Exception(
+        messageDeLaReponse(response, repli: "Ce paiement est introuvable."),
+      );
     }
   }
 
@@ -190,7 +208,12 @@ class PaymentService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return AuthorRevenueModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to fetch author revenue');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger vos revenus.",
+        ),
+      );
     }
   }
 

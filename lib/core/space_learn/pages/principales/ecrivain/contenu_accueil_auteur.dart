@@ -81,10 +81,7 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
     AppColors.suivreLeTheme(context);
     return Column(
       children: [
-        NavBarAll(
-          userName: widget.userName,
-          role: 'auteur',
-        ),
+        NavBarAll(userName: widget.userName, role: 'auteur'),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadData,
@@ -97,74 +94,89 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
                   SizedBox(height: 10),
                   Statistique(stats: _stats),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Revenus(stats: _stats, authorId: _authorId),
-            ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: Revenus(stats: _stats, authorId: _authorId),
+                  ),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AjouterLivrePage(),
-                      ),
-                    );
-                    if (result == true) _loadData();
-                  },
-                  icon: Icon(
-                    Icons.add_circle,
-                    color: AppColors.onAccent,
-                    size: 24,
-                  ),
-                  label: Text(
-                    "Publier un nouveau livre",
-                    style: AppTextStyles.subtitle,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondaryVariant,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusCard,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AjouterLivrePage(),
+                            ),
+                          );
+                          if (result == true) _loadData();
+                        },
+                        icon: Icon(
+                          Icons.add_circle,
+                          color: AppColors.onAccent,
+                          size: 24,
+                        ),
+                        label: Text(
+                          "Publier un nouveau livre",
+                          style: AppTextStyles.subtitle,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondaryVariant,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusCard,
+                            ),
+                          ),
+                          elevation: 0,
+                        ),
                       ),
                     ),
-                    elevation: 0,
                   ),
-                ),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: TopLivresSection(
+                      books: _books,
+                      isLoading: _isLoading,
+                      onBookUpdated: _loadData,
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: CommentairesRecentsSection(books: _books),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: DerniersAbonnesSection(followers: _followers),
+                  ),
+
+                  SizedBox(height: 100),
+                ],
               ),
             ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: TopLivresSection(
-                books: _books,
-                isLoading: _isLoading,
-                onBookUpdated: _loadData,
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: CommentairesRecentsSection(books: _books),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: DerniersAbonnesSection(followers: _followers),
-            ),
-
-            SizedBox(height: 100),
-          ],
+          ),
         ),
-      ),
-    ),
-  ),
-],
-);
+      ],
+    );
   }
 }

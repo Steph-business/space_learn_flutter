@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/recommendationModel.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class RecommendationService {
   final http.Client client;
@@ -21,7 +22,12 @@ class RecommendationService {
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => RecommendationModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch recommendations');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les recommandations.",
+        ),
+      );
     }
   }
 
@@ -43,7 +49,12 @@ class RecommendationService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return RecommendationModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to create recommendation');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Cette recommandation n'a pas pu être envoyée.",
+        ),
+      );
     }
   }
 
@@ -55,7 +66,12 @@ class RecommendationService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete recommendation');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Cette recommandation n'a pas pu être supprimée.",
+        ),
+      );
     }
   }
 
@@ -78,7 +94,12 @@ class RecommendationService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to send recommendation feedback');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Votre retour n'a pas pu être envoyé.",
+        ),
+      );
     }
   }
 }

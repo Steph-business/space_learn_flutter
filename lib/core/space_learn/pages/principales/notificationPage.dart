@@ -78,10 +78,7 @@ class _NotificationPageState extends State<NotificationPage>
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: Icon(
-                Icons.chevron_left,
-                color: AppColors.textPrimary,
-              ),
+              icon: Icon(Icons.chevron_left, color: AppColors.textPrimary),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
@@ -132,8 +129,7 @@ class _NotificationPageState extends State<NotificationPage>
                 ),
                 onSelected: (value) async {
                   if (value == 'mark_all') {
-                    final notifProvider = context
-                        .read<NotificationProvider>();
+                    final notifProvider = context.read<NotificationProvider>();
                     final token = await TokenStorage.getToken();
                     if (token != null) {
                       notifProvider.markAllAsRead(token);
@@ -236,14 +232,28 @@ class _NotificationPageState extends State<NotificationPage>
   Widget _buildBody(BuildContext context) {
     return Consumer<NotificationProvider>(
       builder: (context, provider, child) {
-        final rawNotifications =
-            provider.groupedNotifications[widget.role ?? 'lecteur'] ?? [];
+        // Le seau du role, et a defaut la liste complete.
+        //
+        // Tout venait de . Quand cette cle est
+        // absente — role non renseigne, groupement pas encore fait — la liste
+        // etait vide, et l'ecran annoncait « Vous etes a jour ! » a quelqu'un
+        // dont les notifications n'avaient tout simplement pas ete lues. Se
+        // taire est preferable a affirmer le faux.
+        final duRole = provider.groupedNotifications[widget.role ?? 'lecteur'];
+        final rawNotifications = (duRole == null || duRole.isEmpty)
+            ? provider.notifications
+            : duRole;
 
         final notifications = rawNotifications.where((n) {
           if (_filter == 'non_read') return !n.lu;
           if (_filter == 'archives') return n.lu;
           return true;
         }).toList();
+
+        // « Vous etes a jour » n'a de sens que s'il y a quelque chose a etre a
+        // jour DE. Sans rien du tout, c'est « aucune notification » — et les
+        // deux se confondaient.
+        final rienDuTout = rawNotifications.isEmpty;
 
         return RefreshIndicator(
           onRefresh: _fetchGrouped,
@@ -261,16 +271,20 @@ class _NotificationPageState extends State<NotificationPage>
                   child: RecentNotificationsPage(
                     customNotifications: notifications,
                     title: null,
-                    messageVide: switch (_filter) {
-                      'non_read' => "Vous êtes à jour !",
-                      'archives' => "Aucune notification archivée.",
-                      _ => "Aucune notification.",
-                    },
-                    emptyIcon: switch (_filter) {
-                      'non_read' => Iconsax.tick_circle,
-                      'archives' => Iconsax.archive_1,
-                      _ => Iconsax.notification_bing,
-                    },
+                    messageVide: rienDuTout
+                        ? "Aucune notification pour l'instant."
+                        : switch (_filter) {
+                            'non_read' => "Aucune notification !",
+                            'archives' => "Aucune notification archivée.",
+                            _ => "Aucune notification.",
+                          },
+                    emptyIcon: rienDuTout
+                        ? Iconsax.notification_bing
+                        : switch (_filter) {
+                            'non_read' => Iconsax.tick_circle,
+                            'archives' => Iconsax.archive_1,
+                            _ => Iconsax.notification_bing,
+                          },
                     emptyFadeAnimation: _emptyFadeAnim,
                     emptySlideAnimation: _emptySlideAnim,
                   ),

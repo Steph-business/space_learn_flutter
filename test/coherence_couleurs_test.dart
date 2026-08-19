@@ -175,6 +175,60 @@ void main() {
     },
   );
 
+  // ── Règle 1 bis ────────────────────────────────────────────────────────
+  // Un dégradé est un aplat, lui aussi.
+  //
+  // La règle 1 ne voit que `backgroundColor:` et `color:` posés sur une
+  // couleur d'accent nommée. Les cartes de citations de l'accueil peignaient
+  // leur fond avec `gradient: LinearGradient(colors: …)`, dont la liste venait
+  // d'une donnée : rien à lire dans le source, donc rien à signaler. Toute leur
+  // encre — étoiles, citation, nom du lecteur — utilisait
+  // `AppColors.textPrimary`, qui suit le fond de la PAGE et non celui de la
+  // carte. En thème clair l'encre sombre passait par chance sur l'orange ;
+  // en thème sombre elle devient claire, et la carte entière s'efface.
+  //
+  // On ne cherche donc plus la couleur du fond, mais le simple fait qu'il y en
+  // ait un : dès qu'une décoration porte un `gradient:`, l'encre de ce qu'elle
+  // contient doit être `onAccent`.
+  test('aucune encre dépendante du thème sur un dégradé', () {
+    final fautes = <String>[];
+
+    for (final fichier in _fichiersDart()) {
+      final chemin = fichier.path.replaceAll(r'\\', '/');
+      if (chemin.endsWith('core/themes/app_colors.dart')) continue;
+
+      final texte = fichier.readAsStringSync();
+
+      for (final degrade in RegExp(r'\bgradient\s*:').allMatches(texte)) {
+        // La décoration qui porte ce dégradé, puis le widget qu'elle habille :
+        // l'encre vit chez l'enfant, pas dans la décoration.
+        var (ouv, _) = _ouvrePortee(texte, degrade.start);
+        if (ouv == null) continue;
+        final (parent, _) = _ouvrePortee(texte, ouv);
+        if (parent != null) ouv = parent;
+
+        final fin = _ferme(texte, ouv);
+
+        for (final e in _encresInterdites.allMatches(
+          texte.substring(ouv, fin),
+        )) {
+          fautes.add(
+            '${fichier.path}:${_ligneDe(texte, ouv + e.start)} '
+            '— ${e.group(2)} posé sur un dégradé (utiliser AppColors.onAccent)',
+          );
+        }
+      }
+    }
+
+    expect(
+      fautes,
+      isEmpty,
+      reason:
+          '${fautes.length} encre(s) illisible(s) sur un dégradé :\n'
+          '${fautes.join('\n')}',
+    );
+  });
+
   // ── Règle 2 ────────────────────────────────────────────────────────────
   // Un fond écrit en dur ne suit aucun thème. C'est ce qui rendait les
   // notifications d'erreur (#1E1B1B) et le dialogue de paiement (#1E1E2E)

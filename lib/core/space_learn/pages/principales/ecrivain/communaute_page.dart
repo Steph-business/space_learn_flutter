@@ -105,24 +105,28 @@ class _TeamsPageState extends State<TeamsPage> {
 
       List<Evenement> evts = [];
       try {
-        final rawEvts =
-            await _evenementService.getEvenementsByAuthor(user.id, token);
+        final rawEvts = await _evenementService.getEvenementsByAuthor(
+          user.id,
+          token,
+        );
         evts = rawEvts
-            .map((e) => Evenement(
-                  id: e.id,
-                  typePublication: e.typePublication,
-                  categorie: e.categorie,
-                  titre: e.titre,
-                  contenu: e.contenu,
-                  imageUrl: e.imageUrl,
-                  dateEvenement: e.dateEvenement,
-                  auteurId: e.auteurId,
-                  nomAuteur: (e.nomAuteur != null &&
-                          e.nomAuteur!.trim().isNotEmpty)
-                      ? e.nomAuteur
-                      : user.nomComplet,
-                  creeLe: e.creeLe,
-                ))
+            .map(
+              (e) => Evenement(
+                id: e.id,
+                typePublication: e.typePublication,
+                categorie: e.categorie,
+                titre: e.titre,
+                contenu: e.contenu,
+                imageUrl: e.imageUrl,
+                dateEvenement: e.dateEvenement,
+                auteurId: e.auteurId,
+                nomAuteur:
+                    (e.nomAuteur != null && e.nomAuteur!.trim().isNotEmpty)
+                    ? e.nomAuteur
+                    : user.nomComplet,
+                creeLe: e.creeLe,
+              ),
+            )
             .toList();
       } catch (e) {}
 
@@ -211,199 +215,110 @@ class _TeamsPageState extends State<TeamsPage> {
                           Padding(
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
                             child: Text(
-                      _prenom.isEmpty
-                          ? "Votre communauté"
-                          : "La communauté de $_prenom",
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                    child: Text(
-                      _phraseAudience(),
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textSecondary,
-                        fontSize: 13.5,
-                        height: 1.45,
-                      ),
-                    ),
-                  ),
-
-                  // Salon de l'Auteur
-                  _buildGlobalSalonCard(),
-
-                  // Outils rapides
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildQuickAction(
-                            Iconsax.edit,
-                            "Nouvelle annonce",
-                            AppColors.accentInk,
-                            onTap: () async {
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const NouvelleAnnoncePage(),
-                                ),
-                              );
-                              if (result == true) _loadData();
-                            },
-                          ),
-                        ),
-                        SizedBox(width: 15),
-                        Expanded(
-                          child: _buildQuickAction(
-                            Iconsax.calendar,
-                            "Événement",
-                            // Le vert etait AppColors.success : l'employer en
-                            // decor pour un bouton lui retire son sens de
-                            // confirmation partout ailleurs. Deux actions de
-                            // meme rang portent le meme accent ; leurs icones
-                            // suffisent a les distinguer.
-                            AppColors.accentInk,
-                            onTap: () async {
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const CreerEvenementPage(),
-                                ),
-                              );
-                              if (result == true) _loadData();
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Section Événements & Annonces
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 20.0,
-                      top: 30.0,
-                      bottom: 15.0,
-                    ),
-                    child: Text(
-                      "Vos publications (${_evenements.length})",
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  if (_evenements.isNotEmpty)
-                    _buildEvenementsSection()
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: Container(
-                        height: 120,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusCard,
-                          ),
-                          border: Border.all(
-                            color: AppColors.textPrimary.withOpacity(0.05),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Iconsax.notification_status,
-                              color: AppColors.textHint,
-                              size: 32,
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              "Aucune annonce ou événement pour le moment.",
+                              _prenom.isEmpty
+                                  ? "Votre communauté"
+                                  : "La communauté de $_prenom",
                               style: GoogleFonts.poppins(
-                                color: AppColors.textHint,
-                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.4,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                            child: Text(
+                              _phraseAudience(),
+                              style: GoogleFonts.poppins(
+                                color: AppColors.textSecondary,
+                                fontSize: 13.5,
+                                height: 1.45,
+                              ),
+                            ),
+                          ),
 
-                  // Forums par Livre
-                  Builder(
-                    builder: (context) {
-                      final activeBooks = _books
-                          .where((b) => b.nombreMessages > 0)
-                          .toList();
-                      final displayBooks = _filterActiveOnly
-                          ? activeBooks
-                          : _books;
+                          // Salon de l'Auteur
+                          _buildGlobalSalonCard(),
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                          // Outils rapides
                           Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 20.0,
-                              vertical: 10.0,
+                              vertical: 10,
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
                               children: [
-                                Text(
-                                  "Forums de vos œuvres (${displayBooks.length})",
-                                  style: AppTextStyles.subtitle,
+                                Expanded(
+                                  child: _buildQuickAction(
+                                    Iconsax.edit,
+                                    "Nouvelle annonce",
+                                    AppColors.accentInk,
+                                    onTap: () async {
+                                      final result = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const NouvelleAnnoncePage(),
+                                        ),
+                                      );
+                                      if (result == true) _loadData();
+                                    },
+                                  ),
                                 ),
-                                const SizedBox(height: 12),
-                                SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      _buildFilterChip(
-                                        label:
-                                            "Discussions actives (${activeBooks.length})",
-                                        isSelected: _filterActiveOnly,
-                                        onTap: () => setState(
-                                          () => _filterActiveOnly = true,
+                                SizedBox(width: 15),
+                                Expanded(
+                                  child: _buildQuickAction(
+                                    Iconsax.calendar,
+                                    "Événement",
+                                    // Le vert etait AppColors.success : l'employer en
+                                    // decor pour un bouton lui retire son sens de
+                                    // confirmation partout ailleurs. Deux actions de
+                                    // meme rang portent le meme accent ; leurs icones
+                                    // suffisent a les distinguer.
+                                    AppColors.accentInk,
+                                    onTap: () async {
+                                      final result = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const CreerEvenementPage(),
                                         ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      _buildFilterChip(
-                                        label:
-                                            "Toutes mes œuvres (${_books.length})",
-                                        isSelected: !_filterActiveOnly,
-                                        onTap: () => setState(
-                                          () => _filterActiveOnly = false,
-                                        ),
-                                      ),
-                                    ],
+                                      );
+                                      if (result == true) _loadData();
+                                    },
                                   ),
                                 ),
                               ],
                             ),
                           ),
 
-                          if (displayBooks.isEmpty)
+                          // Section Événements & Annonces
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: 20.0,
+                              top: 30.0,
+                              bottom: 15.0,
+                            ),
+                            child: Text(
+                              "Vos publications (${_evenements.length})",
+                              style: GoogleFonts.poppins(
+                                color: AppColors.textPrimary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          if (_evenements.isNotEmpty)
+                            _buildEvenementsSection()
+                          else
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 20.0,
                               ),
                               child: Container(
-                                padding: const EdgeInsets.all(24),
+                                height: 120,
+                                width: double.infinity,
                                 decoration: BoxDecoration(
                                   color: AppColors.cardBackground,
                                   borderRadius: BorderRadius.circular(
@@ -415,84 +330,184 @@ class _TeamsPageState extends State<TeamsPage> {
                                     ),
                                   ),
                                 ),
-                                child: Center(
-                                  child: Column(
-                                    children: [
-                                      Icon(
-                                        Iconsax.messages_1,
-                                        size: 36,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Iconsax.notification_status,
+                                      color: AppColors.textHint,
+                                      size: 32,
+                                    ),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      "Aucune annonce ou événement pour le moment.",
+                                      style: GoogleFonts.poppins(
                                         color: AppColors.textHint,
+                                        fontSize: 13,
                                       ),
-                                      const SizedBox(height: 12),
-                                      // Un vide doit dire quoi faire. Le
-                                      // premier message annoncait « aucune
-                                      // discussion active » a un auteur qui
-                                      // avait quatre œuvres, sans lui indiquer
-                                      // que l'autre onglet les montrait.
-                                      Text(
-                                        _filterActiveOnly
-                                            ? (_books.isEmpty
-                                                  ? "Publiez une œuvre : chacune ouvre son propre forum."
-                                                  : "Aucun lecteur n'a encore écrit sur vos œuvres.\n"
-                                                        "Elles sont dans « Toutes mes œuvres ».")
-                                            : "Publiez un livre pour créer un forum qui lui est dédié.",
-                                        style: GoogleFonts.poppins(
-                                          color: AppColors.textSecondary,
-                                          fontSize: 13,
-                                          height: 1.45,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                          // Forums par Livre
+                          Builder(
+                            builder: (context) {
+                              final activeBooks = _books
+                                  .where((b) => b.nombreMessages > 0)
+                                  .toList();
+                              final displayBooks = _filterActiveOnly
+                                  ? activeBooks
+                                  : _books;
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20.0,
+                                      vertical: 10.0,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Forums de vos œuvres (${displayBooks.length})",
+                                          style: AppTextStyles.subtitle,
                                         ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      if (_filterActiveOnly &&
-                                          _books.isNotEmpty) ...[
                                         const SizedBox(height: 12),
-                                        GestureDetector(
-                                          onTap: () => setState(
-                                            () => _filterActiveOnly = false,
-                                          ),
-                                          child: Text(
-                                            "Voir toutes mes œuvres (${_books.length})",
-                                            style: GoogleFonts.poppins(
-                                              color: AppColors.accentInk,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                        SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: Row(
+                                            children: [
+                                              _buildFilterChip(
+                                                label:
+                                                    "Discussions actives (${activeBooks.length})",
+                                                isSelected: _filterActiveOnly,
+                                                onTap: () => setState(
+                                                  () =>
+                                                      _filterActiveOnly = true,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              _buildFilterChip(
+                                                label:
+                                                    "Toutes mes œuvres (${_books.length})",
+                                                isSelected: !_filterActiveOnly,
+                                                onTap: () => setState(
+                                                  () =>
+                                                      _filterActiveOnly = false,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                            )
-                          else
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              itemCount: displayBooks.length,
-                              itemBuilder: (context, index) {
-                                final book = displayBooks[index];
-                                return _buildBookForumCard(book);
-                              },
-                            ),
-                        ],
-                      );
-                    },
-                  ),
 
-                  SizedBox(height: 100),
-                ],
-              ),
-            ),
+                                  if (displayBooks.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20.0,
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(24),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.cardBackground,
+                                          borderRadius: BorderRadius.circular(
+                                            AppDimensions.radiusCard,
+                                          ),
+                                          border: Border.all(
+                                            color: AppColors.textPrimary
+                                                .withOpacity(0.05),
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Column(
+                                            children: [
+                                              Icon(
+                                                Iconsax.messages_1,
+                                                size: 36,
+                                                color: AppColors.textHint,
+                                              ),
+                                              const SizedBox(height: 12),
+                                              // Un vide doit dire quoi faire. Le
+                                              // premier message annoncait « aucune
+                                              // discussion active » a un auteur qui
+                                              // avait quatre œuvres, sans lui indiquer
+                                              // que l'autre onglet les montrait.
+                                              Text(
+                                                _filterActiveOnly
+                                                    ? (_books.isEmpty
+                                                          ? "Publiez une œuvre : chacune ouvre son propre forum."
+                                                          : "Aucun lecteur n'a encore écrit sur vos œuvres.\n"
+                                                                "Elles sont dans « Toutes mes œuvres ».")
+                                                    : "Publiez un livre pour créer un forum qui lui est dédié.",
+                                                style: GoogleFonts.poppins(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                  fontSize: 13,
+                                                  height: 1.45,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              if (_filterActiveOnly &&
+                                                  _books.isNotEmpty) ...[
+                                                const SizedBox(height: 12),
+                                                GestureDetector(
+                                                  onTap: () => setState(
+                                                    () => _filterActiveOnly =
+                                                        false,
+                                                  ),
+                                                  child: Text(
+                                                    "Voir toutes mes œuvres (${_books.length})",
+                                                    style: GoogleFonts.poppins(
+                                                      color:
+                                                          AppColors.accentInk,
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    ListView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+                                      itemCount: displayBooks.length,
+                                      itemBuilder: (context, index) {
+                                        final book = displayBooks[index];
+                                        return _buildBookForumCard(book);
+                                      },
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+
+                          SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildGlobalSalonCard() {
     return GestureDetector(
@@ -543,7 +558,7 @@ class _TeamsPageState extends State<TeamsPage> {
                   Text(
                     SalonNoms.globalTitre,
                     style: GoogleFonts.poppins(
-                      color: AppColors.textPrimary,
+                      color: AppColors.onAccent,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),

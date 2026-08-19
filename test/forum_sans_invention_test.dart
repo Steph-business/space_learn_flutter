@@ -50,10 +50,11 @@ void main() {
     final servicesInterdits = ['pravatar', 'randomuser.me', 'ui-avatars.com'];
     final fautes = <String>[];
 
-    for (final f in Directory('lib')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))) {
+    for (final f
+        in Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))) {
       final lignes = f.readAsLinesSync();
       for (var i = 0; i < lignes.length; i++) {
         if (lignes[i].trimLeft().startsWith('//')) continue;

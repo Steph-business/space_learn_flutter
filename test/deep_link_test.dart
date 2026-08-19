@@ -5,14 +5,18 @@ void main() {
   group('Extraction du livre depuis un lien de recommandation', () {
     test('lien web standard', () {
       expect(
-        DeepLinkService.extraireLivreID(Uri.parse('https://api.exemple.ci/book/abc-123')),
+        DeepLinkService.extraireLivreID(
+          Uri.parse('https://api.exemple.ci/book/abc-123'),
+        ),
         'abc-123',
       );
     });
 
     test('barre oblique finale', () {
       expect(
-        DeepLinkService.extraireLivreID(Uri.parse('https://api.exemple.ci/book/abc-123/')),
+        DeepLinkService.extraireLivreID(
+          Uri.parse('https://api.exemple.ci/book/abc-123/'),
+        ),
         'abc-123',
       );
     });
@@ -20,7 +24,8 @@ void main() {
     test('paramètres de campagne ajoutés au lien', () {
       expect(
         DeepLinkService.extraireLivreID(
-            Uri.parse('https://api.exemple.ci/book/abc-123?utm_source=whatsapp')),
+          Uri.parse('https://api.exemple.ci/book/abc-123?utm_source=whatsapp'),
+        ),
         'abc-123',
       );
     });
@@ -33,12 +38,19 @@ void main() {
     });
 
     test('lien sans identifiant', () {
-      expect(DeepLinkService.extraireLivreID(Uri.parse('https://api.exemple.ci/book')), isNull);
+      expect(
+        DeepLinkService.extraireLivreID(
+          Uri.parse('https://api.exemple.ci/book'),
+        ),
+        isNull,
+      );
     });
 
     test('lien étranger à l’application', () {
       expect(
-        DeepLinkService.extraireLivreID(Uri.parse('https://api.exemple.ci/paiement/succes')),
+        DeepLinkService.extraireLivreID(
+          Uri.parse('https://api.exemple.ci/paiement/succes'),
+        ),
         isNull,
       );
     });

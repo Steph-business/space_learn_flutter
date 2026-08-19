@@ -7,6 +7,7 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/themes/widgets/app_card.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 /// Saisie du numéro Mobile Money vers lequel l'auteur est payé.
 ///
@@ -115,7 +116,7 @@ class _PayoutInfoPageState extends State<PayoutInfoPage> {
       setState(() => _isSaving = false);
       AppNotifications.showSnackBar(
         context,
-        message: e.toString().replaceFirst('Exception: ', ''),
+        message: messageLisible(e, repli: "Enregistrement impossible."),
         isSuccess: false,
       );
     }

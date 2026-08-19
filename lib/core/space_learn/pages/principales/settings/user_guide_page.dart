@@ -77,8 +77,9 @@ class _UserGuidePageState extends State<UserGuidePage>
     AppColors.suivreLeTheme(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isAuthorTab = widget.estAuteur && _tabController.index == 1;
-    final accentColor =
-        isAuthorTab ? AppColors.secondaryVariant : AppColors.accentInk;
+    final accentColor = isAuthorTab
+        ? AppColors.secondaryVariant
+        : AppColors.accentInk;
 
     return Scaffold(
       backgroundColor: isDark
@@ -110,58 +111,64 @@ class _UserGuidePageState extends State<UserGuidePage>
           // manque un.
           child: widget.estAuteur
               ? Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.textHint.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-                boxShadow: [
-                  BoxShadow(
-                    color: accentColor.withOpacity(0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                ],
-              ),
-              labelColor: AppColors.onAccent,
-              unselectedLabelColor:
-                  AppColors.textSecondary,
-              labelStyle: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              tabs: const [
-                Tab(
-                  iconMargin: EdgeInsets.only(bottom: 2),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.menu_book_rounded, size: 18),
-                      SizedBox(width: 8),
-                      Text("Parcours Lecteur"),
+                  decoration: BoxDecoration(
+                    color: AppColors.textHint.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusCard,
+                    ),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      color: accentColor,
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusInner,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accentColor.withOpacity(0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    labelColor: AppColors.onAccent,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    labelStyle: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    tabs: const [
+                      Tab(
+                        iconMargin: EdgeInsets.only(bottom: 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.menu_book_rounded, size: 18),
+                            SizedBox(width: 8),
+                            Text("Parcours Lecteur"),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.edit_note_rounded, size: 20),
+                            SizedBox(width: 8),
+                            Text("Parcours Auteur"),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.edit_note_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text("Parcours Auteur"),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          )
+                )
               : const SizedBox.shrink(),
         ),
       ),
@@ -181,7 +188,8 @@ class _UserGuidePageState extends State<UserGuidePage>
               ),
               child: TextField(
                 controller: _searchController,
-                onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
+                onChanged: (v) =>
+                    setState(() => _searchQuery = v.trim().toLowerCase()),
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   color: AppColors.textPrimary,
@@ -244,7 +252,8 @@ class _UserGuidePageState extends State<UserGuidePage>
           "Consultez les 'Nouveautés' et 'Recommandations pour vous' générées selon vos lectures.",
           "Tapez sur un livre pour ouvrir sa fiche détaillée, lire le résumé, consulter les avis et le prix.",
         ],
-        tip: "Ajoutez un livre en favori d'un tap sur le cœur pour le retrouver plus tard dans votre bibliothèque !",
+        tip:
+            "Ajoutez un livre en favori d'un tap sur le cœur pour le retrouver plus tard dans votre bibliothèque !",
       ),
       _GuideSection(
         icon: Icons.auto_stories_rounded,
@@ -257,7 +266,8 @@ class _UserGuidePageState extends State<UserGuidePage>
           "Touchez le centre de l'écran pour afficher la barre d'outils : ajustez la taille de police, la luminosité et choisissez le thème de fond (Clair, Sombre ou Sépia).",
           "Accédez à la Table des matières pour sauter directement à un chapitre précis.",
         ],
-        tip: "Votre progression est sauvegardée automatiquement à chaque page lue !",
+        tip:
+            "Votre progression est sauvegardée automatiquement à chaque page lue !",
       ),
       _GuideSection(
         icon: Icons.headphones_rounded,
@@ -270,7 +280,8 @@ class _UserGuidePageState extends State<UserGuidePage>
           "Contrôlez la lecture depuis l'écran de verrouillage ou via les boutons de vos écouteurs Bluetooth.",
           "La lecture audio continue même si vous mettez l'application en arrière-plan.",
         ],
-        tip: "Parfait pour continuer à apprendre pendant vos trajets quotidiens ou vos séances de sport.",
+        tip:
+            "Parfait pour continuer à apprendre pendant vos trajets quotidiens ou vos séances de sport.",
       ),
       _GuideSection(
         icon: Icons.download_done_rounded,
@@ -324,7 +335,8 @@ class _UserGuidePageState extends State<UserGuidePage>
       sections: sections,
       isDark: isDark,
       bannerTitle: "Visite Guidée Interactive de l'Accueil",
-      bannerSubtitle: "Relancer le projecteur guidé pas-à-pas sur l'écran d'accueil.",
+      bannerSubtitle:
+          "Relancer le projecteur guidé pas-à-pas sur l'écran d'accueil.",
       bannerIcon: Icons.rocket_launch_rounded,
       bannerColor: AppColors.accentInk,
       onBannerTap: () async {
@@ -357,7 +369,8 @@ class _UserGuidePageState extends State<UserGuidePage>
           "Uploadez votre manuscrit finalisé au format PDF ou ePUB.",
           "Vérifiez l'aperçu et confirmez la publication pour rendre l'ouvrage disponible dans la boutique.",
         ],
-        tip: "Une couverture soignée et un résumé captivant augmentent vos lectures de plus de 60% !",
+        tip:
+            "Une couverture soignée et un résumé captivant augmentent vos lectures de plus de 60% !",
       ),
       _GuideSection(
         icon: Icons.price_change_rounded,
@@ -419,7 +432,8 @@ class _UserGuidePageState extends State<UserGuidePage>
       sections: sections,
       isDark: isDark,
       bannerTitle: "Besoin d'aide pour publier ?",
-      bannerSubtitle: "Consultez la foire aux questions ou contactez l'équipe éditoriale.",
+      bannerSubtitle:
+          "Consultez la foire aux questions ou contactez l'équipe éditoriale.",
       bannerIcon: Icons.support_agent_rounded,
       bannerColor: AppColors.secondaryVariant,
       onBannerTap: () {
@@ -445,8 +459,9 @@ class _UserGuidePageState extends State<UserGuidePage>
       if (_searchQuery.isEmpty) return true;
       final matchTitle = sec.title.toLowerCase().contains(_searchQuery);
       final matchDesc = sec.shortDesc.toLowerCase().contains(_searchQuery);
-      final matchSteps =
-          sec.steps.any((s) => s.toLowerCase().contains(_searchQuery));
+      final matchSteps = sec.steps.any(
+        (s) => s.toLowerCase().contains(_searchQuery),
+      );
       return matchTitle || matchDesc || matchSteps;
     }).toList();
 
@@ -512,7 +527,9 @@ class _UserGuidePageState extends State<UserGuidePage>
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: bannerColor,
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusInner,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: bannerColor.withOpacity(0.4),
@@ -521,7 +538,11 @@ class _UserGuidePageState extends State<UserGuidePage>
                           ),
                         ],
                       ),
-                      child: Icon(bannerIcon, color: AppColors.onAccent, size: 24),
+                      child: Icon(
+                        bannerIcon,
+                        color: AppColors.onAccent,
+                        size: 24,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -533,7 +554,7 @@ class _UserGuidePageState extends State<UserGuidePage>
                             style: GoogleFonts.poppins(
                               fontSize: 14.5,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: AppColors.onAccent,
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -646,9 +667,7 @@ class _UserGuidePageState extends State<UserGuidePage>
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        border: Border.all(
-          color: AppColors.textHint.withValues(alpha: 0.12),
-        ),
+        border: Border.all(color: AppColors.textHint.withValues(alpha: 0.12)),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -728,16 +747,19 @@ class _UserGuidePageState extends State<UserGuidePage>
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: section.color.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-                  border: Border.all(
-                    color: section.color.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusInner,
                   ),
+                  border: Border.all(color: section.color.withOpacity(0.25)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.lightbulb_outline_rounded,
-                        color: section.color, size: 18),
+                    Icon(
+                      Icons.lightbulb_outline_rounded,
+                      color: section.color,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

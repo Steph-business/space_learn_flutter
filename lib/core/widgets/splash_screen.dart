@@ -24,19 +24,15 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     // Démarre à 0.4 pour éviter la phase entièrement noire
-    _fadeAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _scaleAnimation = Tween<double>(begin: 0.92, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutBack,
-      ),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.92,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _controller.forward();
   }
@@ -61,7 +57,10 @@ class _SplashScreenState extends State<SplashScreen>
         children: [
           // Main centered content
           Align(
-            alignment: const Alignment(0, -0.15), // Décale légèrement vers le haut
+            alignment: const Alignment(
+              0,
+              -0.15,
+            ), // Décale légèrement vers le haut
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: ScaleTransition(
@@ -159,4 +158,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-

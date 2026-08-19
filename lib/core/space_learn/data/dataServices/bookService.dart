@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/book_model.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class BookService {
   final http.Client client;
@@ -48,7 +49,9 @@ class BookService {
       final Map<String, dynamic> data = jsonDecode(response.body);
       return BookModel.fromJson(data['data'] ?? data);
     } else {
-      throw Exception(_messageServeur(response, "Impossible de créer ce livre."));
+      throw Exception(
+        _messageServeur(response, "Impossible de créer ce livre."),
+      );
     }
   }
 
@@ -111,7 +114,9 @@ class BookService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return BookModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to fetch book');
+      throw Exception(
+        messageDeLaReponse(response, repli: "Ce livre est introuvable."),
+      );
     }
   }
 
@@ -134,7 +139,9 @@ class BookService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return BookModel.fromJson(responseData['data'] ?? responseData);
     }
-    throw Exception(_messageServeur(response, "Impossible d'enregistrer ce livre."));
+    throw Exception(
+      _messageServeur(response, "Impossible d'enregistrer ce livre."),
+    );
   }
 
   /// Le message du serveur, quand il en donne un.
@@ -170,7 +177,9 @@ class BookService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception(_messageServeur(response, "Impossible de supprimer ce livre."));
+      throw Exception(
+        _messageServeur(response, "Impossible de supprimer ce livre."),
+      );
     }
   }
 
@@ -204,7 +213,12 @@ class BookService {
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => BookModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch books by category');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les livres de cette catégorie.",
+        ),
+      );
     }
   }
 }

@@ -15,6 +15,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/librarySe
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/author_profile_page.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class AllAuthorsPage extends StatefulWidget {
   const AllAuthorsPage({super.key});
@@ -211,7 +212,10 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
         });
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur : ${e.toString()}",
+          message: messageLisible(
+            e,
+            repli: "Action impossible pour le moment.",
+          ),
           isError: true,
         );
       }

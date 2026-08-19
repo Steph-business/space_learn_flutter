@@ -8,11 +8,8 @@ import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.
 /// serveur. La valeur retombait donc a zero quoi qu'il arrive, et rien ne le
 /// signalait : un compteur a zero ressemble a un sujet que personne n'a aime.
 void main() {
-  Discussion depuis(Map<String, dynamic> json) => Discussion.fromJson({
-    'id': 'd1',
-    'titre': 'Un sujet',
-    ...json,
-  });
+  Discussion depuis(Map<String, dynamic> json) =>
+      Discussion.fromJson({'id': 'd1', 'titre': 'Un sujet', ...json});
 
   test('le compte est lu sous la cle que le serveur envoie', () {
     expect(depuis({'nombre_jaime': 7}).likesCount, 7);

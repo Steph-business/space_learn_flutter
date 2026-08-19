@@ -137,8 +137,8 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.12)
               : (isAvailable
-                  ? Colors.grey.withValues(alpha: 0.1)
-                  : Colors.grey.withValues(alpha: 0.05)),
+                    ? Colors.grey.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.05)),
           borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
         ),
         child: Text(flag, style: const TextStyle(fontSize: 22)),
@@ -183,12 +183,12 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
       trailing: isSelected
           ? Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 24)
           : (!isAvailable
-              ? Icon(
-                  Icons.lock_clock_outlined,
-                  color: AppColors.textHint,
-                  size: 20,
-                )
-              : null),
+                ? Icon(
+                    Icons.lock_clock_outlined,
+                    color: AppColors.textHint,
+                    size: 20,
+                  )
+                : null),
       onTap: () {
         if (!isAvailable) {
           AppNotifications.showPremiumDialog(

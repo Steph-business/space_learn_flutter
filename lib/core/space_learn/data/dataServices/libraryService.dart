@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/library_model.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class LibraryService {
   final http.Client client;
@@ -74,7 +75,12 @@ class LibraryService {
 
       return data.map((json) => LibraryModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch user library');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger votre bibliothèque.",
+        ),
+      );
     }
   }
 
@@ -86,7 +92,12 @@ class LibraryService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to remove from library');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Ce livre n'a pas pu être retiré de votre bibliothèque.",
+        ),
+      );
     }
   }
 }

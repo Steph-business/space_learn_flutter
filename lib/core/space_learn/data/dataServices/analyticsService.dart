@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../model/analytics.dart';
 import '../../../utils/api_routes.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class AnalyticsService {
   final http.Client httpClient;
@@ -27,7 +28,12 @@ class AnalyticsService {
         final Map<String, dynamic> jsonResponse = json.decode(response.body);
         return Analytics.fromJson(jsonResponse);
       } else {
-        throw Exception('Failed to load analytics data');
+        throw Exception(
+          messageDeLaReponse(
+            response,
+            repli: "Impossible de charger les statistiques.",
+          ),
+        );
       }
     } catch (e) {
       rethrow;

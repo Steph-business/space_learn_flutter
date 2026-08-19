@@ -116,6 +116,13 @@ class ReaderStatsService {
         'total': lire('total_minutes'),
         'jour': lire('minutes_jour'),
         'serie': lire('serie_jours'),
+        // Les livres terminés et en cours, comptés une seule fois, au même
+        // endroit. Chaque écran les recalculait à sa façon : l'accueil depuis
+        // les progressions, les paramètres depuis la TAILLE de la bibliothèque
+        // — d'où « 1 livre lu » ici et « 2 » là, le même jour, pour le même
+        // lecteur.
+        'lus': lire('livres_lus'),
+        'en_cours': lire('livres_en_cours'),
       };
     } catch (_) {
       return null;
@@ -123,13 +130,18 @@ class ReaderStatsService {
   }
 
   /// Déclare des minutes de lecture au compte du lecteur.
-  Future<void> declarerMinutes(int minutes) async {
-    if (minutes <= 0) return;
+  ///
+  /// Rend `true` seulement si le serveur les a enregistrées. L'appelant en a
+  /// besoin : sans cette réponse, il retranchait les minutes de son solde avant
+  /// de savoir, et une session lue sans réseau était perdue pour toujours —
+  /// avec elle le temps cumulé, la série de jours et les badges d'assiduité.
+  Future<bool> declarerMinutes(int minutes) async {
+    if (minutes <= 0) return true;
     try {
       final token = await TokenStorage.getToken();
-      if (token == null || token.isEmpty) return;
+      if (token == null || token.isEmpty) return false;
 
-      await client.post(
+      final reponse = await client.post(
         Uri.parse(ApiRoutes.readingTemps),
         headers: {
           'Content-Type': 'application/json',
@@ -137,9 +149,11 @@ class ReaderStatsService {
         },
         body: jsonEncode({'minutes': minutes}),
       );
+      return reponse.statusCode >= 200 && reponse.statusCode < 300;
     } catch (_) {
       // Le comptage local a déjà eu lieu : une minute perdue côté serveur ne
-      // doit pas interrompre la lecture.
+      // doit pas interrompre la lecture. Elle repartira plus tard.
+      return false;
     }
   }
 }

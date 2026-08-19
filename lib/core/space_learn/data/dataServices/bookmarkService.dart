@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../model/bookmark_model.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class BookmarkService {
   final http.Client client;
@@ -37,7 +38,12 @@ class BookmarkService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return BookmarkModel.fromJson(responseData['data'] ?? responseData);
     } else {
-      throw Exception('Failed to create bookmark: ${response.body}');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Ce signet n'a pas pu être ajouté.",
+        ),
+      );
     }
   }
 
@@ -57,7 +63,12 @@ class BookmarkService {
       final List<dynamic> data = responseData['data'] ?? [];
       return data.map((json) => BookmarkModel.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch bookmarks');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger vos signets.",
+        ),
+      );
     }
   }
 
@@ -70,7 +81,12 @@ class BookmarkService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete bookmark');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Ce signet n'a pas pu être supprimé.",
+        ),
+      );
     }
   }
 
@@ -83,7 +99,12 @@ class BookmarkService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to clear bookmarks');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Vos signets n'ont pas pu être effacés.",
+        ),
+      );
     }
   }
 }

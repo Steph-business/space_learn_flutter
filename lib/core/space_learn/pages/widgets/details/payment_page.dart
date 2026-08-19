@@ -13,6 +13,7 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class PaymentPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -429,7 +430,7 @@ class _PaymentPageState extends State<PaymentPage> {
       Navigator.of(context).pop();
       AppNotifications.showSnackBar(
         context,
-        message: "Erreur : $e",
+        message: messageLisible(e, repli: "Le paiement n'a pas pu aboutir."),
         isError: true,
       );
     }

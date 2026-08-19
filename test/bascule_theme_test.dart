@@ -90,12 +90,18 @@ void main() {
     _ApplicationState.basculer();
     await tester.pumpAndSettle();
 
-    expect(_fond(tester, 'empilee'), AppColors.scaffoldDark,
-        reason: 'la page empilée est restée sur son ancienne palette');
+    expect(
+      _fond(tester, 'empilee'),
+      AppColors.scaffoldDark,
+      reason: 'la page empilée est restée sur son ancienne palette',
+    );
 
     // Le correctif ne doit pas se payer en navigation perdue.
-    expect(find.text('empilee'), findsOneWidget,
-        reason: 'la pile de navigation a été détruite');
+    expect(
+      find.text('empilee'),
+      findsOneWidget,
+      reason: 'la pile de navigation a été détruite',
+    );
 
     // La page racine suit aussi.
     _ApplicationState.basculer();
@@ -110,9 +116,9 @@ void main() {
     addTearDown(() => AppColors.isDark = etatInitial);
 
     await tester.pumpWidget(const _Application());
-    Navigator.of(tester.element(find.text('accueil'))).push(
-      MaterialPageRoute(builder: (_) => const _PageSansAbonnement()),
-    );
+    Navigator.of(
+      tester.element(find.text('accueil')),
+    ).push(MaterialPageRoute(builder: (_) => const _PageSansAbonnement()));
     await tester.pumpAndSettle();
 
     _ApplicationState.basculer();

@@ -13,6 +13,7 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/themes/widgets/app_card.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 /// Portefeuille de l'auteur : gains cumulés, retrait à la demande, historique.
 ///
@@ -75,7 +76,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _erreur = e.toString().replaceFirst('Exception: ', '');
+        _erreur = messageLisible(e, repli: "Impossible de charger vos ventes.");
       });
     }
   }
@@ -144,7 +145,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
       setState(() => _retraitEnCours = false);
       AppNotifications.showSnackBar(
         context,
-        message: e.toString().replaceFirst('Exception: ', ''),
+        message: messageLisible(e, repli: "Action impossible pour le moment."),
         isSuccess: false,
       );
     } finally {
@@ -160,100 +161,177 @@ class _SalesReportPageState extends State<SalesReportPage> {
     );
     final cleFormulaire = GlobalKey<FormState>();
 
+    final p = _portefeuille;
+
     return showDialog<double>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        ),
-        title: Text(
-          'Montant à retirer',
-          style: GoogleFonts.poppins(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+      // StatefulBuilder : le montant réellement versé se recalcule à chaque
+      // frappe. Sans lui, l'auteur découvrirait les frais sur son relevé
+      // Mobile Money — le pire endroit pour les apprendre.
+      builder: (context) => StatefulBuilder(
+        builder: (context, rafraichir) => AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           ),
-        ),
-        content: Form(
-          key: cleFormulaire,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Disponible : ${_montant(solde.disponible)}\n'
-                'Minimum : ${_montant(_portefeuille.minimumRetrait)}',
-                style: GoogleFonts.poppins(
-                  color: AppColors.textSecondary,
-                  fontSize: 12.5,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: AppDimensions.spaceLg),
-              TextFormField(
-                controller: controleur,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                autofocus: true,
-                style: GoogleFonts.poppins(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: InputDecoration(
-                  suffixText: solde.devise,
-                  suffixStyle: GoogleFonts.poppins(
+          title: Text(
+            'Montant à retirer',
+            style: GoogleFonts.poppins(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          content: Form(
+            key: cleFormulaire,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Disponible : ${_montant(solde.disponible)}\n'
+                  'Minimum : ${_montant(p.minimumRetraitAbsolu)}'
+                  // La ligne sur la gratuité ne s'affiche que si un virement
+                  // peut réellement coûter quelque chose. Sinon elle laisse
+                  // entendre qu'en dessous du seuil, on paie.
+                  '${p.desFraisExistent ? '\nVirement offert à partir de ${_montant(p.minimumRetrait)}' : ''}',
+                  style: GoogleFonts.poppins(
                     color: AppColors.textSecondary,
+                    fontSize: 12.5,
+                    height: 1.5,
                   ),
-                  filled: true,
-                  fillColor: AppColors.scaffoldBackground,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusInner,
+                ),
+                const SizedBox(height: AppDimensions.spaceLg),
+                TextFormField(
+                  controller: controleur,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  autofocus: true,
+                  onChanged: (_) => rafraichir(() {}),
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: InputDecoration(
+                    suffixText: solde.devise,
+                    suffixStyle: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.scaffoldBackground,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusInner,
+                      ),
                     ),
                   ),
+                  validator: (v) {
+                    final montant = double.tryParse(v ?? '');
+                    if (montant == null || montant <= 0) {
+                      return 'Montant invalide';
+                    }
+                    if (montant < p.minimumRetraitAbsolu) {
+                      return 'Minimum ${_montant(p.minimumRetraitAbsolu)}';
+                    }
+                    if (montant > solde.disponible) {
+                      return 'Supérieur au solde disponible';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (v) {
-                  final montant = double.tryParse(v ?? '');
-                  if (montant == null || montant <= 0) {
-                    return 'Montant invalide';
-                  }
-                  if (montant < _portefeuille.minimumRetrait) {
-                    return 'Minimum ${_montant(_portefeuille.minimumRetrait)}';
-                  }
-                  if (montant > solde.disponible) {
-                    return 'Supérieur au solde disponible';
-                  }
-                  return null;
-                },
+                _apercuDuVirement(p, double.tryParse(controleur.text) ?? 0),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Annuler',
+                style: GoogleFonts.poppins(color: AppColors.textSecondary),
               ),
-            ],
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (!cleFormulaire.currentState!.validate()) return;
+                Navigator.of(context).pop(double.parse(controleur.text));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onAccent,
+                elevation: 0,
+              ),
+              child: Text(
+                'Confirmer',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Ce que l'auteur touchera vraiment, dit avant qu'il ne confirme.
+  ///
+  /// Le seuil de retrait n'était pas un seuil mais une porte : sous 5 000 F,
+  /// rien ne sortait. Un auteur qui n'a qu'un seul livre voyait son
+  /// portefeuille monter sans jamais pouvoir y toucher. Le virement reste
+  /// offert au-dessus du seuil ; en dessous, il est possible, frais retenus —
+  /// et c'est ici qu'ils s'annoncent.
+  Widget _apercuDuVirement(Portefeuille p, double montant) {
+    if (montant <= 0 || montant > p.solde.disponible) {
+      return const SizedBox.shrink();
+    }
+
+    final frais = p.fraisPour(montant);
+    if (frais <= 0) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          // « Virement offert » n'a de sens que s'il peut être payant. Quand
+          // aucun frais n'existe, on dit simplement ce qui arrive.
+          p.desFraisExistent
+              ? 'Virement offert : vous recevrez ${_montant(p.versePour(montant))}.'
+              : 'Vous recevrez ${_montant(p.versePour(montant))}, sans aucun frais.',
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.accentInk,
+            height: 1.4,
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Annuler',
-              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+      );
+    }
+
+    final manque = p.minimumRetrait - montant;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Vous recevrez ${_montant(p.versePour(montant))} '
+            '(${_montant(frais)} de frais d\'opérateur).',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+              height: 1.4,
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              if (!cleFormulaire.currentState!.validate()) return;
-              Navigator.of(context).pop(double.parse(controleur.text));
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onAccent,
-              elevation: 0,
+          if (manque > 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Encore ${_montant(manque)} et le virement devient gratuit.',
+              style: GoogleFonts.poppins(
+                fontSize: 11.5,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
             ),
-            child: Text(
-              'Confirmer',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -318,7 +396,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
       if (!mounted) return;
       AppNotifications.showSnackBar(
         context,
-        message: e.toString().replaceFirst('Exception: ', ''),
+        message: messageLisible(e, repli: "Action impossible pour le moment."),
         isSuccess: false,
       );
     }
@@ -493,10 +571,23 @@ class _SalesReportPageState extends State<SalesReportPage> {
             ),
           ),
           const SizedBox(height: AppDimensions.spaceMd),
+          // Deux seuils, deux phrases distinctes. « Retrait possible à partir
+          // de 5 000 » était faux depuis que le virement est ouvert dès le
+          // plancher absolu — et c'était la phrase qui faisait croire à
+          // l'auteur que son argent était retenu.
           Text(
-            _portefeuille.retraitPossible
-                ? 'Commission de la plateforme : $pourcentage % sur chaque vente.'
-                : 'Retrait possible à partir de ${_montant(_portefeuille.minimumRetrait)}. '
+            !_portefeuille.retraitPossible
+                ? 'Retrait possible à partir de '
+                      '${_montant(_portefeuille.minimumRetraitAbsolu)}. '
+                      'Commission de la plateforme : $pourcentage % sur chaque vente.'
+                : _portefeuille.desFraisExistent &&
+                      _portefeuille.solde.disponible <
+                          _portefeuille.minimumRetrait
+                ? 'Virement offert à partir de '
+                      '${_montant(_portefeuille.minimumRetrait)} ; en dessous, '
+                      'les frais d\'opérateur sont retenus. '
+                      'Commission de la plateforme : $pourcentage % sur chaque vente.'
+                : 'Virement sans frais. '
                       'Commission de la plateforme : $pourcentage % sur chaque vente.',
             style: GoogleFonts.poppins(
               color: AppColors.textHint,

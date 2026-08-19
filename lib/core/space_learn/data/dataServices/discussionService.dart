@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../model/discussionModel.dart';
 import '../../../utils/api_routes.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class DiscussionService {
   final http.Client client;
@@ -40,7 +41,9 @@ class DiscussionService {
       final Map<String, dynamic> data = json.decode(response.body);
       return Discussion.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to create discussion');
+      throw Exception(
+        messageDeLaReponse(response, repli: "Ce salon n'a pas pu être créé."),
+      );
     }
   }
 
@@ -52,7 +55,12 @@ class DiscussionService {
       final List<dynamic> list = responseData['data'] ?? [];
       return list.map((json) => Discussion.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch global discussions');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les salons.",
+        ),
+      );
     }
   }
 
@@ -68,7 +76,12 @@ class DiscussionService {
       final List<dynamic> list = responseData['data'] ?? [];
       return list.map((json) => Discussion.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch author discussions');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les salons de cet auteur.",
+        ),
+      );
     }
   }
 
@@ -87,7 +100,12 @@ class DiscussionService {
       final List<dynamic> list = responseData['data'] ?? [];
       return list.map((json) => Discussion.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch book discussions');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les salons de ce livre.",
+        ),
+      );
     }
   }
 
@@ -102,7 +120,12 @@ class DiscussionService {
       final List<dynamic> list = responseData['data'] ?? [];
       return list.map((json) => Discussion.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch discussions');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les salons.",
+        ),
+      );
     }
   }
 
@@ -114,15 +137,25 @@ class DiscussionService {
       final Map<String, dynamic> data = json.decode(response.body);
       return Discussion.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to get discussion');
+      throw Exception(
+        messageDeLaReponse(response, repli: "Ce salon est introuvable."),
+      );
     }
   }
 
+  /// Modifie un sujet : titre, description, bannière.
+  ///
+  /// Seuls les champs fournis partent. Côté serveur, un champ absent veut dire
+  /// « ne touche pas » et non « efface » — envoyer systématiquement le titre
+  /// suffisait tant qu'on ne modifiait que lui, mais aurait effacé la
+  /// description dès qu'on aurait voulu la corriger.
   Future<Discussion> updateDiscussion(
     String id,
-    String titre,
-    String token,
-  ) async {
+    String token, {
+    String? titre,
+    String? description,
+    String? imageBanniere,
+  }) async {
     final url = ApiRoutes.discussionById.replaceFirst(':id', id);
     final response = await client.put(
       Uri.parse(url),
@@ -130,14 +163,23 @@ class DiscussionService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: json.encode({'titre': titre}),
+      body: json.encode({
+        if (titre != null) 'titre': titre,
+        if (description != null) 'description': description,
+        if (imageBanniere != null) 'image_banniere': imageBanniere,
+      }),
     );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
       return Discussion.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to update discussion');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Ce salon n'a pas pu être modifié.",
+        ),
+      );
     }
   }
 
@@ -164,7 +206,12 @@ class DiscussionService {
         total: (contenu['nombre_jaime'] as num?)?.toInt() ?? 0,
       );
     }
-    throw Exception('Failed to toggle like');
+    throw Exception(
+      messageDeLaReponse(
+        response,
+        repli: "Votre mention j'aime n'a pas pu être enregistrée.",
+      ),
+    );
   }
 
   Future<void> deleteDiscussion(String id, String token) async {
@@ -175,7 +222,12 @@ class DiscussionService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete discussion');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Ce salon n'a pas pu être supprimé.",
+        ),
+      );
     }
   }
 }

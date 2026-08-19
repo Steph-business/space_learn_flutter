@@ -240,12 +240,14 @@ class BookCacheService {
         final id = point > 0 ? nom.substring(0, point) : nom;
         if (id.isEmpty) continue;
 
-        entrees.add(LivreEnCache(
-          livreId: id,
-          chemin: entity.path,
-          octets: await entity.length(),
-          modifieLe: await entity.lastModified(),
-        ));
+        entrees.add(
+          LivreEnCache(
+            livreId: id,
+            chemin: entity.path,
+            octets: await entity.length(),
+            modifieLe: await entity.lastModified(),
+          ),
+        );
       }
 
       // Le plus récemment ouvert d'abord : c'est celui qu'on cherche.

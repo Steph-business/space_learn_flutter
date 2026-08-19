@@ -27,6 +27,13 @@ class ApiRoutes {
   /// appuie sur « Continuer avec Google » sans savoir si un compte existe.
   static const String google = "$baseUrl/auth/google";
   static const String logout = "$baseUrl/auth/logout";
+
+  /// Prolonge la session sans redemander le mot de passe.
+  ///
+  /// Le jeton d'accès ne vit qu'une heure ; celui-ci le renouvelle pendant
+  /// trente jours. `ApiClient` l'appelle tout seul quand une requête revient
+  /// en 401 — aucun écran n'a à s'en occuper.
+  static const String refresh = "$baseUrl/auth/refresh";
   static const String sendOtp = "$baseUrl/auth/send-otp";
   static const String verifyOtp = "$baseUrl/auth/verify-otp";
   static const String verifyRegistration = "$baseUrl/auth/verification";
@@ -189,6 +196,24 @@ class ApiRoutes {
   static const String messagesByDiscussion =
       "$baseUrlsGin/api/messages/discussion/:discussion_id";
   static const String messageById = "$baseUrlsGin/api/messages/:id";
+
+  // Messagerie privée
+  //
+  // Le tête-à-tête, distinct du forum : `messages` ci-dessus vit dans un salon
+  // public, ces routes-ci dans une conversation à deux. Elles sont sur le
+  // backend métier (8084) comme le reste, et non sur l'authentification.
+  static const String dmConversations = "$baseUrlsGin/api/dm/conversations";
+
+  /// Ouvre — ou retrouve — la conversation avec quelqu'un. Le serveur la crée
+  /// si elle n'existe pas : le client n'a donc jamais d'identifiant à inventer.
+  static const String dmConversationAvecUtilisateur =
+      "$baseUrlsGin/api/dm/conversations/user/:user_id";
+
+  /// Lire un fil marque au passage comme lus les messages reçus : c'est la
+  /// même requête, il n'y a rien d'autre à appeler pour éteindre la pastille.
+  static const String dmMessagesDeConversation =
+      "$baseUrlsGin/api/dm/conversations/:id/messages";
+  static const String dmMessages = "$baseUrlsGin/api/dm/messages";
 
   // Category routes
   static const String categories = "$baseUrlsGin/api/categories";

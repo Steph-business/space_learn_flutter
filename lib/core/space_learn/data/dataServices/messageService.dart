@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../model/messageModel.dart';
 import '../../../utils/api_routes.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class MessageService {
   final http.Client client;
@@ -27,7 +28,12 @@ class MessageService {
       final Map<String, dynamic> data = json.decode(response.body);
       return Message.fromJson(data['data'] ?? data);
     } else {
-      throw Exception('Failed to create message');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Ce message n'a pas pu être envoyé.",
+        ),
+      );
     }
   }
 
@@ -49,7 +55,12 @@ class MessageService {
       final List<dynamic> list = responseData['data'] ?? [];
       return list.map((json) => Message.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to fetch messages');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Impossible de charger les messages.",
+        ),
+      );
     }
   }
 
@@ -65,7 +76,46 @@ class MessageService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception('Failed to delete message');
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Ce message n'a pas pu être supprimé.",
+        ),
+      );
     }
+  }
+
+  /// Réécrit un message.
+  ///
+  /// La route existait côté serveur depuis toujours, correctement protégée —
+  /// mais rien ne l'appelait : on pouvait effacer un propos, jamais corriger
+  /// une faute. Le serveur refuse au-delà de vingt-quatre heures, et à tout
+  /// autre que l'auteur du texte.
+  Future<Message> updateMessage(
+    String messageId,
+    String contenu,
+    String token,
+  ) async {
+    final url = ApiRoutes.messageById.replaceFirst(':id', messageId);
+    final response = await client.put(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'contenu': contenu}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return Message.fromJson(data['data'] ?? data);
+    }
+
+    throw Exception(
+      messageDeLaReponse(
+        response,
+        repli: "Ce message n'a pas pu être modifié.",
+      ),
+    );
   }
 }

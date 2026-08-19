@@ -98,23 +98,69 @@ class _EvenementsPageState extends State<EvenementsPage> {
       body: Column(
         children: [
           _filtres(),
-          Expanded(
-            child: liste.isEmpty
-                ? _vide()
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                    itemCount: liste.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) => CarteEvenement(
-                      evenement: liste[index],
-                      signature: widget.signature,
-                      onTap: () => widget.onOuvrir(context, liste[index]),
-                    ),
-                  ),
-          ),
+          Expanded(child: liste.isEmpty ? _vide() : _listeGroupee(liste)),
         ],
       ),
     );
+  }
+
+  /// La liste, rangee par familles et annoncee comme telle.
+  ///
+  /// L'ordre venait du serveur — a venir, puis actualites, puis passe — mais
+  /// rien ne le disait : on voyait defiler une annonce de juillet, une dedicace
+  /// d'aout, une dedicace de juillet, sans comprendre ce qui les rangeait
+  /// ainsi. Un ordre qu'on ne peut pas nommer ressemble a un desordre.
+  ///
+  /// Les titres ne trient rien : ils NOMMENT le tri que le serveur a deja fait.
+  /// Regrouper ici sans toucher a l'ordre garantit que les deux ne peuvent pas
+  /// diverger.
+  Widget _listeGroupee(List<Evenement> liste) {
+    final aVenir = liste
+        .where((e) => e.dateEvenement != null && !e.passe)
+        .toList();
+    final annonces = liste.where((e) => e.dateEvenement == null).toList();
+    final passes = liste
+        .where((e) => e.dateEvenement != null && e.passe)
+        .toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      children: [
+        ..._section("À venir", aVenir),
+        ..._section("Actualités", annonces),
+        ..._section("Déjà passés", passes),
+      ],
+    );
+  }
+
+  /// Un titre et ses cartes. Une famille vide ne laisse aucune trace : un titre
+  /// seul au-dessus du vide fait croire a un chargement qui n'aboutit pas.
+  List<Widget> _section(String titre, List<Evenement> membres) {
+    if (membres.isEmpty) return const [];
+
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 10),
+        child: Text(
+          "$titre (${membres.length})",
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ),
+      for (var i = 0; i < membres.length; i++)
+        Padding(
+          padding: EdgeInsets.only(bottom: i == membres.length - 1 ? 8 : 12),
+          child: CarteEvenement(
+            evenement: membres[i],
+            signature: widget.signature,
+            onTap: () => widget.onOuvrir(context, membres[i]),
+          ),
+        ),
+    ];
   }
 
   Widget _filtres() {

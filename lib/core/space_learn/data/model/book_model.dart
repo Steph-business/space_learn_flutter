@@ -201,7 +201,9 @@ class BookModel {
             json['extractUrl'],
         useGin: true,
       ),
-      nbPagesExtrait: _entier(json['nb_pages_extrait'] ?? json['nbPagesExtrait']),
+      nbPagesExtrait: _entier(
+        json['nb_pages_extrait'] ?? json['nbPagesExtrait'],
+      ),
       fichierIndisponible: json['fichier_indisponible'] == true,
       aUnFichier:
           json['a_un_fichier'] == true ||

@@ -62,7 +62,8 @@ class ReadingActivityModel {
               )
             : null,
         pourcentage: (() {
-          final p = json['pourcentage'] ??
+          final p =
+              json['pourcentage'] ??
               json['Pourcentage'] ??
               json['percentage'] ??
               json['Percentage'];
@@ -73,8 +74,12 @@ class ReadingActivityModel {
           }
           final last = (json['last_page'] ?? json['LastPage']);
           final total = (json['total_pages'] ?? json['TotalPages']);
-          final lNum = last is num ? last.toDouble() : double.tryParse(last?.toString() ?? '');
-          final tNum = total is num ? total.toDouble() : double.tryParse(total?.toString() ?? '');
+          final lNum = last is num
+              ? last.toDouble()
+              : double.tryParse(last?.toString() ?? '');
+          final tNum = total is num
+              ? total.toDouble()
+              : double.tryParse(total?.toString() ?? '');
           if (lNum != null && tNum != null && tNum > 0) {
             return ((lNum / tNum) * 100).clamp(0.0, 100.0);
           }

@@ -50,6 +50,9 @@ import '../../../data/model/citation_model.dart';
 import 'temps_lecture_page.dart';
 import 'package:space_learn_flutter/core/services/onboarding_guide_service.dart';
 import 'package:space_learn_flutter/core/widgets/guides/space_learn_tour.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 
 class HomePageLecteur extends StatefulWidget {
   final String profileId;
@@ -88,6 +91,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
   bool _isLoading = true;
   String? _error;
+
+  /// La panne vient-elle d'une session finie plutôt que d'un incident passager ?
+  ///
+  /// Les deux n'appellent pas le même geste : l'une se répare en réessayant,
+  /// l'autre jamais.
+  bool _sessionExpiree = false;
   ReaderStatsModel? _stats;
 
   /// Jours de lecture consécutifs, tenus par le serveur quand il les connaît.
@@ -167,8 +176,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               context: context,
               searchBarKey: _searchBarKey,
               dailyGoalKey: _dailyGoal != null ? _dailyGoalKey : null,
-              featuredBooksKey:
-                  _featuredBooks.isNotEmpty ? _featuredBooksKey : null,
+              featuredBooksKey: _featuredBooks.isNotEmpty
+                  ? _featuredBooksKey
+                  : null,
             );
           }
         });
@@ -189,6 +199,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     setState(() {
       _isLoading = true;
       _error = null;
+      // Sans cette remise à zéro, un incident réseau survenant après une
+      // session expirée garderait le bouton « Se reconnecter ».
+      _sessionExpiree = false;
     });
 
     try {
@@ -216,8 +229,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       );
       final todayReadingMinutes =
           await ReadingTimeStorage.getTodayReadingMinutes(
-        user?.id ?? widget.profileId,
-      );
+            user?.id ?? widget.profileId,
+          );
 
       final results = await Future.wait([
         _statsService.getReaderStats(widget.profileId).catchError((e) {
@@ -268,8 +281,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       // est synchrone et n'attend rien.
       final bilan = await _statsService.lireBilan();
       final serveurRenseigne = (bilan?['total'] ?? 0) > 0;
-      final serieLocale =
-          await ReadingTimeStorage.getReadingStreak(widget.profileId);
+      final serieLocale = await ReadingTimeStorage.getReadingStreak(
+        widget.profileId,
+      );
 
       if (mounted) {
         context
@@ -294,7 +308,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           final backendGoals = (results.length > 8 && results[8] is List)
               ? (results[8] as List).cast<GoalModel>()
               : <GoalModel>[];
-          final citation = results.length > 9 ? results[9] as CitationModel? : null;
+          final citation = results.length > 9
+              ? results[9] as CitationModel?
+              : null;
           final allProgress = (results.length > 10 && results[10] is List)
               ? (results[10] as List).cast<ReadingActivityModel>()
               : <ReadingActivityModel>[];
@@ -351,14 +367,37 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             }).length;
           }
 
-          int displayedBooksRead =
-              (apiStats.booksRead > 0 && apiStats.booksRead != 12)
-                  ? apiStats.booksRead
-                  : finishedReading;
+          // Le bilan du lecteur fait foi : c'est la seule définition qui reste.
+          //
+          // Cette ligne valait auparavant :
+          //     (apiStats.booksRead > 0 && apiStats.booksRead != 12)
+          //         ? apiStats.booksRead : finishedReading
+          // Le « != 12 » écartait une valeur de démonstration écrite en dur
+          // ailleurs — un nombre magique pour contourner un autre défaut. Et
+          // `apiStats` venait de `/api/analytics/reader/:livre_id`, une route
+          // qui rend les statistiques D'UN LIVRE : l'application y envoyait un
+          // identifiant d'utilisateur, ne recevait jamais de champ `books_read`
+          // et retombait donc toujours sur le comptage local.
+          //
+          // `bilan['lus']` compte les livres terminés ET possédés. Sans la
+          // jointure sur la bibliothèque, ce compte montait à 6 pour un lecteur
+          // qui ne possède que 2 livres : des extraits parcourus, des essais.
+          // Le gardien est `bilan != null`, et non `serveurRenseigne` : ce
+          // dernier dit si le serveur a enregistré des MINUTES de lecture, ce
+          // qui n'a rien à voir avec le nombre de livres terminés. Un lecteur
+          // ayant fini un livre avant que le décompte du temps n'existe serait
+          // retombé sur le comptage local — le mauvais.
+          //
+          // Un zéro venu du serveur est ici une vraie réponse, pas une absence :
+          // c'est lui qui sait ce que le lecteur possède.
+          int displayedBooksRead = bilan != null
+              ? (bilan['lus'] ?? finishedReading)
+              : finishedReading;
 
           // Format reading time
-          String formattedTime =
-              ReadingTimeStorage.formatMinutes(readingMinutes);
+          String formattedTime = ReadingTimeStorage.formatMinutes(
+            readingMinutes,
+          );
           if (readingMinutes == 0 &&
               apiStats.totalTime.isNotEmpty &&
               apiStats.totalTime != '0h' &&
@@ -408,7 +447,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             // Conservé pour le modèle, mais plus affiché : il valait
             // `max(objectifs terminés, badges débloqués)`, deux grandeurs sans
             // rapport. Les badges se comptent sur leur propre écran.
-            goalsAchieved: backendBadges.where((b) => b.debloqueLe != null).length,
+            goalsAchieved: backendBadges
+                .where((b) => b.debloqueLe != null)
+                .length,
           );
 
           // 1. Build a comprehensive Author Map from all available sources
@@ -518,14 +559,16 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               .toList();
 
           final authorOwnBookIds = _allBooks
-              .where((b) =>
-                  (b.auteurId.isNotEmpty && b.auteurId == _currentUserId) ||
-                  (b.auteur != null && b.auteur!.id == _currentUserId) ||
-                  (b.authorName.isNotEmpty &&
-                      (b.authorName.trim().toLowerCase() ==
-                              _displayName.trim().toLowerCase() ||
-                          b.authorName.trim().toLowerCase() ==
-                              widget.userName.trim().toLowerCase())))
+              .where(
+                (b) =>
+                    (b.auteurId.isNotEmpty && b.auteurId == _currentUserId) ||
+                    (b.auteur != null && b.auteur!.id == _currentUserId) ||
+                    (b.authorName.isNotEmpty &&
+                        (b.authorName.trim().toLowerCase() ==
+                                _displayName.trim().toLowerCase() ||
+                            b.authorName.trim().toLowerCase() ==
+                                widget.userName.trim().toLowerCase())),
+              )
               .map((b) => b.id);
 
           _ownedBookIds = {
@@ -578,7 +621,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = "Erreur lors du chargement des données: $e";
+          _sessionExpiree = estSessionExpiree(e);
+          _error = messageLisible(
+            e,
+            repli: "Impossible de charger vos données.",
+          );
           _isLoading = false;
         });
       }
@@ -768,13 +815,19 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text("Nouveautés", style: AppTextStyles.sectionTitle),
+                              Text(
+                                "Nouveautés",
+                                style: AppTextStyles.sectionTitle,
+                              ),
                               GestureDetector(
                                 onTap: () {
                                   MainNavBar.mainNavBarKey.currentState
                                       ?.navigateToMarketplace();
                                 },
-                                child: Text("Voir plus", style: AppTextStyles.link),
+                                child: Text(
+                                  "Voir plus",
+                                  style: AppTextStyles.link,
+                                ),
                               ),
                             ],
                           ),
@@ -1283,7 +1336,14 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         if (mounted) {
           AppNotifications.showSnackBar(
             context,
-            message: errorStr.replaceFirst('Exception: ', ''),
+            // `errorStr` sert juste au-dessus à reconnaître un 409 : c'est du
+            // routage, pas de l'affichage. Le montrer tel quel laissait passer
+            // « Failed to follow user: 500 - {...} », que RelationService
+            // compose avec le code HTTP et le corps de la réponse.
+            message: messageLisible(
+              e,
+              repli: "Impossible de suivre cet auteur.",
+            ),
             isError: true,
           );
         }
@@ -1563,6 +1623,21 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   colors: q["gradient"] as List<Color>,
                 ),
               ),
+              // Toute l'encre de cette carte appartient a l'APLAT, pas a la
+              // page.
+              //
+              // Elle utilisait AppColors.textPrimary, textSecondary et
+              // textHint — trois couleurs qui suivent le fond de la PAGE. Or
+              // la carte a son propre fond, un degrade orange ou ardoise. En
+              // theme clair l'encre sombre passait par chance sur l'orange et
+              // mal sur l'ardoise ; en theme sombre elle devient claire, et
+              // toute la carte s'efface.  est la seule encre garantie
+              // sur la gamme d'accent, dans les deux themes.
+              //
+              // Le test de coherence des couleurs porte deja cette regle, mais
+              // il ne voit que  et  : ici le fond est
+              // un degrade construit depuis une liste de donnees, invisible a
+              // une lecture du source.
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1572,18 +1647,22 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     children: [
                       Row(
                         children: List.generate(5, (starIndex) {
+                          final acquise = starIndex < (q["note"] as int? ?? 0);
                           return Icon(
-                            starIndex < (q["note"] as int? ?? 0)
-                                ? Icons.star
-                                : Icons.star_border,
-                            color: AppColors.textPrimary,
+                            acquise ? Icons.star : Icons.star_border,
+                            // Une etoile non acquise s'efface sans changer de
+                            // teinte : deux couleurs differentes sur un aplat
+                            // colore font une troisieme couleur a l'oeil.
+                            color: AppColors.onAccent.withValues(
+                              alpha: acquise ? 1 : 0.45,
+                            ),
                             size: 14,
                           );
                         }),
                       ),
                       Icon(
                         Icons.format_quote,
-                        color: AppColors.textHint,
+                        color: AppColors.onAccent.withValues(alpha: 0.45),
                         size: 24,
                       ),
                     ],
@@ -1595,7 +1674,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         q["quote"] as String,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.lora(
-                          color: AppColors.textPrimary,
+                          color: AppColors.onAccent,
                           fontSize: 14,
                           fontStyle: FontStyle.italic,
                           fontWeight: FontWeight.w500,
@@ -1611,11 +1690,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                     children: [
                       CircleAvatar(
                         radius: 12,
-                        backgroundColor: AppColors.textHint,
+                        backgroundColor: AppColors.onAccent.withValues(
+                          alpha: 0.25,
+                        ),
                         child: Icon(
                           Icons.person,
                           size: 14,
-                          color: AppColors.textPrimary,
+                          color: AppColors.onAccent,
                         ),
                       ),
                       SizedBox(width: 8),
@@ -1626,7 +1707,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                             Text(
                               q["author"] as String,
                               style: GoogleFonts.poppins(
-                                color: AppColors.textPrimary,
+                                color: AppColors.onAccent,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1636,7 +1717,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                               Text(
                                 "Livre: ${(q["book"] as BookModel).titre}",
                                 style: GoogleFonts.poppins(
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.onAccent.withValues(
+                                    alpha: 0.75,
+                                  ),
                                   fontSize: 9,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1771,10 +1854,38 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               style: GoogleFonts.poppins(color: AppColors.textPrimary),
             ),
             SizedBox(height: 20),
-            ElevatedButton(onPressed: _loadData, child: Text("Réessayer")),
+            // Un bouton qui peut aboutir, ou pas de bouton du tout.
+            //
+            // « Réessayer » s'affichait sous toutes les erreurs, session
+            // expirée comprise. Or un jeton mort le reste : appuyer relançait
+            // les mêmes requêtes, qui échouaient de la même façon, aussi
+            // longtemps que la personne insistait. Le seul geste utile est de
+            // se reconnecter — alors c'est celui-là qu'on propose.
+            _sessionExpiree
+                ? ElevatedButton(
+                    onPressed: _seReconnecter,
+                    child: const Text("Se reconnecter"),
+                  )
+                : ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text("Réessayer"),
+                  ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Termine la session et ramène à l'écran de connexion.
+  ///
+  /// Le nettoyage passe par [SessionService] : effacer le seul jeton laisserait
+  /// sur l'appareil la bibliothèque téléchargée et le profil choisi.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
     );
   }
 

@@ -20,6 +20,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/a
     as lecteurHome;
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class OtpPage extends StatefulWidget {
   final String email;
@@ -95,20 +96,17 @@ class _OtpPageState extends State<OtpPage> {
           }
         }
       } else {
-        final success = await _authService.verifyOtp(widget.email, otp);
+        // Un code refusé lève, avec la raison exacte du serveur — code
+        // expiré, compte fermé, quota dépassé. Elle était jusqu'ici remplacée
+        // par « Code OTP invalide », qui n'était vrai qu'une fois sur trois.
+        await _authService.verifyOtp(widget.email, otp);
 
-        if (success && mounted) {
+        if (mounted) {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) =>
                   ResetPasswordPage(email: widget.email, otp: otp),
             ),
-          );
-        } else if (mounted) {
-          AppNotifications.showSnackBar(
-            context,
-            message: "Code OTP invalide.",
-            isError: true,
           );
         }
       }
@@ -116,7 +114,10 @@ class _OtpPageState extends State<OtpPage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur: ${e.toString().replaceAll("Exception: ", "")}",
+          message: messageLisible(
+            e,
+            repli: "Vérification impossible pour le moment.",
+          ),
           isError: true,
         );
       }
@@ -132,25 +133,22 @@ class _OtpPageState extends State<OtpPage> {
     setState(() => _isLoading = true);
 
     try {
-      final success = await _authService.forgotPassword(widget.email);
-      if (success && mounted) {
+      await _authService.forgotPassword(widget.email);
+      if (mounted) {
         AppNotifications.showSnackBar(
           context,
           message: 'Un nouveau code de validation a été envoyé.',
           isSuccess: true,
-        );
-      } else if (mounted) {
-        AppNotifications.showSnackBar(
-          context,
-          message: "Impossible de renvoyer le code.",
-          isError: true,
         );
       }
     } catch (e) {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur: ${e.toString().replaceAll("Exception: ", "")}",
+          message: messageLisible(
+            e,
+            repli: "Le code n'a pas pu être renvoyé.",
+          ),
           isError: true,
         );
       }

@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:http/http.dart' as http;
+
+import 'package:space_learn_flutter/core/services/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -64,13 +65,17 @@ class CreneauLecture {
     );
   }
 
-  CreneauLecture copyWith({int? heure, int? minute, Set<int>? jours, bool? actif}) =>
-      CreneauLecture(
-        heure: heure ?? this.heure,
-        minute: minute ?? this.minute,
-        jours: jours ?? this.jours,
-        actif: actif ?? this.actif,
-      );
+  CreneauLecture copyWith({
+    int? heure,
+    int? minute,
+    Set<int>? jours,
+    bool? actif,
+  }) => CreneauLecture(
+    heure: heure ?? this.heure,
+    minute: minute ?? this.minute,
+    jours: jours ?? this.jours,
+    actif: actif ?? this.actif,
+  );
 }
 
 /// Les rappels de lecture, et leur programmation réelle auprès du système.
@@ -100,6 +105,11 @@ class RappelsLecture {
 
   /// Prépare les fuseaux. Sans cela, `zonedSchedule` lève à la première mise
   /// en attente, et le rappel ne serait pas programmé du tout.
+  /// Publique : les rappels de rendez-vous en ont besoin aussi, et preparer
+  /// les fuseaux deux fois de deux facons differentes finirait par donner deux
+  /// resultats.
+  static Future<void> preparerFuseau() => _preparerFuseau();
+
   static Future<void> _preparerFuseau() async {
     if (_fuseauPret) return;
     tzdata.initializeTimeZones();
@@ -176,7 +186,11 @@ class RappelsLecture {
             id: _baseId + index,
             title: 'C\'est votre moment de lecture',
             body: 'Quelques pages vous attendent.',
-            scheduledDate: _prochaineOccurrence(jour, creneau.heure, creneau.minute),
+            scheduledDate: _prochaineOccurrence(
+              jour,
+              creneau.heure,
+              creneau.minute,
+            ),
             notificationDetails: details,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
             // Chaque semaine, au même jour et à la même heure.
@@ -235,7 +249,7 @@ class RappelsLecture {
       final token = await TokenStorage.getToken();
       if (token == null || token.isEmpty) return null;
 
-      final reponse = await http.get(
+      final reponse = await ApiClient.instance.get(
         Uri.parse(ApiRoutes.readingCreneaux),
         headers: {'Authorization': 'Bearer $token'},
       );
@@ -277,7 +291,7 @@ class RappelsLecture {
       final token = await TokenStorage.getToken();
       if (token == null || token.isEmpty) return;
 
-      await http.put(
+      await ApiClient.instance.put(
         Uri.parse(ApiRoutes.readingCreneaux),
         headers: {
           'Content-Type': 'application/json',

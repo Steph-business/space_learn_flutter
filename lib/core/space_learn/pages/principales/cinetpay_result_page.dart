@@ -160,12 +160,19 @@ class CinetpayResultPage extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () async {
                     if (isAccepted) {
-                      Map<String, dynamic> bookToOpen = Map<String, dynamic>.from(book);
+                      Map<String, dynamic> bookToOpen =
+                          Map<String, dynamic>.from(book);
                       try {
                         final token = await TokenStorage.getToken();
-                        final bookId = (book['id'] ?? book['ID'] ?? '').toString();
-                        if (token != null && token.isNotEmpty && bookId.isNotEmpty) {
-                          final freshBook = await BookService().getBookById(bookId, authToken: token);
+                        final bookId = (book['id'] ?? book['ID'] ?? '')
+                            .toString();
+                        if (token != null &&
+                            token.isNotEmpty &&
+                            bookId.isNotEmpty) {
+                          final freshBook = await BookService().getBookById(
+                            bookId,
+                            authToken: token,
+                          );
                           bookToOpen = freshBook.toJson();
                         }
                       } catch (_) {
