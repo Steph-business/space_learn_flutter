@@ -31,7 +31,7 @@ class SoldeAuteur {
     totalRetire: _double(json['total_retire']),
     enCours: _double(json['en_cours']),
     disponible: _double(json['disponible']),
-    devise: json['devise']?.toString() ?? 'XOF',
+    devise: json['devise']?.toString() ?? 'FCFA',
   );
 
   static const SoldeAuteur vide = SoldeAuteur(
@@ -39,7 +39,7 @@ class SoldeAuteur {
     totalRetire: 0,
     enCours: 0,
     disponible: 0,
-    devise: 'XOF',
+    devise: 'FCFA',
   );
 }
 
@@ -77,7 +77,7 @@ class ReversementModel {
         montantBrut: _double(json['montant_brut']),
         commission: _double(json['commission']),
         montantNet: _double(json['montant_net']),
-        devise: json['devise']?.toString() ?? 'XOF',
+        devise: json['devise']?.toString() ?? 'FCFA',
         creeLe: _date(json['cree_le']),
       );
 }
@@ -105,7 +105,7 @@ class RetraitModel {
   factory RetraitModel.fromJson(Map<String, dynamic> json) => RetraitModel(
     id: json['id']?.toString() ?? '',
     montant: _double(json['montant']),
-    devise: json['devise']?.toString() ?? 'XOF',
+    devise: json['devise']?.toString() ?? 'FCFA',
     statut: json['statut']?.toString() ?? 'demandee',
     derniereErreur: json['derniere_erreur']?.toString(),
     demandeLe: _date(json['demande_le']),
@@ -141,31 +141,7 @@ class RetraitModel {
 class Portefeuille {
   final SoldeAuteur solde;
   final double tauxCommission;
-
-  /// Le montant à partir duquel le virement est offert.
   final double minimumRetrait;
-
-  /// Le plancher en dessous duquel on ne vire pas du tout.
-  ///
-  /// Entre les deux, le retrait reste possible : les frais d'opérateur sont
-  /// retenus. Sans cette seconde borne, un auteur qui n'a qu'un seul livre
-  /// voyait son portefeuille monter sans jamais pouvoir y toucher.
-  final double minimumRetraitAbsolu;
-
-  /// Ce qui est retenu sur un virement demandé sous le seuil de gratuité.
-  ///
-  /// Nul aujourd'hui : la plateforme prend les frais de transfert à sa charge,
-  /// quel que soit le montant. Les écrans ne doivent donc parler ni de frais ni
-  /// de « virement offert » — les deux notions n'ont de sens que l'une par
-  /// rapport à l'autre, et annoncer une gratuité à partir d'un seuil laisse
-  /// entendre qu'en dessous on paie.
-  final double fraisRetrait;
-
-  /// Un virement peut-il coûter quelque chose à l'auteur ?
-  ///
-  /// Tant que c'est faux, les écrans se taisent sur le sujet.
-  bool get desFraisExistent => fraisRetrait > 0;
-
   final List<ReversementModel> ventes;
   final List<RetraitModel> retraits;
 
@@ -173,8 +149,6 @@ class Portefeuille {
     required this.solde,
     required this.tauxCommission,
     required this.minimumRetrait,
-    required this.minimumRetraitAbsolu,
-    required this.fraisRetrait,
     required this.ventes,
     required this.retraits,
   });
@@ -185,13 +159,6 @@ class Portefeuille {
         : SoldeAuteur.vide,
     tauxCommission: _double(json['taux_commission']),
     minimumRetrait: _double(json['minimum_retrait']),
-    // Un serveur d'une version antérieure n'envoie pas ces deux bornes : on
-    // retombe alors sur l'ancien comportement, où le seuil de gratuité était
-    // aussi le plancher absolu.
-    minimumRetraitAbsolu: json['minimum_retrait_absolu'] != null
-        ? _double(json['minimum_retrait_absolu'])
-        : _double(json['minimum_retrait']),
-    fraisRetrait: _double(json['frais_retrait']),
     ventes: _liste(json['reversements'], ReversementModel.fromJson),
     retraits: _liste(json['retraits'], RetraitModel.fromJson),
   );
@@ -200,38 +167,12 @@ class Portefeuille {
     solde: SoldeAuteur.vide,
     tauxCommission: 0.20,
     minimumRetrait: 5000,
-    minimumRetraitAbsolu: 1000,
-    fraisRetrait: 100,
     ventes: [],
     retraits: [],
   );
 
   /// L'auteur peut-il demander un retrait maintenant ?
-  ///
-  /// La borne est le plancher absolu, pas le seuil de gratuité : c'est tout
-  /// l'objet de la distinction. Le bouton restait grisé jusqu'à 5 000 F.
-  bool get retraitPossible => solde.disponible >= minimumRetraitAbsolu;
-
-  /// Les frais retenus sur un retrait de [montant]. Zéro au-dessus du seuil.
-  ///
-  /// La règle est la même que celle du serveur, `DecomposerRetrait` : le
-  /// montant est aligné sur le palier de l'opérateur — cinq francs en zone
-  /// XOF — et les frais absorbent le reliquat, de sorte que versé + frais
-  /// redonne exactement le montant demandé.
-  double fraisPour(double montant) {
-    final aligne = (montant / 5).floor() * 5.0;
-    if (aligne <= 0 || aligne >= minimumRetrait) return 0;
-    final verse = ((aligne - fraisRetrait) / 5).floor() * 5.0;
-    if (verse <= 0) return aligne;
-    return aligne - verse;
-  }
-
-  /// Ce que l'auteur recevra réellement pour un retrait de [montant].
-  double versePour(double montant) {
-    final aligne = (montant / 5).floor() * 5.0;
-    if (aligne <= 0) return 0;
-    return aligne - fraisPour(montant);
-  }
+  bool get retraitPossible => solde.disponible >= minimumRetrait;
 }
 
 /// Coordonnées Mobile Money vers lesquelles l'auteur est payé.
