@@ -165,6 +165,13 @@ class ApiRoutes {
   // Author routes
   static const String recentBooksByAuthor =
       "$baseUrlsGin/api/authors/:authorId/books/recent";
+
+  /// L'annuaire des auteurs, pagine.
+  ///
+  /// L'ecran « Tous les auteurs » les deduisait des livres qu'il chargeait :
+  /// le decompte affiche ne comptait que les livres recus, et la liste ne
+  /// pouvait pas etre paginee puisqu'elle derivait d'une autre.
+  static const String auteurs = "$baseUrlsGin/api/authors";
   static const String authorRevenue =
       "$baseUrlsGin/api/authors/:authorId/revenue";
   static const String authorStats = "$baseUrlsGin/api/authors/:authorId/stats";

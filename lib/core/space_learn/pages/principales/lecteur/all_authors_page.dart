@@ -1,22 +1,35 @@
-import 'package:space_learn_flutter/core/themes/app_colors.dart';
-import 'package:space_learn_flutter/core/utils/app_notifications.dart';
-import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
-import 'package:flutter/material.dart';
-import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
-import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
-import 'package:iconsax/iconsax.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/relationModel.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
-import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
-import 'package:space_learn_flutter/core/utils/token_storage.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/author_profile_page.dart';
-import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
+
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/auteurService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/relationService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/author_profile_page.dart';
+import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
+
+/// L'annuaire des auteurs.
+///
+/// Cet écran déduisait les auteurs des livres qu'il chargeait — deux cents au
+/// plus. Trois défauts en découlaient, tous visibles :
+///
+///   - le décompte sous chaque nom ne comptait que les livres reçus. Un auteur
+///     prolifique en affichait moins qu'il n'en a, et un auteur dont aucun
+///     livre n'était dans la page portait « 0 livre publié » ;
+///   - la liste ne pouvait pas être paginée : on ne pagine pas une liste
+///     dérivée d'une autre. Voir l'auteur suivant demandait de charger les
+///     livres suivants ;
+///   - il fallait rapatrier tous les abonnements du lecteur pour savoir
+///     lesquels étaient suivis.
+///
+/// Le serveur répond maintenant à ces trois questions (`GET /api/authors`).
 class AllAuthorsPage extends StatefulWidget {
   const AllAuthorsPage({super.key});
 
@@ -25,212 +38,174 @@ class AllAuthorsPage extends StatefulWidget {
 }
 
 class _AllAuthorsPageState extends State<AllAuthorsPage> {
-  final BookService _bookService = BookService();
+  final AuteurService _auteurService = AuteurService();
   final RelationService _relationService = RelationService();
 
-  List<UserModel> _authors = [];
-  Set<String> _followingIds = {};
-  bool _isLoading = true;
-  String? _error;
+  final List<AuteurResume> _auteurs = [];
+  bool _chargement = true;
+  bool _chargeLaSuite = false;
+  bool _finDeListe = false;
+  String? _erreur;
+  int _page = 1;
+
+  final ScrollController _defilement = ScrollController();
+  final TextEditingController _recherche = TextEditingController();
+  Timer? _attenteSaisie;
+  String _terme = '';
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _defilement.addListener(_auDefilement);
+    _charger();
   }
 
-  Future<void> _loadData() async {
+  @override
+  void dispose() {
+    _attenteSaisie?.cancel();
+    _defilement.removeListener(_auDefilement);
+    _defilement.dispose();
+    _recherche.dispose();
+    super.dispose();
+  }
+
+  /// Demande la suite avant d'atteindre le bas : le temps que la page arrive,
+  /// le lecteur y est.
+  void _auDefilement() {
+    if (!_defilement.hasClients) return;
+    final reste =
+        _defilement.position.maxScrollExtent - _defilement.position.pixels;
+    if (reste < 500) _chargerLaSuite();
+  }
+
+  Future<void> _charger() async {
     setState(() {
-      _isLoading = true;
-      _error = null;
+      _chargement = true;
+      _erreur = null;
+      _page = 1;
+      _finDeListe = false;
     });
 
     try {
       final token = await TokenStorage.getToken();
-      final libraryService = LibraryService();
+      final premiers = await _auteurService.getAuteurs(
+        page: 1,
+        recherche: _terme,
+        authToken: token,
+      );
 
-      // Les auteurs sont deduits des livres charges : l'ecran ne peut donc
-      // en montrer que ceux qui apparaissent dans les deux cents premiers
-      // titres. C'est une borne assumee, faute d'une route dediee aux
-      // auteurs — sans elle, cet ecran telechargerait le catalogue entier.
-      final List<Future<dynamic>> futures = [
-        _bookService.getAllBooks(maximum: 200),
-      ];
-
-      UserModel? currentUser;
-      if (token != null) {
-        final authService = AuthService();
-        currentUser = await authService.getUser(token);
-      }
-
-      if (token != null && currentUser != null) {
-        futures.add(_relationService.getFollowing(currentUser.id));
-        futures.add(libraryService.getUserLibrary(token));
-      } else {
-        futures.add(Future.value(<RelationModel>[]));
-        futures.add(Future.value(<LibraryModel>[]));
-      }
-
-      final results = await Future.wait(futures);
-
-      final allBooks = results[0] as List<BookModel>;
-      final following = results[1] as List<RelationModel>;
-      final library = results[2] as List<LibraryModel>;
-
-      final Map<String, UserModel> authorsMap = {};
-      final Map<String, int> authorBookCount = {};
-      final Map<String, Set<String>> authorCategories = {};
-
-      // Calculate stats from all books
-      for (var book in allBooks) {
-        final authorId = book.auteurId;
-        if (authorId.isEmpty) continue;
-
-        authorBookCount[authorId] = (authorBookCount[authorId] ?? 0) + 1;
-        if (book.categorie?.nom != null) {
-          authorCategories
-              .putIfAbsent(authorId, () => {})
-              .add(book.categorie!.nom);
-        }
-
-        if (book.auteur != null &&
-            book.auteur!.nomComplet != 'Auteur inconnu') {
-          authorsMap[authorId] = book.auteur!;
-        } else if (!authorsMap.containsKey(authorId)) {
-          authorsMap[authorId] = UserModel(
-            id: authorId,
-            profilId: authorId,
-            email: '',
-            nomComplet: book.authorName,
-            isProfileComplete: false,
-          );
-        }
-      }
-
-      // Source 1: User's Library (very reliable for names via joins)
-      for (var item in library) {
-        final authorId = item.livre?.auteurId;
-        if (authorId != null && authorId.isNotEmpty) {
-          if (item.livre!.auteur != null &&
-              item.livre!.auteur!.nomComplet != 'Auteur inconnu') {
-            authorsMap[authorId] = item.livre!.auteur!;
-          } else if (item.auteurNom != null &&
-              item.auteurNom!.isNotEmpty &&
-              item.auteurNom != 'Auteur inconnu') {
-            authorsMap[authorId] = UserModel(
-              id: authorId,
-              profilId: authorId,
-              email: '',
-              nomComplet: item.auteurNom!,
-              isProfileComplete: false,
-            );
-          }
-        }
-      }
-
-      // Source 2: Following list
-      for (var f in following) {
-        if (f.nomComplet != null && f.nomComplet!.isNotEmpty) {
-          authorsMap[f.suitId] = UserModel(
-            id: f.suitId,
-            profilId: f.suitId,
-            email: '',
-            nomComplet: f.nomComplet!,
-            profilePhoto: f.profilePhoto,
-            isProfileComplete: false,
-          );
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _authors = authorsMap.values.toList();
-          _followingIds = following.map((f) => f.suitId).toSet();
-
-          // Store stats in the authors' biography if empty to attract users
-          for (var author in _authors) {
-            final count = authorBookCount[author.id] ?? 0;
-            final cats = authorCategories[author.id] ?? {};
-
-            if (author.biography == null ||
-                author.biography!.isEmpty ||
-                author.biography == "Auteur SpaceLearn") {
-              String insight =
-                  "$count livre${count > 1 ? 's' : ''} publié${count > 1 ? 's' : ''}";
-              if (cats.isNotEmpty) {
-                insight += " • Spécialiste : ${cats.first}";
-              }
-              // We create a temporary modified user for the UI
-              authorsMap[author.id] = UserModel(
-                id: author.id,
-                profilId: author.profilId,
-                email: author.email,
-                nomComplet: author.nomComplet,
-                profilePhoto: author.profilePhoto,
-                biography: insight,
-                isProfileComplete: author.isProfileComplete,
-              );
-            }
-          }
-          _authors = authorsMap.values.toList();
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _auteurs
+          ..clear()
+          ..addAll(premiers);
+        _finDeListe = premiers.length < AuteurService.taillePage;
+        _chargement = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = "Erreur lors du chargement des auteurs";
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _erreur = messageLisible(
+          e,
+          repli: "Les auteurs n'ont pas pu être chargés.",
+        );
+        _chargement = false;
+      });
     }
   }
 
-  Future<void> _toggleFollow(UserModel author) async {
+  /// La page suivante, ajoutée à la suite.
+  ///
+  /// Un échec n'efface pas ce qui est déjà affiché : le lecteur garde sa
+  /// liste, et le prochain défilement retentera.
+  Future<void> _chargerLaSuite() async {
+    if (_chargeLaSuite || _finDeListe || _chargement) return;
+    setState(() => _chargeLaSuite = true);
+
+    try {
+      final token = await TokenStorage.getToken();
+      final suite = await _auteurService.getAuteurs(
+        page: _page + 1,
+        recherche: _terme,
+        authToken: token,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _page += 1;
+        _auteurs.addAll(suite);
+        // Page incomplète : il n'y a plus rien derrière. La réponse ne porte
+        // pas de compteur total, c'est le seul signal de fin disponible.
+        _finDeListe = suite.length < AuteurService.taillePage;
+        _chargeLaSuite = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _chargeLaSuite = false);
+    }
+  }
+
+  void _surRecherche(String valeur) {
+    _attenteSaisie?.cancel();
+    _terme = valeur.trim();
+    // Une pause avant d'interroger le serveur : sans elle, « traoré »
+    // déclenche six recherches, dont cinq sont périmées avant d'arriver.
+    _attenteSaisie = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) _charger();
+    });
+  }
+
+  void _ouvrir(AuteurResume auteur) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AuthorProfilePage(
+          author: UserModel(
+            id: auteur.id,
+            profilId: auteur.id,
+            email: '',
+            nomComplet: auteur.nomComplet,
+            profilePhoto: auteur.photo,
+            biography: auteur.biographie,
+            isProfileComplete: false,
+          ),
+          initialIsFollowing: auteur.estSuivi,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _basculerAbonnement(int index) async {
     final token = await TokenStorage.getToken();
     if (token == null) return;
 
-    final isFollowing = _followingIds.contains(author.id);
+    final auteur = _auteurs[index];
+    final suivait = auteur.estSuivi;
 
-    setState(() {
-      if (isFollowing) {
-        _followingIds.remove(author.id);
-      } else {
-        _followingIds.add(author.id);
-      }
-    });
+    setState(() => _auteurs[index] = auteur.copyWith(estSuivi: !suivait));
 
     try {
-      if (isFollowing) {
-        await _relationService.unfollowUser(author.id, token);
+      if (suivait) {
+        await _relationService.unfollowUser(auteur.id, token);
       } else {
-        await _relationService.followUser(author.id, token);
+        await _relationService.followUser(auteur.id, token);
       }
     } catch (e) {
-      // Revert if error
-      if (mounted) {
-        setState(() {
-          if (isFollowing) {
-            _followingIds.add(author.id);
-          } else {
-            _followingIds.remove(author.id);
-          }
-        });
-        AppNotifications.showSnackBar(
-          context,
-          message: messageLisible(
-            e,
-            repli: "Action impossible pour le moment.",
-          ),
-          isError: true,
-        );
-      }
+      if (!mounted) return;
+      // L'état revient à ce qu'il était : afficher « Suivi » alors que le
+      // serveur n'en sait rien ferait croire à un abonnement qui n'existe pas.
+      setState(() => _auteurs[index] = auteur.copyWith(estSuivi: suivait));
+      AppNotifications.showSnackBar(
+        context,
+        message: messageLisible(e, repli: "Action impossible pour le moment."),
+        isError: true,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
@@ -247,147 +222,363 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
         title: Text("Tous les auteurs", style: AppTextStyles.sectionTitle),
         centerTitle: true,
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: AppColors.accentInk))
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _error!,
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: Text("Réessayer"),
-                  ),
-                ],
-              ),
-            )
-          : _authors.isEmpty
-          ? Center(
-              child: Text(
-                "Aucun auteur trouvé",
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _authors.length,
-              itemBuilder: (context, index) {
-                final author = _authors[index];
-                final isFollowing = _followingIds.contains(author.id);
+      body: RefreshIndicator(
+        onRefresh: _charger,
+        color: AppColors.accentInk,
+        backgroundColor: AppColors.cardBackground,
+        child: _corps(),
+      ),
+    );
+  }
 
-                return Container(
-                  margin: EdgeInsets.only(bottom: 16),
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusCard,
+  Widget _corps() {
+    if (_chargement) {
+      return Center(
+        child: CircularProgressIndicator(color: AppColors.accentInk),
+      );
+    }
+
+    if (_erreur != null) {
+      return _etatVide(
+        icone: Iconsax.warning_2,
+        titre: "Chargement impossible",
+        detail: _erreur!,
+        action: "Réessayer",
+        surAction: _charger,
+      );
+    }
+
+    // Aucun auteur ET aucune recherche en cours : l'annuaire est vide.
+    if (_auteurs.isEmpty && _terme.isEmpty) {
+      return _etatVide(
+        icone: Iconsax.user_search,
+        titre: "Aucun auteur pour l'instant",
+        detail: "Les auteurs apparaissent ici dès qu'un livre est publié.",
+      );
+    }
+
+    return ListView.builder(
+      controller: _defilement,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.screenPadding,
+        AppDimensions.spaceSm,
+        AppDimensions.screenPadding,
+        AppDimensions.spaceXl,
+      ),
+      // En-tête, puis les auteurs, puis le pied (chargement, fin de liste, ou
+      // absence de résultat).
+      itemCount: _auteurs.length + 2,
+      itemBuilder: (context, index) {
+        if (index == 0) return _entete();
+        if (index <= _auteurs.length) return _carte(index - 1);
+        return _pied();
+      },
+    );
+  }
+
+  Widget _entete() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimensions.spaceLg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Suivez un auteur pour être prévenu de ses nouveautés.",
+            style: AppTextStyles.grey12,
+          ),
+          const SizedBox(height: AppDimensions.spaceMd),
+          TextField(
+            controller: _recherche,
+            onChanged: _surRecherche,
+            style: AppTextStyles.body13,
+            decoration: InputDecoration(
+              hintText: "Rechercher un auteur",
+              hintStyle: AppTextStyles.grey12,
+              prefixIcon: Icon(
+                Iconsax.search_normal_1,
+                size: 18,
+                color: AppColors.textHint,
+              ),
+              suffixIcon: _terme.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: Icon(
+                        Iconsax.close_circle,
+                        size: 18,
+                        color: AppColors.textHint,
+                      ),
+                      onPressed: () {
+                        _recherche.clear();
+                        _terme = '';
+                        _charger();
+                      },
                     ),
-                    border: Border.all(
-                      color: AppColors.textPrimary.withOpacity(0.05),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AuthorProfilePage(
-                                author: author,
-                                initialIsFollowing: isFollowing,
-                              ),
-                            ),
-                          );
-                        },
-                        child: CircleAvatar(
-                          radius: 30,
-                          backgroundColor: AppColors.textHint,
-                          child: ClipOval(
-                            child: ProfileImageHelper.buildProfileImage(
-                              author.profilePhoto,
-                              fallbackInitial: author.nomComplet
-                                  .substring(0, 1)
-                                  .toUpperCase(),
-                              textStyle: TextStyle(
-                                color: AppColors.accentInk,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AuthorProfilePage(
-                                  author: author,
-                                  initialIsFollowing: isFollowing,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                author.nomComplet,
-                                style: AppTextStyles.subtitle,
-                              ),
-                              Text(
-                                author.biography ?? "Auteur SpaceLearn",
-                                style: AppTextStyles.grey12,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => _toggleFollow(author),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isFollowing
-                              ? AppColors.textHint
-                              : AppColors.primary,
-                          foregroundColor: AppColors.textPrimary,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusInner,
-                            ),
-                            side: isFollowing
-                                ? BorderSide(
-                                    color: AppColors.textPrimary.withOpacity(
-                                      0.1,
-                                    ),
-                                  )
-                                : BorderSide.none,
-                          ),
-                        ),
-                        child: Text(isFollowing ? "Suivi" : "Suivre"),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              filled: true,
+              fillColor: AppColors.cardBackground,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              border: _contour(AppColors.textHint.withValues(alpha: 0.2)),
+              enabledBorder: _contour(
+                AppColors.textHint.withValues(alpha: 0.2),
+              ),
+              focusedBorder: _contour(AppColors.accentInk),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  OutlineInputBorder _contour(Color couleur) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+    borderSide: BorderSide(color: couleur),
+  );
+
+  Widget _pied() {
+    if (_chargeLaSuite) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: SizedBox(
+            height: 22,
+            width: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+
+    if (_auteurs.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 48),
+        child: Column(
+          children: [
+            Icon(Iconsax.search_normal_1, size: 36, color: AppColors.textHint),
+            const SizedBox(height: AppDimensions.spaceMd),
+            Text(
+              "Aucun auteur ne correspond à « $_terme ».",
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodySecondary,
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Le dire évite de continuer à défiler en espérant qu'il en vienne
+    // d'autres. Inutile quand tout tient sur une page.
+    if (_finDeListe && _auteurs.length > AuteurService.taillePage) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Text(
+            "Vous avez vu tous les auteurs.",
+            style: AppTextStyles.grey12,
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox(height: 8);
+  }
+
+  Widget _carte(int index) {
+    final auteur = _auteurs[index];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppDimensions.spaceMd),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        border: Border.all(color: AppColors.textHint.withValues(alpha: 0.18)),
+      ),
+      // La carte entière ouvre le profil. Deux zones tactiles séparées
+      // laissaient un couloir mort entre l'avatar et le nom : on appuyait sur
+      // la carte et il ne se passait rien.
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _ouvrir(auteur),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimensions.spaceMd),
+            child: Row(
+              children: [
+                _avatar(auteur),
+                const SizedBox(width: AppDimensions.spaceMd),
+                Expanded(child: _identite(auteur)),
+                const SizedBox(width: AppDimensions.spaceSm),
+                _boutonSuivre(index, auteur.estSuivi),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _avatar(AuteurResume auteur) {
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.surfaceVariant,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: ProfileImageHelper.buildProfileImage(
+        auteur.photo,
+        fallbackInitial: auteur.initiale,
+        textStyle: AppTextStyles.subtitleBold.copyWith(
+          color: AppColors.accentInk,
+        ),
+        width: 52,
+        height: 52,
+      ),
+    );
+  }
+
+  Widget _identite(AuteurResume auteur) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          auteur.nomComplet.isEmpty ? "Auteur" : auteur.nomComplet,
+          style: AppTextStyles.subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Icon(Iconsax.book_1, size: 13, color: AppColors.textHint),
+            const SizedBox(width: 4),
+            Text(
+              "${auteur.nombreLivres} livre${auteur.nombreLivres > 1 ? 's' : ''}",
+              style: AppTextStyles.grey12,
+            ),
+            if (auteur.specialite != null) ...[
+              const SizedBox(width: AppDimensions.spaceSm),
+              // Une étiquette, et non la suite de la phrase : elle se rétrécit
+              // toute seule quand le nom est long, au lieu de couper la ligne
+              // entière par des points de suspension.
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentInk.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusPill,
+                    ),
+                  ),
+                  child: Text(
+                    auteur.specialite!,
+                    style: AppTextStyles.body11.copyWith(
+                      color: AppColors.accentInk,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _boutonSuivre(int index, bool suivi) {
+    return SizedBox(
+      height: 36,
+      child: suivi
+          ? OutlinedButton.icon(
+              onPressed: () => _basculerAbonnement(index),
+              icon: const Icon(Iconsax.tick_circle, size: 15),
+              label: const Text("Suivi"),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                textStyle: AppTextStyles.cardTitle12SemiBold,
+                side: BorderSide(
+                  color: AppColors.textHint.withValues(alpha: 0.35),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+                ),
+              ),
+            )
+          : ElevatedButton(
+              onPressed: () => _basculerAbonnement(index),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                // Le libellé prenait `textPrimary`, qui passe au blanc en thème
+                // sombre : du blanc sur l'orange de la marque. `onAccent` est
+                // la couleur prévue pour écrire sur cet aplat.
+                foregroundColor: AppColors.onAccent,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                textStyle: AppTextStyles.cardTitle12SemiBold,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+                ),
+              ),
+              child: const Text("Suivre"),
+            ),
+    );
+  }
+
+  Widget _etatVide({
+    required IconData icone,
+    required String titre,
+    required String detail,
+    String? action,
+    VoidCallback? surAction,
+  }) {
+    // Une liste défilante, et non une colonne centrée : sans elle, le geste de
+    // tirer pour rafraîchir ne prend pas sur un écran qui ne défile pas — donc
+    // précisément dans le cas où l'on veut réessayer.
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(40, 120, 40, 40),
+      children: [
+        Icon(icone, size: 44, color: AppColors.textHint),
+        const SizedBox(height: AppDimensions.spaceLg),
+        Text(titre, textAlign: TextAlign.center, style: AppTextStyles.subtitle),
+        const SizedBox(height: AppDimensions.spaceSm),
+        Text(
+          detail,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.bodySecondary,
+        ),
+        if (action != null && surAction != null) ...[
+          const SizedBox(height: AppDimensions.spaceXl),
+          Center(
+            child: ElevatedButton(
+              onPressed: surAction,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onAccent,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+                ),
+              ),
+              child: Text(action),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
