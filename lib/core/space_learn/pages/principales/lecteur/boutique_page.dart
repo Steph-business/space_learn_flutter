@@ -54,7 +54,14 @@ class _MarketplacePageState extends State<MarketplacePage> {
   /// Le serveur filtre et decoupe desormais ; l'ecran demande la suite quand
   /// le lecteur approche du bas.
   final ScrollController _defilement = ScrollController();
-  int _page = 1;
+
+  /// Le curseur designe le dernier livre recu, non un rang.
+  ///
+  /// « page 2 » suppose une liste figee. Le catalogue s'allonge pendant qu'on
+  /// le parcourt : un livre publie entre deux pages decale tout d'un cran, et
+  /// le lecteur revoit celui qu'il venait de depasser. En defilement infini,
+  /// c'est le cas courant.
+  String? _curseur;
   bool _chargeLaSuite = false;
   bool _finDuCatalogue = false;
 
@@ -112,7 +119,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
     setState(() {
       _isLoading = true;
       _error = null;
-      _page = 1;
+      _curseur = null;
       _finDuCatalogue = false;
     });
 
@@ -120,12 +127,11 @@ class _MarketplacePageState extends State<MarketplacePage> {
       final token = await TokenStorage.getToken();
 
       final resultats = await Future.wait([
-        _bookService.getBooksPage(
+        _bookService.getCataloguePage(
           statut: 'publie',
           authToken: token,
           categorieId: _categorieChoisie,
           recherche: _searchQuery,
-          page: 1,
         ),
         _categorieService.getCategories(),
         // La bibliotheque sert ici de test d'appartenance : elle dit quelles
@@ -142,6 +148,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
       if (!mounted) return;
 
+      final premiere = resultats[0] as PageCatalogue;
       final categories = resultats[1] as List<Categorie>;
       final bibliotheque = resultats[2] as List<LibraryModel>;
       final avis = resultats[3] as List<ReviewModel>;
@@ -152,9 +159,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
         _notesDuLecteur = {
           for (final a in avis) a.livreId: a.note.toDouble(),
         };
-        _books = _enrichir(resultats[0] as List<BookModel>);
-        _finDuCatalogue = (resultats[0] as List<BookModel>).length <
-            BookService.taillePage;
+        _books = _enrichir(premiere.livres);
+        _curseur = premiere.curseurSuivant;
+        _finDuCatalogue = !premiere.aUneSuite;
         _isLoading = false;
       });
     } catch (e) {
@@ -172,26 +179,28 @@ class _MarketplacePageState extends State<MarketplacePage> {
   /// Un echec n'efface pas ce qui est deja affiche : le lecteur garde sa
   /// liste, et le prochain defilement retentera.
   Future<void> _chargerLaSuite() async {
-    if (_chargeLaSuite || _finDuCatalogue || _isLoading) return;
+    if (_chargeLaSuite || _finDuCatalogue || _isLoading || _curseur == null) {
+      return;
+    }
     setState(() => _chargeLaSuite = true);
 
     try {
       final token = await TokenStorage.getToken();
-      final suite = await _bookService.getBooksPage(
+      final suite = await _bookService.getCataloguePage(
         statut: 'publie',
         authToken: token,
         categorieId: _categorieChoisie,
         recherche: _searchQuery,
-        page: _page + 1,
+        apres: _curseur,
       );
 
       if (!mounted) return;
       setState(() {
-        _page += 1;
-        _books = [..._books, ..._enrichir(suite)];
-        // Page incomplete : il n'y a plus rien derriere. La reponse ne porte
-        // pas de compteur total, c'est le seul signal de fin disponible.
-        _finDuCatalogue = suite.length < BookService.taillePage;
+        _books = [..._books, ..._enrichir(suite.livres)];
+        _curseur = suite.curseurSuivant;
+        // Le serveur dit lui-meme s'il reste quelque chose : il demande une
+        // ligne de plus que necessaire pour le savoir, sans compter la table.
+        _finDuCatalogue = !suite.aUneSuite;
         _chargeLaSuite = false;
       });
     } catch (_) {

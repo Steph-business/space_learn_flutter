@@ -72,6 +72,72 @@ class BookService {
   /// s'arrête, plutôt que de laisser croire que la liste est complète.
   static const int maximumParDefaut = 200;
 
+  /// Une page du catalogue, et de quoi demander la suivante.
+  ///
+  /// [curseurSuivant] est opaque : on le renvoie tel quel, on ne l'interprète
+  /// pas. Sa forme appartient au serveur, qui peut la changer.
+  ///
+  /// La pagination par rang — « page 2 » — suppose une liste qui ne bouge pas.
+  /// Le catalogue s'allonge pendant qu'on le parcourt : un livre publié entre
+  /// deux pages décale tout d'un cran, et le lecteur revoit l'ouvrage qu'il
+  /// venait de dépasser. En défilement infini, c'est le cas courant.
+  ///
+  /// Le curseur désigne le dernier livre vu, pas un rang. Rien ne peut glisser
+  /// dessous.
+  Future<PageCatalogue> getCataloguePage({
+    String? statut,
+    String? authToken,
+    String? categorieId,
+    String? recherche,
+    String? apres,
+    int limit = taillePage,
+  }) async {
+    final parametres = <String, String>{'limit': '$limit'};
+    if (apres != null && apres.isNotEmpty) parametres['apres'] = apres;
+    if (statut != null) parametres['statut'] = statut;
+    if (categorieId != null) parametres['categorie_id'] = categorieId;
+    if (recherche != null && recherche.trim().length >= 2) {
+      parametres['q'] = recherche.trim();
+    }
+
+    final uri = Uri.parse(
+      ApiRoutes.books,
+    ).replace(queryParameters: parametres);
+
+    final headers = <String, String>{};
+    if (authToken != null && authToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $authToken';
+    }
+
+    try {
+      final response = await client.get(
+        uri,
+        headers: headers.isEmpty ? null : headers,
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> corps = jsonDecode(response.body);
+        final List<dynamic> data = corps['data'] ?? [];
+        final meta = corps['meta'];
+
+        return PageCatalogue(
+          livres: data.map((json) => BookModel.fromJson(json)).toList(),
+          curseurSuivant: meta is Map ? meta['curseur_suivant'] as String? : null,
+          aUneSuite: meta is Map && meta['a_une_suite'] == true,
+        );
+      }
+
+      debugPrint(
+        'Catalogue : HTTP ${response.statusCode} sur $uri '
+        '— ${messageDeLaReponse(response, repli: 'sans détail')}',
+      );
+    } catch (e) {
+      debugPrint('Catalogue : $uri injoignable — $e');
+    }
+
+    return const PageCatalogue(livres: [], aUneSuite: false);
+  }
+
   /// Une page précise du catalogue, et elle seule.
   ///
   /// C'est ce qu'utilisent les écrans qui chargent la suite au défilement.
@@ -325,4 +391,22 @@ class BookService {
       );
     }
   }
+}
+
+/// Une page du catalogue, et le curseur qui mène à la suivante.
+class PageCatalogue {
+  const PageCatalogue({
+    required this.livres,
+    required this.aUneSuite,
+    this.curseurSuivant,
+  });
+
+  final List<BookModel> livres;
+
+  /// Vrai quand le serveur a encore quelque chose à donner. Il le sait parce
+  /// qu'il demande une ligne de plus que nécessaire — sans compter la table.
+  final bool aUneSuite;
+
+  /// À renvoyer tel quel dans `apres`. Nul quand la liste est finie.
+  final String? curseurSuivant;
 }
