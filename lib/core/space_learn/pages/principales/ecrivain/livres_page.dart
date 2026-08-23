@@ -7,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/livres/publications_liste.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
@@ -34,6 +35,10 @@ class _LivresPageState extends State<LivresPage> {
   String _selectedFilter = "Tous";
 
   final List<String> _filters = ["Tous", "Publiés", "Brouillons", "Populaires"];
+
+  /// Vrai quand l'erreur est liée à la session (token absent / expiré).
+  bool get _isSessionError =>
+      _error != null && _error!.contains("Session");
 
   @override
   void initState() {
@@ -192,7 +197,16 @@ class _LivresPageState extends State<LivresPage> {
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                 ),
-                                decoration: const BoxDecoration(),
+                                decoration: BoxDecoration(
+                                  border: isSelected
+                                      ? Border(
+                                          bottom: BorderSide(
+                                            color: AppColors.secondaryVariant,
+                                            width: 2,
+                                          ),
+                                        )
+                                      : null,
+                                ),
                                 child: Center(
                                   child: Text(
                                     filter,
@@ -243,47 +257,97 @@ class _LivresPageState extends State<LivresPage> {
                         )
                       : _error != null
                       ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Iconsax.warning_2,
-                                size: 48,
-                                color: AppColors.error.withOpacity(0.6),
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                _error!,
-                                style: GoogleFonts.poppins(
-                                  color: AppColors.error,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              SizedBox(height: 16),
-                              GestureDetector(
-                                onTap: _loadBooks,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 10,
-                                  ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Icône contextuelle
+                                Container(
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: AppColors.secondaryVariant
-                                        .withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(
-                                      AppDimensions.radiusSmall,
-                                    ),
+                                    color: (_isSessionError
+                                            ? AppColors.warning
+                                            : AppColors.error)
+                                        .withOpacity(0.1),
+                                    shape: BoxShape.circle,
                                   ),
-                                  child: Text(
-                                    "Réessayer",
-                                    style: GoogleFonts.poppins(
+                                  child: Icon(
+                                    _isSessionError
+                                        ? Iconsax.lock
+                                        : Iconsax.wifi_square,
+                                    size: 32,
+                                    color: _isSessionError
+                                        ? AppColors.warning
+                                        : AppColors.error,
+                                  ),
+                                ),
+                                SizedBox(height: 20),
+                                // Titre de l'erreur
+                                Text(
+                                  _isSessionError
+                                      ? "Session expirée"
+                                      : "Oups !",
+                                  style: GoogleFonts.poppins(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                // Sous-texte explicatif
+                                Text(
+                                  _isSessionError
+                                      ? "Votre session a expiré.\nReconnectez-vous pour continuer."
+                                      : _error!,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 13,
+                                    height: 1.5,
+                                  ),
+                                ),
+                                SizedBox(height: 24),
+                                // Bouton contextuel — filled
+                                GestureDetector(
+                                  onTap: _isSessionError
+                                      ? () {
+                                          TokenStorage.clearToken();
+                                          Navigator.of(context)
+                                              .pushAndRemoveUntil(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const LoginPage(),
+                                            ),
+                                            (route) => false,
+                                          );
+                                        }
+                                      : _loadBooks,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 28,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
                                       color: AppColors.secondaryVariant,
-                                      fontWeight: FontWeight.w600,
+                                      borderRadius: BorderRadius.circular(
+                                        AppDimensions.radiusInner,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _isSessionError
+                                          ? "Se reconnecter"
+                                          : "Réessayer",
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         )
                       : _filteredBooks.isEmpty
@@ -360,17 +424,22 @@ class _LivresPageState extends State<LivresPage> {
                             ],
                           ),
                         )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children: [
-                              PublicationsList(
-                                books: _filteredBooks,
-                                authorName: _authorName,
-                                onBookUpdated: _loadBooks,
-                              ),
-                              SizedBox(height: 100),
-                            ],
+                      : RefreshIndicator(
+                          onRefresh: _loadBooks,
+                          color: AppColors.secondaryVariant,
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              children: [
+                                PublicationsList(
+                                  books: _filteredBooks,
+                                  authorName: _authorName,
+                                  onBookUpdated: _loadBooks,
+                                ),
+                                SizedBox(height: 100),
+                              ],
+                            ),
                           ),
                         ),
                 ),
@@ -392,9 +461,9 @@ class _LivresPageState extends State<LivresPage> {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.textPrimary.withOpacity(0.03),
+          color: color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-          border: Border.all(color: AppColors.textPrimary.withOpacity(0.06)),
+          border: Border.all(color: color.withOpacity(0.15)),
         ),
         child: Column(
           children: [

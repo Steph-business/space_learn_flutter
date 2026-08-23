@@ -285,7 +285,7 @@ class _LoginPageState extends State<LoginPage> {
                   // le permet, et s'effacent quand il faut défiler.
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      minHeight: contraintes.maxHeight - 24,
+                      minHeight: (contraintes.maxHeight - 24).clamp(0, double.infinity),
                     ),
                     child: IntrinsicHeight(
                       child: Column(

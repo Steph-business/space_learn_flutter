@@ -32,14 +32,21 @@ class _Serveur {
       return http.Response('{"ok":true}', 200);
     }
 
-    // detailed-stats/:livre_id
+    // POST /api/reading/activity — la seule route ouverte aux lecteurs pour
+    // déposer des minutes sur un livre.
+    //
+    // Ce faux serveur reproduisait auparavant le contrat que le client
+    // imaginait : un PUT sur `detailed-stats/:livre_id` portant un champ
+    // `reading_time_increment`. Ni la route ni le champ n'acceptent cela — la
+    // route est réservée à l'auteur du livre, et le champ n'existe pas. Le test
+    // passait donc en prouvant que le client s'entend avec lui-même, pendant
+    // que le vrai serveur répondait 403 à chaque envoi.
     if (!accepteLivre) return http.Response('{}', 503);
-    final segments = requete.url.pathSegments;
     minutesLivre.add((
-      livre: segments.last,
-      minutes: (corps['reading_time_increment'] as num).toInt(),
+      livre: corps['livre_id'] as String,
+      minutes: (corps['duree_minutes'] as num).toInt(),
     ));
-    return http.Response('{"ok":true}', 200);
+    return http.Response('{"ok":true}', 201);
   });
 }
 
@@ -181,6 +188,44 @@ void main() {
       await MinutesEnAttente.porter(livreId: 'livre-b', secondes: 60);
 
       expect(await MinutesEnAttente.resteDuLecteur(), 2);
+    });
+  });
+
+  group('Soldes hors normes', () {
+    /// Le serveur refuse au-delà de 480 minutes : une séance de huit heures
+    /// n'est pas crédible. Sans plafond côté client, un solde qui dépassait ce
+    /// seuil était rejeté à CHAQUE tentative — il ne repartait donc jamais et
+    /// grossissait indéfiniment dans les préférences.
+    test('un solde au-dessus du plafond part par tranches', () async {
+      // 600 minutes accumulées : dix heures hors réseau, ou des mois de
+      // minutes par livre qui n'ont jamais pu partir.
+      serveur.accepteLecteur = false;
+      await MinutesEnAttente.porter(livreId: 'livre-a', secondes: 600 * 60);
+      expect(serveur.minutesLecteur, isEmpty);
+
+      serveur.accepteLecteur = true;
+      await MinutesEnAttente.vider();
+
+      // Une première tranche part, plafonnée.
+      expect(serveur.minutesLecteur, [480]);
+      expect(await MinutesEnAttente.resteDuLecteur(), 120);
+
+      // Le reste suit au passage suivant : rien n'est perdu, rien ne bloque.
+      await MinutesEnAttente.vider();
+      expect(serveur.minutesLecteur, [480, 120]);
+      expect(await MinutesEnAttente.resteDuLecteur(), 0);
+    });
+
+    test("le solde d'un livre part aussi par tranches", () async {
+      serveur.accepteLivre = false;
+      await MinutesEnAttente.porter(livreId: 'livre-a', secondes: 500 * 60);
+      expect(serveur.minutesLivre, isEmpty);
+
+      serveur.accepteLivre = true;
+      await MinutesEnAttente.vider();
+
+      expect(serveur.minutesLivre.map((e) => e.minutes).toList(), [480]);
+      expect(await MinutesEnAttente.resteDuLivre('livre-a'), 20);
     });
   });
 

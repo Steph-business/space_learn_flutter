@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
@@ -175,109 +176,305 @@ class _SalesReportPageState extends State<SalesReportPage> {
     final cleFormulaire = GlobalKey<FormState>();
 
     final p = _portefeuille;
+    final minimum = p.minimumRetraitAbsolu;
+    final maximum = solde.disponible;
 
-    return showDialog<double>(
+    return showModalBottomSheet<double>(
       context: context,
-      // StatefulBuilder : le montant réellement versé se recalcule à chaque
-      // frappe. Sans lui, l'auteur découvrirait les frais sur son relevé
-      // Mobile Money — le pire endroit pour les apprendre.
+      isScrollControlled: true,
+      backgroundColor: AppColors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.radiusPill),
+        ),
+      ),
       builder: (context) => StatefulBuilder(
-        builder: (context, rafraichir) => AlertDialog(
-          backgroundColor: AppColors.cardBackground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-          ),
-          title: Text(
-            'Montant à retirer',
-            style: GoogleFonts.poppins(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+        builder: (context, rafraichir) {
+          final montantActuel =
+              (double.tryParse(controleur.text) ?? 0).clamp(0.0, maximum);
+          final sliderValue = montantActuel.clamp(minimum, maximum);
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
-          ),
-          content: Form(
-            key: cleFormulaire,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Disponible : ${_montant(solde.disponible)}\n'
-                  'Minimum : ${_montant(p.minimumRetraitAbsolu)}'
-                  // La ligne sur la gratuité ne s'affiche que si un virement
-                  // peut réellement coûter quelque chose. Sinon elle laisse
-                  // entendre qu'en dessous du seuil, on paie.
-                  '${p.desFraisExistent ? '\nVirement offert à partir de ${_montant(p.minimumRetrait)}' : ''}',
-                  style: GoogleFonts.poppins(
-                    color: AppColors.textSecondary,
-                    fontSize: 12.5,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.spaceLg),
-                TextFormField(
-                  controller: controleur,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  autofocus: true,
-                  onChanged: (_) => rafraichir(() {}),
-                  style: GoogleFonts.poppins(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  decoration: InputDecoration(
-                    suffixText: solde.devise,
-                    suffixStyle: GoogleFonts.poppins(
-                      color: AppColors.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.scaffoldBackground,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusInner,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: Form(
+                key: cleFormulaire,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Poignée ──
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.textPrimary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
-                  ),
-                  validator: (v) {
-                    final montant = double.tryParse(v ?? '');
-                    if (montant == null || montant <= 0) {
-                      return 'Montant invalide';
-                    }
-                    if (montant < p.minimumRetraitAbsolu) {
-                      return 'Minimum ${_montant(p.minimumRetraitAbsolu)}';
-                    }
-                    if (montant > solde.disponible) {
-                      return 'Supérieur au solde disponible';
-                    }
-                    return null;
-                  },
+                    const SizedBox(height: 20),
+
+                    // ── Titre ──
+                    Text(
+                      'Montant à retirer',
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // ── Infos ──
+                    Row(
+                      children: [
+                        _infoPuce(
+                          'Disponible',
+                          _montant(solde.disponible),
+                          AppColors.success,
+                        ),
+                        const SizedBox(width: 16),
+                        _infoPuce(
+                          'Minimum',
+                          _montant(minimum),
+                          AppColors.warning,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // ── Champ de saisie + bouton MAX ──
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: controleur,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            autofocus: true,
+                            onChanged: (_) => rafraichir(() {}),
+                            style: GoogleFonts.poppins(
+                              color: AppColors.textPrimary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            decoration: InputDecoration(
+                              suffixText: solde.devise,
+                              suffixStyle: GoogleFonts.poppins(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                              filled: true,
+                              fillColor: AppColors.scaffoldBackground,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusInner,
+                                ),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusInner,
+                                ),
+                                borderSide: BorderSide(
+                                  color: AppColors.border,
+                                  width: 1,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusInner,
+                                ),
+                                borderSide: BorderSide(
+                                  color: AppColors.secondaryVariant,
+                                  width: 1.5,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                            validator: (v) {
+                              final montant = double.tryParse(v ?? '');
+                              if (montant == null || montant <= 0) {
+                                return 'Montant invalide';
+                              }
+                              if (montant < minimum) {
+                                return 'Minimum ${_montant(minimum)}';
+                              }
+                              if (montant > solde.disponible) {
+                                return 'Supérieur au solde';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Bouton MAX
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: GestureDetector(
+                            onTap: () {
+                              controleur.text =
+                                  maximum.round().toString();
+                              controleur.selection =
+                                  TextSelection.collapsed(
+                                offset: controleur.text.length,
+                              );
+                              rafraichir(() {});
+                              HapticFeedback.lightImpact();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.secondaryVariant
+                                    .withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusInner,
+                                ),
+                              ),
+                              child: Text(
+                                'MAX',
+                                style: GoogleFonts.poppins(
+                                  color: AppColors.secondaryVariant,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+
+                    // ── Slider ──
+                    if (maximum > minimum)
+                      SliderTheme(
+                        data: SliderThemeData(
+                          activeTrackColor: AppColors.secondaryVariant,
+                          inactiveTrackColor:
+                              AppColors.secondaryVariant.withOpacity(0.15),
+                          thumbColor: AppColors.secondaryVariant,
+                          overlayColor:
+                              AppColors.secondaryVariant.withOpacity(0.12),
+                          trackHeight: 4,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 8,
+                          ),
+                        ),
+                        child: Slider(
+                          value: sliderValue,
+                          min: minimum,
+                          max: maximum,
+                          onChanged: (val) {
+                            controleur.text = val.round().toString();
+                            controleur.selection = TextSelection.collapsed(
+                              offset: controleur.text.length,
+                            );
+                            rafraichir(() {});
+                          },
+                        ),
+                      ),
+
+                    // ── Aperçu du virement ──
+                    _apercuDuVirement(p, montantActuel),
+                    const SizedBox(height: 24),
+
+                    // ── Bouton Confirmer pleine largeur ──
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (!cleFormulaire.currentState!.validate()) return;
+                          HapticFeedback.mediumImpact();
+                          Navigator.of(context)
+                              .pop(double.parse(controleur.text));
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondaryVariant,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusInner,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Confirmer le retrait',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // ── Annuler ──
+                    Center(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(
+                          'Annuler',
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                _apercuDuVirement(p, double.tryParse(controleur.text) ?? 0),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Annuler',
-                style: GoogleFonts.poppins(color: AppColors.textSecondary),
               ),
             ),
-            ElevatedButton(
-              onPressed: () {
-                if (!cleFormulaire.currentState!.validate()) return;
-                Navigator.of(context).pop(double.parse(controleur.text));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onAccent,
-                elevation: 0,
+          );
+        },
+      ),
+    );
+  }
+
+  /// Puce d'info compacte pour le bottom sheet (Disponible / Minimum).
+  Widget _infoPuce(String label, String valeur, Color couleur) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: couleur.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
-              child: Text(
-                'Confirmer',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              valeur,
+              style: GoogleFonts.poppins(
+                color: couleur,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -412,6 +609,10 @@ class _SalesReportPageState extends State<SalesReportPage> {
         message: messageLisible(e, repli: "Action impossible pour le moment."),
         isSuccess: false,
       );
+      // Un refus veut le plus souvent dire que le virement vient d'être pris
+      // en main : l'écran montrerait encore un bouton « Annuler » sur une
+      // ligne qui a déjà bougé.
+      await _charger();
     }
   }
 
@@ -508,13 +709,23 @@ class _SalesReportPageState extends State<SalesReportPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Solde disponible',
-            style: GoogleFonts.poppins(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+          Row(
+            children: [
+              Icon(
+                Iconsax.wallet_3,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Solde disponible',
+                style: GoogleFonts.poppins(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppDimensions.spaceXs),
           Text(
@@ -775,6 +986,19 @@ class _SalesReportPageState extends State<SalesReportPage> {
       child: AppCard(
         child: Row(
           children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.success.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Iconsax.book_1,
+                color: AppColors.success,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: AppDimensions.spaceMd),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

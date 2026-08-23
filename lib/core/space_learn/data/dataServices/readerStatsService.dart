@@ -66,18 +66,29 @@ class ReaderStatsService {
         'Authorization': 'Bearer $token',
       };
 
-      // Detailed stats endpoint typically handles per-book reading time increments
-      final uri = Uri.parse(
-        ApiRoutes.updateDetailedStats.replaceFirst(':livre_id', livreId),
-      );
+      // `/api/reading/activity`, et non `detailed-stats`.
+      //
+      // L'appel visait auparavant `PUT /api/detailed-stats/:livre_id` avec un
+      // champ `reading_time_increment`. Le commentaire d'origine disait que
+      // cette route « gère généralement » les incréments de temps : elle ne
+      // les gère pas du tout. Ce champ n'existe nulle part côté serveur, et la
+      // route est réservée à l'AUTEUR du livre — un lecteur reçoit 403. Les
+      // minutes par livre n'ont donc jamais été enregistrées, et la file
+      // d'attente locale ne se vidait jamais.
+      //
+      // Pire quand le lecteur se trouvait être l'auteur : la requête passait,
+      // le serveur liait une clé inconnue, obtenait une structure vide, et
+      // remettait à zéro les six statistiques du livre.
+      final uri = Uri.parse(ApiRoutes.readingActivity);
 
-      final response = await client.put(
+      final response = await client.post(
         uri,
         headers: headers,
-        body: jsonEncode({'reading_time_increment': minutes}),
+        body: jsonEncode({'livre_id': livreId, 'duree_minutes': minutes}),
       );
 
-      return response.statusCode == 200;
+      // 201 : la route rend « Created » sur l'activité enregistrée.
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       return false;
     }

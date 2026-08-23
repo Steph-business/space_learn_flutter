@@ -68,14 +68,31 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
       ..loadRequest(Uri.parse(widget.paymentUrl));
   }
 
+  /// Reconnaît la page de retour, celle où CinetPay renvoie après paiement.
+  ///
+  /// La version précédente cherchait `success` — en anglais. Or les URL de
+  /// retour configurées sur le serveur sont `/paiement/succes` et
+  /// `/paiement/echec`, en français : « succes » ne contient pas « success ».
+  /// Aucune des quatre conditions ne se vérifiait, la webview restait donc sur
+  /// la page de retour sans jamais demander le statut, et l'achat n'aboutissait
+  /// pas côté application — alors que le paiement, lui, était bien passé.
+  ///
+  /// On teste maintenant le CHEMIN plutôt que des mots-clés dispersés :
+  /// `/paiement/` couvre les deux issues et suit le serveur si l'hôte change.
+  /// Les termes anglais restent acceptés, au cas où l'URL de retour serait un
+  /// jour reconfigurée dans cette langue.
   bool _isCinetpayReturnUrl(String url) {
-    // CinetPay redirects to the return_url after payment
-    // Detect common CinetPay redirect indicators
-    return url.contains('cinetpay') == false &&
-        (url.contains('success') ||
-            url.contains('return') ||
-            url.contains('cancel') ||
-            url.contains('spacelearn'));
+    if (url.contains('cinetpay')) return false;
+
+    final minuscules = url.toLowerCase();
+    return minuscules.contains('/paiement/') ||
+        minuscules.contains('succes') ||
+        minuscules.contains('echec') ||
+        minuscules.contains('success') ||
+        minuscules.contains('failed') ||
+        minuscules.contains('return') ||
+        minuscules.contains('cancel') ||
+        minuscules.contains('spacelearn');
   }
 
   void _checkIfReturnUrl(String url) {

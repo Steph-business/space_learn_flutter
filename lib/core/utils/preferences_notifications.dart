@@ -28,7 +28,9 @@ class PreferencesNotifications {
   /// Les types réellement émis par le serveur, relevés dans les appels à
   /// `CreateNotification` :
   ///
-  ///   communaute      avis, salon, message, nouvel événement, nouveau livre
+  ///   communaute      salon, message, nouvel événement, nouveau livre
+  ///   avis            un avis a été déposé sur votre livre
+  ///   nouvel_abonne   quelqu'un s'est abonné à vous
   ///   rappel_lecture  relance après inactivité
   ///   vente           un livre de l'auteur a été acheté
   ///   achat           le paiement du lecteur est validé
@@ -37,9 +39,17 @@ class PreferencesNotifications {
   /// confirmation d'un paiement. Un utilisateur qui a payé doit être prévenu,
   /// même s'il a tout coupé par ailleurs — le taire serait un défaut, pas un
   /// respect de sa préférence.
+  ///
+  /// `avis` et `nouvel_abonne` sont sortis de `communaute` côté serveur pour
+  /// pouvoir mener quelque part de précis. Ils restent gouvernés par le MÊME
+  /// interrupteur : sans ces deux lignes, qui avait coupé « Vie de la
+  /// communauté » recevrait de nouveau les avis et les abonnements, sans avoir
+  /// rien changé à son réglage.
   static const Map<String, String> _cleParType = {
     'rappel_lecture': cleRappelsLecture,
     'communaute': cleCommunaute,
+    'avis': cleCommunaute,
+    'nouvel_abonne': cleCommunaute,
     'vente': cleVentes,
   };
 

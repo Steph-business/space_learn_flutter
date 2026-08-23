@@ -10,6 +10,7 @@ import 'package:space_learn_flutter/main.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/livres_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/abonnes_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/bibliotheque_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_messages_page.dart';
@@ -75,7 +76,30 @@ class NotificationService {
     // Role check (normalization)
     final isLecteur = (notif.role == 'lecteur' || notif.role == null);
 
-    if (type.contains('message') ||
+    if (type == 'avis') {
+      // « Nouvel avis sur votre livre X » ouvre X.
+      //
+      // Le serveur rangeait cet evenement dans « communaute », sans reference :
+      // il tombait donc dans la branche des salons et menait au forum. Il porte
+      // maintenant son propre type et l'identifiant du livre — et c'est la
+      // fiche qu'il faut, puisque les avis s'y affichent. La page reconnait
+      // l'auteur toute seule.
+      _ouvrirLaFicheDuLivre(context, notif.referenceId, isLecteur, popToRoot);
+    } else if (type == 'nouvel_abonne') {
+      // On montre QUI vient de s'abonner : la liste des abonnes du
+      // destinataire, ou le nouveau venu figure avec son nom et sa photo.
+      //
+      // Et non sa fiche a lui : `/api/authors/:id` repond 404 pour un compte
+      // sans livre publie, ce qui est le cas d'un lecteur — c'est-a-dire de la
+      // plupart des abonnes. La reference voyage tout de meme, pour le jour ou
+      // un profil de lecteur existera.
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AbonnesPage(authorId: notif.utilisateurId),
+        ),
+      );
+    } else if (type.contains('message') ||
         type.contains('reponse') ||
         type.contains('communaute')) {
       // On ouvre le salon dont il est question, pas « un » salon.

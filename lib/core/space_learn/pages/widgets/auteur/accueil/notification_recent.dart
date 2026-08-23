@@ -21,6 +21,10 @@ String libelleTypeNotification(String type) {
       return 'REPRENDRE LA LECTURE';
     case 'communaute':
       return 'COMMUNAUTÉ';
+    case 'avis':
+      return 'NOUVEL AVIS';
+    case 'nouvel_abonne':
+      return 'NOUVEL ABONNÉ';
     case 'vente':
       return 'VENTE';
     case 'achat':

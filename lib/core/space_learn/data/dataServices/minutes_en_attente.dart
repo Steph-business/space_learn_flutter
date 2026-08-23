@@ -40,6 +40,14 @@ class MinutesEnAttente {
   /// Minutes dues aux statistiques d'un livre. Suffixé par l'identifiant.
   static const String _cleLivre = 'lecture_minutes_livre_';
 
+  /// Plafond d'un envoi, en minutes.
+  ///
+  /// Le serveur refuse au-delà : une séance de huit heures n'est pas crédible.
+  /// Sans ce plafond côté client, un solde qui dépassait 480 était rejeté à
+  /// CHAQUE tentative — il ne repartait donc jamais et grossissait
+  /// indéfiniment. Le solde part maintenant par tranches, une par passage.
+  static const int _maxMinutesParEnvoi = 480;
+
   /// Un seul envoi à la fois.
   ///
   /// Le battement de lecture tombe toutes les quinze secondes. Sans ce verrou,
@@ -116,8 +124,9 @@ class MinutesEnAttente {
 
   static Future<void> _viderLecteur(SharedPreferences prefs, String uid) async {
     final cle = '$_cleLecteur$uid';
-    final du = prefs.getInt(cle) ?? 0;
-    if (du <= 0) return;
+    final solde = prefs.getInt(cle) ?? 0;
+    if (solde <= 0) return;
+    final du = solde > _maxMinutesParEnvoi ? _maxMinutesParEnvoi : solde;
 
     if (await _service.declarerMinutes(du)) {
       // On retranche ce qu'on a envoyé, pas le solde courant : de nouvelles
@@ -131,11 +140,12 @@ class MinutesEnAttente {
     final cles = prefs.getKeys().where((k) => k.startsWith(prefixe)).toList();
 
     for (final cle in cles) {
-      final du = prefs.getInt(cle) ?? 0;
-      if (du <= 0) {
+      final solde = prefs.getInt(cle) ?? 0;
+      if (solde <= 0) {
         await prefs.remove(cle);
         continue;
       }
+      final du = solde > _maxMinutesParEnvoi ? _maxMinutesParEnvoi : solde;
 
       final livreId = cle.substring(prefixe.length);
       if (await _service.recordReadingTime(livreId, minutes: du)) {
