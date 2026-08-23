@@ -1550,27 +1550,34 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
                       SizedBox(height: 40),
 
-                      // Related Sections (Only shown if not owned)
-                      if (!isOwned) ...[
-                        if (!_isLoadingRelated) ...[
-                          if (_authorBooks.isNotEmpty)
-                            _buildRelatedSection(
-                              "Autres livres de ${book.authorName}",
-                              _authorBooks,
-                            ),
-                          if (_categoryBooks.isNotEmpty)
-                            _buildRelatedSection(
-                              "Livres similaires",
-                              _categoryBooks,
-                            ),
-                        ] else ...[
-                          Center(
-                            child: Text(
-                              "Chargement...",
-                              style: TextStyle(color: AppColors.textSecondary),
-                            ),
+                      // Recommandations.
+                      //
+                      // Elles etaient cachees par `if (!isOwned)` : seul celui
+                      // qui NE possedait PAS le livre les voyait. C'est
+                      // l'inverse du bon moment — un lecteur qui vient de finir
+                      // un ouvrage est precisement celui a qui proposer le
+                      // suivant du meme auteur.
+                      //
+                      // `_loadRelatedBooks()` tournait deja pour tout le monde
+                      // (initState) : la liste etait chargee puis jetee.
+                      if (!_isLoadingRelated) ...[
+                        if (_authorBooks.isNotEmpty)
+                          _buildRelatedSection(
+                            "Du même auteur",
+                            _authorBooks,
                           ),
-                        ],
+                        if (_categoryBooks.isNotEmpty)
+                          _buildRelatedSection(
+                            "Livres similaires",
+                            _categoryBooks,
+                          ),
+                      ] else ...[
+                        Center(
+                          child: Text(
+                            "Chargement...",
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        ),
                       ],
                     ],
                   ),

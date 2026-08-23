@@ -88,7 +88,19 @@ class _TeamsPageState extends State<TeamsPage> {
         return;
       }
 
-      final books = await _bookService.getBooksByAuthorId(user.id);
+      // Les OEUVRES PUBLIEES seulement.
+      //
+      // `GET /api/books/author/:id` rend tous les statuts quand c'est l'auteur
+      // qui demande — c'est son contrat, et l'ecran « Mes livres » en a besoin
+      // pour lister les brouillons. Mais la Communaute n'est pas l'ecran de
+      // gestion : un brouillon n'a ni lecteur, ni salon, ni message. Il
+      // s'affichait pourtant ici avec son forum, comme un ouvrage en ligne.
+      //
+      // La page soeur filtre deja de la meme facon : livres_page.dart:106.
+      final tousLesLivres = await _bookService.getBooksByAuthorId(user.id);
+      final books = tousLesLivres
+          .where((b) => b.statut.toLowerCase() == "publie")
+          .toList();
 
       // Le nombre d'abonnes ne doit pas empecher la page de s'afficher :
       // c'est un ornement, pas une donnee vitale.

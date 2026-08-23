@@ -68,8 +68,17 @@ class _StatistiqueState extends State<Statistique> {
         Row(
           children: [
             Expanded(
+              // « VENTES BRUT » et non « VENTES ».
+              //
+              // `total_revenue` est la somme de ce que les ACHETEURS ont paye
+              // (SUM(paiements.montant) des paiements confirmes) : ni la
+              // commission de 20 % ni les retraits n'en sont deduits. Le
+              // rapport de ventes, lui, montre le PORTEFEUILLE — le net credite
+              // moins ce qui a deja ete retire. Les deux chiffres sont justes,
+              // ils ne mesurent pas la meme chose ; seul le libelle manquait
+              // pour qu'on cesse de les croire contradictoires.
               child: _buildStatCard(
-                "VENTES",
+                "VENTES BRUT",
                 "${totalRevenue.toStringAsFixed(0)} FCFA",
                 "", // Removed fake growth
                 Icons.account_balance_wallet_rounded,

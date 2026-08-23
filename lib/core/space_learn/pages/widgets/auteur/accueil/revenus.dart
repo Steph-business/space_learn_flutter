@@ -39,12 +39,23 @@ class Revenus extends StatefulWidget {
 
 class _RevenusState extends State<Revenus> {
   bool isRevenueSelected = true;
-  String _selectedPeriodKey = '30d';
+  // « Tout » par defaut, parce que c'est ce que la page CHARGE.
+  //
+  // L'accueil appelle getAuthorStats(authorId, "") — chaine vide, donc aucun
+  // parametre `period`, donc le serveur retient « all » et rend TOUT
+  // l'historique. Mais cet ecran partait sur '30d' sans rien redemander : le
+  // chiffre couvrait toutes les ventes depuis l'ouverture du compte et
+  // s'affichait sous le libelle « Total (Mois) ». Un mensonge sur de l'argent.
+  String _selectedPeriodKey = 'all';
   bool _isLoadingPeriodData = false;
   Map<String, dynamic>? _customPeriodStats;
   final AuthorStatsService _authorStatsService = AuthorStatsService();
 
   static const List<PeriodOption> _periods = [
+    // `all` est la valeur que le serveur retient quand aucune periode n'est
+    // demandee (livre/repository.go, PeriodeDebut) : l'option existe donc
+    // desormais a l'ecran aussi, au lieu d'etre un etat sans nom.
+    PeriodOption(key: 'all', label: 'Tout', fullLabel: 'Depuis le début'),
     PeriodOption(key: '7d', label: 'Semaine', fullLabel: 'Cette Semaine'),
     PeriodOption(key: '30d', label: 'Mois', fullLabel: 'Ce Mois'),
     PeriodOption(key: '1y', label: 'Année', fullLabel: 'Cette Année'),
@@ -52,7 +63,7 @@ class _RevenusState extends State<Revenus> {
 
   PeriodOption get _currentPeriod => _periods.firstWhere(
     (p) => p.key == _selectedPeriodKey,
-    orElse: () => _periods[1],
+    orElse: () => _periods[0],
   );
 
   Map<String, dynamic> get activeStats => _customPeriodStats ?? widget.stats;
@@ -227,7 +238,9 @@ class _RevenusState extends State<Revenus> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "Total (${_currentPeriod.label})",
+                    _currentPeriod.key == 'all'
+                        ? "Chiffre d'affaires brut — depuis le début"
+                        : "Chiffre d'affaires brut (${_currentPeriod.label})",
                     style: GoogleFonts.poppins(
                       color: AppColors.textHint,
                       fontSize: 11,
