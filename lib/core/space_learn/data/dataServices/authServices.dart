@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:space_learn_flutter/core/space_learn/data/model/tokenUser.dart';
@@ -74,6 +75,13 @@ class AuthService {
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
       final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
+      // ── DIAGNOSTIC ──
+      debugPrint('\n╔══ DIAGNOSTIC LOGIN ═══════════════════════');
+      debugPrint('║ Token reçu : ${tokenUser.token.isNotEmpty}');
+      debugPrint('║ Refresh token reçu : "${tokenUser.refreshToken}"');
+      debugPrint('║ Refresh vide ? ${tokenUser.refreshToken.isEmpty}');
+      debugPrint('║ Clés JSON : ${jsonDecode(response.body).keys.toList()}');
+      debugPrint('╚════════════════════════════════════════════\n');
       // ✅ On sauvegarde le token après la connexion
       await TokenStorage.saveToken(tokenUser.token);
       await TokenStorage.saveRefreshToken(tokenUser.refreshToken);

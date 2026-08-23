@@ -122,6 +122,12 @@ class ApiClient extends http.BaseClient {
 
     if (reponse.statusCode != 401 || estRouteAuth) return reponse;
 
+    // ── DIAGNOSTIC : quelle requête déclenche le 401 ? ──
+    debugPrint('\n╔══ DIAGNOSTIC SESSION ══════════════════════');
+    debugPrint('║ 401 reçu sur : ${request.method} ${request.url}');
+    debugPrint('║ Authorization présent : $posePar');
+    debugPrint('╚════════════════════════════════════════════\n');
+
     // Le jeton porté par la requête est-il celui de la session ?
     //
     // Presque tous les services de l'application prennent un `token` en
@@ -255,8 +261,16 @@ class ApiClient extends http.BaseClient {
   Future<Renouvellement> _renouveler() async {
     try {
       final refresh = await TokenStorage.getRefreshToken();
+      // ── DIAGNOSTIC ──
+      debugPrint('\n╔══ DIAGNOSTIC REFRESH ═════════════════════');
+      debugPrint('║ Refresh token présent : ${refresh != null && refresh.isNotEmpty}');
+      debugPrint('║ Refresh token (début) : ${refresh != null && refresh.length > 20 ? refresh.substring(0, 20) : refresh}...');
       // Rien à présenter : aucune requête ne ranimera cette session-là.
-      if (refresh == null || refresh.isEmpty) return Renouvellement.refuse;
+      if (refresh == null || refresh.isEmpty) {
+        debugPrint('║ ⛔ PAS DE REFRESH TOKEN → refuse');
+        debugPrint('╚════════════════════════════════════════════\n');
+        return Renouvellement.refuse;
+      }
 
       // Volontairement `_inner` : passer par `send` relancerait ce même
       // mécanisme sur son propre 401, indéfiniment.
@@ -268,8 +282,15 @@ class ApiClient extends http.BaseClient {
           )
           .timeout(const Duration(seconds: 20));
 
+      debugPrint('║ Réponse refresh : ${reponse.statusCode}');
+      debugPrint('║ Corps refresh : ${reponse.body.length > 200 ? reponse.body.substring(0, 200) : reponse.body}');
+
       final verdict = verdictDuServeur(reponse.statusCode);
-      if (verdict != Renouvellement.reussi) return verdict;
+      if (verdict != Renouvellement.reussi) {
+        debugPrint('║ ⛔ Verdict : $verdict');
+        debugPrint('╚════════════════════════════════════════════\n');
+        return verdict;
+      }
 
       // Un 200 illisible est une anomalie du serveur, pas une session finie :
       // on ne met personne dehors sur une réponse qu'on n'a pas su lire.
@@ -278,11 +299,15 @@ class ApiClient extends http.BaseClient {
 
       final nouveau = corps['token']?.toString();
       if (nouveau == null || nouveau.isEmpty) {
+        debugPrint('║ ⛔ Token absent dans la réponse refresh');
+        debugPrint('╚════════════════════════════════════════════\n');
         return Renouvellement.indisponible;
       }
 
       await TokenStorage.saveToken(nouveau);
       await TokenStorage.saveRefreshToken(corps['refresh_token']?.toString());
+      debugPrint('║ ✅ Session renouvelée avec succès');
+      debugPrint('╚════════════════════════════════════════════\n');
       return Renouvellement.reussi;
     } catch (e) {
       // Coupure, délai dépassé, DNS injoignable : on n'a rien appris sur la
@@ -293,6 +318,11 @@ class ApiClient extends http.BaseClient {
   }
 
   void _declencherDeconnexion() {
+    // ── DIAGNOSTIC ──
+    debugPrint('\n╔══ ⛔ DÉCONNEXION DÉCLENCHÉE ════════════════');
+    debugPrint('║ Stacktrace :');
+    debugPrint('║ ${StackTrace.current.toString().split('\n').take(5).join('\n║ ')}');
+    debugPrint('╚════════════════════════════════════════════\n');
     final handler = onUnauthorized;
     if (handler == null || _handlingUnauthorized) return;
 
