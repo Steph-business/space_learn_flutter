@@ -38,10 +38,10 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
   int _favoritesCount = 0;
 
-  /// Nombre de livres possédés. Ce n'est PAS le nombre de livres lus.
-  int _libraryCount = 0;
-
   /// Livres réellement terminés, tels que le serveur les compte.
+  ///
+  /// À ne pas confondre avec la taille de la bibliothèque : « Livres lus »
+  /// affichait autrefois le nombre de livres POSSÉDÉS.
   int _livresLus = 0;
   int _inProgressCount = 0;
 
@@ -421,147 +421,149 @@ class _ProfilePageState extends State<ProfilePage> {
     final stepsCount = 4;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      // Le contenu défile en entier, boutons compris.
+      //
+      // L'étape occupait toute la hauteur par un `Expanded`, ce qui collait
+      // les boutons au bas de l'écran : sur une étape à un seul champ, un vide
+      // considérable séparait le formulaire de « Suivant », et le regard
+      // devait le traverser pour trouver quoi faire.
+      //
+      // Les boutons suivent maintenant le formulaire. Quand une étape est
+      // longue — ou quand le clavier monte — l'ensemble défile, et ils restent
+      // atteignables.
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 10),
+              // En-tête de l'étape
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SizedBox(height: 10),
-                  // En-tête de l'étape
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Étape ${_currentStep + 1} sur $stepsCount",
-                        style: GoogleFonts.poppins(
-                          color: AppColors.accentInk,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    "Étape ${_currentStep + 1} sur $stepsCount",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.accentInk,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
-                  SizedBox(height: 12),
-                  // Barre de progression
-                  Stack(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: AppColors.textHint,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusXs,
-                          ),
-                        ),
-                      ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        width:
-                            MediaQuery.of(context).size.width *
-                                ((_currentStep + 1) / stepsCount) -
-                            48,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusXs,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 36),
-
-                  // Contenu dynamique basé sur l'étape courante
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [_buildStepContent()],
+                ],
+              ),
+              SizedBox(height: 12),
+              // Barre de progression
+              Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusXs,
                       ),
                     ),
                   ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width:
+                        MediaQuery.of(context).size.width *
+                            ((_currentStep + 1) / stepsCount) -
+                        48,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusXs,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 36),
 
-                  // Actions de navigation (Suivant / Précédent)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (_currentStep > 0)
-                        Expanded(
-                          child: Container(
-                            height: 52,
-                            margin: const EdgeInsets.only(right: 16),
-                            child: OutlinedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _currentStep--;
-                                });
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                  color: AppColors.textPrimary.withOpacity(
-                                    0.15,
-                                  ),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppDimensions.radiusInner,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                "Retour",
-                                style: GoogleFonts.poppins(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
+              // Contenu dynamique basé sur l'étape courante
+              _buildStepContent(),
+
+              // L'écart qui sépare le formulaire de ses boutons : assez
+              // pour qu'on ne les confonde pas avec un champ, pas au point
+              // de les rejeter hors du regard.
+              const SizedBox(height: AppDimensions.spaceXl * 2),
+
+              // Actions de navigation (Suivant / Précédent)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (_currentStep > 0)
+                    Expanded(
+                      child: Container(
+                        height: 52,
+                        margin: const EdgeInsets.only(right: 16),
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              _currentStep--;
+                            });
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: AppColors.textPrimary.withOpacity(0.15),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusInner,
                               ),
                             ),
                           ),
-                        )
-                      else
-                        SizedBox(),
-                      Expanded(
-                        child: SizedBox(
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _handleStepNext(stepsCount);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppDimensions.radiusInner,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              _currentStep == stepsCount - 1
-                                  ? "Terminer"
-                                  : "Suivant",
-                              style: GoogleFonts.poppins(
-                                color: AppColors.onAccent,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          child: Text(
+                            "Retour",
+                            style: GoogleFonts.poppins(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
-                    ],
+                    )
+                  else
+                    SizedBox(),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _handleStepNext(stepsCount);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusInner,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          _currentStep == stepsCount - 1
+                              ? "Terminer"
+                              : "Suivant",
+                          style: GoogleFonts.poppins(
+                            color: AppColors.onAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  SizedBox(height: 10),
                 ],
               ),
-            ),
+              SizedBox(height: 10),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -826,13 +828,38 @@ class _ProfilePageState extends State<ProfilePage> {
       style: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
+        // Une couleur de TEXTE remplissait ce champ.
+        //
+        // `textHint` est le gris des indications ; posé en fond, il donnait une
+        // boîte gris foncé sur un écran clair, sur laquelle le nom saisi —
+        // écrit en `textPrimary`, donc presque noir — devenait difficile à
+        // lire. C'était le seul champ de l'application dans ce cas : tous les
+        // autres emploient une vraie surface.
+        //
+        // `surfaceVariant` en est une, et elle suit le thème toute seule.
+        filled: true,
+        fillColor: AppColors.surfaceVariant,
+        // L'étiquette était de la même couleur que le fond : une fois posée
+        // dans le champ, elle y disparaissait.
         labelStyle: GoogleFonts.poppins(
-          color: AppColors.textHint,
+          color: AppColors.textSecondary,
           fontSize: 14,
         ),
+        // Flottante, elle se pose sur la bordure : c'est l'accent qui la porte,
+        // comme sur les autres formulaires.
+        floatingLabelStyle: GoogleFonts.poppins(
+          color: AppColors.accentInk,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
         prefixIcon: Icon(icon, color: AppColors.accentInk, size: 20),
-        filled: true,
-        fillColor: AppColors.textHint,
+        // `border` sert de repli aux états non décrits — erreur, champ
+        // désactivé. Sans lui, ceux-là retombaient sur le soulignement par
+        // défaut de Material, au milieu de champs à bordure complète.
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+          borderSide: BorderSide(color: AppColors.textPrimary.withOpacity(0.1)),
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           borderSide: BorderSide(color: AppColors.textPrimary.withOpacity(0.1)),
@@ -952,52 +979,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildReadOnlyField({
-    required String value,
-    required String label,
-    required IconData icon,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return TextFormField(
-      initialValue: value,
-      readOnly: true,
-      style: GoogleFonts.poppins(
-        color: isDark ? AppColors.textHint : Colors.black54,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.poppins(
-          color: isDark ? AppColors.textHint : Colors.black38,
-        ),
-        prefixIcon: Icon(icon, color: AppColors.accentInk),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.textHint : AppColors.textSecondary,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.textHint : AppColors.textSecondary,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.textHint : AppColors.textSecondary,
-          ),
-        ),
-        filled: true,
-        fillColor: isDark
-            ? AppColors.cardBackground.withOpacity(0.5)
-            : Colors.grey[100],
-      ),
-    );
-  }
-
   Widget _buildStatsSection() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1363,7 +1345,6 @@ class _ProfilePageState extends State<ProfilePage> {
             }
 
             _favoritesCount = favs.length;
-            _libraryCount = libBooks.length;
 
             // Même correction que sur l'écran des paramètres : « Livres lus »
             // affichait la TAILLE DE LA BIBLIOTHÈQUE, et « En cours » était

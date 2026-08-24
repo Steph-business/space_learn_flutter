@@ -13,7 +13,11 @@ class SupabaseService {
     if (kIsWeb) return true;
     try {
       // Test 1: Basic internet connectivity
-      final googleResponse = await http
+      //
+      // Le résultat n'est pas lu : c'est l'appel qui fait le test. S'il
+      // échoue ou expire, le `catch` en bas rend false. L'affectation, elle,
+      // ne servait à rien.
+      await http
           .get(Uri.parse('https://httpbin.org/get'))
           .timeout(const Duration(seconds: 5));
       // Test 2: Supabase connectivity

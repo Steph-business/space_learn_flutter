@@ -978,7 +978,12 @@ class _SalesReportPageState extends State<SalesReportPage> {
 
   Widget _ligneVente(ReversementModel vente) {
     final titre = _titresParLivre[vente.livreId] ?? 'Livre';
-    final date = vente.creeLe;
+    // La date de la VENTE, et non celle du crédit.
+    //
+    // Les deux diffèrent dès qu'un crédit a été rattrapé après coup : une
+    // vente du 20 juillet, créditée le 17 août, s'affichait « 17 août ».
+    // L'auteur ne pouvait rapprocher son rapport de rien de ce qu'il savait.
+    final date = vente.dateAAfficher;
     final quand = date == null
         ? ''
         : DateFormat('d MMM y', 'fr_FR').format(date.toLocal());

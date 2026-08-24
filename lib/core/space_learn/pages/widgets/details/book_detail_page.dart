@@ -3,10 +3,8 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
-import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
-import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'reading_page.dart';
@@ -98,7 +96,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
   // Chapitres
   final ChapitreService _chapitreService = ChapitreService();
   List<ChapitreModel> _chapitres = [];
-  bool _isLoadingChapitres = true;
 
   int get _progressionPourcentage {
     if (_readingProgress != null) {
@@ -225,13 +222,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
       if (mounted) {
         setState(() {
           _chapitres = chapitres;
-          _isLoadingChapitres = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoadingChapitres = false;
         });
       }
     }

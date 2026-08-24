@@ -16,10 +16,6 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
-import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/accueil_lecteur_page.dart'
-    as lecteurHome;
-import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
-    as ecrivainHome;
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class OtpPage extends StatefulWidget {

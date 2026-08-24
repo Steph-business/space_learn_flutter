@@ -149,15 +149,6 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     });
   }
 
-  void _clearSearch() {
-    _searchController.clear();
-    setState(() {
-      _searchQuery = "";
-      _isSearching = false;
-      _searchResults = [];
-    });
-  }
-
   @override
   void initState() {
     super.initState();

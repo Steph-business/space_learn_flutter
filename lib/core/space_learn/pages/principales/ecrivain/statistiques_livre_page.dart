@@ -69,7 +69,7 @@ class StatistiquesLivrePage extends StatelessWidget {
                         )
                       : Container(
                           decoration: BoxDecoration(
-                            color: AppColors.textHint,
+                            color: AppColors.surfaceVariant,
                             borderRadius: BorderRadius.circular(
                               AppDimensions.radiusInner,
                             ),

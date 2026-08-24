@@ -58,7 +58,23 @@ class ReversementModel {
   final double montantNet;
 
   final String devise;
+
+  /// Quand le crédit a été inscrit au portefeuille.
   final DateTime? creeLe;
+
+  /// Quand la vente a réellement eu lieu.
+  ///
+  /// Ce n'est pas la même date que [creeLe], et l'écart peut atteindre des
+  /// semaines : les crédits rattrapés après coup portent tous la date du
+  /// rattrapage. Le rapport affichait [creeLe], si bien qu'une vente du
+  /// 20 juillet s'y lisait « 17 août ».
+  ///
+  /// Nulle quand le paiement d'origine n'existe plus — une anomalie, que
+  /// l'écran doit montrer plutôt que masquer.
+  final DateTime? venduLe;
+
+  /// La date à afficher : celle de la vente, à défaut celle du crédit.
+  DateTime? get dateAAfficher => venduLe ?? creeLe;
 
   const ReversementModel({
     required this.id,
@@ -68,6 +84,7 @@ class ReversementModel {
     required this.montantNet,
     required this.devise,
     this.creeLe,
+    this.venduLe,
   });
 
   factory ReversementModel.fromJson(Map<String, dynamic> json) =>
@@ -79,6 +96,7 @@ class ReversementModel {
         montantNet: _double(json['montant_net']),
         devise: json['devise']?.toString() ?? 'XOF',
         creeLe: _date(json['cree_le']),
+        venduLe: _date(json['vendu_le']),
       );
 }
 

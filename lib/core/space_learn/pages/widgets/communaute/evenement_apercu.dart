@@ -71,7 +71,7 @@ class _FeuilleEvenement extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.textHint,
+                    color: AppColors.textHint.withValues(alpha: 0.4),
                     // Une pastille : le rayon depasse la demi-hauteur, donc
                     // les extremites sont rondes quoi qu'il arrive.
                     borderRadius: BorderRadius.circular(

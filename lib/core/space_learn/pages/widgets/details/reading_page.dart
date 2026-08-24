@@ -23,7 +23,6 @@ import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/partageService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/dataServices/readingSettingsService.dart';
-import '../../../data/dataServices/readerStatsService.dart';
 import '../../../data/dataServices/reading_time_storage.dart';
 import '../../../data/dataServices/paymentService.dart';
 import '../../../data/dataServices/authServices.dart';
@@ -56,7 +55,6 @@ class _ReadingPageState extends State<ReadingPage> {
   final ReadingProgressService _progressService = ReadingProgressService();
   final BookmarkService _bookmarkService = BookmarkService();
   final ReadingSettingsService _settingsService = ReadingSettingsService();
-  final ReaderStatsService _statsService = ReaderStatsService();
 
   final bool _showCover = false;
   int _currentPage = 1;
@@ -2421,7 +2419,7 @@ class _ReadingPageState extends State<ReadingPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondary.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
                   ),
                 ),

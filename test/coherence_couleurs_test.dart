@@ -323,17 +323,34 @@ void main() {
   // opacité fait une surface discrète légitime, et textHint ou textSecondary
   // servent parfois de trait — une poignée, une piste de progression.
   test('aucune couleur de texte ne sert de surface', () {
-    final texteEnSurface = RegExp(
-      r'BoxDecoration\(\s*color:\s*AppColors\.textPrimary\s*,',
+    // La règle ne regardait que `BoxDecoration(color: textPrimary)`.
+    //
+    // Elle a laissé passer `fillColor: AppColors.textHint` sur le champ de
+    // l'écran « Commençons par votre nom » : une boîte gris foncé sur un
+    // écran clair, portant un texte presque noir. Trois angles morts d'un
+    // coup — la propriété (`fillColor`), le jeton (`textHint`), et le fait
+    // que ce n'était pas une `BoxDecoration`.
+    //
+    // Elle couvre désormais les trois propriétés qui posent une surface, et
+    // tous les jetons de texte.
+    // Seuls les usages à PLEINE opacité sont fautifs.
+    //
+    // `AppColors.textPrimary.withOpacity(0.12)` est un voile teinté : il suit
+    // le thème, reste discret, et sert légitimement de filet ou de fond de
+    // pastille. C'est la couleur pleine qui pose problème — elle est faite
+    // pour être lue, pas pour porter du texte.
+    final surfaces = RegExp(
+      r'(?:BoxDecoration\(\s*color|fillColor|backgroundColor)'
+      r':\s*AppColors\.(textPrimary|textSecondary|textHint)\b(?!\s*\.with)',
       multiLine: true,
     );
     final fautes = <String>[];
 
     for (final fichier in _fichiersDart()) {
       final source = fichier.readAsStringSync();
-      for (final m in texteEnSurface.allMatches(source)) {
+      for (final m in surfaces.allMatches(source)) {
         final ligne = source.substring(0, m.start).split('\n').length;
-        fautes.add('${fichier.path}:$ligne');
+        fautes.add('${fichier.path}:$ligne — AppColors.${m.group(1)} en fond');
       }
     }
 
@@ -341,8 +358,10 @@ void main() {
       fautes,
       isEmpty,
       reason:
-          'AppColors.textPrimary employé comme fond. Utiliser cardBackground, '
-          'surfaceVariant ou scaffoldBackground :\n${fautes.join('\n')}',
+          'Une couleur de TEXTE employée comme fond : le contenu posé dessus '
+          'devient illisible, et la surface ne suit plus le thème. Utiliser '
+          'cardBackground, surfaceVariant ou scaffoldBackground :\n'
+          '${fautes.join('\n')}',
     );
   });
 

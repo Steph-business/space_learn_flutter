@@ -10,7 +10,6 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/paymentSe
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
-import 'package:space_learn_flutter/core/utils/profile_storage.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
@@ -103,8 +102,6 @@ class _PaymentPageState extends State<PaymentPage> {
                     onPressed: () async {
                       try {
                         final token = await TokenStorage.getToken();
-                        final profileId =
-                            await ProfileStorage.getSelectedProfile() ?? '';
                         if (token != null) {
                           final bookId = widget.book['id']?.toString() ?? '';
                           if (bookId.isNotEmpty) {

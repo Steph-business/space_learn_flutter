@@ -41,10 +41,10 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   int _favoritesCount = 0;
 
-  /// Nombre de livres possédés. Ce n'est PAS le nombre de livres lus.
-  int _libraryCount = 0;
-
   /// Livres réellement terminés, tels que le serveur les compte.
+  ///
+  /// À ne pas confondre avec la taille de la bibliothèque : « Livres lus »
+  /// affichait autrefois le nombre de livres POSSÉDÉS.
   int _livresLus = 0;
   int _inProgressCount = 0;
 
@@ -101,7 +101,6 @@ class _SettingsPageState extends State<SettingsPage> {
         if (mounted) {
           setState(() {
             _favoritesCount = favs.length;
-            _libraryCount = libBooks.length;
             _livresLus =
                 bilan?['lus'] ?? _compterLocalement(libBooks, termines: true);
             _inProgressCount =
@@ -442,7 +441,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildStatCol(String label, String value) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         Text(
@@ -661,7 +659,6 @@ class _SettingsPageState extends State<SettingsPage> {
     ThemeProvider themeProvider,
   ) {
     final isSelected = themeProvider.themeMode == mode;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
       leading: Icon(
         icon,

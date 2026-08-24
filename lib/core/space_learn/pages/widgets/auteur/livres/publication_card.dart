@@ -1,13 +1,10 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
-import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
-import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
-import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 // La carte est intentionnellement epuree : titre, statut, prix, note.
 // Les actions (Modifier, Publier, Supprimer) se trouvent dans le menu

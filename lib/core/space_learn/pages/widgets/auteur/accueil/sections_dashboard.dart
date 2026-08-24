@@ -709,7 +709,7 @@ class DerniersAbonnesSection extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 18,
-          backgroundColor: AppColors.textHint,
+          backgroundColor: AppColors.surfaceVariant,
           child: photo != null && photo.isNotEmpty
               ? ClipOval(
                   child: Image.network(

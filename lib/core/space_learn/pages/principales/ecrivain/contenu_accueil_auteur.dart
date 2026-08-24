@@ -115,7 +115,19 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
                 children: [
                   SizedBox(height: 10),
                   if (_echecStats != null) _bandeauEchecStats(_echecStats!),
-                  Statistique(stats: _stats),
+                  // La même marge que tous les blocs du fil.
+                  //
+                  // Celui-ci était le seul à n'en recevoir aucune : ses deux
+                  // cartes couraient jusqu'aux bords de l'écran, celle de
+                  // droite s'y trouvait coupée, et le bloc entier paraissait
+                  // décalé par rapport à tout ce qui le suivait.
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: Statistique(stats: _stats),
+                  ),
 
                   Padding(
                     padding: const EdgeInsets.symmetric(

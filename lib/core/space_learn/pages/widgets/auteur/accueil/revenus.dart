@@ -79,6 +79,37 @@ class _RevenusState extends State<Revenus> {
       ? (activeStats['net_revenue'] as num).toDouble()
       : totalRevenue;
 
+  /// Les points de la courbe, tels que le serveur les a découpés.
+  ///
+  /// Repli sur la série mensuelle pour un serveur d'une version antérieure :
+  /// douze mois valent mieux qu'une courbe vide, et les étiquettes suivront
+  /// la même logique.
+  List<double> _serie() {
+    final cle = isRevenueSelected ? 'serie_revenus' : 'serie_lectures';
+    final repli = isRevenueSelected ? 'monthly_revenue' : 'monthly_readings';
+
+    final brut = activeStats[cle] is List
+        ? activeStats[cle] as List
+        : (activeStats[repli] is List ? activeStats[repli] as List : const []);
+
+    final valeurs = <double>[
+      for (final v in brut) if (v is num) v.toDouble() else 0.0,
+    ];
+    // Un seul point ne dessine pas de courbe : fl_chart a besoin de deux
+    // extrémités pour tracer un segment.
+    return valeurs.length >= 2 ? valeurs : [0.0, 0.0];
+  }
+
+  /// Les étiquettes de l'axe, telles que le serveur les a nommées.
+  List<String> _etiquettes() {
+    final brut = activeStats['serie_libelles'];
+    if (brut is List && brut.length >= 2) {
+      return [for (final e in brut) e.toString()];
+    }
+    // Serveur antérieur : la série de repli est mensuelle, donc les mois.
+    return moisDeLaFenetre(activeStats['mois_debut']?.toString());
+  }
+
   /// La légende du grand chiffre, accordée à l'onglet et à la période.
   String _sousTitreDuTotal() {
     final quoi = isRevenueSelected ? "Vos gains" : "Lectures";
@@ -351,73 +382,41 @@ class _RevenusState extends State<Revenus> {
     );
   }
 
+  /// Les étiquettes de l'axe, prises de la série elle-même.
+  ///
+  /// Elles étaient écrites en dur, et ne décrivaient rien : « Lun, Mar, Jeu,
+  /// Sam, Dim » sous sept points, « Sem 1 » à « Sem 4 » sous quatre mois,
+  /// « Jan » à « Déc » sous une fenêtre glissante. Chaque valeur s'affichait
+  /// donc sous un moment qui n'était pas le sien.
+  ///
+  /// Cinq repères au plus : au-delà, ils se chevauchent sur un téléphone.
   List<Widget> _buildXAxisLabels() {
-    switch (_selectedPeriodKey) {
-      case '7d':
-        return [
-          _buildDateLabel("Lun"),
-          _buildDateLabel("Mar"),
-          _buildDateLabel("Jeu"),
-          _buildDateLabel("Sam"),
-          _buildDateLabel("Dim"),
-        ];
-      case '30d':
-        return [
-          _buildDateLabel("Sem 1"),
-          _buildDateLabel("Sem 2"),
-          _buildDateLabel("Sem 3"),
-          _buildDateLabel("Sem 4"),
-        ];
-      case '1y':
-      default:
-        // Les étiquettes suivent la fenêtre réelle des données.
-        //
-        // Elles étaient écrites en dur, de « Jan » à « Déc ». Or le serveur
-        // renvoie les douze derniers mois GLISSANTS — de M-11 au mois courant.
-        // En août, le premier point est donc celui de septembre de l'année
-        // précédente, et il s'affichait sous « Jan » : toute la courbe était
-        // décalée de huit mois. C'est ce que l'auteur voyait, sans moyen de
-        // s'en douter.
-        final mois = _moisDeLaFenetre();
-        return [
-          _buildDateLabel(mois[0]),
-          _buildDateLabel(mois[3]),
-          _buildDateLabel(mois[6]),
-          _buildDateLabel(mois[9]),
-          _buildDateLabel(mois[11]),
-        ];
+    final noms = _etiquettes();
+    if (noms.length <= 5) {
+      return [for (final n in noms) _buildDateLabel(n)];
     }
+
+    final pas = (noms.length - 1) / 4;
+    return [
+      for (var i = 0; i < 5; i++)
+        _buildDateLabel(noms[(i * pas).round().clamp(0, noms.length - 1)]),
+    ];
   }
 
-  List<String> _moisDeLaFenetre() =>
-      moisDeLaFenetre(activeStats['mois_debut']?.toString());
-
   LineChartData _buildChartData() {
-    // Chaque courbe lit SA série.
+    // La série vient du serveur, découpée pour la période demandée.
     //
-    // Celle des lectures n'existait pas : elle était fabriquée en divisant les
-    // revenus par 1500. Le résultat n'approchait rien — il n'a aucun rapport
-    // avec un nombre de lectures — et s'affichait pourtant à l'auteur sous le
-    // mot « Lectures ». Le serveur fournit désormais la vraie série, comptée
-    // sur la même fenêtre que les revenus.
-    final cle = isRevenueSelected ? 'monthly_revenue' : 'monthly_readings';
-    List<dynamic> rawData = [];
-    if (activeStats[cle] is List) {
-      rawData = activeStats[cle] as List;
-    } else if (isRevenueSelected && activeStats['period_revenue'] is List) {
-      rawData = activeStats['period_revenue'] as List;
-    }
-
-    int pointCount = 12;
-    if (_selectedPeriodKey == '7d') pointCount = 7;
-    if (_selectedPeriodKey == '30d') pointCount = 4;
-
-    List<double> chartValues = List.filled(pointCount, 0.0);
-    for (int i = 0; i < rawData.length && i < pointCount; i++) {
-      if (rawData[i] is num) {
-        chartValues[i] = (rawData[i] as num).toDouble();
-      }
-    }
+    // Elle était fabriquée ici, et deux fois de travers. D'abord la courbe des
+    // lectures n'existait pas : on divisait les revenus par 1500, un nombre
+    // sans aucun rapport avec des lectures, affiché sous le mot « Lectures ».
+    // Ensuite le découpage était inventé : sous « Semaine » on montrait les
+    // sept premiers mois de la fenêtre comme s'ils étaient sept jours, sous
+    // « Mois » les quatre premiers mois sous « Sem 1 » à « Sem 4 ».
+    //
+    // Le serveur a les dates : c'est lui qui découpe, et il envoie les
+    // étiquettes avec.
+    final chartValues = _serie();
+    final pointCount = chartValues.length;
 
     double maxY = chartValues.isEmpty
         ? 10
