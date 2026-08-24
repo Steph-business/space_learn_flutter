@@ -403,8 +403,8 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       // Le serveur remplace l'intégralité des champs à chaque mise à jour :
       // un envoi partiel effacerait ceux qu'on omet. On compose donc toujours
       // la charge complète, en y injectant les fichiers téléversés.
-      Map<String, dynamic> champs(String statut, {String? cover}) {
-        final data = <String, dynamic>{
+      Map<String, dynamic> champs(String statut) {
+        return <String, dynamic>{
           'titre': _titreController.text.trim(),
           'description': _descriptionController.text.trim(),
           'argumentaire_partage': _argumentaireController.text.trim(),
@@ -414,9 +414,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
           'statut': statut,
           'stock': widget.book?.stock ?? 999,
         };
-        final c = cover ?? widget.book?.imageCouverture;
-        if (c != null && c.isNotEmpty) data['image_couverture'] = c;
-        // Aucune adresse de fichier ici.
+        // Aucune adresse de fichier ici, couverture comprise.
         //
         // Le serveur ne les accepte plus en entrée : c'est le téléversement,
         // et lui seul, qui les écrit — après avoir vérifié que le manuscrit
@@ -424,7 +422,12 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         // laissait croire que le client décidait de l'emplacement des
         // fichiers, alors qu'il ne fait que répéter ce que le serveur lui a
         // dit.
-        return data;
+        //
+        // La couverture était restée en dehors de cette règle, et le prix en
+        // était visible : le téléversement écrivait l'adresse publique
+        // complète, puis cette mise à jour la remplaçait par le chemin brut
+        // renvoyé dans la réponse. Un livre fraîchement publié se retrouvait
+        // sans couverture, sans que rien ne le signale.
       }
 
       final bool fichiersAEnvoyer =
@@ -469,11 +472,12 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         livreId = cree.id;
       }
 
-      String? uploadedCoverPath;
-
-      // Téléversement des fichiers si modifiés/fournis
+      // Téléversement des fichiers si modifiés/fournis.
+      //
+      // Le retour n'est plus conservé : c'est le serveur qui inscrit l'adresse
+      // de la couverture, sous sa forme publique complète.
       if (_selectedCoverPath != null || _selectedCoverBytes != null) {
-        uploadedCoverPath = await UploadService.envoyer(
+        await UploadService.envoyer(
           authToken: token,
           livreId: livreId,
           type: TypeFichier.couverture,
@@ -503,7 +507,7 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       // Mise à jour / publication effective avec les chemins de fichiers définitifs
       await _bookService.updateBook(
         livreId,
-        champs(isDraft ? 'brouillon' : 'publie', cover: uploadedCoverPath),
+        champs(isDraft ? 'brouillon' : 'publie'),
         token,
       );
 

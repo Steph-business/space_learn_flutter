@@ -213,7 +213,9 @@ class _SalesReportPageState extends State<SalesReportPage> {
                         height: 4,
                         decoration: BoxDecoration(
                           color: AppColors.textPrimary.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusXs,
+                          ),
                         ),
                       ),
                     ),
@@ -406,7 +408,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondaryVariant,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.onAccent,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(

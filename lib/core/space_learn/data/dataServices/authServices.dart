@@ -11,6 +11,31 @@ import 'package:space_learn_flutter/core/services/api_client.dart';
 import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
+/// Le compte existe, mais son adresse n'a jamais été validée.
+///
+/// Ce n'est pas un échec de connexion : c'est une étape qui manque, et elle a
+/// son écran. La distinguer par un type plutôt que par une sous-chaîne de
+/// message évite qu'une reformulation côté serveur ne coupe la redirection en
+/// silence.
+///
+/// `codeEnvoye` vaut false quand le serveur n'a pas pu envoyer le courriel :
+/// l'écran doit alors proposer de réessayer, et surtout ne pas annoncer un
+/// code que personne n'a reçu.
+class CompteNonVerifieException implements Exception {
+  const CompteNonVerifieException({
+    required this.email,
+    required this.codeEnvoye,
+    required this.message,
+  });
+
+  final String email;
+  final bool codeEnvoye;
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class AuthService {
   /// Le client partagé, comme tous les autres services.
   ///
@@ -58,6 +83,10 @@ class AuthService {
     } else {
       // Le message du serveur est utile (« cet email est déjà utilisé ») ;
       // son corps brut ne l'est pas. messageDeLaReponse fait le tri.
+      debugPrint('\n╔══ DIAGNOSTIC INSCRIPTION ══════════════════');
+      debugPrint('║ Status : ${response.statusCode}');
+      debugPrint('║ Corps  : ${response.body}');
+      debugPrint('╚════════════════════════════════════════════\n');
       throw Exception(
         messageDeLaReponse(response, repli: "Inscription impossible."),
       );
@@ -91,10 +120,43 @@ class AuthService {
       // qui se connectent sur un même téléphone.
       await TokenStorage.saveUserId(tokenUser.user.id);
       return tokenUser;
-    } else {
-      throw Exception(
-        messageDeLaReponse(response, repli: "Connexion impossible."),
-      );
+    }
+
+    // Un compte non vérifié se reconnaît au STATUT, plus à sa phrase.
+    //
+    // L'écran décidait de rediriger vers la saisie du code en cherchant
+    // « n'est pas encore vérifié » dans le message. Reformuler cette phrase
+    // côté serveur cassait donc la redirection, sans qu'aucune compilation ne
+    // s'en aperçoive. Le 403 et le champ `verified` sont là pour ça.
+    //
+    // `code_envoye` distingue « le code est parti » de « l'envoi a échoué » :
+    // sans lui, l'écran annonçait un courriel que personne n'avait reçu.
+    if (response.statusCode == 403) {
+      final corps = _corpsJson(response.body);
+      if (corps != null && corps["verified"] == false) {
+        throw CompteNonVerifieException(
+          email: (corps["email"] as String?) ?? email,
+          codeEnvoye: corps["code_envoye"] != false,
+          message: messageDeLaReponse(response, repli: "Compte non vérifié."),
+        );
+      }
+    }
+
+    throw Exception(
+      messageDeLaReponse(response, repli: "Connexion impossible."),
+    );
+  }
+
+  /// Le corps d'une réponse, s'il est bien un objet JSON.
+  ///
+  /// Un serveur en panne peut répondre du HTML sous un code d'erreur : le
+  /// décodage doit échouer sans bruit plutôt que faire tomber la connexion.
+  Map<String, dynamic>? _corpsJson(String corps) {
+    try {
+      final decode = jsonDecode(corps);
+      return decode is Map<String, dynamic> ? decode : null;
+    } catch (_) {
+      return null;
     }
   }
 

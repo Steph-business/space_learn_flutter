@@ -339,7 +339,7 @@ class _LivresPageState extends State<LivresPage> {
                                           ? "Se reconnecter"
                                           : "Réessayer",
                                       style: GoogleFonts.poppins(
-                                        color: Colors.white,
+                                        color: AppColors.onAccent,
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
                                       ),

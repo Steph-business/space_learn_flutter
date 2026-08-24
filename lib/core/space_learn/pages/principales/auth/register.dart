@@ -63,52 +63,65 @@ class _RegisterPageState extends State<RegisterPage> {
   void _handleRegister() async {
     if (_isLoading) return;
 
-    developer.log('Début de _handleRegister', name: 'RegisterPage');
-
-    final name = _nameController.text.trim();
-    final pseudo = _pseudoController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
-
-    if (name.isEmpty || pseudo.isEmpty || email.isEmpty || password.isEmpty) {
-      AppNotifications.showSnackBar(
-        context,
-        message: 'Veuillez remplir tous les champs.',
-        isError: true,
-      );
-      return;
-    }
-
-    if (password != confirmPassword) {
-      AppNotifications.showSnackBar(
-        context,
-        message: 'Les mots de passe ne correspondent pas.',
-        isError: true,
-      );
-      return;
-    }
-
-    final profileService = ProfileService();
-    final selectedProfile = await profileService.getSelectedProfile();
-
-    if (!mounted) return;
-
-    if (selectedProfile == null) {
-      AppNotifications.showSnackBar(
-        context,
-        message: "Veuillez d'abord sélectionner un profil.",
-        isError: true,
-      );
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const ProfilPage()));
-      return;
-    }
-
+    // Le verrou d'abord, et le `try` avec lui.
+    //
+    // Il était posé vingt lignes plus bas, après l'`await` qui relit le profil
+    // choisi (SharedPreferences passe par un canal de plateforme : la boucle
+    // d'événements est rendue le temps de la lecture). Deux appuis rapides
+    // envoyaient donc deux inscriptions, et la seconde se heurtait au compte
+    // que la première venait de créer.
+    //
+    // Le déplacer seul aurait été pire que le défaut : les trois retours
+    // anticipés de validation sortent avant le `finally`, et laisseraient
+    // `_isLoading` à true pour toujours — bouton mort, lien « Se connecter »
+    // mort, et pour seule issue de tuer l'application. Le `try` s'ouvre donc
+    // ici, de sorte que TOUTE sortie passe par le `finally`.
     setState(() => _isLoading = true);
 
     try {
+      developer.log('Début de _handleRegister', name: 'RegisterPage');
+
+      final name = _nameController.text.trim();
+      final pseudo = _pseudoController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+      final confirmPassword = _confirmPasswordController.text.trim();
+
+      if (name.isEmpty || pseudo.isEmpty || email.isEmpty || password.isEmpty) {
+        AppNotifications.showSnackBar(
+          context,
+          message: 'Veuillez remplir tous les champs.',
+          isError: true,
+        );
+        return;
+      }
+
+      if (password != confirmPassword) {
+        AppNotifications.showSnackBar(
+          context,
+          message: 'Les mots de passe ne correspondent pas.',
+          isError: true,
+        );
+        return;
+      }
+
+      final profileService = ProfileService();
+      final selectedProfile = await profileService.getSelectedProfile();
+
+      if (!mounted) return;
+
+      if (selectedProfile == null) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Veuillez d'abord sélectionner un profil.",
+          isError: true,
+        );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ProfilPage()),
+        );
+        return;
+      }
+
       final success = await _authService.register(
         nomComplet: name,
         pseudo: pseudo,

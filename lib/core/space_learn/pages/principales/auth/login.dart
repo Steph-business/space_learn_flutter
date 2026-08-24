@@ -219,13 +219,26 @@ class _LoginPageState extends State<LoginPage> {
       developer.log("Erreur lors de la connexion : $e");
       if (!mounted) return;
       final errorStr = e.toString();
-      if (errorStr.contains("n'est pas encore vérifié") ||
-          errorStr.contains("403")) {
+      // Le type d'abord, la sous-chaîne ensuite.
+      //
+      // Le test portait sur le texte du message : reformuler la phrase côté
+      // serveur coupait la redirection sans qu'aucune compilation ne bronche.
+      // Le repli textuel reste, pour les serveurs qui ne renvoient pas encore
+      // `verified` — le téléphone se met à jour avant le serveur, pas après.
+      final nonVerifie = e is CompteNonVerifieException;
+      // `contains("403")` ne peut rien attraper : messageDeLaReponse ne laisse
+      // jamais le nombre dans la chaîne. On garde le seul repli qui marche.
+      if (nonVerifie || errorStr.contains("n'est pas encore vérifié")) {
+        // Ne rien annoncer qui ne se soit pas produit : quand l'envoi a
+        // échoué, l'écran promettait un courriel qui n'était jamais parti, et
+        // la personne attendait devant sa boîte.
+        final codeEnvoye = !nonVerifie || e.codeEnvoye;
         AppNotifications.showPremiumDialog(
           context,
           title: "Vérification requise",
-          message:
-              "Votre adresse e-mail n'a pas encore été validée. Un nouveau code OTP de validation vous a été envoyé.",
+          message: codeEnvoye
+              ? "Votre adresse e-mail n'a pas encore été validée. Un nouveau code OTP de validation vous a été envoyé."
+              : "Votre adresse e-mail n'a pas encore été validée. Le code n'a pas pu être envoyé : demandez-en un nouveau depuis l'écran de vérification.",
           confirmText: "Vérifier maintenant",
           isSuccess: false,
           onConfirm: () {
@@ -285,7 +298,10 @@ class _LoginPageState extends State<LoginPage> {
                   // le permet, et s'effacent quand il faut défiler.
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      minHeight: (contraintes.maxHeight - 24).clamp(0, double.infinity),
+                      minHeight: (contraintes.maxHeight - 24).clamp(
+                        0,
+                        double.infinity,
+                      ),
                     ),
                     child: IntrinsicHeight(
                       child: Column(

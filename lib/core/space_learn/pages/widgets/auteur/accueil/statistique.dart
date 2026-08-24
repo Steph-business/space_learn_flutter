@@ -59,7 +59,19 @@ class _StatistiqueState extends State<Statistique> {
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
     // Extract values from stats map
-    final double totalRevenue = (widget.stats['total_revenue'] ?? 0).toDouble();
+    // Ce que l'auteur touche, et non ce que l'acheteur a payé.
+    //
+    // `total_revenue` est le chiffre d'affaires brut : la plateforme en retient
+    // sa part, et l'auteur ne verra jamais ce montant-là. Son portefeuille lui
+    // annonce le net, et les deux écrans se contredisaient donc.
+    //
+    // `net_revenue` est lu dans le registre des reversements — celui qui fait
+    // foi pour le portefeuille. Repli sur le brut pour un serveur d'une
+    // version antérieure : mieux vaut un chiffre trop généreux qu'un zéro.
+    final double brut = (widget.stats['total_revenue'] ?? 0).toDouble();
+    final double net = widget.stats['net_revenue'] != null
+        ? (widget.stats['net_revenue'] as num).toDouble()
+        : brut;
 
     final int readersCount = widget.stats['total_followers'] ?? _followersCount;
 
@@ -68,18 +80,17 @@ class _StatistiqueState extends State<Statistique> {
         Row(
           children: [
             Expanded(
-              // « VENTES BRUT » et non « VENTES ».
+              // « MES GAINS » : le seul chiffre qui concerne l'auteur.
               //
-              // `total_revenue` est la somme de ce que les ACHETEURS ont paye
-              // (SUM(paiements.montant) des paiements confirmes) : ni la
-              // commission de 20 % ni les retraits n'en sont deduits. Le
-              // rapport de ventes, lui, montre le PORTEFEUILLE — le net credite
-              // moins ce qui a deja ete retire. Les deux chiffres sont justes,
-              // ils ne mesurent pas la meme chose ; seul le libelle manquait
-              // pour qu'on cesse de les croire contradictoires.
+              // L'écran annonçait « VENTES BRUT », c'est-à-dire ce que les
+              // acheteurs ont payé, commission non déduite. Le libellé était
+              // exact, mais le montant n'était pas le sien : son portefeuille
+              // en affichait un autre, plus petit, et rien ne disait lequel
+              // comptait. Une place de marché doit répondre à « combien
+              // j'ai gagné », pas à « combien on a encaissé grâce à moi ».
               child: _buildStatCard(
-                "VENTES BRUT",
-                "${totalRevenue.toStringAsFixed(0)} FCFA",
+                "MES GAINS",
+                "${net.toStringAsFixed(0)} FCFA",
                 "", // Removed fake growth
                 Icons.account_balance_wallet_rounded,
               ),
