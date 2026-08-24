@@ -25,6 +25,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/a
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart'
     as ecrivainHome;
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/utils/parcours.dart';
 
 class LoginPage extends StatefulWidget {
   final String? initialEmail;
@@ -133,9 +134,7 @@ class _LoginPageState extends State<LoginPage> {
         profileId: profilId,
         userName: tokenUser.user.nomComplet,
       );
-    } else if (role.contains("auteur") ||
-        role.contains("administrateur") ||
-        role.contains("éditeur")) {
+    } else if (estParcoursAuteur(role)) {
       destination = ecrivainHome.HomePageAuteur(
         key: ecrivainHome.HomePageAuteur.navKey,
         profileId: profilId,

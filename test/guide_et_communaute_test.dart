@@ -22,34 +22,43 @@ void main() {
   const faq =
       'lib/core/space_learn/pages/principales/settings/help_faq_page.dart';
 
-  // ── Un lecteur ne voit pas le mode d'emploi de l'auteur ─────────────────
+  // ── Chacun ne voit QUE son parcours ─────────────────────────────────────
   //
-  // La page avait deux onglets et un `initialIsAuthor` qui ne décidait que du
-  // premier affiché : un lecteur n'avait qu'à toucher le second pour lire tout
-  // le parcours auteur — déposer un manuscrit, fixer un prix, suivre ses ventes.
-  test("le guide ne monte le parcours auteur que pour un auteur", () {
+  // Trois etats successifs, chacun corrigeant le precedent :
+  //
+  //  1. un `initialIsAuthor` ne decidait que de l'onglet OUVERT — un lecteur
+  //     n'avait qu'a toucher le second pour lire tout le parcours auteur ;
+  //  2. un lecteur n'eut plus qu'un onglet, mais l'auteur en gardait deux et
+  //     ouvrait sur « Decouvrir et trouver des livres » depuis ses reglages
+  //     d'auteur, avec une question d'auteur ;
+  //  3. plus d'onglets du tout : un seul parcours, celui de la personne.
+  test("le guide ne monte qu'un seul parcours", () {
     final source = lire(guide);
 
-    // Hors commentaires : la documentation mentionne l'ancien nom pour
-    // expliquer pourquoi il a disparu, et cette explication doit pouvoir rester.
+    // Hors commentaires : la documentation mentionne les anciens mecanismes
+    // pour expliquer pourquoi ils ont disparu, et doit pouvoir le faire.
     final codeSeul = source
         .split('\n')
-        .where((l) => !l.trimLeft().startsWith('//'))
+        .where((l) =>
+            !l.trimLeft().startsWith('//') && !l.trimLeft().startsWith('///'))
         .join('\n');
+
     expect(
       codeSeul.contains('initialIsAuthor'),
       isFalse,
-      reason: "Le drapeau d'onglet initial a été remplacé par un vrai rôle.",
+      reason: "Le drapeau d'onglet initial a ete remplace par un vrai role.",
     );
+    for (final vestige in ['TabController', 'TabBarView', 'TabBar(']) {
+      expect(
+        codeSeul.contains(vestige),
+        isFalse,
+        reason: "$vestige subsiste : le guide ne doit plus avoir d'onglets.",
+      );
+    }
     expect(
-      source.contains('length: widget.estAuteur ? 2 : 1'),
+      codeSeul.contains('? _buildAuthorGuide(isDark)'),
       isTrue,
-      reason: 'Un lecteur n\'a qu\'un onglet.',
-    );
-    expect(
-      source.contains('if (widget.estAuteur) _buildAuthorGuide'),
-      isTrue,
-      reason: 'Le parcours auteur ne doit pas être construit pour un lecteur.',
+      reason: 'Le parcours affiche doit dependre du role, et lui seul.',
     );
   });
 
@@ -64,9 +73,11 @@ void main() {
     );
     expect(entete.contains('UserGuidePage('), isTrue);
     expect(
-      entete.contains("estAuteur: widget.role == 'auteur'"),
+      entete.contains('estAuteur: estParcoursAuteur(widget.role)'),
       isTrue,
-      reason: "Le rôle de l'en-tête décide de ce qui s'ouvre.",
+      reason: "Le rôle de l'en-tête décide de ce qui s'ouvre, et par la règle "
+          "PARTAGÉE : l'égalité stricte avec « auteur » laissait les éditeurs "
+          "et les administrateurs devant le guide du lecteur.",
     );
   });
 

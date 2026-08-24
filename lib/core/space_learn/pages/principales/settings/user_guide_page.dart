@@ -10,14 +10,17 @@ import 'help_faq_page.dart';
 
 /// Le mode d'emploi de l'application.
 ///
-/// Un lecteur n'y voit que son propre parcours. Un auteur voit les deux, parce
-/// qu'il est aussi lecteur — il achète et lit des livres comme les autres.
+/// Chacun n'y voit QUE son parcours : un lecteur le sien, un auteur le sien.
 ///
-/// [estAuteur] remplace un ancien `initialIsAuthor`, qui ne décidait que de
-/// l'onglet OUVERT : les deux onglets restaient là, et un lecteur n'avait qu'à
-/// toucher le second pour lire tout le mode d'emploi de l'auteur — déposer un
-/// manuscrit, fixer un prix, suivre ses ventes. Un écran de réglages ne doit
-/// pas expliquer un métier qu'on n'exerce pas.
+/// L'auteur voyait les deux, sous prétexte qu'il lit aussi. Mais il ouvre ce
+/// guide depuis ses réglages d'auteur, avec une question d'auteur — publier,
+/// fixer un prix, se faire payer — et tombait sur « Découvrir et trouver des
+/// livres ». Un mode d'emploi qui commence par répondre à côté n'est pas
+/// consulté deux fois.
+///
+/// Avant cela, un ancien `initialIsAuthor` ne décidait que de l'onglet OUVERT :
+/// les deux restaient là, et un lecteur n'avait qu'à toucher le second pour
+/// lire comment déposer un manuscrit et suivre des ventes qu'il n'aura jamais.
 class UserGuidePage extends StatefulWidget {
   final bool estAuteur;
 
@@ -27,9 +30,7 @@ class UserGuidePage extends StatefulWidget {
   State<UserGuidePage> createState() => _UserGuidePageState();
 }
 
-class _UserGuidePageState extends State<UserGuidePage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _UserGuidePageState extends State<UserGuidePage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -40,14 +41,6 @@ class _UserGuidePageState extends State<UserGuidePage>
   @override
   void initState() {
     super.initState();
-    // Un seul onglet pour un lecteur : le parcours auteur n'existe pas pour lui.
-    _tabController = TabController(
-      length: widget.estAuteur ? 2 : 1,
-      vsync: this,
-    );
-    _tabController.addListener(() {
-      if (mounted) setState(() {});
-    });
     _tts.addListener(_surEtatVoix);
   }
 
@@ -67,7 +60,6 @@ class _UserGuidePageState extends State<UserGuidePage>
     // d'emploi par-dessus l'écran suivant.
     _tts.removeListener(_surEtatVoix);
     _tts.stop();
-    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -76,8 +68,7 @@ class _UserGuidePageState extends State<UserGuidePage>
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAuthorTab = widget.estAuteur && _tabController.index == 1;
-    final accentColor = isAuthorTab
+    final accentColor = widget.estAuteur
         ? AppColors.secondaryVariant
         : AppColors.accentInk;
 
@@ -97,79 +88,12 @@ class _UserGuidePageState extends State<UserGuidePage>
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "Guide d'utilisation",
+          widget.estAuteur ? "Guide de l'auteur" : "Guide du lecteur",
           style: GoogleFonts.poppins(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          // La barre d'onglets n'a de sens qu'à deux onglets. Pour un lecteur,
-          // qui n'a que son propre parcours, elle laisserait croire qu'il en
-          // manque un.
-          child: widget.estAuteur
-              ? Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.textHint.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusCard,
-                    ),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: accentColor,
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusInner,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accentColor.withOpacity(0.4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    labelColor: AppColors.onAccent,
-                    unselectedLabelColor: AppColors.textSecondary,
-                    labelStyle: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
-                    tabs: const [
-                      Tab(
-                        iconMargin: EdgeInsets.only(bottom: 2),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.menu_book_rounded, size: 18),
-                            SizedBox(width: 8),
-                            Text("Parcours Lecteur"),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.edit_note_rounded, size: 20),
-                            SizedBox(width: 8),
-                            Text("Parcours Auteur"),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : const SizedBox.shrink(),
         ),
       ),
       body: Column(
@@ -221,17 +145,11 @@ class _UserGuidePageState extends State<UserGuidePage>
             ),
           ),
 
+          // Un seul parcours, celui de la personne qui consulte.
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildReaderGuide(isDark),
-                // Le parcours auteur n'est monte que pour un auteur : un
-                // TabBarView a deux enfants sur un controleur d'un seul onglet
-                // leve une assertion au premier rendu.
-                if (widget.estAuteur) _buildAuthorGuide(isDark),
-              ],
-            ),
+            child: widget.estAuteur
+                ? _buildAuthorGuide(isDark)
+                : _buildReaderGuide(isDark),
           ),
         ],
       ),
@@ -253,7 +171,7 @@ class _UserGuidePageState extends State<UserGuidePage>
           "Tapez sur un livre pour ouvrir sa fiche détaillée, lire le résumé, consulter les avis et le prix.",
         ],
         tip:
-            "Ajoutez un livre en favori d'un tap sur le cœur pour le retrouver plus tard dans votre bibliothèque !",
+            "Le cœur met un livre de côté dans vos favoris — c'est un pense-bête, pas un achat : le livre n'entre dans votre bibliothèque qu'une fois acquis.",
       ),
       _GuideSection(
         icon: Icons.auto_stories_rounded,
@@ -286,12 +204,14 @@ class _UserGuidePageState extends State<UserGuidePage>
       _GuideSection(
         icon: Icons.download_done_rounded,
         color: AppColors.accentInk,
-        title: "4. Mode Hors-ligne & Téléchargements",
-        shortDesc: "Télécharger pour lire sans connexion internet.",
+        title: "4. Lire sans connexion",
+        shortDesc:
+            "Vos livres restent sur l'appareil après la première ouverture.",
         steps: [
-          "Sur la fiche d'un livre acquis, cliquez sur 'Télécharger pour lecture hors-ligne'.",
-          "Retrouvez tous vos fichiers téléchargés dans 'Paramètres > Téléchargements'.",
-          "Vous pouvez lire tous vos livres hors-ligne n'importe où, même sans réseau.",
+          "Il n'y a rien à télécharger à la main : la première ouverture d'un livre le dépose sur votre appareil.",
+          "Les fois suivantes, il s'ouvre directement — même sans réseau.",
+          "Retrouvez ce qui occupe de la place dans « Paramètres › Téléchargements », et libérez-en si besoin.",
+          "L'aperçu gratuit et le livre acheté sont conservés séparément : lire l'un ne remplace pas l'autre.",
         ],
       ),
       _GuideSection(
@@ -324,9 +244,10 @@ class _UserGuidePageState extends State<UserGuidePage>
         title: "7. Paiements & Sécurité",
         shortDesc: "Acheter des livres en toute confiance.",
         steps: [
-          "Les paiements sont sécurisés par notre partenaire CinetPay.",
-          "Moyens acceptés : Mobile Money (Orange Money, MTN Moov, Wave) et Cartes bancaires.",
-          "Après confirmation, le livre est instantanément et définitivement ajouté à votre bibliothèque.",
+          "Avant d'acheter, ouvrez l'aperçu gratuit : il reprend les premières pages du livre.",
+          "Les paiements passent par CinetPay : Mobile Money (Orange, MTN, Moov, Wave) et cartes bancaires.",
+          "Après confirmation, le livre entre dans votre bibliothèque et y reste : un ouvrage acheté ne se perd pas.",
+          "Si un paiement n'aboutit pas, vous en êtes prévenu et pouvez réessayer — rien ne reste bloqué.",
         ],
       ),
     ];
@@ -355,76 +276,83 @@ class _UserGuidePageState extends State<UserGuidePage>
   }
 
   // ───────────────────────── Parcours Auteur ─────────────────────────
+  //
+  // Ce guide ne dit que des choses vérifiées dans le code. La version
+  // précédente promettait un prix « librement » choisi alors qu'un plancher
+  // existe, des « coordonnées bancaires » que rien n'accepte, et un
+  // basculement entre les modes Lecteur et Auteur qui n'est branché nulle
+  // part. Un mode d'emploi qui décrit une application imaginaire fait perdre
+  // plus de temps qu'il n'en fait gagner.
   Widget _buildAuthorGuide(bool isDark) {
     final List<_GuideSection> sections = [
       _GuideSection(
         icon: Icons.upload_file_rounded,
         color: AppColors.secondaryVariant,
-        title: "1. Publier un nouveau livre (PDF / ePUB)",
-        shortDesc: "Mettre en ligne votre manuscrit étape par étape.",
+        title: "1. Publier un livre",
+        shortDesc: "Du manuscrit à la mise en vente, étape par étape.",
         steps: [
-          "Rendez-vous sur votre tableau de bord Auteur et cliquez sur 'Ajouter un livre' ou 'Publier'.",
-          "Renseignez les informations de base : Titre, Sous-titre, Catégorie et Résumé accrocheur.",
-          "Téléversez votre image de couverture haute définition au format portrait.",
-          "Uploadez votre manuscrit finalisé au format PDF ou ePUB.",
-          "Vérifiez l'aperçu et confirmez la publication pour rendre l'ouvrage disponible dans la boutique.",
+          "Depuis votre accueil, touchez « Publier un nouveau livre ».",
+          "Renseignez le titre, la catégorie, la description, puis l'argumentaire de recommandation à la seconde étape.",
+          "Choisissez votre image de couverture, puis votre manuscrit au format PDF ou ePUB.",
+          "Tant que les fichiers ne sont pas déposés, le livre reste en brouillon : il n'apparaît pas à la vente.",
+          "L'aperçu gratuit est fabriqué automatiquement à partir de votre manuscrit — vous n'avez rien à préparer.",
         ],
         tip:
-            "Une couverture soignée et un résumé captivant augmentent vos lectures de plus de 60% !",
+            "Un manuscrit de moins de dix pages est refusé à la publication, et un même fichier ne peut pas être vendu sous deux titres.",
       ),
       _GuideSection(
         icon: Icons.price_change_rounded,
-        color: AppColors.accentInk,
-        title: "2. Fixation des prix & Droits d'auteur",
-        shortDesc: "Modèle de rémunération et tarification.",
+        color: AppColors.secondaryVariant,
+        title: "2. Fixer votre prix",
+        shortDesc: "Ce que vous demandez, et ce que vous touchez.",
         steps: [
-          "Vous choisissez librement le prix de vente de votre livre (ou gratuit pour promouvoir vos écrits).",
-          "Vos royalties sont créditées directement après chaque achat réussi.",
-          "Vous conservez l'intégralité de votre propriété intellectuelle et de vos droits d'auteur.",
+          "Le prix minimum d'un livre payant est de 2 000 FCFA. En dessous, la commission et les frais d'opérateur ne laisseraient presque rien pour vous.",
+          "Vous pouvez aussi publier gratuitement : cochez la case prévue, et le livre s'ajoute directement à la bibliothèque de vos lecteurs.",
+          "La plateforme retient 20 % sur chaque vente. Sur un livre à 2 000 FCFA, vous percevez donc 1 600 FCFA.",
+          "Le formulaire affiche votre gain en francs pendant que vous saisissez le prix : plus besoin de calculer.",
         ],
+        tip:
+            "La fourchette conseillée va de 2 000 à 5 000 FCFA. Rien ne vous y oblige, mais un prix très élevé se vend rarement sur ce marché.",
       ),
       _GuideSection(
         icon: Icons.insights_rounded,
-        color: AppColors.accentInk,
-        title: "3. Tableau de bord & Statistiques de vente",
-        shortDesc: "Suivre vos performances et vos lecteurs en temps réel.",
+        color: AppColors.secondaryVariant,
+        title: "3. Suivre vos ventes",
+        shortDesc: "Lire vos chiffres sans se tromper de grandeur.",
         steps: [
-          "Accédez à 'Rapports de ventes' depuis vos paramètres auteur.",
-          "Visualisez vos revenus cumulés, vos ventes par période et le taux de complétion de vos livres.",
-          "Identifiez vos chapitres les plus lus pour mieux comprendre votre audience.",
+          "Votre accueil affiche « Mes gains » : ce que vous touchez, commission déjà déduite. Ce n'est pas le montant payé par l'acheteur.",
+          "La courbe suit la période choisie — semaine, mois, ou les douze derniers mois — et bascule entre vos gains et vos lectures.",
+          "Seules les ventes réellement réglées sont comptées : une commande abandonnée en cours de paiement n'apparaît nulle part.",
+          "« Mes gains » dans les réglages détaille chaque vente, à sa date réelle, et l'état de vos retraits.",
         ],
       ),
       _GuideSection(
-        icon: Icons.account_balance_rounded,
-        color: AppColors.accentInk,
-        title: "4. Retrait des gains & Paiements",
-        shortDesc: "Configurer vos coordonnées pour recevoir vos royalties.",
+        icon: Icons.account_balance_wallet_rounded,
+        color: AppColors.secondaryVariant,
+        title: "4. Recevoir votre argent",
+        shortDesc: "Coordonnées Mobile Money et demande de virement.",
         steps: [
-          "Rendez-vous dans 'Informations de paiement' dans les paramètres.",
-          "Renseignez votre numéro Mobile Money ou vos coordonnées bancaires.",
-          "Demandez un virement de vos gains dès que le seuil minimum de retrait est atteint.",
+          "Renseignez d'abord votre numéro Mobile Money dans « Compte de versement ». Le virement se fait vers ce numéro, et seulement vers lui.",
+          "Vous pouvez demander un virement à partir de 1 000 FCFA — soit dès votre première vente au prix plancher.",
+          "Le virement est sans frais : vous recevez exactement ce que votre solde annonce.",
+          "Une demande reste annulable tant qu'elle n'est pas partie chez l'opérateur.",
         ],
+        tip:
+            "Votre solde est crédité dès qu'un paiement est confirmé, sans démarche de votre part.",
       ),
       _GuideSection(
         icon: Icons.campaign_rounded,
-        color: AppColors.accentInk,
-        title: "5. Fidéliser et engager votre communauté",
-        shortDesc: "Interagir avec vos lecteurs et vos abonnés.",
+        color: AppColors.secondaryVariant,
+        title: "5. Faire vivre votre communauté",
+        shortDesc: "Annonces, événements et échanges avec vos lecteurs.",
         steps: [
-          "Consultez la liste de vos abonnés dans 'Espace Auteur > Abonnés'.",
-          "Répondez aux commentaires et aux avis laissés sous vos livres.",
-          "Publiez des annonces ou créez des fils de discussion dans le Forum communautaire.",
+          "Publiez une annonce ou créez un événement depuis « Gérer mes annonces & évènements » sur votre accueil.",
+          "Un événement daté peut être rappelé à vos lecteurs la veille au soir.",
+          "Répondez dans les salons de discussion attachés à vos livres — vous pouvez y modifier ou retirer vos messages.",
+          "Consultez vos abonnés depuis l'espace auteur ; ils sont prévenus à chacune de vos publications.",
         ],
-      ),
-      _GuideSection(
-        icon: Icons.swap_horiz_rounded,
-        color: AppColors.accentInk,
-        title: "6. Basculer entre le mode Lecteur et Auteur",
-        shortDesc: "Un compte unique pour lire et écrire.",
-        steps: [
-          "Vous pouvez à tout moment passer du mode Auteur au mode Lecteur depuis le menu de profil.",
-          "Votre progression de lecture et vos publications d'auteur restent synchronisées sur le même compte.",
-        ],
+        tip:
+            "Une annonce quitte le fil des lecteurs au bout de trois mois, un événement passé au bout d'un mois. Rien n'est supprimé : vous les retrouvez dans votre espace.",
       ),
     ];
 
@@ -439,7 +367,9 @@ class _UserGuidePageState extends State<UserGuidePage>
       onBannerTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const HelpFaqPage()),
+          MaterialPageRoute(
+            builder: (context) => HelpFaqPage(estAuteur: widget.estAuteur),
+          ),
         );
       },
     );

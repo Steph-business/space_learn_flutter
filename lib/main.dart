@@ -33,6 +33,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/a
     as lecteurHome;
 import 'package:space_learn_flutter/core/widgets/splash_screen.dart';
 import 'package:space_learn_flutter/core/services/lecture_audio_handler.dart';
+import 'package:space_learn_flutter/core/utils/parcours.dart';
 
 /// Ce que toutes les préparations réunies ont le droit de faire attendre avant
 /// le premier écran.
@@ -418,10 +419,7 @@ class _MyAppState extends State<MyApp> {
         profileId: _selectedProfile!,
         userName: _user!.nomComplet,
       );
-    } else if (role.contains('auteur') ||
-        role.contains('ecrivain') ||
-        role.contains('administrateur') ||
-        role.contains('éditeur')) {
+    } else if (estParcoursAuteur(role)) {
       return ecrivainHome.HomePageAuteur(
         key: ecrivainHome.HomePageAuteur.navKey,
         profileId: _selectedProfile!,

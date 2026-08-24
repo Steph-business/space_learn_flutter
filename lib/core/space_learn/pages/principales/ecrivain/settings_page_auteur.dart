@@ -189,7 +189,9 @@ class SettingsPageAuteur extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const HelpFaqPage()),
+              MaterialPageRoute(
+                builder: (context) => const HelpFaqPage(estAuteur: true),
+              ),
             );
           },
         ),

@@ -8,7 +8,14 @@ import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/user_guide_page.dart';
 
 class HelpFaqPage extends StatelessWidget {
-  const HelpFaqPage({super.key});
+  /// Le parcours de la personne qui consulte.
+  ///
+  /// Sans lui, le lien « guide d'utilisation » de cette page ouvrait toujours
+  /// le parcours LECTEUR — y compris pour un auteur venu de ses propres
+  /// réglages, avec une question d'auteur.
+  final bool estAuteur;
+
+  const HelpFaqPage({super.key, this.estAuteur = false});
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +126,7 @@ class HelpFaqPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const UserGuidePage(),
+                    builder: (context) => UserGuidePage(estAuteur: estAuteur),
                   ),
                 );
               },

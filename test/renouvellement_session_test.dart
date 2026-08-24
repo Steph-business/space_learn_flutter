@@ -83,13 +83,39 @@ void main() {
     /// connexion, et qui reçoit seulement un échec passager.
     test('seul un refus ramène à la connexion', () {
       bool deconnecte(int code) =>
-          ApiClient.verdictDuServeur(code) == Renouvellement.refuse;
+          ApiClient.sessionTerminee(ApiClient.verdictDuServeur(code));
 
       expect(deconnecte(401), isTrue);
       expect(deconnecte(403), isTrue);
       for (final code in [429, 500, 502, 503, 408, 400]) {
         expect(deconnecte(code), isFalse, reason: 'un $code déconnectait');
       }
+    });
+  });
+
+  group('Ce qui ne ferme PAS la session', () {
+    /// Le défaut qui renvoyait à l'écran de connexion juste après s'y être
+    /// connecté.
+    ///
+    /// Une route qui répondait 401 même après un renouvellement RÉUSSI
+    /// provoquait la déconnexion : on en concluait que « l'accès est
+    /// réellement refusé ». Mais le serveur d'authentification venait de
+    /// délivrer un jeton — la session était vivante, prouvée telle à la
+    /// seconde près.
+    ///
+    /// Le lecteur ressortait donc quelques secondes après être entré, se
+    /// reconnectait, et ressortait par la même porte.
+    test('un renouvellement réussi ne ferme jamais la session', () {
+      expect(ApiClient.sessionTerminee(Renouvellement.reussi), isFalse);
+    });
+
+    test('ni une panne, ni un réseau coupé', () {
+      expect(ApiClient.sessionTerminee(Renouvellement.indisponible), isFalse);
+    });
+
+    /// Et le seul cas qui la ferme, pour que la règle se lise en entier.
+    test('seul le refus du serveur de session la ferme', () {
+      expect(ApiClient.sessionTerminee(Renouvellement.refuse), isTrue);
     });
   });
 

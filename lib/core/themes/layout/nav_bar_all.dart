@@ -12,6 +12,7 @@ import '../../space_learn/pages/principales/notificationPage.dart';
 import '../../space_learn/pages/principales/messages_page.dart';
 import '../../space_learn/pages/principales/profilePage.dart';
 import '../../space_learn/data/dataServices/notification_provider.dart';
+import 'package:space_learn_flutter/core/utils/parcours.dart';
 
 class NavBarAll extends StatefulWidget {
   final String? userName;
@@ -246,8 +247,9 @@ class _NavBarAllState extends State<NavBarAll> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          UserGuidePage(estAuteur: widget.role == 'auteur'),
+                      builder: (context) => UserGuidePage(
+                        estAuteur: estParcoursAuteur(widget.role),
+                      ),
                     ),
                   );
                 },

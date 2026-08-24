@@ -106,6 +106,23 @@ class ApiClient extends http.BaseClient {
     return Renouvellement.indisponible;
   }
 
+  /// Faut-il ramener la personne à l'écran de connexion ?
+  ///
+  /// Une seule chose en décide : ce que `/auth/refresh` a répondu. Ni le code
+  /// d'une route métier, ni le nombre de fois qu'elle a échoué.
+  ///
+  /// La nuance a coûté cher. Une requête qui répondait 401 même après un
+  /// renouvellement RÉUSSI provoquait la déconnexion : on en concluait que
+  /// « l'accès est réellement refusé ». Mais le serveur d'authentification
+  /// venait précisément de délivrer un jeton — la session était vivante,
+  /// prouvée telle. Le lecteur se faisait éjecter quelques secondes après
+  /// s'être connecté, se reconnectait, et ressortait par la même porte.
+  ///
+  /// Qu'une route refuse l'accès est un problème de cette route. Ce n'en est
+  /// pas un de session.
+  static bool sessionTerminee(Renouvellement verdict) =>
+      verdict == Renouvellement.refuse;
+
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     // Les routes d'authentification renvoient légitimement 401 (mauvais mot de
@@ -164,19 +181,35 @@ class ApiClient extends http.BaseClient {
       await _poserLeJeton(seconde);
       reponse = await _envoyer(seconde);
 
-      // Un second 401 avec un jeton tout neuf n'est plus une question de
-      // session : l'accès est réellement refusé.
-      if (reponse.statusCode == 401) _declencherDeconnexion();
+      // Un second 401 ne ferme PLUS la session.
+      //
+      // C'était le cas, et le raisonnement paraissait solide : « avec un jeton
+      // tout neuf, l'accès est réellement refusé ». Il confondait deux choses.
+      //
+      // Nous venons de renouveler la session AVEC SUCCÈS : le serveur
+      // d'authentification vient de nous délivrer un jeton, donc la session est
+      // vivante, prouvée telle à la seconde près. Qu'UNE route réponde 401
+      // malgré cela dit quelque chose de cette route — un défaut, un droit qui
+      // manque, un chemin mal formé — jamais que la personne doit être remise
+      // à l'écran de connexion.
+      //
+      // C'est ce qui se produisait : une seule requête fautive, et le lecteur
+      // était éjecté quelques secondes après s'être connecté. Il se
+      // reconnectait, la même requête repartait, et il ressortait.
+      //
+      // L'appelant reçoit son 401 et l'affiche à sa façon. La session, elle,
+      // ne se juge qu'à /auth/refresh.
+      if (reponse.statusCode == 401) {
+        debugPrint(
+          'Refus persistant sur ${request.method} ${request.url} : '
+          'la session est pourtant valide (renouvelée à l\'instant). '
+          'C\'est cette route qu\'il faut regarder, pas la session.',
+        );
+      }
       return reponse;
     }
 
-    // Seul un refus explicite du serveur ferme la session.
-    //
-    // Une panne, un quota dépassé ou un réseau coupé laissent simplement
-    // l'appelant recevoir son échec : il réessaiera, et la session sera
-    // toujours là. C'est la différence entre « on vous a déconnecté » et
-    // « ça n'est pas passé », et elle se voit à l'écran.
-    if (verdict == Renouvellement.refuse) _declencherDeconnexion();
+    if (sessionTerminee(verdict)) _declencherDeconnexion();
 
     // Session renouvelée mais requête non rejouable : rien à déconnecter,
     // l'appelant reçoit son échec et pourra recommencer.
