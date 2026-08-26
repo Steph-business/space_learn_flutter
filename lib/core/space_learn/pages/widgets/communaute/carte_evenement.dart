@@ -335,35 +335,37 @@ class _CarteEvenementState extends State<CarteEvenement> {
                           //
                           // La date exacte reste : elle seule permet de noter le
                           // rendez-vous quelque part.
-                          Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: proximiteEvenement(
-                                    evenement.dateEvenement!,
+                          Flexible(
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: proximiteEvenement(
+                                      evenement.dateEvenement!,
+                                    ),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
+                                  TextSpan(
+                                    text:
+                                        " · ${DateFormat('d MMM yyyy', 'fr_FR').format(evenement.dateEvenement!)}",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                TextSpan(
-                                  text:
-                                      " · ${DateFormat('d MMM yyyy', 'fr_FR').format(evenement.dateEvenement!)}",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              style: TextStyle(
+                                color: evenement.passe
+                                    ? AppColors.textSecondary
+                                    : accent,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            style: TextStyle(
-                              color: evenement.passe
-                                  ? AppColors.textSecondary
-                                  : accent,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),

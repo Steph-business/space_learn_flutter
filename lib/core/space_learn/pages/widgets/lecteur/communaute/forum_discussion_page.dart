@@ -844,8 +844,10 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                               (d.nomUtilisateur?.trim().isNotEmpty ?? false)
                               ? d.nomUtilisateur!.trim()
                               : "Anonyme",
-                          time: d.creeLe != null
-                              ? tempsRelatif(d.creeLe!)
+                          // La dernière activité, pas l'ouverture du salon —
+                          // c'est déjà la date sur laquelle le serveur trie.
+                          time: d.dateAAfficher != null
+                              ? tempsRelatif(d.dateAAfficher!)
                               : "inconnu",
                           title: d.titre,
                           // La description de la discussion. Un texte

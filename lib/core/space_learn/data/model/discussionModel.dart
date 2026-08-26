@@ -55,6 +55,24 @@ class Discussion {
 
   final DateTime? dernierMessageLe;
 
+  /// La date à montrer pour ce salon : sa dernière activité, ou à défaut son
+  /// ouverture.
+  ///
+  /// C'est la date sur laquelle le SERVEUR trie déjà — `triParActivite`, qui
+  /// prend le dernier message et retombe sur la date d'ouverture pour un salon
+  /// muet. La liste affichait `creeLe`, une autre date : elle paraissait donc
+  /// mal triée alors qu'elle l'était bien. « il y a 6 mois », « il y a 1
+  /// semaine », « il y a 5 mois » — le désordre n'était pas dans l'ordre, il
+  /// était dans ce qu'on lisait.
+  ///
+  /// Un salon ouvert il y a six mois et animé hier est un salon vivant. Le
+  /// dater de son ouverture le fait passer pour mort.
+  ///
+  /// Même forme que `BookModel.dateAAfficher` et
+  /// `ReversementModel.dateAAfficher` : une date d'événement, un repli sur la
+  /// date de création.
+  DateTime? get dateAAfficher => dernierMessageLe ?? creeLe;
+
   Discussion({
     required this.id,
     this.creePar,
