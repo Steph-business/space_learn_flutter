@@ -39,8 +39,11 @@ class PublicationCard extends StatelessWidget {
       "nov",
       "dec",
     ];
-    final String formattedDate = book.creeLe != null
-        ? "${book.creeLe!.day} ${mois[book.creeLe!.month]} ${book.creeLe!.year}"
+    // La parution, pas l'ouverture de la fiche : le brouillon naît des
+    // semaines avant la mise en vente, et c'est celle-ci que l'auteur cherche.
+    final DateTime? date = book.dateAAfficher;
+    final String formattedDate = date != null
+        ? "${date.day} ${mois[date.month]} ${date.year}"
         : "N/A";
 
     final isPublished = book.statut.toLowerCase() == 'publie';

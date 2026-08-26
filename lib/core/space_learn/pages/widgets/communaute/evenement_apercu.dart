@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/proximite_evenement.dart';
 
 /// Ouvre une annonce ou un événement en feuille, sans quitter la page.
 ///
@@ -151,14 +152,34 @@ class _FeuilleEvenement extends StatelessWidget {
                             color: AppColors.textSecondary,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            DateFormat(
-                              'EEEE d MMMM yyyy',
-                              'fr_FR',
-                            ).format(evenement.dateEvenement!),
-                            style: GoogleFonts.poppins(
-                              color: AppColors.textSecondary,
-                              fontSize: 12.5,
+                          // Même règle que sur la carte : la distance d'abord,
+                          // la date complète ensuite. C'est ici qu'on décide
+                          // d'y aller ou non, donc c'est ici que « Demain »
+                          // compte le plus.
+                          Expanded(
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: proximiteEvenement(
+                                      evenement.dateEvenement!,
+                                    ),
+                                    style: GoogleFonts.poppins(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text:
+                                        " · ${DateFormat('EEEE d MMMM yyyy', 'fr_FR').format(evenement.dateEvenement!)}",
+                                    style: GoogleFonts.poppins(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],

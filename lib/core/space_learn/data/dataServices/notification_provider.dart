@@ -5,6 +5,29 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServi
 import 'notificationService.dart';
 import '../model/notificationModel.dart';
 
+/// La plus récente en tête, sans jamais faire remonter une date manquante.
+///
+/// Le tri précédent remplaçait une date absente par `DateTime.now()` : une
+/// notification sans date devenait donc la plus récente de toutes et se
+/// plaçait en haut. Un repli doit choisir le cas le moins nuisible — ici,
+/// laisser couler ce dont on ignore la date plutôt que de la promouvoir.
+///
+/// Le départage par identifiant n'est pas cosmétique : deux notifications
+/// écrites dans la même seconde — l'échec d'un paiement et la réussite de la
+/// tentative suivante — ont la même date à la seconde près, et `compareTo`
+/// rend alors zéro. Sans second critère, leur ordre dépend de celui où la
+/// base les a rendues, c'est-à-dire de rien.
+List<NotificationModel> trierDuPlusRecent(List<NotificationModel> liste) {
+  final copie = List<NotificationModel>.from(liste);
+  final jamais = DateTime.fromMillisecondsSinceEpoch(0);
+  copie.sort((a, b) {
+    final parDate = (b.creeLe ?? jamais).compareTo(a.creeLe ?? jamais);
+    if (parDate != 0) return parDate;
+    return b.id.compareTo(a.id);
+  });
+  return copie;
+}
+
 class NotificationProvider extends ChangeNotifier {
   final NotificationService _service = NotificationService();
   final AuthService _authService = AuthService();
@@ -79,14 +102,18 @@ class NotificationProvider extends ChangeNotifier {
       final result = await _service.getNotifications(token, groupByRole: true);
 
       if (result is Map<String, List<NotificationModel>>) {
-        _groupedNotifications = result;
-        // Also update the flat list for unread count and backward compatibility
-        _notifications = result.values.expand((element) => element).toList();
-        // Server already sorts by DESC, but we can ensure it
-        _notifications.sort(
-          (a, b) => (b.creeLe ?? DateTime.now()).compareTo(
-            a.creeLe ?? DateTime.now(),
-          ),
+        // Chaque seau est trié, pas seulement la liste à plat.
+        //
+        // L'écran affiche `groupedNotifications[role]` et ne retombe sur
+        // `notifications` que si ce seau est vide : c'était donc la SEULE liste
+        // triée qui n'était presque jamais celle qu'on voyait. Un échec de
+        // paiement s'affichait au-dessus de la réussite qui l'avait suivi.
+        _groupedNotifications = {
+          for (final entree in result.entries)
+            entree.key: trierDuPlusRecent(entree.value),
+        };
+        _notifications = trierDuPlusRecent(
+          result.values.expand((element) => element).toList(),
         );
       }
 

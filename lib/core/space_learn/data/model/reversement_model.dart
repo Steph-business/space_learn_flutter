@@ -137,6 +137,14 @@ class RetraitModel {
 
   bool get estEnEchec => statut == 'echouee';
 
+  /// Le virement est parti sans que l'opérateur ait confirmé son sort.
+  ///
+  /// Ni réussi ni échoué : l'appel a expiré ou la connexion s'est coupée
+  /// pendant l'envoi. Le montant reste immobilisé, à dessein — le rejouer
+  /// risquerait de payer deux fois. Quelqu'un doit vérifier chez l'opérateur et
+  /// trancher.
+  bool get estIncertain => statut == 'incertain';
+
   String get libelleStatut {
     switch (statut) {
       case 'demandee':
@@ -149,6 +157,13 @@ class RetraitModel {
         return 'Échec, nouvelle tentative prévue';
       case 'annulee':
         return 'Annulé';
+      case 'incertain':
+        // Ce statut tombait dans le cas par défaut : l'auteur lisait le mot
+        // « incertain » tout seul, sous une icône d'attente identique à celle
+        // d'une demande ordinaire. Rien ne lui disait que sa somme était
+        // bloquée, ni pourquoi son solde ne remontait pas. Il redemandait un
+        // retrait, refusé pour solde insuffisant, sans comprendre.
+        return 'Virement parti, confirmation en attente chez l\'opérateur';
       default:
         return statut;
     }

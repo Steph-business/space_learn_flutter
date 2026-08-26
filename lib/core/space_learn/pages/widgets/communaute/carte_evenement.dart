@@ -9,6 +9,8 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:space_learn_flutter/core/services/rappel_evenement.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/proximite_evenement.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/temps_relatif.dart';
 
 /// Une annonce ou un événement, tel qu'il apparaît dans une liste.
 ///
@@ -290,45 +292,81 @@ class _CarteEvenementState extends State<CarteEvenement> {
                 // evenement en garde deux, mais celle-ci porte desormais son
                 // nom et se detache : c'est la seule qui engage le lecteur a
                 // se deplacer.
+                // Souple, et non rigide.
+                //
+                // Le badge s'est allongé — « Dans 2 semaines · 9 sept. 2026 »
+                // là où il n'y avait qu'une date. Sur un écran étroit et avec
+                // une catégorie au nom long, un Container rigide déborderait de
+                // sa rangée. Flexible le laisse rendre la main : c'est la fin
+                // de la date qui s'abrège, pas la mise en page qui casse.
                 if (evenement.dateEvenement != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: evenement.passe
-                          ? AppColors.textHint.withValues(alpha: 0.12)
-                          : accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusXs,
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Iconsax.calendar_1,
-                          size: 10,
-                          color: evenement.passe
-                              ? AppColors.textSecondary
-                              : accent,
+                      decoration: BoxDecoration(
+                        color: evenement.passe
+                            ? AppColors.textHint.withValues(alpha: 0.12)
+                            : accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusXs,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          DateFormat(
-                            'd MMM yyyy',
-                            'fr_FR',
-                          ).format(evenement.dateEvenement!),
-                          style: GoogleFonts.poppins(
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Iconsax.calendar_1,
+                            size: 10,
                             color: evenement.passe
                                 ? AppColors.textSecondary
                                 : accent,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          // La distance d'abord, la date ensuite.
+                          //
+                          // « 17 août 2026 » dit la même chose le jour de la
+                          // publication et trois semaines plus tard : c'est au
+                          // lecteur de calculer si ça le concerne, et personne
+                          // ne calcule. « Demain » se lit sans effort et change
+                          // tout seul à mesure que la date approche.
+                          //
+                          // La date exacte reste : elle seule permet de noter le
+                          // rendez-vous quelque part.
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: proximiteEvenement(
+                                    evenement.dateEvenement!,
+                                  ),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text:
+                                      " · ${DateFormat('d MMM yyyy', 'fr_FR').format(evenement.dateEvenement!)}",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            style: TextStyle(
+                              color: evenement.passe
+                                  ? AppColors.textSecondary
+                                  : accent,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
               ],
@@ -361,9 +399,20 @@ class _CarteEvenementState extends State<CarteEvenement> {
                           ? evenement.nomAuteur!.trim()
                           : null);
 
-                final datePubStr = evenement.creeLe != null
-                    ? "Publié le ${DateFormat('d MMM yyyy', 'fr_FR').format(evenement.creeLe!)}"
-                    : null;
+                // Une annonce se date par son âge, un rendez-vous par sa date.
+                //
+                // « Publié le 25 juil. 2026 » sur une annonce qui dit « très
+                // bientôt » se lit comme du frais alors qu'elle a un mois : la
+                // date exacte n'a rien de faux, elle ne dit simplement pas
+                // qu'elle est vieille. Un rendez-vous, lui, garde la date de
+                // publication telle quelle — sa distance à nous est déjà dans
+                // le badge du haut, et deux formulations relatives sur la même
+                // carte se marcheraient dessus.
+                final datePubStr = evenement.creeLe == null
+                    ? null
+                    : evenement.dateEvenement == null
+                    ? "Publié ${tempsRelatif(evenement.creeLe!)}"
+                    : "Publié le ${DateFormat('d MMM yyyy', 'fr_FR').format(evenement.creeLe!)}";
 
                 final hasAuthor = nomAuteurEffectif != null;
                 final hasPubDate = datePubStr != null;

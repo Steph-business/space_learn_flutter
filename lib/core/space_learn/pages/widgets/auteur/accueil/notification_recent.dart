@@ -31,6 +31,10 @@ String libelleTypeNotification(String type) {
       return 'ACHAT';
     case 'paiement':
       return 'PAIEMENT';
+    // Sans ce cas, « paiement_echoue » tombait dans le repli et s'affichait
+    // « PAIEMENT ECHOUE », sans accents.
+    case 'paiement_echoue':
+      return 'PAIEMENT ÉCHOUÉ';
     case 'annonce':
       return 'ANNONCE';
     case 'evenement':
@@ -42,6 +46,80 @@ String libelleTypeNotification(String type) {
       // Un type inconnu reste lisible : les tirets bas s'effacent.
       return type.replaceAll('_', ' ').toUpperCase();
   }
+}
+
+IconData iconeDuTypeDeNotification(String type) {
+  final t = type.toLowerCase();
+  // L'echec se teste AVANT le cas general : « paiement_echoue » contient
+  // « paiement », et l'ordre des conditions decide donc de tout.
+  if (notificationEstUnEchec(t)) {
+    return Iconsax.close_circle;
+  }
+  if (t.contains('payment') ||
+      t.contains('paiement') ||
+      t.contains('vente') ||
+      t.contains('achat')) {
+    return Iconsax.wallet_3;
+  }
+  if (t.contains('review') || t.contains('avis')) {
+    return Iconsax.star;
+  }
+  if (t.contains('message') || t.contains('reponse')) {
+    return Iconsax.message_2;
+  }
+  if (t.contains('chapitre') || t.contains('livre') || t.contains('lecture')) {
+    return Iconsax.book;
+  }
+  if (t.contains('abonné') || t.contains('follow')) {
+    return Iconsax.user_add;
+  }
+  return Iconsax.notification;
+}
+
+/// Un type qui annonce que quelque chose n'a PAS abouti.
+///
+/// Le test vit a part parce que deux fonctions en dependent — la couleur et
+/// l'icone — et qu'elles doivent dire la meme chose. Une pastille verte au-
+/// dessus d'une icone d'echec serait pire que le defaut d'origine.
+bool notificationEstUnEchec(String t) =>
+    t.contains('echoue') ||
+    t.contains('echec') ||
+    t.contains('annule') ||
+    t.contains('refuse') ||
+    t.contains('failed');
+
+Color couleurDuTypeDeNotification(String type) {
+  final t = type.toLowerCase();
+  // « paiement_echoue » CONTIENT « paiement » : sans ce test place en
+  // premier, l'echec heritait du vert du succes. Le lecteur voyait donc
+  // « votre commande a ete annulee » en vert, la meme couleur que
+  // « paiement valide » juste en dessous — la couleur disait le contraire
+  // du texte, et c'est la couleur qu'on lit en premier.
+  if (notificationEstUnEchec(t)) {
+    return AppColors.error;
+  }
+  if (t.contains('payment') ||
+      t.contains('paiement') ||
+      t.contains('vente') ||
+      t.contains('achat')) {
+    return AppColors.success;
+  }
+  if (t.contains('review') || t.contains('avis')) {
+    return AppColors.warning;
+  }
+  if (t.contains('message') || t.contains('reponse')) {
+    return AppColors.secondary;
+  }
+  if (t.contains('chapitre') || t.contains('livre')) {
+    return AppColors.violet;
+  }
+  if (t.contains('lecture')) {
+    return AppColors.primary;
+  }
+  if (t.contains('abonné') || t.contains('follow')) {
+    return AppColors.pinkVivid;
+  }
+  return AppColors.primary;
 }
 
 class RecentNotificationsPage extends StatefulWidget {
@@ -88,57 +166,6 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
     if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes}m';
     if (diff.inHours < 24) return 'Il y a ${diff.inHours}h';
     return 'Il y a ${diff.inDays}j';
-  }
-
-  IconData _iconForType(String type) {
-    final t = type.toLowerCase();
-    if (t.contains('payment') ||
-        t.contains('paiement') ||
-        t.contains('vente') ||
-        t.contains('achat')) {
-      return Iconsax.wallet_3;
-    }
-    if (t.contains('review') || t.contains('avis')) {
-      return Iconsax.star;
-    }
-    if (t.contains('message') || t.contains('reponse')) {
-      return Iconsax.message_2;
-    }
-    if (t.contains('chapitre') ||
-        t.contains('livre') ||
-        t.contains('lecture')) {
-      return Iconsax.book;
-    }
-    if (t.contains('abonné') || t.contains('follow')) {
-      return Iconsax.user_add;
-    }
-    return Iconsax.notification;
-  }
-
-  Color _accentColorForType(String type) {
-    final t = type.toLowerCase();
-    if (t.contains('payment') ||
-        t.contains('paiement') ||
-        t.contains('vente') ||
-        t.contains('achat')) {
-      return AppColors.success;
-    }
-    if (t.contains('review') || t.contains('avis')) {
-      return AppColors.warning;
-    }
-    if (t.contains('message') || t.contains('reponse')) {
-      return AppColors.secondary;
-    }
-    if (t.contains('chapitre') || t.contains('livre')) {
-      return AppColors.violet;
-    }
-    if (t.contains('lecture')) {
-      return AppColors.primary;
-    }
-    if (t.contains('abonné') || t.contains('follow')) {
-      return AppColors.pinkVivid;
-    }
-    return AppColors.primary;
   }
 
   Future<void> _supprimer(BuildContext context, NotificationModel notif) async {
@@ -295,8 +322,8 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
               onDismissed: (_) => _supprimer(context, notif),
               child: _NotificationCardFromModel(
                 model: notif,
-                icon: _iconForType(notif.type),
-                accentColor: _accentColorForType(notif.type),
+                icon: iconeDuTypeDeNotification(notif.type),
+                accentColor: couleurDuTypeDeNotification(notif.type),
                 timeAgo: _formatTimeAgo(notif.creeLe),
                 onTap: () => _handleNotificationTap(context, notif),
               ),

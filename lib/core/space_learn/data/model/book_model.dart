@@ -58,6 +58,17 @@ class BookModel {
   final DateTime? creeLe;
   final DateTime? majLe;
 
+  /// Date de MISE EN VENTE, distincte de la date de création de la fiche.
+  ///
+  /// L'application crée le livre en brouillon dès l'ouverture du formulaire,
+  /// avant tout dépôt de manuscrit : `creeLe` marque donc ce premier instant,
+  /// pas la parution. Un auteur qui commence une fiche en janvier et publie en
+  /// août voyait son livre daté de janvier.
+  ///
+  /// Nulle pour tout le catalogue antérieur — le serveur ne remplit pas cette
+  /// colonne rétroactivement, faute de savoir. D'où [dateAAfficher].
+  final DateTime? publieLe;
+
   // Stats - Made robust with gutters to avoid Null errors during Hot Reload
   final double? _noteMoyenne;
   final int? _telechargements;
@@ -94,6 +105,7 @@ class BookModel {
     this.adresseContratNft,
     this.creeLe,
     this.majLe,
+    this.publieLe,
     this.categorie,
     this.activites,
     this.progressions,
@@ -222,6 +234,9 @@ class BookModel {
       adresseContratNft: json['adresse_contrat_nft'],
       creeLe: json['cree_le'] != null ? DateTime.parse(json['cree_le']) : null,
       majLe: json['maj_le'] != null ? DateTime.parse(json['maj_le']) : null,
+      publieLe: json['publie_le'] != null
+          ? DateTime.tryParse(json['publie_le'].toString())
+          : null,
       noteMoyenne: (() {
         final val =
             json['note_moyenne'] ??
@@ -309,6 +324,13 @@ class BookModel {
       ? auteur!.nomComplet
       : 'Auteur inconnu';
 
+  /// La date à montrer pour ce livre : sa parution, ou à défaut sa création.
+  ///
+  /// Le repli n'est pas une approximation commode : pour tout le catalogue
+  /// antérieur au suivi de `publieLe`, la date de création EST la seule connue.
+  /// Même forme que [ReversementModel.dateAAfficher].
+  DateTime? get dateAAfficher => publieLe ?? creeLe;
+
   BookModel copyWith({
     String? id,
     String? auteurId,
@@ -327,6 +349,7 @@ class BookModel {
     String? adresseContratNft,
     DateTime? creeLe,
     DateTime? majLe,
+    DateTime? publieLe,
     double? noteMoyenne,
     int? telechargements,
     int? nombreMessages,
@@ -354,6 +377,7 @@ class BookModel {
       adresseContratNft: adresseContratNft ?? this.adresseContratNft,
       creeLe: creeLe ?? this.creeLe,
       majLe: majLe ?? this.majLe,
+      publieLe: publieLe ?? this.publieLe,
       noteMoyenne: noteMoyenne ?? this.noteMoyenne,
       telechargements: telechargements ?? this.telechargements,
       nombreMessages: nombreMessages ?? this.nombreMessages,
@@ -393,6 +417,7 @@ class BookModel {
       'adresse_contrat_nft': adresseContratNft,
       'cree_le': creeLe?.toIso8601String(),
       'maj_le': majLe?.toIso8601String(),
+      'publie_le': publieLe?.toIso8601String(),
       'note_moyenne': noteMoyenne,
       'telechargements': telechargements,
       'nombre_messages': nombreMessages,

@@ -540,22 +540,17 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   /// « Échec de l'opération : Exception: ce manuscrit est trop court ». Le
   /// serveur écrit maintenant des phrases utilisables — trop court, déjà
   /// publié sous un autre titre — et elles doivent arriver telles quelles.
-  static String _lisible(Object erreur) {
-    var texte = erreur.toString();
-    for (final prefixe in [
-      'Exception: ',
-      'HttpException: ',
-      'FormatException: ',
-    ]) {
-      if (texte.startsWith(prefixe)) {
-        texte = texte.substring(prefixe.length);
-        break;
-      }
-    }
-    texte = texte.trim();
-    if (texte.isEmpty) return "L'opération a échoué. Réessayez.";
-    return texte[0].toUpperCase() + texte.substring(1);
-  }
+  /// Cette fonction ne retirait que le préfixe, et laissait passer tout le
+  /// reste : une coupure réseau affichait « Failed host lookup: '144.91.101.16'
+  /// (OS Error: No address associated with hostname) » à un auteur venu publier
+  /// un livre. L'adresse du serveur avec.
+  ///
+  /// messageLisible, dans core/utils/message_erreur.dart, fait déjà ce travail
+  /// pour toute l'application : il distingue une panne de transport d'un refus
+  /// du serveur, et se tait dès qu'un texte sent le diagnostic. Ce fichier
+  /// l'importait déjà sans l'appeler.
+  static String _lisible(Object erreur) =>
+      messageLisible(erreur, repli: "L'opération a échoué. Réessayez.");
 
   void _showSuccessDialog({
     required bool isModification,

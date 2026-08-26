@@ -910,6 +910,11 @@ class _SalesReportPageState extends State<SalesReportPage> {
       'en_cours' => (AppColors.primary, Icons.sync_rounded),
       'echouee' => (AppColors.error, Icons.refresh_rounded),
       'annulee' => (AppColors.textHint, Icons.close_rounded),
+      // Un virement dont le sort est inconnu portait l'horloge de l'attente
+      // ordinaire : à l'œil, rien ne le distinguait d'une demande déposée la
+      // veille. Le point d'interrogation dit ce qu'il en est — on ne sait pas
+      // encore, et c'est précisément pour cela que la somme ne revient pas.
+      'incertain' => (AppColors.warning, Icons.help_outline_rounded),
       _ => (AppColors.warning, Icons.schedule_rounded),
     };
 

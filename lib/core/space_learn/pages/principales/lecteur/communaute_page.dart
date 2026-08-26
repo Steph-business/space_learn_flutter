@@ -589,11 +589,11 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
   /// Absente s'il n'y en a aucun. Un titre au-dessus du vide donne
   /// l'impression d'un chargement qui n'aboutit pas.
   List<Widget> _sectionAgenda() =>
-      _sectionPublications("Prochains rendez-vous", _rendezVousAVenir);
+      _sectionPublications("Rendez-vous", _rendezVousAVenir);
 
   /// « Actualités de vos auteurs » : ce qui se lit.
   List<Widget> _sectionActualites() =>
-      _sectionPublications("Actualités de vos auteurs", _actualites);
+      _sectionPublications("Actualités", _actualites);
 
   List<Widget> _sectionPublications(String titre, List<Evenement> membres) {
     if (membres.isEmpty) return const [];

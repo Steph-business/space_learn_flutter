@@ -11,6 +11,7 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/readerStatsService.dart';
@@ -65,6 +66,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   bool _isLoadingStats = true;
+
+  /// Empêche un second appel pendant que le serveur répond. Sur un réseau lent,
+  /// la boîte de dialogue se referme aussitôt et rien n'indique qu'il se passe
+  /// quelque chose : sans ce garde-fou, on tape deux fois.
+  bool _basculeEnCours = false;
 
   @override
   void initState() {
@@ -619,35 +625,60 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  /// Bascule vers l'espace auteur — côté SERVEUR, et pas seulement à l'écran.
+  ///
+  /// Cette bascule n'écrivait que dans le stockage local : elle changeait la
+  /// page affichée sans rien dire au serveur. Le compte restait « lecteur », et
+  /// c'est le rôle porté par le jeton qui décide de ce qui est permis. Tant que
+  /// la publication n'était gardée par rien, personne ne s'en apercevait ;
+  /// depuis qu'elle exige le rôle Auteur, le parcours se terminait par un refus
+  /// au dernier geste — après avoir écrit le livre, choisi la couverture et
+  /// fixé le prix.
+  ///
+  /// On demande donc le profil au serveur, on attend son accord, et on ne
+  /// navigue qu'ensuite. Le jeton renvoyé porte le nouveau rôle ; le service
+  /// l'enregistre à la place de l'ancien.
   Future<void> _executeSwitchToAuthorMode(BuildContext context) async {
+    if (_basculeEnCours) return;
+    setState(() => _basculeEnCours = true);
+
     try {
-      final token = await TokenStorage.getToken();
-      if (token == null) return;
-      final authService = AuthService();
-      final user = await authService.getUser(token);
-      if (user == null) return;
+      // Le serveur résout le profil par son libellé aussi bien que par son
+      // identifiant, et n'accepte que les profils librement attribuables —
+      // lecteur, auteur, éditeur. « Auteur » en fait partie.
+      final tokenUser = await AuthService().updateProfileForUser("Auteur");
 
       await ProfileStorage.saveSelectedProfileRole("auteur");
       if (!context.mounted) return;
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
           builder: (context) => ecrivainHome.HomePageAuteur(
             key: ecrivainHome.HomePageAuteur.navKey,
-            profileId: user.profilId,
-            userName: user.nomComplet,
+            profileId: tokenUser.user.profilId,
+            userName: tokenUser.user.nomComplet,
           ),
         ),
         (route) => false,
       );
     } catch (e) {
       if (context.mounted) {
+        // Le service relaie le message du serveur dans l'exception. Le montrer
+        // vaut mieux qu'un « Erreur » générique : c'est lui qui dit si le
+        // profil est refusé, si le compte n'est plus actif, ou si le réseau a
+        // lâché.
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur lors du changement de profil.",
+          message: messageLisible(
+            e,
+            repli: "Le passage en mode auteur a échoué.",
+          ),
           isError: true,
         );
       }
+    } finally {
+      if (mounted) setState(() => _basculeEnCours = false);
     }
   }
 

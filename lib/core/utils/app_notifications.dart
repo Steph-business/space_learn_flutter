@@ -104,7 +104,7 @@ class AppNotifications {
       accentColor = AppColors.error;
     } else if (isSuccess) {
       icon = Icons.verified_user_outlined;
-      accentColor = AppColors.success;
+      accentColor = AppColors.primary;
     }
 
     return showDialog(

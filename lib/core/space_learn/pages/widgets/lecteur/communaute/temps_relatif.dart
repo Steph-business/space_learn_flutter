@@ -12,6 +12,16 @@ String tempsRelatif(DateTime date, {DateTime? maintenant}) {
   // juste envoyé pouvait s'afficher « il y a -1 min ».
   if (ecart.isNegative) return "à l'instant";
 
+  // Au-delà d'un mois, on cesse de compter les semaines.
+  //
+  // Une annonce vit trois mois dans le fil. Sans ce palier, la plus ancienne
+  // s'affichait « il y a 12 semaines » — une durée que personne ne se
+  // représente, et qui donne au texte l'air d'être plus frais qu'il n'est.
+  // Le mois vaut trente jours : un repère, pas un calcul.
+  if (ecart.inDays >= 30) {
+    final mois = ecart.inDays ~/ 30;
+    return "il y a $mois mois";
+  }
   if (ecart.inDays >= 7) {
     final semaines = ecart.inDays ~/ 7;
     return "il y a $semaines semaine${semaines > 1 ? 's' : ''}";

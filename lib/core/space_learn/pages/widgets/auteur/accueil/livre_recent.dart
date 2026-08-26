@@ -38,8 +38,11 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
           if (mounted) {
             setState(() {
               books.sort(
-                (a, b) => (b.creeLe ?? DateTime(0)).compareTo(
-                  a.creeLe ?? DateTime(0),
+                // « Récent » veut dire récemment PARU, pas récemment
+                // ébauché : un brouillon vieux de six mois publié hier doit
+                // remonter en tête.
+                (a, b) => (b.dateAAfficher ?? DateTime(0)).compareTo(
+                  a.dateAAfficher ?? DateTime(0),
                 ),
               );
               _books = books.take(3).toList();
