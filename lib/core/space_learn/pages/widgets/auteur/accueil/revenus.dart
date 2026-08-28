@@ -93,7 +93,8 @@ class _RevenusState extends State<Revenus> {
         : (activeStats[repli] is List ? activeStats[repli] as List : const []);
 
     final valeurs = <double>[
-      for (final v in brut) if (v is num) v.toDouble() else 0.0,
+      for (final v in brut)
+        if (v is num) v.toDouble() else 0.0,
     ];
     // Un seul point ne dessine pas de courbe : fl_chart a besoin de deux
     // extrémités pour tracer un segment.
@@ -117,6 +118,25 @@ class _RevenusState extends State<Revenus> {
         ? "$quoi — depuis le début"
         : "$quoi (${_currentPeriod.label})";
   }
+
+  /// Ce que le graphique couvre — qui n'est pas toujours ce que le total dit.
+  ///
+  /// Sur « Tout », le grand chiffre porte bien tout l'historique, mais le
+  /// graphique, lui, ne montre que les douze derniers mois : le serveur
+  /// découpe cette période en douze tranches mensuelles et écarte
+  /// explicitement ce qui tombe avant (`repartir`, modules/livre/repository.go
+  /// — « une vente hors fenêtre n'appartient à aucune tranche »).
+  ///
+  /// Un auteur qui vend depuis deux ans voyait donc un total et une courbe qui
+  /// ne parlaient pas de la même période, sans que rien ne le dise.
+  String _porteeDuGraphique() {
+    return _currentPeriod.key == 'all'
+        ? "Les douze derniers mois"
+        : _currentPeriod.fullLabel;
+  }
+
+  /// Aucune vente, aucune lecture : un graphique n'a rien à montrer.
+  bool get _serieVide => _serie().every((v) => v == 0);
 
   @override
   void didUpdateWidget(Revenus oldWidget) {
@@ -320,12 +340,27 @@ class _RevenusState extends State<Revenus> {
 
           const SizedBox(height: 28),
 
+          // Ce que le graphique couvre, dit au-dessus de lui.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _porteeDuGraphique(),
+              style: GoogleFonts.poppins(
+                color: AppColors.textHint,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
           // Chart Section with loader overlay
           SizedBox(
-            height: 120,
+            height: 150,
             child: Stack(
               children: [
-                LineChart(_buildChartData()),
+                if (_serieVide) _rienAMontrer() else BarChart(_buildBarData()),
                 if (_isLoadingPeriodData)
                   Positioned.fill(
                     child: Container(
@@ -343,17 +378,6 @@ class _RevenusState extends State<Revenus> {
                     ),
                   ),
               ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // X-Axis Labels
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: _buildXAxisLabels(),
             ),
           ),
 
@@ -382,90 +406,150 @@ class _RevenusState extends State<Revenus> {
     );
   }
 
-  /// Les étiquettes de l'axe, prises de la série elle-même.
+  /// Ce qu'on affiche quand il n'y a encore rien à afficher.
   ///
-  /// Elles étaient écrites en dur, et ne décrivaient rien : « Lun, Mar, Jeu,
-  /// Sam, Dim » sous sept points, « Sem 1 » à « Sem 4 » sous quatre mois,
-  /// « Jan » à « Déc » sous une fenêtre glissante. Chaque valeur s'affichait
-  /// donc sous un moment qui n'était pas le sien.
-  ///
-  /// Cinq repères au plus : au-delà, ils se chevauchent sur un téléphone.
-  List<Widget> _buildXAxisLabels() {
-    final noms = _etiquettes();
-    if (noms.length <= 5) {
-      return [for (final n in noms) _buildDateLabel(n)];
-    }
-
-    final pas = (noms.length - 1) / 4;
-    return [
-      for (var i = 0; i < 5; i++)
-        _buildDateLabel(noms[(i * pas).round().clamp(0, noms.length - 1)]),
-    ];
+  /// Douze mois à zéro dessinent une ligne plate au ras du sol : le lecteur
+  /// croit à un graphique cassé, et n'apprend rien. Tant qu'aucune vente n'est
+  /// enregistrée, mieux vaut dire ce qui remplira cette place.
+  Widget _rienAMontrer() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isRevenueSelected
+                  ? Icons.savings_outlined
+                  : Icons.auto_stories_outlined,
+              color: AppColors.textHint,
+              size: 28,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              isRevenueSelected
+                  ? "Aucune vente sur cette période"
+                  : "Aucune lecture sur cette période",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isRevenueSelected
+                  ? "Vos gains s'afficheront ici mois par mois, dès la première vente."
+                  : "Le nombre de lectures s'affichera ici mois par mois.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: AppColors.textHint,
+                fontSize: 11.5,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  LineChartData _buildChartData() {
-    // La série vient du serveur, découpée pour la période demandée.
-    //
-    // Elle était fabriquée ici, et deux fois de travers. D'abord la courbe des
-    // lectures n'existait pas : on divisait les revenus par 1500, un nombre
-    // sans aucun rapport avec des lectures, affiché sous le mot « Lectures ».
-    // Ensuite le découpage était inventé : sous « Semaine » on montrait les
-    // sept premiers mois de la fenêtre comme s'ils étaient sept jours, sous
-    // « Mois » les quatre premiers mois sous « Sem 1 » à « Sem 4 ».
-    //
-    // Le serveur a les dates : c'est lui qui découpe, et il envoie les
-    // étiquettes avec.
-    final chartValues = _serie();
-    final pointCount = chartValues.length;
+  /// L'histogramme des revenus, une barre par tranche.
+  ///
+  /// C'était une courbe. Une courbe interpole entre deux points : entre mars et
+  /// avril, elle dessine une pente qui laisse croire à des ventes qui n'ont pas
+  /// eu lieu. Un revenu mensuel est une somme par tranche, pas un signal
+  /// continu — la barre est la forme juste.
+  ///
+  /// Elle règle aussi un défaut de placement. Les étiquettes étaient une
+  /// `Row` posée SOUS le graphique, en `spaceBetween` : cinq noms répartis à
+  /// intervalles égaux à l'écran alors qu'ils désignaient les tranches 0, 3, 6,
+  /// 8 et 11 — des écarts de trois, trois, deux et trois mois. « Mai » se
+  /// dessinait aux trois quarts de la largeur quand sa vraie place était à
+  /// 72,7 %. Ici, `titlesData` accroche chaque étiquette à SA barre : le
+  /// décalage ne peut plus exister.
+  BarChartData _buildBarData() {
+    final valeurs = _serie();
+    final noms = _etiquettes();
 
-    double maxY = chartValues.isEmpty
+    double maxY = valeurs.isEmpty
         ? 10
-        : chartValues.reduce((a, b) => a > b ? a : b);
+        : valeurs.reduce((a, b) => a > b ? a : b);
     if (maxY == 0) maxY = 10;
     maxY = maxY * 1.2;
 
-    List<FlSpot> spots = [];
-    for (int i = 0; i < pointCount; i++) {
-      spots.add(FlSpot(i.toDouble(), chartValues[i]));
-    }
+    // Au-delà de six repères, les noms se chevauchent sur un téléphone : on
+    // n'en montre qu'un sur `pas`, et TOUJOURS le dernier — c'est le mois en
+    // cours, celui qu'on vient lire.
+    final pas = (valeurs.length / 6).ceil().clamp(1, valeurs.length);
+    final dernier = valeurs.length - 1;
 
-    return LineChartData(
-      gridData: const FlGridData(show: false),
-      titlesData: const FlTitlesData(show: false),
-      borderData: FlBorderData(show: false),
-      minX: 0,
-      maxX: (pointCount - 1).toDouble(),
+    return BarChartData(
+      alignment: BarChartAlignment.spaceAround,
       minY: 0,
       maxY: maxY,
-      lineBarsData: [
-        LineChartBarData(
-          spots: spots.isEmpty ? [const FlSpot(0, 0)] : spots,
-          isCurved: true,
-          color: AppColors.accentInk,
-          barWidth: 3,
-          isStrokeCapRound: true,
-          dotData: FlDotData(
-            show: true,
-            getDotPainter: (spot, percent, barData, index) =>
-                FlDotCirclePainter(
-                  radius: 4,
-                  color: AppColors.accentInk,
-                  strokeWidth: 2,
-                  strokeColor: AppColors.cardBackground,
-                ),
-          ),
-          belowBarData: BarAreaData(
-            show: true,
-            gradient: LinearGradient(
-              colors: [
-                AppColors.secondary.withOpacity(0.2),
-                AppColors.secondary.withOpacity(0.0),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
+      gridData: const FlGridData(show: false),
+      borderData: FlBorderData(show: false),
+      barTouchData: BarTouchData(
+        touchTooltipData: BarTouchTooltipData(
+          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+            final nom = groupIndex < noms.length ? noms[groupIndex] : '';
+            final valeur = rod.toY;
+            final texte = isRevenueSelected
+                ? "$nom\n${valeur.toStringAsFixed(0)} FCFA"
+                : "$nom\n${valeur.round()} lecture${valeur.round() > 1 ? 's' : ''}";
+            return BarTooltipItem(
+              texte,
+              GoogleFonts.poppins(
+                color: AppColors.textPrimary,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            );
+          },
+        ),
+      ),
+      titlesData: FlTitlesData(
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 24,
+            getTitlesWidget: (value, meta) {
+              final i = value.round();
+              if (i < 0 || i >= noms.length) return const SizedBox.shrink();
+              if (i != dernier && i % pas != 0) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: _buildDateLabel(noms[i]),
+              );
+            },
           ),
         ),
+      ),
+      barGroups: [
+        for (var i = 0; i < valeurs.length; i++)
+          BarChartGroupData(
+            x: i,
+            barRods: [
+              BarChartRodData(
+                toY: valeurs[i],
+                // Le mois en cours se distingue : c'est celui qu'on regarde.
+                color: i == dernier
+                    ? AppColors.accentInk
+                    : AppColors.secondary.withValues(alpha: 0.55),
+                width: valeurs.length > 8 ? 9 : 16,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(4),
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }

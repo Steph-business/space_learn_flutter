@@ -330,74 +330,134 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showDeleteAccountDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        ),
-        title: Row(
-          children: [
-            const Icon(
-              Icons.warning_amber_rounded,
-              color: AppColors.error,
-              size: 28,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              "Supprimer mon compte",
-              style: GoogleFonts.poppins(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          "Cette action est irréversible. Votre profil, vos préférences et l'accès à votre bibliothèque seront définitivement supprimés.",
-          style: GoogleFonts.poppins(
-            color: AppColors.textSecondary,
-            fontSize: 13,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              "Annuler",
-              style: GoogleFonts.poppins(color: AppColors.textHint),
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+            border: Border.all(
+              color: AppColors.textPrimary.withValues(alpha: 0.08),
             ),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Warning icon
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.error.withValues(alpha: 0.12),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 28,
+                  color: AppColors.error,
+                ),
               ),
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await SessionService.terminer();
-              if (context.mounted) {
-                AppNotifications.showPremiumDialog(
-                  context,
-                  title: "Demande transmise",
-                  message:
-                      "Votre demande de suppression de compte a bien été transmise.",
-                  confirmText: "Fermer",
-                  isSuccess: true,
-                );
-              }
-            },
-            child: Text(
-              "Confirmer la suppression",
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 20),
+              // Title
+              Text(
+                "Supprimer mon compte",
+                style: GoogleFonts.poppins(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
+              const SizedBox(height: 12),
+              // Message
+              Text(
+                "Cette action est irréversible. Votre profil, vos préférences et l'accès à votre bibliothèque seront définitivement supprimés.",
+                style: GoogleFonts.poppins(
+                  color: AppColors.textPrimary.withValues(alpha: 0.7),
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              // Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textHint,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusInner,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          "Annuler",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          await SessionService.terminer();
+                          if (context.mounted) {
+                            AppNotifications.showPremiumDialog(
+                              context,
+                              title: "Demande transmise",
+                              message:
+                                  "Votre demande de suppression de compte a bien été transmise.",
+                              confirmText: "Fermer",
+                              isSuccess: true,
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusInner,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          "Supprimer",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

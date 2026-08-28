@@ -38,6 +38,10 @@ class _UserGuidePageState extends State<UserGuidePage> {
   String? _sectionLue;
   final TtsService _tts = TtsService();
 
+  /// Lecture complète du guide : index de la section en cours, ou -1.
+  int _lectureTouteIndex = -1;
+  List<_GuideSection> _lectureTouteSections = [];
+
   @override
   void initState() {
     super.initState();
@@ -46,10 +50,22 @@ class _UserGuidePageState extends State<UserGuidePage> {
 
   void _surEtatVoix() {
     if (!mounted) return;
-    setState(() {
-      // La voix s'est tue d'elle-même : plus aucune section n'est en cours.
-      if (_tts.isStopped) _sectionLue = null;
-    });
+    // La voix s'est tue d'elle-même : plus aucune section n'est en cours.
+    if (_tts.isStopped) {
+      _sectionLue = null;
+      // En mode « tout le guide », passer à la section suivante.
+      if (_lectureTouteIndex >= 0) {
+        _lectureTouteIndex++;
+        if (_lectureTouteIndex < _lectureTouteSections.length) {
+          setState(() {});
+          _lireSectionDuGuide(_lectureTouteIndex);
+        } else {
+          _arreterLectureTotale();
+        }
+      } else {
+        setState(() {});
+      }
+    }
   }
 
   @override
@@ -60,6 +76,7 @@ class _UserGuidePageState extends State<UserGuidePage> {
     // d'emploi par-dessus l'écran suivant.
     _tts.removeListener(_surEtatVoix);
     _tts.stop();
+    _arreterLectureTotale();
     _searchController.dispose();
     super.dispose();
   }
@@ -96,61 +113,70 @@ class _UserGuidePageState extends State<UserGuidePage> {
           ),
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Barre de recherche dans le guide
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-                border: Border.all(
-                  color: AppColors.textHint.withValues(alpha: 0.3),
+          Column(
+            children: [
+              // Barre de recherche dans le guide
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusInner,
+                    ),
+                    border: Border.all(
+                      color: AppColors.textHint.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (v) =>
+                        setState(() => _searchQuery = v.trim().toLowerCase()),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: "Rechercher une aide, une fonctionnalité...",
+                      hintStyle: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: AppColors.textHint,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: accentColor,
+                        size: 22,
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
                 ),
               ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (v) =>
-                    setState(() => _searchQuery = v.trim().toLowerCase()),
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: AppColors.textPrimary,
-                ),
-                decoration: InputDecoration(
-                  hintText: "Rechercher une aide, une fonctionnalité...",
-                  hintStyle: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: AppColors.textHint,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: accentColor,
-                    size: 22,
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+
+              // Un seul parcours, celui de la personne qui consulte.
+              Expanded(
+                child: widget.estAuteur
+                    ? _buildAuthorGuide(isDark)
+                    : _buildReaderGuide(isDark),
               ),
-            ),
+            ],
           ),
 
-          // Un seul parcours, celui de la personne qui consulte.
-          Expanded(
-            child: widget.estAuteur
-                ? _buildAuthorGuide(isDark)
-                : _buildReaderGuide(isDark),
-          ),
+          // Mini-player en bas pendant la lecture complète du guide
+          if (_lectureTouteIndex >= 0) _buildMiniPlayer(accentColor),
         ],
       ),
     );
@@ -311,8 +337,17 @@ class _UserGuidePageState extends State<UserGuidePage> {
           "La plateforme retient 20 % sur chaque vente. Sur un livre à 2 000 FCFA, vous percevez donc 1 600 FCFA.",
           "Le formulaire affiche votre gain en francs pendant que vous saisissez le prix : plus besoin de calculer.",
         ],
+        // Le guide présentait les 5 000 F comme un plafond — « la fourchette
+        // conseillée va de 2 000 à 5 000 » — et y ajoutait une affirmation de
+        // marché que rien n'étaye : « un prix très élevé se vend rarement ».
+        //
+        // Il n'existe qu'une limite, et c'est le plancher. Le serveur le dit
+        // lui-même à côté des deux champs (modules/parametres/controller.go) :
+        // la fourchette est « un repérage, pas une limite », alors que « le
+        // plancher, lui, est une limite : en dessous, la vente est refusée ».
+        // Au-dessus de 2 000 F, l'auteur fixe son prix comme il l'entend.
         tip:
-            "La fourchette conseillée va de 2 000 à 5 000 FCFA. Rien ne vous y oblige, mais un prix très élevé se vend rarement sur ce marché.",
+            "Au-dessus de 2 000 FCFA, vous fixez votre prix librement : il n'y a pas de plafond. La fourchette que le formulaire affiche n'est qu'un repère pour situer votre saisie.",
       ),
       _GuideSection(
         icon: Icons.insights_rounded,
@@ -424,8 +459,17 @@ class _UserGuidePageState extends State<UserGuidePage> {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        _lectureTouteIndex >= 0 ? 100 : 24,
+      ),
       children: [
+        // Bouton « Écouter tout le guide »
+        _buildBoutonEcouterTout(sections, bannerColor),
+        const SizedBox(height: 12),
+
         // Carte d'action rapide / Démonstration en tête de liste
         Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -589,6 +633,283 @@ class _UserGuidePageState extends State<UserGuidePage> {
       morceaux.add("Astuce. ${section.tip}");
     }
     return morceaux.join(". ");
+  }
+
+  // ───────────────────── Écouter tout le guide ─────────────────────
+
+  Widget _buildBoutonEcouterTout(
+    List<_GuideSection> sections,
+    Color accentColor,
+  ) {
+    final enCours = _lectureTouteIndex >= 0;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: enCours
+              ? [accentColor.withOpacity(0.25), accentColor.withOpacity(0.10)]
+              : [accentColor.withOpacity(0.12), accentColor.withOpacity(0.04)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        border: Border.all(
+          color: accentColor.withOpacity(enCours ? 0.5 : 0.25),
+          width: 1.2,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => enCours
+              ? _arreterLectureTotale()
+              : _lancerLectureTotale(sections),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accentColor.withOpacity(0.18),
+                    border: Border.all(
+                      color: accentColor.withOpacity(0.4),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(
+                    enCours ? Icons.stop_rounded : Icons.headphones_rounded,
+                    color: accentColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        enCours
+                            ? "Arrêter la lecture audio"
+                            : "Écouter tout le guide",
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        enCours
+                            ? "Section ${_lectureTouteIndex + 1} / ${_lectureTouteSections.length}"
+                            : "La synthèse vocale lit chaque section à la suite.",
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  enCours
+                      ? Icons.stop_circle_outlined
+                      : Icons.play_circle_fill_rounded,
+                  color: accentColor,
+                  size: 32,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _lancerLectureTotale(List<_GuideSection> sections) async {
+    if (sections.isEmpty) return;
+
+    if (!_tts.voixFrancaiseDisponible && _tts.etatVoix != EtatVoix.inconnu) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: _tts.etatVoix == EtatVoix.moteurIndisponible
+            ? "Cet appareil n'a pas de moteur de synthèse vocale."
+            : "Aucune voix française installée. Ajoutez-en une dans "
+                  "Paramètres › Accessibilité › Synthèse vocale.",
+        isError: true,
+      );
+      return;
+    }
+
+    setState(() {
+      _lectureTouteSections = sections;
+      _lectureTouteIndex = 0;
+    });
+    await _lireSectionDuGuide(0);
+  }
+
+  Future<void> _lireSectionDuGuide(int index) async {
+    if (index < 0 || index >= _lectureTouteSections.length) {
+      _arreterLectureTotale();
+      return;
+    }
+    final section = _lectureTouteSections[index];
+    setState(() {
+      _lectureTouteIndex = index;
+      _sectionLue = section.title;
+    });
+    await _tts.speak(_texteDe(section), apercu: true);
+  }
+
+  void _arreterLectureTotale() {
+    _tts.stop();
+    if (mounted) {
+      setState(() {
+        _lectureTouteIndex = -1;
+        _lectureTouteSections = [];
+        _sectionLue = null;
+      });
+    }
+  }
+
+  Widget _buildMiniPlayer(Color accentColor) {
+    final sectionTitle =
+        _lectureTouteIndex >= 0 &&
+            _lectureTouteIndex < _lectureTouteSections.length
+        ? _lectureTouteSections[_lectureTouteIndex].title
+        : "";
+    final isFirst = _lectureTouteIndex <= 0;
+    final isLast = _lectureTouteIndex >= _lectureTouteSections.length - 1;
+
+    return Positioned(
+      left: 12,
+      right: 12,
+      bottom: MediaQuery.of(context).padding.bottom + 12,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+          border: Border.all(color: accentColor.withOpacity(0.3), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Indicateur animé
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accentColor.withOpacity(0.15),
+              ),
+              child: Icon(
+                _tts.isPlaying
+                    ? Icons.graphic_eq_rounded
+                    : Icons.headphones_rounded,
+                color: accentColor,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Titre de la section
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sectionTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    "${_lectureTouteIndex + 1} / ${_lectureTouteSections.length}",
+                    style: GoogleFonts.poppins(
+                      fontSize: 10.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Contrôles
+            IconButton(
+              icon: Icon(
+                Icons.skip_previous_rounded,
+                color: isFirst ? AppColors.textHint : AppColors.textPrimary,
+                size: 22,
+              ),
+              onPressed: isFirst
+                  ? null
+                  : () => _lireSectionDuGuide(_lectureTouteIndex - 1),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            ),
+            IconButton(
+              icon: Icon(
+                _tts.isPlaying
+                    ? Icons.pause_circle_filled_rounded
+                    : Icons.play_circle_fill_rounded,
+                color: accentColor,
+                size: 32,
+              ),
+              onPressed: () {
+                if (_tts.isPlaying) {
+                  _tts.pause();
+                } else if (_tts.isPaused) {
+                  _tts.resume();
+                } else {
+                  _lireSectionDuGuide(_lectureTouteIndex);
+                }
+              },
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.skip_next_rounded,
+                color: isLast ? AppColors.textHint : AppColors.textPrimary,
+                size: 22,
+              ),
+              onPressed: isLast
+                  ? null
+                  : () => _lireSectionDuGuide(_lectureTouteIndex + 1),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.close_rounded,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              onPressed: _arreterLectureTotale,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildSectionCard(_GuideSection section, bool isDark) {
