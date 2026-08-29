@@ -1,35 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Politique de trafic réseau.
-
-  L'application interroge ses API en clair, sur http://144.91.101.16:8083 et
-  :8084. Le manifeste portait `usesCleartextTraffic="false"` : Android bloque
-  alors la requête avant même qu'elle parte, et aucune API n'est joignable.
-
-  Deux mauvaises réponses existaient. Remettre `usesCleartextTraffic="true"`
-  rouvrirait le clair vers *n'importe quel* hôte, y compris un point d'accès
-  hostile capable de rejouer ou de modifier les échanges. Laisser `false`
-  rendrait l'application inutilisable.
-
-  Cette configuration n'ouvre le clair que pour le serveur du projet, et le
-  laisse interdit partout ailleurs.
-
-  Ce n'est qu'une étape. Les jetons d'authentification et les identifiants de
-  connexion transitent aujourd'hui en clair : n'importe qui sur le même réseau
-  peut les lire. La destination reste de servir les deux API en HTTPS derrière
-  Caddy — les ports 80 et 443 sont déjà ouverts sur la machine — puis de
-  pointer l'application sur https://<domaine> et de supprimer l'exception
-  ci-dessous.
--->
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">144.91.101.16</domain>
-    </domain-config>
-
-    <!-- Tout le reste : clair interdit. -->
-    <base-config cleartextTrafficPermitted="false">
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
 </network-security-config>
+
