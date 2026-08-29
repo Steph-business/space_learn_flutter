@@ -27,6 +27,11 @@ import '../../../data/dataServices/reading_time_storage.dart';
 import '../../../data/model/readingActivityModel.dart';
 import '../../../data/model/badgeModel.dart';
 import '../../../data/dataServices/libraryService.dart';
+import '../../widgets/lecteur/accueil/continuer_lecture.dart';
+import '../../widgets/lecteur/bandeau_ecoute.dart';
+import 'package:flutter/scheduler.dart';
+import '../../../../services/lecture_audio_livre.dart';
+import '../../widgets/details/reading_page.dart';
 import '../../../data/dataServices/bookService.dart';
 import '../../../data/dataServices/readerStatsService.dart';
 import '../../../data/dataServices/lectureService.dart';
@@ -87,6 +92,20 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   final GlobalKey _featuredBooksKey = GlobalKey();
 
   GoalModel? _dailyGoal;
+
+  /// La bibliothèque, progressions déjà fusionnées.
+  ///
+  /// Elle était calculée puis jetée : `updatedLibrary` ne servait qu'à
+  /// compter les livres terminés. La garder ne coûte aucun appel de plus —
+  /// `/api/library` est déjà dans le `Future.wait` du chargement — et c'est
+  /// elle qui dit quel livre est en cours.
+  List<LibraryModel> _bibliotheque = const [];
+
+  /// L'écoute d'un livre, sans l'ouvrir.
+  ///
+  /// Le service est unique : un seul livre parle à la fois, et l'écoute survit
+  /// à cet écran.
+  final LectureAudioLivre _audio = LectureAudioLivre.instance;
   CitationModel? _dailyCitation;
 
   bool _isLoading = true;
@@ -155,6 +174,129 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     _displayName = widget.userName;
     _initDisplayName();
     _loadData();
+    // Sans cet abonnement, `_surEcoute` n'était jamais appelé : `flutter
+    // analyze` le signalait d'ailleurs comme déclaré et non référencé.
+    //
+    // La conséquence se voyait à l'écran. Le bouton ▶ de « Continuer la
+    // lecture » lançait bien la voix, mais rien ne redessinait l'écran : la
+    // flèche ne devenait jamais deux barres, la roue de préparation
+    // n'apparaissait pas, et le bandeau d'écoute — posé en
+    // `bottomNavigationBar` sur `_audio.actif` — ne s'affichait pas non plus.
+    // On lançait une voix qu'aucun bouton de cet écran ne pouvait plus
+    // arrêter.
+    //
+    // La bibliothèque, qui porte la même carte, s'abonnait déjà ainsi.
+    _audio.addListener(_surEcoute);
+  }
+
+  @override
+  void dispose() {
+    // Le service est unique et survit à cet écran : ne pas se désabonner
+    // laisserait une fermeture appeler `setState` sur un widget démonté.
+    _audio.removeListener(_surEcoute);
+    super.dispose();
+  }
+
+  /// Le livre à reprendre : celui qu'on a lu le plus récemment.
+  ///
+  /// « En cours » veut dire commencé et pas fini — le même test que la
+  /// bibliothèque (bibliotheque_page.dart), pour que les deux écrans ne se
+  /// contredisent pas. Le tri par dernière lecture vient du même endroit.
+  ///
+  /// Un livre terminé n'a pas à revenir en tête d'accueil, et un livre jamais
+  /// ouvert n'est pas une reprise : c'est une découverte, et « Nouveautés » s'en
+  /// charge quelques centimètres plus bas.
+  LibraryModel? get _lectureEnCours {
+    final encours = _bibliotheque.where((item) {
+      final p = item.livre?.progressions;
+      if (p == null || p.isEmpty) return false;
+      final pourcentage = p.first.pourcentage.toDouble();
+      return pourcentage > 0 && pourcentage < 100;
+    }).toList();
+
+    if (encours.isEmpty) return null;
+
+    encours.sort((a, b) {
+      DateTime quand(LibraryModel item) {
+        final p = item.livre?.progressions;
+        if (p != null && p.isNotEmpty && p.first.majLe != null) {
+          return p.first.majLe!;
+        }
+        return item.creeLe ?? DateTime(0);
+      }
+
+      return quand(b).compareTo(quand(a));
+    });
+    return encours.first;
+  }
+
+  /// Ouvre le livre repris à la page où on l'a laissé.
+  /// Lance ou suspend l'écoute du livre repris, sans ouvrir la liseuse.
+  ///
+  /// La carte est construite à la main plutôt que par `toJson()` : celui-ci ne
+  /// porte pas de clé `auteur_nom`, et le service la lit pour titrer la
+  /// notification système. Sans elle, le bandeau annonce un auteur vide.
+  Future<void> _ecouter(BookModel livre) async {
+    await _audio.basculer({
+      'id': livre.id,
+      'titre': livre.titre,
+      'auteur_nom': livre.authorName,
+      'fichier_url': livre.fichierUrl,
+      'format': livre.format,
+      'image_couverture': livre.imageCouverture,
+    });
+  }
+
+  /// L'état de l'écoute a changé : la carte doit le refléter.
+  void _surEcoute() {
+    if (!mounted) return;
+
+    // Une notification peut tomber en pleine frame : le service est partagé et
+    // ses méthodes ne rencontrent pas toujours un `await` avant de notifier.
+    // `setState` et `showSnackBar` lèvent tous les deux dans cette phase.
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase != SchedulerPhase.idle &&
+        phase != SchedulerPhase.postFrameCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _surEcoute();
+      });
+      return;
+    }
+
+    setState(() {});
+
+    // Une erreur d'écoute se dit une fois, puis se retire — un EPUB refusé,
+    // un fichier qui ne vient pas.
+    final erreur = _audio.erreur;
+    if (erreur != null) {
+      AppNotifications.showSnackBar(context, message: erreur, isError: true);
+    }
+  }
+
+  Future<void> _reprendre(LibraryModel item) async {
+    final livre = item.livre;
+    if (livre == null) return;
+
+    final p = livre.progressions;
+    int? page;
+    if (p != null && p.isNotEmpty) {
+      if (p.first.lastPage > 0) {
+        page = p.first.lastPage;
+      } else if (p.first.chapitreCourant > 0) {
+        page = p.first.chapitreCourant;
+      }
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ReadingPage(book: livre.toJson(), initialPage: page),
+      ),
+    );
+    // Au retour, la progression a bougé : l'accueil doit la relire, sinon la
+    // carte annonce encore la page d'avant.
+    if (mounted) _loadData();
   }
 
   Future<void> _checkAndShowTour() async {
@@ -166,7 +308,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             SpaceLearnTour.startHomeTour(
               context: context,
               searchBarKey: _searchBarKey,
-              dailyGoalKey: _dailyGoal != null ? _dailyGoalKey : null,
+              // La deuxième étape vise la carte de cet emplacement, que ce
+              // soit la reprise de lecture ou l'objectif quotidien.
+              dailyGoalKey: (_lectureEnCours != null || _dailyGoal != null)
+                  ? _dailyGoalKey
+                  : null,
               featuredBooksKey: _featuredBooks.isNotEmpty
                   ? _featuredBooksKey
                   : null,
@@ -278,6 +424,19 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       final serieLocale = await ReadingTimeStorage.getReadingStreak(
         widget.profileId,
       );
+      // La cible que le lecteur a RÉELLEMENT réglée.
+      //
+      // `computeSmartGoals` la prend en paramètre nommé avec 15 par défaut, et
+      // les deux appelants l'omettaient : régler 30 minutes sur la page
+      // « Temps de lecture » n'avait donc aucun effet ici ni sur l'écran des
+      // badges, qui continuaient d'annoncer « Lire au moins 15 minutes
+      // aujourd'hui ». Trois écrans, un seul réglage, deux valeurs.
+      //
+      // Lue ICI et non dans le `setState` qui suit : celui-ci est synchrone et
+      // n'attend rien.
+      final cibleQuotidienne = await ReadingTimeStorage.getDailyGoalMinutes(
+        widget.profileId,
+      );
 
       if (mounted) {
         context
@@ -344,6 +503,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             return item;
           }).toList();
 
+          _bibliotheque = updatedLibrary;
+
           // Compute accurate books read
           int finishedReading = allProgress.where((p) {
             return p.pourcentage >= 100 ||
@@ -402,6 +563,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
           // Compute smart & backend goals
           final smartGoals = ReadingTimeStorage.computeSmartGoals(
+            dailyGoalTarget: cibleQuotidienne,
             booksRead: displayedBooksRead,
             totalMinutes: readingMinutes,
             todayMinutes: todayReadingMinutes,
@@ -634,6 +796,9 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       child: Scaffold(
         key: PageStorageKey('homePageLecteur'),
         backgroundColor: AppColors.scaffoldBackground,
+        // Sans lui, une voix lancée depuis cette carte n'aurait aucun moyen
+        // d'être arrêtée hors de la notification système.
+        bottomNavigationBar: _audio.actif ? const BandeauEcoute() : null,
         body: Column(
           children: [
             NavBarAll(
@@ -776,7 +941,34 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                 if (_selectedSection == "Tout") ...[
                   SizedBox(height: 16),
                   if (_stats != null) _buildQuickStats(),
-                  if (_dailyGoal != null) ...[
+                  // Reprendre passe avant encourager.
+                  //
+                  // Quand une lecture est en cours, c'est elle qui occupe cette
+                  // place : le lecteur qui revient veut rouvrir son livre, pas
+                  // lire un pourcentage. L'objectif quotidien reste en repli —
+                  // le retirer tout à fait le ferait disparaître de l'accueil
+                  // pour un compte neuf, c'est-à-dire précisément pour celui à
+                  // qui il s'adresse, et laisserait la visite guidée sans cible
+                  // à sa deuxième étape.
+                  if (_lectureEnCours != null) ...[
+                    SizedBox(height: 16),
+                    Container(
+                      key: _dailyGoalKey,
+                      child: ContinuerLecture(
+                        livre: _lectureEnCours!.livre!,
+                        onReprendre: () => _reprendre(_lectureEnCours!),
+                        onEcouter: () => _ecouter(_lectureEnCours!.livre!),
+                        // `estLeLivre` est indispensable : le service est
+                        // unique et `enLecture` est global.
+                        enEcoute:
+                            _audio.estLeLivre(_lectureEnCours!.livre!.id) &&
+                            _audio.enLecture,
+                        enPreparation:
+                            _audio.estLeLivre(_lectureEnCours!.livre!.id) &&
+                            _audio.preparation,
+                      ),
+                    ),
+                  ] else if (_dailyGoal != null) ...[
                     SizedBox(height: 16),
                     GestureDetector(
                       key: _dailyGoalKey,

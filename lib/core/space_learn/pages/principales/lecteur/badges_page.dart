@@ -103,7 +103,17 @@ class _BadgesPageState extends State<BadgesPage>
       final totalMinutes = serveurRenseigne ? bilan!['total']! : totalMin;
       final minutesJour = serveurRenseigne ? bilan!['jour']! : todayMin;
 
+      // La cible que le lecteur a REELLEMENT reglee.
+      //
+      // `computeSmartGoals` la prend en parametre nomme avec 15 par defaut, et
+      // les deux appelants l'omettaient : regler 30 minutes sur la page
+      // « Temps de lecture » n'avait donc aucun effet ici ni sur l'accueil, qui
+      // continuaient d'annoncer « Lire au moins 15 minutes aujourd'hui ». Trois
+      // ecrans, un seul reglage, deux valeurs.
+      final cibleQuotidienne =
+          await ReadingTimeStorage.getDailyGoalMinutes(widget.userId);
       final smartGoals = ReadingTimeStorage.computeSmartGoals(
+        dailyGoalTarget: cibleQuotidienne,
         booksRead: finishedBooks,
         totalMinutes: totalMinutes,
         todayMinutes: minutesJour,
@@ -669,6 +679,14 @@ class _BadgesPageState extends State<BadgesPage>
   ///
   /// Sans elle, « Plume dans la marge » à 24 annotations sur 25 ressemblait
   /// exactement à « Cinquante heures » à zéro : deux carrés gris.
+  /// Ce badge se mesure-t-il en minutes ?
+  ///
+  /// Le préfixe plutôt qu'une liste close : un futur HEURES_100 sera compté
+  /// juste sans qu'on ait à revenir ici. C'est le seul endroit de
+  /// l'application qui connaisse cette unité — si le serveur en ajoute une
+  /// autre, il faudra la déclarer ici aussi.
+  bool _estEnMinutes(String code) => code.startsWith("HEURES_");
+
   Widget _avancementBadge(BadgeModel badge) {
     return Column(
       children: [
@@ -683,7 +701,19 @@ class _BadgesPageState extends State<BadgesPage>
         ),
         const SizedBox(height: 6),
         Text(
-          "${badge.progression} / ${badge.cible}",
+          // Les badges de temps se comptent en MINUTES.
+          //
+          // Le catalogue du serveur mesure HEURES_10 et HEURES_50 en minutes,
+          // avec des cibles de 600 et 3000. La carte affichait donc « 64 / 600 »
+          // sous un titre disant « Dix heures » : un rapport de soixante entre
+          // le titre et le compteur, que personne ne peut deviner.
+          //
+          // `formatMinutes` existait déjà et rendait exactement ce qu'il faut ;
+          // cet endroit ne l'appelait simplement pas.
+          _estEnMinutes(badge.code)
+              ? "${ReadingTimeStorage.formatMinutes(badge.progression)} / "
+                  "${ReadingTimeStorage.formatMinutes(badge.cible)}"
+              : "${badge.progression} / ${badge.cible}",
           style: GoogleFonts.poppins(
             fontSize: 10,
             fontWeight: FontWeight.w600,

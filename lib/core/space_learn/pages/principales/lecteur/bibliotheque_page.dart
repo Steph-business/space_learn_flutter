@@ -4,6 +4,7 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/layout/recherche_bar.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bibliotheque/livre_card.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/bandeau_ecoute.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
@@ -91,76 +92,6 @@ class _BibliothequePageState extends State<BibliothequePage> {
     if (erreur != null) {
       AppNotifications.showSnackBar(context, message: erreur, isError: true);
     }
-  }
-
-  /// Ce qui se joue, et comment l'arreter.
-  Widget _bandeauEcoute() {
-    return Material(
-      color: AppColors.cardBackground,
-      elevation: 8,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-          child: Row(
-            children: [
-              Icon(
-                Icons.headphones_rounded,
-                color: AppColors.accentInk,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _audio.titre,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      _audio.preparation
-                          ? 'Préparation…'
-                          : _audio.total > 0
-                          ? 'Page ${_audio.page} sur ${_audio.total}'
-                          : 'Écoute en cours',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: _audio.preparation
-                    ? null
-                    : () => _audio.enLecture
-                          ? _audio.pause()
-                          : _audio.reprendre(),
-                icon: Icon(
-                  _audio.enLecture
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                  color: AppColors.accentInk,
-                ),
-              ),
-              IconButton(
-                onPressed: _audio.arreter,
-                icon: Icon(Icons.close_rounded, color: AppColors.textHint),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> _ecouter(BookModel livre) async {
@@ -352,7 +283,7 @@ class _BibliothequePageState extends State<BibliothequePage> {
       // Sans lui, l'audio demarrerait sans aucun moyen de l'arreter : il
       // faudrait ouvrir le livre pour trouver un bouton pause, alors que tout
       // l'interet est justement de ne pas l'ouvrir.
-      bottomNavigationBar: _audio.actif ? _bandeauEcoute() : null,
+      bottomNavigationBar: _audio.actif ? const BandeauEcoute() : null,
       body: Column(
         children: [
           const NavBarAll(role: 'lecteur'),
