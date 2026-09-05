@@ -134,22 +134,41 @@ void main() {
     /// Le limiteur de débit répond 429. Le service rendait une liste vide,
     /// exactement comme un catalogue réellement vide : à l'écran, « aucun
     /// livre » — et personne ne cherchait du côté du serveur.
-    test('un refus rend une liste vide sans lever', () async {
+    ///
+    /// CE GROUPE ATTENDAIT L'INVERSE DE SON PROPRE TITRE. Il vérifiait que le
+    /// service « rend une liste vide sans lever » — c'est-à-dire précisément
+    /// le défaut que son intitulé condamne, et que le commentaire ci-dessus
+    /// décrit au passé. Un demi-correctif avait été verrouillé par un test :
+    /// le service ne devinait plus de pages, mais il continuait de traduire
+    /// une panne en catalogue vide. Le service lève désormais, et l'écran
+    /// affiche l'erreur avec un bouton « Réessayer » ; le test dit maintenant
+    /// ce que le groupe promet.
+    test('un refus lève, avec le message du serveur', () async {
       final service = BookService(
         client: MockClient(
           (_) async => http.Response('{"error":"Trop de requetes."}', 429),
         ),
       );
 
-      expect(await service.getAllBooks(), isEmpty);
+      await expectLater(
+        service.getAllBooks(),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'le message du serveur',
+            contains('Trop de requetes.'),
+          ),
+        ),
+      );
     });
 
-    test('une panne reseau non plus', () async {
+    test('une panne reseau lève aussi, au lieu de rendre une liste vide',
+        () async {
       final service = BookService(
         client: MockClient((_) async => throw const _PanneReseau()),
       );
 
-      expect(await service.getAllBooks(), isEmpty);
+      await expectLater(service.getAllBooks(), throwsA(isA<Exception>()));
     });
   });
 }

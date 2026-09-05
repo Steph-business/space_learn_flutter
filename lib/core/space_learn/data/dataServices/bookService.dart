@@ -109,33 +109,35 @@ class BookService {
       headers['Authorization'] = 'Bearer $authToken';
     }
 
-    try {
-      final response = await client.get(
-        uri,
-        headers: headers.isEmpty ? null : headers,
+    // L'échec REMONTE, il ne se déguise plus en catalogue vide.
+    //
+    // Cette méthode avalait tout — HTTP 500, 429 du limiteur, réseau coupé —
+    // en un debugPrint suivi d'une PageCatalogue vide avec aUneSuite=false.
+    // La boutique affichait alors « Aucun livre disponible » et posait « fin
+    // du catalogue » : une panne présentée exactement comme une boutique
+    // vide, sans bouton Réessayer, et une pagination stoppée à jamais après
+    // un simple hoquet réseau. L'exception (réseau comprise) laisse l'écran
+    // distinguer la panne du vide.
+    final response = await client.get(
+      uri,
+      headers: headers.isEmpty ? null : headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> corps = jsonDecode(response.body);
+      final List<dynamic> data = corps['data'] ?? [];
+      final meta = corps['meta'];
+
+      return PageCatalogue(
+        livres: data.map((json) => BookModel.fromJson(json)).toList(),
+        curseurSuivant: meta is Map ? meta['curseur_suivant'] as String? : null,
+        aUneSuite: meta is Map && meta['a_une_suite'] == true,
       );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> corps = jsonDecode(response.body);
-        final List<dynamic> data = corps['data'] ?? [];
-        final meta = corps['meta'];
-
-        return PageCatalogue(
-          livres: data.map((json) => BookModel.fromJson(json)).toList(),
-          curseurSuivant: meta is Map ? meta['curseur_suivant'] as String? : null,
-          aUneSuite: meta is Map && meta['a_une_suite'] == true,
-        );
-      }
-
-      debugPrint(
-        'Catalogue : HTTP ${response.statusCode} sur $uri '
-        '— ${messageDeLaReponse(response, repli: 'sans détail')}',
-      );
-    } catch (e) {
-      debugPrint('Catalogue : $uri injoignable — $e');
     }
 
-    return const PageCatalogue(livres: [], aUneSuite: false);
+    throw Exception(
+      messageDeLaReponse(response, repli: 'Impossible de charger le catalogue.'),
+    );
   }
 
   /// Une page précise du catalogue, et elle seule.
@@ -230,37 +232,33 @@ class BookService {
       headers['Authorization'] = 'Bearer $authToken';
     }
 
-    try {
-      final response = await client.get(
-        uri,
-        headers: headers.isEmpty ? null : headers,
-      );
+    // L'échec REMONTE, il ne se déguise plus en liste vide.
+    //
+    // Un debugPrint puis `return []` faisait passer un 500, un 429 ou une
+    // coupure réseau pour « aucun résultat » : l'écran Recherche affichait
+    // « Aucun résultat trouvé pour "X" » alors que son état d'erreur, construit
+    // exprès, ne se déclenchait jamais. Tous les appelants sont sous try/catch
+    // ou catchError : à eux de décider quoi montrer.
+    final response = await client.get(
+      uri,
+      headers: headers.isEmpty ? null : headers,
+    );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data'] ?? [];
-        return data.map((json) => BookModel.fromJson(json)).toList();
-      }
-
-      // Un filtre inconnu du serveur : on retente sans lui plutôt que de
-      // rendre une liste vide sans explication.
-      if (response.statusCode == 404 &&
-          (auteurId != null || statut != null)) {
-        return _pageDeLivres(authToken: authToken, limit: limit, page: page);
-      }
-
-      // Le silence était total ici : trois branches vides, et un catalogue
-      // vide à l'écran sans que rien ne dise pourquoi — 429 du limiteur de
-      // débit compris.
-      debugPrint(
-        'Catalogue : HTTP ${response.statusCode} sur $uri '
-        '— ${messageDeLaReponse(response, repli: 'sans détail')}',
-      );
-    } catch (e) {
-      debugPrint('Catalogue : $uri injoignable — $e');
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
+      return data.map((json) => BookModel.fromJson(json)).toList();
     }
 
-    return [];
+    // Un filtre inconnu du serveur : on retente sans lui plutôt que de
+    // rendre une liste vide sans explication.
+    if (response.statusCode == 404 && (auteurId != null || statut != null)) {
+      return _pageDeLivres(authToken: authToken, limit: limit, page: page);
+    }
+
+    throw Exception(
+      messageDeLaReponse(response, repli: 'Impossible de charger les livres.'),
+    );
   }
 
   /// Fetch a single book by id. If [authToken] is provided, it will be sent
@@ -355,17 +353,29 @@ class BookService {
 
   Future<List<BookModel>> getBooksByAuthorId(String auteurId) async {
     final url = ApiRoutes.booksByAuthor.replaceFirst(':auteur_id', auteurId);
-    try {
-      final response = await client.get(Uri.parse(url));
+    // L'échec REMONTE : une branche else vide et un catch vide rendaient []
+    // sur un 500 comme sur un réseau coupé. « Mes livres » affichait alors
+    // « Vous n'avez pas encore publié de livres » à un auteur qui en vend
+    // dix : son try/catch ne se déclenchait jamais.
+    //
+    // Tous les appelants attrapent l'exception, mais l'attraper ne suffit
+    // pas : un catch qui se contente de baisser son indicateur de chargement
+    // rétablit exactement le mensonge « panne = vide », un cran plus loin.
+    // C'est à l'écran de montrer la panne et d'offrir de réessayer.
+    final response = await client.get(Uri.parse(url));
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data'] ?? [];
-        return data.map((json) => BookModel.fromJson(json)).toList();
-      } else {}
-    } catch (e) {}
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'] ?? [];
+      return data.map((json) => BookModel.fromJson(json)).toList();
+    }
 
-    return [];
+    throw Exception(
+      messageDeLaReponse(
+        response,
+        repli: 'Impossible de charger les livres de cet auteur.',
+      ),
+    );
   }
 
   // Alias for consistency

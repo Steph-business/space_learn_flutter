@@ -23,6 +23,11 @@ class BandeauEcoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
+    // Le bandeau flotte au-dessus des écrans, il n'hérite donc pas de leur
+    // abonnement : sans cet appel il gardait les couleurs du thème précédent
+    // après une bascule clair/sombre, seul élément resté en arrière.
+
     final audio = LectureAudioLivre.instance;
 
     return Material(

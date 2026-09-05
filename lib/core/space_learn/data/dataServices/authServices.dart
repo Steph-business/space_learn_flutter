@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart'
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/services/api_client.dart';
+import 'package:space_learn_flutter/core/services/rappels_lecture.dart';
 import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
@@ -56,6 +58,39 @@ class AuthService {
   final http.Client client;
 
   AuthService({http.Client? client}) : client = client ?? ApiClient.instance;
+
+  /// Ouvre la session sur cet appareil.
+  ///
+  /// Les trois chemins d'entrée — mot de passe, Google, validation
+  /// d'inscription — recopiaient les mêmes quatre enregistrements. Les réunir
+  /// évite qu'un cinquième chemin, demain, en oublie un.
+  ///
+  /// C'est aussi le pendant de SessionService.terminer : ce que la
+  /// déconnexion efface, l'ouverture de session doit le remettre en place.
+  Future<void> _ouvrirSession(TokenUser tokenUser) async {
+    await TokenStorage.saveToken(tokenUser.token);
+    await TokenStorage.saveRefreshToken(tokenUser.refreshToken);
+    await TokenStorage.saveUserName(tokenUser.user.nomComplet);
+    // Le temps de lecture, la série de jours et les badges sont rangés par
+    // compte : sans cet identifiant ils se mélangeaient entre les personnes
+    // qui se connectent sur un même téléphone.
+    await TokenStorage.saveUserId(tokenUser.user.id);
+
+    // Les rappels de lecture reviennent avec le compte.
+    //
+    // La déconnexion les purge maintenant de l'appareil, notifications
+    // système comprises (voir RappelsLecture.purgerEtAnnuler) : sans cette
+    // remise en place, le lecteur qui se reconnecte n'aurait plus AUCUN
+    // rappel tant qu'il n'ouvre pas l'écran « Temps de lecture ». Non
+    // attendu : la connexion ne doit pas patienter sur une notification, et
+    // un serveur muet ne doit pas la faire échouer.
+    unawaited(
+      RappelsLecture.synchroniser().catchError((Object e) {
+        debugPrint('Rappels de lecture non reprogrammés : $e');
+        return const <CreneauLecture>[];
+      }),
+    );
+  }
 
   /// ✅ Inscription
   Future<bool> register({
@@ -112,13 +147,7 @@ class AuthService {
       debugPrint('║ Clés JSON : ${jsonDecode(response.body).keys.toList()}');
       debugPrint('╚════════════════════════════════════════════\n');
       // ✅ On sauvegarde le token après la connexion
-      await TokenStorage.saveToken(tokenUser.token);
-      await TokenStorage.saveRefreshToken(tokenUser.refreshToken);
-      await TokenStorage.saveUserName(tokenUser.user.nomComplet);
-      // Le temps de lecture, la série de jours et les badges sont rangés par
-      // compte : sans cet identifiant ils se mélangeaient entre les personnes
-      // qui se connectent sur un même téléphone.
-      await TokenStorage.saveUserId(tokenUser.user.id);
+      await _ouvrirSession(tokenUser);
       return tokenUser;
     }
 
@@ -181,13 +210,7 @@ class AuthService {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
-      await TokenStorage.saveToken(tokenUser.token);
-      await TokenStorage.saveRefreshToken(tokenUser.refreshToken);
-      await TokenStorage.saveUserName(tokenUser.user.nomComplet);
-      // Le temps de lecture, la série de jours et les badges sont rangés par
-      // compte : sans cet identifiant ils se mélangeaient entre les personnes
-      // qui se connectent sur un même téléphone.
-      await TokenStorage.saveUserId(tokenUser.user.id);
+      await _ouvrirSession(tokenUser);
       return tokenUser;
     }
 
@@ -277,13 +300,7 @@ class AuthService {
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
       final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
-      await TokenStorage.saveToken(tokenUser.token);
-      await TokenStorage.saveRefreshToken(tokenUser.refreshToken);
-      await TokenStorage.saveUserName(tokenUser.user.nomComplet);
-      // Le temps de lecture, la série de jours et les badges sont rangés par
-      // compte : sans cet identifiant ils se mélangeaient entre les personnes
-      // qui se connectent sur un même téléphone.
-      await TokenStorage.saveUserId(tokenUser.user.id);
+      await _ouvrirSession(tokenUser);
       return tokenUser;
     } else {
       String errorMessage = "Erreur de validation de l'inscription.";
@@ -455,6 +472,55 @@ class AuthService {
     }
   }
 
+  /// Demande la suppression du compte au serveur — DELETE /utilisateurs/:id.
+  ///
+  /// Le serveur (space_learn_auth, controllers/user.go DeleteAccount)
+  /// désactive le compte immédiatement, anonymise les données personnelles et
+  /// accorde un délai de grâce de 30 jours avant la purge définitive. Rien
+  /// n'est « supprimé » tant qu'il n'a pas répondu 200 : l'écran affichait
+  /// auparavant « demande transmise » après un simple nettoyage local, sans
+  /// qu'aucune requête ne parte — le compte restait pleinement actif en base.
+  ///
+  /// Rend le message du serveur, à afficher tel quel : c'est lui qui dit la
+  /// vérité du contrat (désactivation immédiate, purge après 30 jours).
+  Future<String> deleteAccount() async {
+    final token = await TokenStorage.getToken();
+    if (token == null || token.isEmpty) {
+      throw Exception("Vous devez être connecté pour supprimer votre compte.");
+    }
+
+    // La route porte l'identifiant du compte, et le serveur vérifie qu'il est
+    // bien celui du jeton présenté.
+    final userId = await TokenStorage.getUserId();
+    if (userId == null || userId.isEmpty) {
+      throw Exception("Session incomplète. Reconnectez-vous puis réessayez.");
+    }
+
+    final response = await client.delete(
+      Uri.parse("${ApiRoutes.baseUrl}/utilisateurs/$userId"),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final corps = _corpsJson(response.body);
+      final message = corps?['message'];
+      return (message is String && message.trim().isNotEmpty)
+          ? message
+          : "Votre compte a été désactivé et vos données anonymisées. "
+                "Elles seront définitivement supprimées après un délai de 30 jours.";
+    }
+
+    throw Exception(
+      messageDeLaReponse(
+        response,
+        repli: "La suppression du compte n'a pas abouti.",
+      ),
+    );
+  }
+
   /// Modifier le mot de passe d'un utilisateur connecté.
   ///
   /// La route porte l'identifiant du compte et se demande en POST. Elle était
@@ -485,17 +551,60 @@ class AuthService {
     }
 
     final url = Uri.parse(ApiRoutes.changePassword(userId));
-    final response = await client.post(
+    final corps = jsonEncode({
+      "current_password": currentPassword,
+      "new_password": newPassword,
+    });
+
+    // L'envoi est extrait parce qu'il peut avoir lieu deux fois — et parce que
+    // le marqueur doit accompagner les DEUX envois : chacun peut se heurter au
+    // refus métier.
+    Future<http.Response> envoyer(String jeton) => client.post(
       url,
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer $currentToken",
+        "Authorization": "Bearer $jeton",
+        ApiClient.enTete401Metier: '1',
       },
-      body: jsonEncode({
-        "current_password": currentPassword,
-        "new_password": newPassword,
-      }),
+      body: corps,
     );
+
+    var response = await envoyer(currentToken);
+
+    // Un 401 ici ne dit pas une seule chose, et c'est tout le problème.
+    //
+    // Le serveur en produit deux sur cette route : « Ancien mot de passe
+    // incorrect » (controllers/user.go, ChangePassword) et « Token invalide ou
+    // expiré » (middleware/auth.go). Le premier est MÉTIER — aucun jeton neuf
+    // ne le répare, et le rejeu automatique d'ApiClient ne faisait que renvoyer
+    // le même mot de passe faux, en clair, une seconde fois. Le second est bien
+    // une session à renouveler. Seul le corps les sépare : c'est donc ici, et
+    // pas dans la couche transport, que la décision se prend.
+    if (response.statusCode == 401 && !_ancienMotDePasseRefuse(response.body)) {
+      final verdict = await ApiClient.instance.renouvelerSession();
+
+      if (verdict == Renouvellement.reussi) {
+        final neuf = await TokenStorage.getToken();
+        // `neuf != currentToken` : sans jeton réellement différent, réessayer
+        // ne ferait que promener le mot de passe une fois de plus pour le même
+        // refus.
+        if (neuf != null && neuf.isNotEmpty && neuf != currentToken) {
+          response = await envoyer(neuf);
+        }
+      } else if (ApiClient.sessionTerminee(verdict)) {
+        // Le refus de `/auth/refresh` est le SEUL verdict qui finit une
+        // session, et jusqu'ici c'était `send` qui en tirait la conséquence.
+        // Le marqueur l'ayant mis hors circuit, le relais se fait ici : sinon
+        // la personne restait sur l'écran des réglages, avec la phrase brute du
+        // serveur et une session morte. Une panne de réseau (`indisponible`),
+        // elle, ne déconnecte personne : on laisse remonter le message du
+        // serveur et l'écran propose de recommencer.
+        ApiClient.instance.constaterSessionFinie();
+        throw Exception(
+          "Votre session a expiré. Reconnectez-vous, puis réessayez.",
+        );
+      }
+    }
 
     if (response.statusCode == 200 || response.statusCode == 204) {
       return true;
@@ -510,5 +619,21 @@ class AuthService {
       } catch (_) {}
       throw Exception(errorMessage);
     }
+  }
+
+  /// Ce 401-là est-il le refus MÉTIER de l'ancien mot de passe ?
+  ///
+  /// Le doute se tranche volontairement DU CÔTÉ DE LA SESSION : un corps
+  /// illisible, ou un message que le serveur aurait reformulé, rend `false` et
+  /// donc le comportement d'avant — renouveler, réessayer. Une reformulation
+  /// coûtera un aller-retour de trop ; elle ne cassera jamais le changement de
+  /// mot de passe de quelqu'un dont le jeton venait d'expirer. L'inverse — se
+  /// tromper du côté métier — laisserait cette personne devant un « Token
+  /// invalide ou expiré » qu'un simple renouvellement aurait levé.
+  bool _ancienMotDePasseRefuse(String corps) {
+    final json = _corpsJson(corps);
+    if (json == null) return false;
+    final message = '${json['error'] ?? json['message'] ?? ''}'.toLowerCase();
+    return message.contains('ancien mot de passe');
   }
 }

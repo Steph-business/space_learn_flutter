@@ -207,6 +207,36 @@ class ReadingTimeStorage {
     }
   }
 
+  /// Oublie l'historique NOMINATIF de lecture. Appelé à la déconnexion.
+  ///
+  /// Des clés de cette classe, « reading_sessions_ » est la seule qui NOMME des
+  /// choses : elle garde le TITRE de chaque livre lu et l'heure à laquelle il
+  /// l'a été. C'est ce qu'une personne peut avoir des raisons de ne pas laisser
+  /// derrière elle sur un téléphone, et cette liste n'existe qu'ici — le
+  /// serveur ne tient que des minutes par jour (`jours_de_lecture`), sans titre
+  /// ni horodatage de séance.
+  ///
+  /// Les COMPTEURS (total, jour, par livre, objectif quotidien) ne sont
+  /// volontairement PAS purgés. La décision et ses raisons sont écrites à
+  /// l'étape correspondante de `SessionService.terminer`, seul point de
+  /// nettoyage de la session.
+  ///
+  /// Balayage par PRÉFIXE, comme `BadgeService.purgerCache` : il ne dépend donc
+  /// pas de l'identifiant du compte — que l'étape « jeton » de la déconnexion a
+  /// déjà effacé — et emporte au passage le seau « invite » ainsi que les
+  /// listes laissées par les comptes précédents, du temps où rien n'était
+  /// purgé.
+  static Future<void> purgerSessions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cles = prefs
+        .getKeys()
+        .where((c) => c.startsWith(_keyPrefixSessions))
+        .toList();
+    for (final cle in cles) {
+      await prefs.remove(cle);
+    }
+  }
+
   /// Get total reading minutes for user
   static Future<int> getTotalReadingMinutes(String? userId) async {
     try {

@@ -11,8 +11,8 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServi
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/reset_password.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
-import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/profileService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/profilModel.dart';
@@ -54,31 +54,72 @@ class _OtpPageState extends State<OtpPage> {
           widget.email,
           otp,
         );
-        if (tokenUser != null && mounted) {
-          AppNotifications.showSnackBar(
-            context,
-            message:
-                "Inscription validée avec succès ! Connectez-vous pour compléter votre profil.",
-            isSuccess: true,
-          );
-
+        if (tokenUser != null) {
+          // LA VÉRIFICATION A RÉUSSI : le serveur a marqué l'e-mail vérifié
+          // et CONSOMMÉ le code. Plus rien de ce qui suit ne doit la faire
+          // passer pour un échec. L'ancien code enchaînait getProfils() dans
+          // le même try : si ce second appel réseau tombait, le catch
+          // affichait « Vérification impossible », la personne ressaisissait
+          // un code déjà brûlé et recevait « L'email est déjà vérifié » —
+          // sans jamais être routée vers la connexion. Pire : la fin de
+          // session n'était jamais atteinte, et l'application rouvrait
+          // CONNECTÉE au prochain lancement, alors qu'elle croyait son
+          // inscription ratée.
           final profilId = tokenUser.user.profilId;
-          await _profileService.saveSelectedProfile(profilId);
-          final allProfiles = await _profileService.getProfils();
-          if (!mounted) return;
-          final userProfile = allProfiles.firstWhere(
-            (p) => p.id.trim().toLowerCase() == profilId.trim().toLowerCase(),
-            orElse: () => ProfilModel(id: '', libelle: ''),
-          );
+          String role = '';
+          try {
+            // La résolution du rôle a besoin du jeton : elle passe donc AVANT
+            // la fin de session, plus bas.
+            final allProfiles = await _profileService.getProfils();
+            final userProfile = allProfiles.firstWhere(
+              (p) => p.id.trim().toLowerCase() == profilId.trim().toLowerCase(),
+              orElse: () => ProfilModel(id: '', libelle: ''),
+            );
+            role = userProfile.libelle.toLowerCase();
+          } catch (e) {
+            // Le rôle sera résolu à la connexion ; l'inscription, elle, est
+            // bel et bien validée.
+            debugPrint('OTP : profil non résolu après vérification — $e');
+          }
 
-          final role = userProfile.libelle.toLowerCase();
-          await ProfileStorage.saveSelectedProfileRole(role);
-          await ProfileStorage.saveIsRegisteredUser(true);
+          // La session ouverte par verifyRegistration est fermée dans TOUS les
+          // cas : on force la connexion manuelle.
+          //
+          // C'était `TokenStorage.clearToken()` — une SECONDE définition de la
+          // fin de session, à côté de SessionService.terminer(). Elle laissait
+          // en place tout ce que terminer() sait nettoyer et qui peut venir
+          // d'un compte précédent sur le même appareil : badges, marqueurs de
+          // discussion, adresse mémorisée, rappels de rendez-vous, purges
+          // mémoire. Un seul point de nettoyage, ici comme ailleurs.
+          try {
+            await SessionService.terminer();
+          } catch (e) {
+            debugPrint('OTP : fin de session incomplète — $e');
+          }
 
-          // Clear token to force manual login
-          await TokenStorage.clearToken();
+          // Réécrits APRÈS le nettoyage — qui les emporte, et c'est voulu :
+          // l'écran de connexion s'en sert pour router sans attendre le
+          // réseau, et ils appartiennent bien au compte qui vient de naître.
+          try {
+            if (profilId.isNotEmpty) {
+              await _profileService.saveSelectedProfile(profilId);
+            }
+            if (role.isNotEmpty) {
+              await ProfileStorage.saveSelectedProfileRole(role);
+            }
+          } catch (e) {
+            debugPrint(
+              'OTP : préférences d\'inscription non enregistrées — $e',
+            );
+          }
 
           if (mounted) {
+            AppNotifications.showSnackBar(
+              context,
+              message:
+                  "Inscription validée avec succès ! Connectez-vous pour compléter votre profil.",
+              isSuccess: true,
+            );
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (_) => LoginPage(
@@ -90,13 +131,38 @@ class _OtpPageState extends State<OtpPage> {
               (route) => false,
             );
           }
+        } else {
+          // BRANCHE MUETTE, désormais bruyante.
+          //
+          // `verifyRegistration` est typée `Future<TokenUser?>` : le jour où
+          // elle rendra null au lieu de lever — un 200 au corps inattendu
+          // suffit, TokenUser.fromJson n'est pas défensif — l'écran arrêtait
+          // le chargeur et ne disait plus rien : ni succès, ni erreur, ni
+          // navigation, alors que le code OTP venait d'être consommé. On lève
+          // pour que le catch ci-dessous prenne le relais.
+          throw Exception("Réponse inattendue du serveur.");
         }
       } else {
-        // Un code refusé lève, avec la raison exacte du serveur — code
-        // expiré, compte fermé, quota dépassé. Elle était jusqu'ici remplacée
-        // par « Code OTP invalide », qui n'était vrai qu'une fois sur trois.
-        await _authService.verifyOtp(widget.email, otp);
-
+        // MOT DE PASSE OUBLIÉ : ON NE VÉRIFIE PLUS LE CODE ICI.
+        //
+        // Cette branche appelait `/auth/verify-otp`, qui retrouve le code NON
+        // CONSOMMÉ puis le marque utilisé (otp.go:117-125). L'écran suivant
+        // appelle `/auth/reset-password`, qui exige à son tour un code NON
+        // CONSOMMÉ (otp.go:282) — il ne pouvait donc trouver que celui que
+        // cet écran venait de brûler.
+        //
+        // Le parcours était mort de bout en bout : on lisait « code vérifié »,
+        // on choisissait son mot de passe, et l'on recevait « code expiré ».
+        // Un nouveau code invalidait les précédents, et l'on recommençait
+        // sans fin. Personne ne pouvait réinitialiser depuis l'application —
+        // le site avait exactement le même défaut, corrigé de la même façon.
+        //
+        // On transmet donc le code intact : `/auth/reset-password` est seul à
+        // le consommer, et un code faux y sera refusé avec la raison du
+        // serveur — en une fois, au lieu d'une vérification qui condamnait la
+        // suivante. (`/auth/verify-otp` reste en place côté serveur ; ici,
+        // l'inscription passe par `verifyRegistration`, qui a sa propre
+        // route.)
         if (mounted) {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -118,9 +184,15 @@ class _OtpPageState extends State<OtpPage> {
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // Le bouton retour reste actif pendant le chargement : quand la
+      // réponse arrivait après que l'écran avait été quitté, setState
+      // frappait un State disposé (« setState() called after dispose() »).
+      // Même garde que dans _handleResendCode, qui l'avait déjà.
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -133,7 +205,12 @@ class _OtpPageState extends State<OtpPage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: 'Un nouveau code de validation a été envoyé.',
+          // Le serveur répond volontairement dans le vague (anti-énumération)
+          // : il rend 200 même quand aucun compte n'existe et qu'aucun
+          // courriel n'est parti. On relaie sa formulation conditionnelle au
+          // lieu d'affirmer un envoi qu'on ne peut pas garantir.
+          message:
+              'Si un compte correspond à cette adresse, un nouveau code vient d\'être envoyé.',
           isSuccess: true,
         );
       }
@@ -141,10 +218,7 @@ class _OtpPageState extends State<OtpPage> {
       if (mounted) {
         AppNotifications.showSnackBar(
           context,
-          message: messageLisible(
-            e,
-            repli: "Le code n'a pas pu être renvoyé.",
-          ),
+          message: messageLisible(e, repli: "Le code n'a pas pu être renvoyé."),
           isError: true,
         );
       }

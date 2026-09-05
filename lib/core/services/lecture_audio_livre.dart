@@ -40,6 +40,24 @@ class LectureAudioLivre extends ChangeNotifier {
   String _titre = '';
   String _auteur = '';
 
+  /// Le compte au nom duquel la séance a COMMENCÉ.
+  ///
+  /// Aucun chemin de déconnexion n'arrête ce singleton : la voix continue de
+  /// parler sur l'écran de connexion. Or minutes et progression étaient
+  /// résolues AU MOMENT de l'écriture (TokenStorage à chaque battement, à
+  /// chaque tour de page) : si un utilisateur B se connectait pendant que la
+  /// voix de A parlait encore, les minutes d'écoute de A étaient créditées à
+  /// B, et la progression du livre de A écrite avec le jeton de B. On mémorise
+  /// donc l'identité du début de séance et l'on vérifie, avant CHAQUE
+  /// écriture, qu'elle n'a pas changé — sinon on stoppe et on n'écrit rien.
+  String? _uidSeance;
+
+  /// Faux quand écrire l'avancée serait un mensonge : progression illisible
+  /// au démarrage (on écraserait une position réelle qu'on n'a simplement pas
+  /// pu lire), ou livre déjà terminé (réécouter ne doit pas ramener 100 % à
+  /// quelques pour cent — le livre sortirait du compteur « livres lus »).
+  bool _ecrireLAvancee = true;
+
   /// Page en cours, à partir de 1 — comme dans le lecteur.
   int _page = 1;
   int _total = 0;
@@ -61,7 +79,20 @@ class LectureAudioLivre extends ChangeNotifier {
   Timer? _battement;
   DateTime? _dernierBattement;
 
+  /// Vrai pendant le report final déclenché par [arreter].
+  ///
+  /// Ce report peut constater un changement de compte et vouloir tout couper —
+  /// c'est-à-dire rappeler [arreter] alors qu'il s'exécute déjà. Sans ce
+  /// témoin, l'arrêt se dédoublait et libérait deux fois le même document.
+  bool _arretEnCours = false;
+
   static const Duration _cadenceDuBattement = Duration(seconds: 15);
+
+  /// Ce qu'on accepte d'attendre pour le dernier report d'une séance.
+  ///
+  /// La déconnexion attend ce report — c'est ce qui garantit qu'il s'écrit avec
+  /// la bonne identité. Elle ne doit pas pour autant attendre le réseau.
+  static const Duration _delaiDuReportFinal = Duration(seconds: 5);
 
   /// Le livre écouté, s'il y en a un.
   String? get livreId => _livreId;
@@ -116,6 +147,9 @@ class LectureAudioLivre extends ChangeNotifier {
     _auteur =
         (livre['auteur_nom'] ?? livre['auteurNom'] ?? livre['auteur'] ?? '')
             .toString();
+    // L'identité du lecteur au départ : toute écriture ultérieure la
+    // revérifiera (voir _uidSeance).
+    _uidSeance = await TokenStorage.getUserId();
     _erreur = null;
     _preparation = true;
     notifyListeners();
@@ -169,7 +203,9 @@ class LectureAudioLivre extends ChangeNotifier {
   }
 
   Future<void> pause() async {
-    _arreterLeBattement();
+    // Attendu : le report du reliquat est asynchrone, et le laisser courir
+    // derrière la pause revenait à ne jamais savoir s'il a abouti.
+    await _arreterLeBattement();
     await _tts.pause();
     notifyListeners();
   }
@@ -187,7 +223,21 @@ class LectureAudioLivre extends ChangeNotifier {
   Future<void> arreter() async {
     // Le temps écouté est porté au compte AVANT de perdre l'identifiant du
     // livre : après, on ne saurait plus à quel ouvrage l'attribuer.
-    _arreterLeBattement();
+    //
+    // ATTENDU, et c'est le point délicat. Le report était lancé sans être
+    // attendu : `arreter()` filait jusqu'à `_uidSeance = null` (plus bas) et
+    // jusqu'à rendre la main à son appelant. Deux dégâts, tous deux observés :
+    //   - la vérification différée comparait alors un uid réel à `null`,
+    //     concluait au changement de compte et JETAIT les dernières secondes —
+    //     ouvrir un livre pendant une écoute perdait le reliquat à chaque fois ;
+    //   - SessionService.terminer croyait l'écriture faite et effaçait le
+    //     jeton ; le report arrivait après, sans identité, et n'écrivait rien.
+    _arretEnCours = true;
+    try {
+      await _arreterLeBattement();
+    } finally {
+      _arretEnCours = false;
+    }
     _tts.removeListener(_surEtatTts);
 
     // On ne débranche que SI la voix est encore la nôtre.
@@ -212,6 +262,8 @@ class LectureAudioLivre extends ChangeNotifier {
     _livreId = null;
     _titre = '';
     _auteur = '';
+    _uidSeance = null;
+    _ecrireLAvancee = true;
     _page = 1;
     _total = 0;
     _preparation = false;
@@ -235,7 +287,10 @@ class LectureAudioLivre extends ChangeNotifier {
     if (_tts.isPlaying) {
       _demarrerLeBattement();
     } else {
-      _arreterLeBattement();
+      // Un écouteur de ChangeNotifier ne rend pas de futur : le report part
+      // détaché ici, mais l'identité de la séance lui est déjà passée en
+      // paramètre — il n'a plus rien à relire au moment de son exécution.
+      unawaited(_arreterLeBattement());
     }
     notifyListeners();
   }
@@ -243,7 +298,10 @@ class LectureAudioLivre extends ChangeNotifier {
   void _demarrerLeBattement() {
     if (_battement?.isActive ?? false) return;
     _dernierBattement = DateTime.now();
-    _battement = Timer.periodic(_cadenceDuBattement, (_) => _porterLeTemps());
+    _battement = Timer.periodic(
+      _cadenceDuBattement,
+      (_) => unawaited(_porterLeTemps()),
+    );
   }
 
   /// Arrête le battement et porte au compte ce qui restait.
@@ -251,15 +309,25 @@ class LectureAudioLivre extends ChangeNotifier {
   /// Sans ce dernier report, une écoute de cinquante secondes suivie d'une
   /// pause ne compterait pour rien : le battement n'aurait pas eu le temps de
   /// tomber une seule fois.
-  void _arreterLeBattement() {
+  Future<void> _arreterLeBattement() async {
     if (_battement == null) return;
     _battement?.cancel();
     _battement = null;
-    _porterLeTemps();
+    // Attendu, mais pas indéfiniment.
+    //
+    // [MinutesEnAttente.porter] pose d'abord le solde sur l'appareil, PUIS
+    // tente de le vider vers le serveur — et cette tentative peut tenir trente
+    // secondes sur un réseau mort. Attendre le tout ferait figer la
+    // déconnexion d'autant. Passé ce délai on cesse d'attendre, sans rien
+    // perdre : les minutes sont déjà sur le disque et repartiront à la
+    // prochaine ouverture d'un livre.
+    await _porterLeTemps()
+        .catchError((Object e) => debugPrint('Report du temps écouté : $e'))
+        .timeout(_delaiDuReportFinal, onTimeout: () {});
     _dernierBattement = null;
   }
 
-  void _porterLeTemps() {
+  Future<void> _porterLeTemps() async {
     final precedent = _dernierBattement;
     if (precedent == null || _livreId == null) return;
 
@@ -271,7 +339,60 @@ class LectureAudioLivre extends ChangeNotifier {
     _dernierBattement = maintenant;
 
     if (secondes <= 0) return;
-    unawaited(MinutesEnAttente.porter(livreId: _livreId, secondes: secondes));
+    // L'identité attendue est CAPTURÉE ICI, pas relue plus tard.
+    //
+    // Le report était détaché et relisait `_uidSeance` au moment de son
+    // exécution — c'est-à-dire après que `arreter()` l'avait remis à null. La
+    // garde d'identité, faite pour protéger le compte, jetait alors les
+    // dernières secondes de CHAQUE écoute normalement terminée.
+    await _porterAuCompteDeLaSeance(
+      uidAttendu: _uidSeance,
+      livreId: _livreId,
+      secondes: secondes,
+    );
+  }
+
+  /// Porte les secondes au compte qui écoute, puis coupe la voix si ce compte
+  /// n'est plus celui de l'appareil.
+  ///
+  /// [uidAttendu] vient de l'appelant et non de `_uidSeance` : ce champ est
+  /// remis à zéro par [arreter], et le lire ici faisait passer une fin
+  /// d'écoute ordinaire pour un changement de compte.
+  ///
+  /// L'identifiant de séance descend maintenant JUSQU'À L'ÉCRITURE.
+  /// [MinutesEnAttente] relisait le compte dans [TokenStorage] au moment de
+  /// poser le solde sur l'appareil, et ce moment tombe APRÈS `clearToken` dès
+  /// que le report final dépasse [_delaiDuReportFinal] : la déconnexion
+  /// n'attend pas au-delà, le report poursuit seul, et il ne trouvait plus
+  /// aucun compte à créditer — les dernières minutes de la séance étaient
+  /// jetées au lieu de rester en attente. Le compte qui écoute est connu
+  /// depuis `demarrer()` ; on le transmet plutôt que de le redécouvrir trop
+  /// tard.
+  Future<void> _porterAuCompteDeLaSeance({
+    required String? uidAttendu,
+    String? livreId,
+    required int secondes,
+  }) async {
+    // Une séance ouverte sans compte identifié n'a personne à créditer : ces
+    // secondes ne sont pas celles de qui se serait connecté entre-temps.
+    if (uidAttendu != null && uidAttendu.isNotEmpty) {
+      await MinutesEnAttente.porter(
+        livreId: livreId,
+        secondes: secondes,
+        uid: uidAttendu,
+      );
+    }
+
+    // La vérification d'identité vient MAINTENANT, après l'écriture : elle ne
+    // sert plus à décider où vont les minutes — elles sont nominatives — mais
+    // à couper une voix qui aurait survécu à la déconnexion de celui qui
+    // l'avait lancée.
+    final uid = await TokenStorage.getUserId();
+    if (uid != uidAttendu) {
+      // Sauf si c'est justement `arreter()` qui nous a appelés : il fait déjà
+      // ce travail, et le relancer d'ici le dédoublerait.
+      if (!_arretEnCours) await arreter();
+    }
   }
 
   /// Le fichier, depuis le cache ou depuis le serveur.
@@ -299,18 +420,44 @@ class LectureAudioLivre extends ChangeNotifier {
   }
 
   /// La page où reprendre l'écoute.
+  ///
+  /// Règle aussi [_ecrireLAvancee] : rendre 1 « par défaut » puis ÉCRIRE
+  /// cette page 1 au serveur écrasait la progression réelle — appuyer sur ▶
+  /// d'un livre fini (ou écouter pendant un raté transitoire du réseau)
+  /// suffisait à réécrire 100 % → ~0 %, et le livre quittait le compteur
+  /// « livres lus ».
   Future<int> _pageDeReprise() async {
     try {
       final token = await TokenStorage.getToken();
-      if (token == null || _livreId == null) return 1;
+      if (token == null || _livreId == null) {
+        // Sans jeton on ne sait rien de la progression : on n'écrira rien.
+        _ecrireLAvancee = false;
+        return 1;
+      }
 
       final avancee = await _progression.getProgressByLivre(_livreId!, token);
-      final page = avancee?.lastPage ?? 0;
+      if (avancee == null) {
+        // Le serveur n'a pas répondu (le service avale ses erreurs et rend
+        // null) : « page 1 » n'est qu'un défaut d'affichage, pas une
+        // observation. On écoute quand même, mais sans écrire.
+        _ecrireLAvancee = false;
+        return 1;
+      }
+
+      final page = avancee.lastPage;
       // Un livre terminé se réécoute depuis le début : rester bloqué sur la
-      // dernière page ne dirait plus rien.
-      if (page <= 0 || page >= _total) return 1;
+      // dernière page ne dirait plus rien. Mais sa progression, elle, reste à
+      // 100 % — la remettre à zéro ferait reculer « livres lus » et badges.
+      if (_total > 0 && page >= _total) {
+        _ecrireLAvancee = false;
+        return 1;
+      }
+
+      _ecrireLAvancee = true;
+      if (page <= 0) return 1;
       return page;
     } catch (_) {
+      _ecrireLAvancee = false;
       return 1;
     }
   }
@@ -366,7 +513,18 @@ class LectureAudioLivre extends ChangeNotifier {
   /// d'écouter.
   Future<void> _enregistrerLAvancee() async {
     if (_livreId == null || _total <= 0) return;
+    // Progression de départ inconnue, ou livre déjà terminé : écrire la page
+    // courante détruirait une position réelle (voir _pageDeReprise).
+    if (!_ecrireLAvancee) return;
     try {
+      // Le compte a pu changer depuis le début de la séance : le jeton
+      // présent maintenant n'est plus celui du lecteur qui écoute. On stoppe
+      // et on n'écrit rien (voir _uidSeance).
+      final uid = await TokenStorage.getUserId();
+      if (uid != _uidSeance) {
+        await arreter();
+        return;
+      }
       final token = await TokenStorage.getToken();
       if (token == null || token.isEmpty) return;
       await _progression.updateReadingProgress(

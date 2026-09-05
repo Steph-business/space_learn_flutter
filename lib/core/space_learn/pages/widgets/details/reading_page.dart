@@ -49,7 +49,12 @@ class ReadingPage extends StatefulWidget {
   State<ReadingPage> createState() => _ReadingPageState();
 }
 
-class _ReadingPageState extends State<ReadingPage> {
+// WidgetsBindingObserver : le battement de temps de lecture doit savoir si
+// l'application est à l'écran. Sans cela, une nuit téléphone verrouillé sur la
+// liseuse créditait ~8 h de « lecture » (série, badges, statistiques de
+// l'auteur) — soit par les ticks qui continuaient, soit par le premier tick du
+// réveil qui couvrait toute l'absence.
+class _ReadingPageState extends State<ReadingPage> with WidgetsBindingObserver {
   final GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
   late PdfViewerController _pdfViewerController;
   final ReadingProgressService _progressService = ReadingProgressService();
@@ -66,8 +71,74 @@ class _ReadingPageState extends State<ReadingPage> {
   Timer? _settingsTimer;
   Timer? _heartbeatTimer;
   DateTime? _lastHeartbeatTick;
-  DateTime? _sessionStartTime;
   bool _showControls = true;
+
+  /// L'application est passée derrière autre chose (accueil, verrouillage).
+  ///
+  /// Pendant ce temps, seule l'écoute à voix haute est de la lecture : le
+  /// battement gèle tout le reste — même règle que le site, qui s'arrête dès
+  /// que l'onglet est masqué sauf pendant une écoute.
+  bool _enArrierePlan = false;
+
+  /// Une AUTRE ROUTE est empilée par-dessus la liseuse.
+  ///
+  /// L'application, elle, est toujours au premier plan : le cycle de vie ne
+  /// bouge pas, [_enArrierePlan] reste faux, et le battement continuait de
+  /// créditer 15 s toutes les 15 s pendant tout le paiement CinetPay — saisie
+  /// du code opérateur, attente du SMS, plusieurs minutes à chaque tentative
+  /// d'achat, portées aussi aux statistiques du livre vues par l'auteur.
+  ///
+  /// Deux témoins distincts et non un seul : quitter l'application pour lire un
+  /// SMS puis y revenir remet [_enArrierePlan] à faux, ce qui aurait dégelé le
+  /// battement alors que la page de paiement couvre toujours la liseuse.
+  bool _masqueParUneAutreRoute = false;
+
+  /// Le battement doit-il rester gelé ?
+  bool get _lectureGelee => _enArrierePlan || _masqueParUneAutreRoute;
+
+  /// Garde-fou par tick : un battement de 15 s qui prétend couvrir davantage
+  /// que quelques minutes n'a pas mesuré de la lecture (minuteur suspendu
+  /// puis relâché d'un coup au réveil de l'application).
+  static const int _plafondTicSecondes = 120;
+
+  /// Le même garde-fou, en version large, pour un tick pendant une écoute.
+  ///
+  /// La branche audio contournait TOUT plafond : elle existe parce qu'écouter
+  /// écran éteint est de la lecture, et le système espace alors les minuteurs.
+  /// Mais sans borne, un minuteur suspendu une nuit puis relâché d'un coup —
+  /// ou le reliquat calculé dans dispose() alors que la voix parlait encore —
+  /// créditait l'absence entière. Quinze minutes laissent toute sa place à
+  /// l'espacement réel des minuteurs sans jamais offrir une nuit de lecture.
+  static const int _plafondTicAudioSecondes = 900;
+
+  /// Les secondes réellement créditées pendant CETTE séance.
+  ///
+  /// C'est elle qui alimente la « session récente » enregistrée à la sortie —
+  /// et non plus l'écart d'horloge entre l'ouverture et la fermeture, qui
+  /// comptait les heures passées ailleurs.
+  int _secondesLuesSeance = 0;
+
+  /// Vrai seulement quand une progression réelle a été observée : la reprise
+  /// est arrivée du serveur, une page initiale a été fournie, ou le lecteur a
+  /// tourné une page. Sans cette garde, fermer un livre AVANT l'arrivée de la
+  /// progression (cache rapide, réseau lent ou GET en échec) envoyait le
+  /// « page 1 » par défaut — et un livre à 150/300, voire terminé, retombait
+  /// à 0,3 % : le serveur écrase sans garde anti-régression.
+  bool _peutEcrireLaProgression = false;
+
+  /// La position enregistrée a été APPLIQUÉE au document.
+  ///
+  /// [_peutEcrireLaProgression] atteste seulement que la progression est
+  /// CONNUE, pas qu'elle est en place : `_loadProgress` la reçoit et lève le
+  /// drapeau sans toucher `_currentPage`, qui vaut encore 1 tant que le saut
+  /// n'a pas eu lieu — 300 ms plus tard pour un PDF. Fermer le livre dans cet
+  /// intervalle réécrivait « page 1 » par-dessus une position réelle. Pire,
+  /// quand le saut n'avait jamais lieu (position au-delà du nombre de pages),
+  /// CHAQUE fermeture de la séance écrasait la vraie position.
+  ///
+  /// Ce témoin-ci ne se lève que sur un déplacement effectivement observé dans
+  /// le document : saut de reprise, tour de page, changement de chapitre.
+  bool _positionAppliquee = false;
 
   // PDF Reader Settings
   double _brightness = 1.0;
@@ -77,6 +148,15 @@ class _ReadingPageState extends State<ReadingPage> {
   bool _isPdf = false;
 
   List<BookmarkModel> _bookmarks = [];
+
+  /// Pourquoi les marque-pages manquent, quand ils manquent.
+  ///
+  /// UNE PANNE N'EST PAS UN VIDE : le chargement avalait ses erreurs, la liste
+  /// restait vide, et le panneau annonçait « Vous n'avez pas encore de
+  /// marque-page » à quelqu'un qui en avait posé vingt. Non nul, ce message
+  /// remplace l'écran vide et s'accompagne d'un « Réessayer ».
+  String? _erreurMarquePages;
+
   List<PdfBookmark> _pdfBookmarks = [];
   Map<String, int> _bookmarkPageMap = {};
   String _currentChapterTitle = "Début du livre";
@@ -116,12 +196,16 @@ class _ReadingPageState extends State<ReadingPage> {
     super.initState();
     _pdfViewerController = PdfViewerController();
     _savedPage = widget.initialPage;
+    // Une page initiale fournie par l'appelant est une progression connue.
+    _peutEcrireLaProgression = _savedPage != null && _savedPage! > 0;
+    // Pour didChangeAppLifecycleState : le battement doit geler quand
+    // l'application quitte l'écran.
+    WidgetsBinding.instance.addObserver(this);
     _loadBookFile();
     _loadProgress();
     _loadSettings();
     _loadBookmarks();
     _lastHeartbeatTick = DateTime.now();
-    _sessionStartTime = DateTime.now();
     _startHeartbeat();
 
     // Rattraper ce qu'une séance précédente n'a pas pu déclarer.
@@ -226,6 +310,10 @@ class _ReadingPageState extends State<ReadingPage> {
       }
     }
 
+    // Des await ont eu lieu : l'écran a pu être refermé pendant qu'ils
+    // couraient, et setState sur un State démonté lève.
+    if (!mounted) return;
+
     if (pdfUrl == null || pdfUrl.isEmpty || bookId.isEmpty) {
       final aUnFichier =
           widget.book['a_un_fichier'] == true ||
@@ -281,12 +369,24 @@ class _ReadingPageState extends State<ReadingPage> {
         bookId,
         pdfUrl,
         extrait: widget.isExtrait,
+        // Le marqueur de version du livre, s'il voyage dans l'objet : il
+        // permettra de détecter un manuscrit remplacé par l'auteur.
+        majLe: (widget.book['maj_le'] ?? widget.book['majLe'])?.toString(),
         onProgress: (progress) {
+          // Le flux HTTP survit à la page : quitter la liseuse pendant un
+          // téléchargement long déclenchait setState sur un State démonté à
+          // chaque paquet reçu. On laisse le téléchargement s'achever — le
+          // livre finira en cache — mais on ne repeint plus rien.
+          if (!mounted) return;
           setState(() {
             _downloadProgress = progress;
           });
         },
       );
+
+      // Même garde après l'attente : l'écran a pu être refermé pendant le
+      // téléchargement.
+      if (!mounted) return;
 
       if (bytes != null) {
         setState(() {
@@ -306,6 +406,7 @@ class _ReadingPageState extends State<ReadingPage> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _loadError = messageLisible(
           e,
@@ -336,6 +437,12 @@ class _ReadingPageState extends State<ReadingPage> {
     // l'effacer. On laisse le téléchargement reprendre la main.
     if (bytes == null) return false;
 
+    // L'ouverture reste immédiate et hors ligne — c'est tout l'intérêt du
+    // cache — mais on vérifie EN ARRIÈRE-PLAN que l'auteur n'a pas remplacé
+    // son manuscrit : sans cela, un appareil qui détenait l'ancien fichier ne
+    // recevait JAMAIS la version corrigée, sans limite de durée.
+    unawaited(_verifierFraicheurDuCache(bookId));
+
     final bool isEpub =
         fichier.path.toLowerCase().endsWith('.epub') ||
         (widget.book['format'] ?? '').toString().toLowerCase() == 'epub';
@@ -354,6 +461,35 @@ class _ReadingPageState extends State<ReadingPage> {
     return true;
   }
 
+  /// Compare la source serveur du livre au fichier en cache et retélécharge
+  /// si le manuscrit a changé — pour la PROCHAINE ouverture, la lecture en
+  /// cours garde ses octets en mémoire. Sans réseau, échoue en silence.
+  ///
+  /// Jamais pour un extrait : le serveur rendrait l'adresse du manuscrit
+  /// entier à qui possède le livre, et la comparaison écraserait l'aperçu
+  /// avec le mauvais fichier.
+  Future<void> _verifierFraicheurDuCache(String bookId) async {
+    if (widget.isExtrait) return;
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) return;
+
+      final frais = await BookService().getBookById(bookId, authToken: token);
+      final url = frais.fichierUrl;
+      if (url == null || url.isEmpty) return;
+
+      await _bookCacheService.rafraichirSiSourceChangee(
+        bookId,
+        url,
+        majLe: frais.majLe?.toIso8601String(),
+      );
+    } catch (e) {
+      // Pas de réseau, ou serveur muet : le cache reste tel quel, et c'est
+      // exactement ce qu'on veut hors ligne.
+      debugPrint('Vérification de fraîcheur du cache impossible : $e');
+    }
+  }
+
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -365,6 +501,12 @@ class _ReadingPageState extends State<ReadingPage> {
       final token = await TokenStorage.getToken();
       if (token != null) {
         final backendSettings = await _settingsService.getSettings(token);
+        // Le réglage revient du serveur APRÈS un aller-retour réseau : le
+        // lecteur a pu refermer le livre entre-temps, et setState sur un State
+        // démonté lève. L'exception partait jusqu'ici se faire avaler par le
+        // `catch` vide plus bas — invisible, mais elle abandonnait la
+        // synchronisation en cours de route.
+        if (!mounted) return;
         if (backendSettings != null) {
           setState(() {
             _backgroundColor = Color(backendSettings.readingBgColor);
@@ -379,7 +521,12 @@ class _ReadingPageState extends State<ReadingPage> {
           _saveToLocal(prefs);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // Silence ASSUMÉ, et lui seul : les réglages locaux ont déjà été
+      // appliqués plus haut, la lecture n'attend rien de cette synchronisation.
+      // Le `catch` vide, lui, cachait aussi les erreurs de programmation.
+      debugPrint('Réglages de lecture non synchronisés : $e');
+    }
   }
 
   void _applyPrefs(SharedPreferences prefs) {
@@ -420,7 +567,12 @@ class _ReadingPageState extends State<ReadingPage> {
           token,
         );
       }
-    } catch (e) {}
+    } catch (e) {
+      // Silence ASSUMÉ : les réglages sont déjà écrits sur l'appareil, la
+      // lecture n'attend rien de cette synchronisation. Mais un 'catch' vide
+      // cache aussi les erreurs de programmation — on trace.
+      debugPrint('Réglages de lecture non enregistrés au serveur : $e');
+    }
   }
 
   void _saveSettingsDebounced() {
@@ -431,18 +583,39 @@ class _ReadingPageState extends State<ReadingPage> {
   }
 
   Future<void> _loadBookmarks() async {
+    final bookId = widget.book['id'] ?? widget.book['ID'];
+    if (bookId == null) return;
     try {
       final token = await TokenStorage.getToken();
-      final bookId = widget.book['id'] ?? widget.book['ID'];
-      if (token != null && bookId != null) {
-        final bks = await _bookmarkService.getBookmarksByLivre(bookId, token);
-        if (mounted) {
-          setState(() {
-            _bookmarks = bks;
-          });
-        }
+      if (!mounted) return;
+      if (token == null) {
+        // Une session expirée se DIT telle quelle : sinon le panneau annonce
+        // une absence de repères là où il n'y a qu'une absence de jeton.
+        setState(
+          () => _erreurMarquePages =
+              "Votre session a expiré. Reconnectez-vous pour retrouver vos marque-pages.",
+        );
+        return;
       }
-    } catch (e) {}
+
+      final bks = await _bookmarkService.getBookmarksByLivre(bookId, token);
+      if (!mounted) return;
+      setState(() {
+        _bookmarks = bks;
+        _erreurMarquePages = null;
+      });
+    } catch (e) {
+      // L'erreur était avalée en silence (`catch (e) {}`) : la liste restait
+      // vide et le panneau affichait « Vous n'avez pas encore de marque-page ».
+      // Le lecteur croyait ses repères perdus alors que seul le réseau
+      // manquait. On dit la panne, et le panneau offre de réessayer.
+      debugPrint('Marque-pages non chargés : $e');
+      if (!mounted) return;
+      setState(
+        () => _erreurMarquePages =
+            "Vos marque-pages n'ont pas pu être chargés.",
+      );
+    }
   }
 
   Future<void> _loadProgress() async {
@@ -467,19 +640,33 @@ class _ReadingPageState extends State<ReadingPage> {
         );
         if (progress != null && mounted) {
           setState(() {
+            // Le serveur a répondu : la progression est CONNUE, on a le droit
+            // de la réécrire à la sortie (voir _peutEcrireLaProgression).
+            _peutEcrireLaProgression = true;
             _savedPage = progress.lastPage > 0
                 ? progress.lastPage
                 : progress.chapitreCourant;
           });
-          // Si le document est déjà chargé, on saute maintenant
-          if (_isDocumentLoaded &&
-              _savedPage! > 0 &&
-              _savedPage! <= _totalPages) {
-            _pdfViewerController.jumpToPage(_savedPage!);
+          // Si le document est déjà chargé, on saute maintenant.
+          //
+          // Ce rattrapage n'existait QUE pour le PDF, et `jumpToPage` n'a
+          // aucun effet sur un EPUB. Or « le document est déjà là quand le GET
+          // répond » est l'ordre NORMAL d'un livre en cache, qui s'ouvre en
+          // moins d'une seconde pendant que la requête voyage : la reprise
+          // EPUB ne fonctionnait que lorsque le réseau battait le disque.
+          if (_isDocumentLoaded && _savedPage! > 0) {
+            _sauterALaPositionEnregistree();
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // La progression n'a pas pu être RELUE. Ce n'est pas grave en soi — le
+      // livre s'ouvre à sa première page — mais '_peutEcrireLaProgression'
+      // reste faux, et c'est lui qui empêche la sortie d'écraser une position
+      // réelle par un 'page 1' inventé. Le silence total cachait ce
+      // basculement ; on le trace.
+      debugPrint('Progression non relue : $e');
+    }
   }
 
   Future<void> _saveProgress(int page) async {
@@ -494,7 +681,13 @@ class _ReadingPageState extends State<ReadingPage> {
           authToken: token,
         );
       }
-    } catch (e) {}
+    } catch (e) {
+      // La position n'a pas atteint le serveur : elle repartira au prochain
+      // tour de page ou à la sortie, la même valeur étant réenvoyée en entier
+      // (ce n'est pas un incrément). Rien à annoncer au lecteur pendant qu'il
+      // lit, mais rien à taire non plus.
+      debugPrint('Progression non enregistrée : $e');
+    }
   }
 
   /// Secondes déjà comptées localement mais pas encore déclarées au serveur.
@@ -508,25 +701,68 @@ class _ReadingPageState extends State<ReadingPage> {
 
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      final now = DateTime.now();
-      final elapsedSec = _lastHeartbeatTick != null
-          ? now.difference(_lastHeartbeatTick!).inSeconds
-          : 15;
-      _lastHeartbeatTick = now;
+    _heartbeatTimer = Timer.periodic(
+      const Duration(seconds: 15),
+      (timer) => _crediterLeTempsEcoule(),
+    );
+  }
 
-      final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
+  /// Crédite le temps écoulé depuis le dernier battement — s'il a été LU.
+  ///
+  /// Le corps du battement créditait `now - _lastHeartbeatTick` sans plafond
+  /// ni suivi du cycle de vie : appuyer sur Accueil, verrouiller le téléphone,
+  /// revenir trois heures plus tard, et les heures d'absence partaient dans le
+  /// temps de lecture (série, badges, statistiques de l'auteur). Trois gardes
+  /// désormais : quand la lecture est gelée — application derrière autre chose
+  /// OU page de paiement par-dessus la liseuse — on ne compte que si la voix
+  /// parle ; et AUCUN tick ne peut couvrir plus que son plafond, celui de la
+  /// voix compris, qui n'en avait aucun.
+  void _crediterLeTempsEcoule() {
+    final now = DateTime.now();
+    int elapsedSec = _lastHeartbeatTick != null
+        ? now.difference(_lastHeartbeatTick!).inSeconds
+        : 0;
+    // La pendule avance TOUJOURS, même quand on ne crédite pas : sinon le
+    // retour au premier plan créditerait toute l'absence d'un coup.
+    _lastHeartbeatTick = now;
 
-      if (elapsedSec > 0) {
-        ReadingTimeStorage.addReadingSeconds(
-          bookId: bookId.isNotEmpty ? bookId : null,
-          seconds: elapsedSec,
-        );
-        if (bookId.isNotEmpty) {
-          _declarerAuServeur(bookId, elapsedSec);
-        }
-      }
-    });
+    // Derrière l'écran verrouillé — ou derrière la page de paiement —, seule
+    // l'écoute à voix haute est de la lecture, c'est même son intérêt.
+    if (_lectureGelee && !_ttsService.isPlaying) return;
+
+    // Un minuteur suspendu puis relâché rend un écart énorme : ce temps-là
+    // n'a pas été lu. La voix qui parle donne droit à une borne plus large,
+    // jamais à l'absence de borne (voir _plafondTicAudioSecondes).
+    final int plafond = _ttsService.isPlaying
+        ? _plafondTicAudioSecondes
+        : _plafondTicSecondes;
+    if (elapsedSec > plafond) elapsedSec = plafond;
+    if (elapsedSec <= 0) return;
+
+    _secondesLuesSeance += elapsedSec;
+
+    final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
+    ReadingTimeStorage.addReadingSeconds(
+      bookId: bookId.isNotEmpty ? bookId : null,
+      seconds: elapsedSec,
+    );
+    if (bookId.isNotEmpty) {
+      _declarerAuServeur(bookId, elapsedSec);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _enArrierePlan = false;
+      // Le temps passé ailleurs n'est pas du temps de lecture : la pendule
+      // repart d'ici.
+      _lastHeartbeatTick = DateTime.now();
+    } else {
+      // On crédite ce qui précède la mise en arrière-plan, puis on gèle.
+      _crediterLeTempsEcoule();
+      _enArrierePlan = true;
+    }
   }
 
   /// Déclare le temps de lecture au serveur, en minutes entières.
@@ -573,6 +809,11 @@ class _ReadingPageState extends State<ReadingPage> {
     //     achete. Le jour ou il l'achete, il s'ouvre a sa page 9 sur trois
     //     cents.
     if (!widget.isExtrait) {
+      // Tourner une page est une progression OBSERVÉE : la sortie pourra
+      // l'écrire même si le GET de reprise a échoué.
+      _peutEcrireLaProgression = true;
+      // Et c'est bien la position du document qu'on tient maintenant.
+      _positionAppliquee = true;
       _saveTimer?.cancel();
       _saveTimer = Timer(const Duration(seconds: 2), () {
         _saveProgress(page);
@@ -746,8 +987,38 @@ class _ReadingPageState extends State<ReadingPage> {
 
       final user = await AuthService().getUser(token);
       final paymentService = PaymentService();
+      final livreId = widget.book['id']?.toString() ?? '';
+
+      // L'identifiant du COMPTE, avec un repli sur le stockage local.
+      //
+      // Il commande deux choses : la garde anti-double-débit, qui n'a plus de
+      // trace locale à opposer sans lui, et la clé sous laquelle la
+      // transaction est mémorisée. `getUser` peut échouer sans réseau alors
+      // que le jeton, lui, porte déjà l'identifiant : s'en remettre au seul
+      // profil laissait alors un `userId` vide, et la mémoire de la
+      // transaction n'était jamais écrite (memoriser refuse une clé vide).
+      final userId = user?.id.isNotEmpty == true
+          ? user!.id
+          : (await TokenStorage.getUserId() ?? '');
+      if (!mounted) return;
+
+      // La fin d'extrait est le SECOND endroit d'où part un paiement, et il
+      // ouvrait une transaction sans jamais regarder s'il en existait déjà
+      // une : revenir sur l'extrait après un paiement dont la confirmation
+      // tardait (le webhook CinetPay peut mettre une dizaine de minutes)
+      // suffisait à payer deux fois le même livre. Même garde que la fiche.
+      if (!await _paiementPeutSeLancer(
+        paymentService,
+        livreId,
+        token,
+        userId,
+      )) {
+        return;
+      }
+      if (!mounted) return;
+
       final result = await paymentService.initiateCinetpayPayment(
-        livreId: widget.book['id']?.toString() ?? '',
+        livreId: livreId,
         montant: amount,
         authToken: token,
         customerName: user?.nomComplet.isNotEmpty == true
@@ -760,17 +1031,55 @@ class _ReadingPageState extends State<ReadingPage> {
 
       if (!mounted) return;
 
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CinetpayWebViewPage(
-            paymentUrl: result.paymentUrl,
-            transactionId: result.paiement.transactionId,
-            book: widget.book,
-            montant: amount,
-          ),
-        ),
+      // Le montant officiel est celui que le serveur a relu en base au moment
+      // d'ouvrir la transaction, pas le prix chargé avec l'extrait : entre les
+      // deux, l'auteur a pu changer son prix, et c'est le débit réel qu'il
+      // faut annoncer.
+      final montantFacture = result.paiement.montant > 0
+          ? result.paiement.montant
+          : amount;
+
+      // La transaction ouverte est MÉMORISÉE avant d'envoyer le lecteur payer.
+      //
+      // Ce chemin-ci ne laissait aucune trace : revenir sur l'extrait après un
+      // paiement dont le webhook tardait n'avait plus rien à opposer, et la
+      // fiche du livre — qui, elle, consulte cette mémoire — ouvrait une
+      // seconde transaction. Même geste que payment_page.
+      await TransactionEnCoursStore.memoriser(
+        userId: userId,
+        livreId: livreId,
+        transactionId: result.paiement.transactionId,
+        montant: montantFacture,
       );
+
+      if (!mounted) return;
+
+      // Le temps de lecture ne court pas pendant le paiement.
+      //
+      // La page de paiement recouvre la liseuse sans que l'application quitte
+      // le premier plan : rien ne gelait le battement, et chaque tentative
+      // d'achat ajoutait ses minutes d'attente d'opérateur au temps de lecture
+      // du livre. On crédite ce qui précède, puis on gèle jusqu'au retour.
+      _crediterLeTempsEcoule();
+      _masqueParUneAutreRoute = true;
+      try {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CinetpayWebViewPage(
+              paymentUrl: result.paymentUrl,
+              transactionId: result.paiement.transactionId,
+              book: widget.book,
+              montant: montantFacture,
+            ),
+          ),
+        );
+      } finally {
+        // La pendule repart du RETOUR : sans cela, le premier battement
+        // d'après créditerait toute la durée du paiement d'un coup.
+        _lastHeartbeatTick = DateTime.now();
+        _masqueParUneAutreRoute = false;
+      }
     } catch (e) {
       if (mounted) {
         AppNotifications.showSnackBar(
@@ -785,64 +1094,233 @@ class _ReadingPageState extends State<ReadingPage> {
     }
   }
 
+  /// Vrai s'il faut lancer un nouveau paiement pour ce livre.
+  ///
+  /// La règle elle-même n'est plus écrite ici : elle vit dans
+  /// [PaymentService.examinerTransactionOuverte], partagée avec la fiche du
+  /// livre et l'écran de paiement. Les TROIS écrans d'où part un achat en
+  /// portaient chacun leur version, et elles avaient fini par se contredire :
+  /// sur une vérification en panne, deux laissaient passer et le troisième
+  /// refusait ; un paiement REFUSÉ par l'opérateur était encore annoncé « en
+  /// cours, attendez la confirmation ». Le même lecteur, sur le même livre,
+  /// pouvait acheter ou non selon l'écran d'où il partait. Cet écran ne décide
+  /// désormais que de ce qu'il MONTRE.
+  Future<bool> _paiementPeutSeLancer(
+    PaymentService paymentService,
+    String livreId,
+    String token,
+    String userId,
+  ) async {
+    // La garde ne lève jamais : une panne y devient un verdict, pas une
+    // exception. Rien à entourer d'un try ici.
+    final garde = await paymentService.examinerTransactionOuverte(
+      userId: userId,
+      livreId: livreId,
+      authToken: token,
+    );
+    if (!mounted) return false;
+
+    switch (garde.verdict) {
+      case VerdictPaiement.dejaAcquis:
+        // Le paiement précédent a abouti et le serveur a accordé le livre :
+        // le dire, et surtout ne pas en ouvrir un second.
+        AppNotifications.showSnackBar(
+          context,
+          message:
+              "Votre paiement précédent a été confirmé : ce livre est déjà dans votre bibliothèque.",
+          isSuccess: true,
+        );
+        return false;
+
+      case VerdictPaiement.aConfirmerParLaPersonne:
+        // Ni confirmée ni close : peut-être réglée (le webhook CinetPay peut
+        // mettre une dizaine de minutes), peut-être abandonnée. Seul le
+        // lecteur le sait — on lui pose la question plutôt que d'ouvrir une
+        // seconde transaction en silence.
+        final payerQuandMeme = await _confirmerNouveauPaiement(garde);
+        return payerQuandMeme == true;
+
+      case VerdictPaiement.laisserPasser:
+        // Y compris quand le statut est INVÉRIFIABLE : refuser un achat parce
+        // qu'on n'a pas pu lire la liste des paiements fermerait la boutique,
+        // et le serveur reste seul à accorder le livre — son idempotence par
+        // merchant_transaction_id ne le donne pas deux fois.
+        return true;
+    }
+  }
+
+  /// Demande au lecteur quoi faire d'une transaction encore ouverte.
+  ///
+  /// La date et la référence viennent du verdict, plus d'une relecture faite
+  /// sur place : c'est la garde qui a consulté le serveur, l'écran se contente
+  /// de rapporter ce qu'elle a vu.
+  Future<bool?> _confirmerNouveauPaiement(GardePaiement enAttente) {
+    final ouverte = enAttente.ouverteLe?.toLocal();
+    final quand = ouverte != null
+        ? " (ouverte le ${ouverte.day.toString().padLeft(2, '0')}/${ouverte.month.toString().padLeft(2, '0')} à ${ouverte.hour.toString().padLeft(2, '0')}h${ouverte.minute.toString().padLeft(2, '0')})"
+        : "";
+    // La référence est CITÉE au lecteur : c'est elle qu'il devra donner en
+    // réclamation si le double débit se produit malgré tout.
+    final reference = enAttente.transactionId.isEmpty
+        ? ""
+        : "\n\nRéférence : ${enAttente.transactionId}";
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+        ),
+        title: Text(
+          "Un paiement est déjà en cours",
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
+        content: Text(
+          "Une transaction pour ce livre$quand n'a pas encore été confirmée. "
+          "La confirmation de votre opérateur peut prendre quelques minutes. "
+          "Si vous payez à nouveau, vous risquez d'être débité deux fois."
+          "$reference",
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              "Attendre la confirmation",
+              style: GoogleFonts.poppins(
+                color: AppColors.accentInk,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              "Payer à nouveau",
+              style: GoogleFonts.poppins(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _toggleBookmark() async {
+    final bookId = widget.book['id'] ?? widget.book['ID'];
+    if (bookId == null) return;
     try {
       final token = await TokenStorage.getToken();
-      final bookId = widget.book['id'] ?? widget.book['ID'];
-      if (token != null && bookId != null) {
-        await _bookmarkService.createBookmark(
-          livreId: bookId,
-          page: _currentPage,
-          chapitre: 1, // Par défaut chapitre 1 pour l'instant
-          label: "Marque-page à la page $_currentPage",
-          authToken: token,
+      if (!mounted) return;
+      if (token == null) {
+        // Le geste ne partait NULLE PART et ne disait rien : appuyer sur
+        // l'étoile avec une session expirée ne produisait aucun signet et
+        // aucun message. Une session expirée se dit comme telle.
+        AppNotifications.showSnackBar(
+          context,
+          message: "Votre session a expiré. Reconnectez-vous pour poser un "
+              "marque-page.",
+          isError: true,
         );
-        if (mounted) {
-          AppNotifications.showSnackBar(
-            context,
-            message: 'Marque-page ajouté à la page $_currentPage',
-            isSuccess: true,
-          );
-        }
+        return;
       }
-    } catch (e) {}
+
+      final cree = await _bookmarkService.createBookmark(
+        livreId: bookId,
+        page: _currentPage,
+        chapitre: 1, // Par défaut chapitre 1 pour l'instant
+        label: "Marque-page à la page $_currentPage",
+        authToken: token,
+      );
+      if (!mounted) return;
+
+      // Le signet RENDU PAR LE SERVEUR rejoint la liste de la séance.
+      //
+      // Il n'y entrait pas : l'icône de la barre se peint d'après `_bookmarks`
+      // (`_bookmarks.any((b) => b.pageNumber == _currentPage)`) et restait donc
+      // creuse après un ajout réussi, comme si rien ne s'était passé. Le
+      // lecteur reposait le même marque-page. On ajoute l'objet du serveur, pas
+      // une copie devinée ici : son identifiant est celui qui servira à le
+      // supprimer.
+      setState(() => _bookmarks = [..._bookmarks, cree]);
+
+      AppNotifications.showSnackBar(
+        context,
+        message: 'Marque-page ajouté à la page $_currentPage',
+        isSuccess: true,
+      );
+    } catch (e) {
+      // L'échec était MUET : le service lève sur un refus du serveur et le
+      // `catch` vide l'avalait. Le lecteur voyait un appui sans effet et sans
+      // explication, et ne pouvait pas savoir qu'il fallait réessayer.
+      debugPrint('Marque-page non ajouté : $e');
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: messageLisible(
+          e,
+          repli: "Ce marque-page n'a pas pu être ajouté.",
+        ),
+        isError: true,
+      );
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _saveTimer?.cancel();
-    if (_currentPage > 0 && _totalPages > 0 && !widget.isExtrait) {
+    // La progression ne part que si elle a été APPLIQUÉE au document dans la
+    // séance (voir _positionAppliquee) : `_currentPage` vaut 1 tant que le
+    // saut de reprise n'a pas eu lieu, et l'envoyer écrasait la vraie
+    // position — un livre terminé quittait même le compteur « livres lus ».
+    // Savoir la progression ne suffit pas ; il faut l'avoir posée.
+    //
+    // Cet envoi n'est PAS attendu — `dispose` est synchrone, et l'attendre
+    // bloquerait la fermeture de l'écran sur un aller-retour réseau. Ce n'est
+    // plus un problème : le minuteur annulé juste au-dessus ne couvre que
+    // celui qui n'a pas encore tiré, et celui qui a DÉJÀ tiré laisse une
+    // requête en vol que cet envoi-ci doublait parfois. C'est désormais
+    // ReadingProgressService qui sérialise les envois d'un même livre et
+    // abandonne les positions dépassées (voir updateReadingProgress) : deux
+    // PUT ne se croisent plus, et le serveur n'a plus rien à départager — il
+    // n'a ni numéro de version ni horodatage client pour le faire.
+    if (_peutEcrireLaProgression &&
+        _positionAppliquee &&
+        _currentPage > 0 &&
+        _totalPages > 0 &&
+        !widget.isExtrait) {
       _saveProgress(_currentPage);
     }
-    final now = DateTime.now();
     final bookId = (widget.book['id'] ?? widget.book['ID'] ?? '').toString();
-    if (_lastHeartbeatTick != null) {
-      final elapsedSec = now.difference(_lastHeartbeatTick!).inSeconds;
-      if (elapsedSec > 0) {
-        ReadingTimeStorage.addReadingSeconds(
-          bookId: bookId.isNotEmpty ? bookId : null,
-          seconds: elapsedSec,
-        );
-        if (bookId.isNotEmpty) {
-          _declarerAuServeur(bookId, elapsedSec);
-        }
-      }
-    }
-    if (_sessionStartTime != null) {
-      final totalSessionSec = now.difference(_sessionStartTime!).inSeconds;
-      if (totalSessionSec >= 5) {
-        final bookTitle =
-            (widget.book['titre'] ??
-                    widget.book['Titre'] ??
-                    widget.book['title'] ??
-                    'Livre')
-                .toString();
-        ReadingTimeStorage.recordSession(
-          bookId: bookId,
-          bookTitle: bookTitle,
-          durationSeconds: totalSessionSec,
-        );
-      }
+    // Le reliquat depuis le dernier battement, avec les mêmes gardes que lui.
+    _crediterLeTempsEcoule();
+    // La durée de la session est ce qui a été CRÉDITÉ, et non l'écart entre
+    // l'ouverture et la fermeture : un livre resté ouvert pendant une nuit de
+    // veille n'est pas une séance de huit heures.
+    if (_secondesLuesSeance >= 5) {
+      final bookTitle =
+          (widget.book['titre'] ??
+                  widget.book['Titre'] ??
+                  widget.book['title'] ??
+                  'Livre')
+              .toString();
+      ReadingTimeStorage.recordSession(
+        bookId: bookId,
+        bookTitle: bookTitle,
+        durationSeconds: _secondesLuesSeance,
+      );
     }
     _heartbeatTimer?.cancel();
     _settingsTimer?.cancel();
@@ -857,6 +1335,68 @@ class _ReadingPageState extends State<ReadingPage> {
     // Rendre l'ecran a son comportement normal.
     WakelockPlus.disable();
     super.dispose();
+  }
+
+  /// Ramène l'EPUB au chapitre enregistré — le pendant du jumpToPage des PDF.
+  ///
+  /// La table des matières donne l'index de paragraphe où commence chaque
+  /// chapitre ; c'est le même chemin que les flèches « chapitre suivant /
+  /// précédent » du panneau audio.
+  ///
+  /// Rend vrai quand la position demandée a réellement été posée : l'appelant
+  /// en a besoin pour savoir s'il a le droit de réécrire la progression à la
+  /// sortie (voir [_positionAppliquee]).
+  bool _restaurerChapitreEpub(int chapitre) {
+    final controleur = _epubController;
+    if (controleur == null) return false;
+    try {
+      final toc = controleur.tableOfContents();
+      final index = chapitre - 1;
+      // Le premier chapitre est déjà là où le document s'ouvre : rien à
+      // faire, mais la position N'EN EST PAS MOINS APPLIQUÉE — sans ce cas,
+      // une reprise au chapitre 1 interdisait toute écriture de la séance.
+      if (index == 0) return true;
+      if (index > 0 && index < toc.length) {
+        controleur.jumpTo(index: toc[index].startIndex);
+        _currentPage = chapitre;
+        return true;
+      }
+    } catch (e) {
+      // Une table des matières absente ou plus courte que prévu : on reste au
+      // début plutôt que de sauter n'importe où.
+      debugPrint('Reprise EPUB impossible : $e');
+    }
+    return false;
+  }
+
+  /// Pose la position enregistrée sur le document, quel que soit son format.
+  ///
+  /// Un seul endroit pour les deux formats : la reprise EPUB et la reprise PDF
+  /// vivaient dans des branches séparées, et le rattrapage « la progression est
+  /// arrivée APRÈS le chargement » n'avait été écrit que pour l'une des deux.
+  ///
+  /// C'est aussi ici que se lève [_positionAppliquee] : tant que le saut n'a
+  /// pas eu lieu, `_currentPage` vaut 1 et l'écrire à la sortie détruirait la
+  /// position réelle.
+  void _sauterALaPositionEnregistree() {
+    final cible = _savedPage;
+    if (cible == null || cible <= 0) return;
+
+    if (_estEpub) {
+      if (_restaurerChapitreEpub(cible)) _positionAppliquee = true;
+      return;
+    }
+
+    if (_totalPages <= 0) return;
+    // La position peut dépasser le document : un manuscrit remplacé par son
+    // auteur compte moins de pages qu'avant. On revenait alors au tout début
+    // en silence, et chaque fermeture réécrivait « page 1 » par-dessus la
+    // vraie position. La dernière page est le plus proche de la vérité.
+    final page = cible > _totalPages ? _totalPages : cible;
+    _pdfViewerController.jumpToPage(page);
+    _updateChapterTitle(page);
+    _currentPage = page;
+    _positionAppliquee = true;
   }
 
   void _updateChapterTitle(int pageNumber) {
@@ -1675,15 +2215,57 @@ class _ReadingPageState extends State<ReadingPage> {
               if (mounted) {
                 setState(() {
                   _isDocumentLoaded = true;
-                  _totalPages = document.Chapters?.length ?? 0;
+                  // Les chapitres APLATIS, et non les seuls chapitres de
+                  // premier niveau.
+                  //
+                  // `document.Chapters` (epubx) range les sous-chapitres dans
+                  // `SubChapters` au lieu de les lister ; `chapterNumber`, lui,
+                  // est l'index dans la liste aplatie que produit
+                  // `tableOfContents()`. Sur une table des matières à deux
+                  // niveaux — le cas courant — `_currentPage` dépassait donc
+                  // vite `_totalPages` : le serveur écrêtait le pourcentage à
+                  // 100 et comptait le livre « lu » dès les premiers
+                  // chapitres, gonflant « livres lus » et les badges ; et la
+                  // garde de reprise rejetait la position enregistrée, si bien
+                  // que le livre rouvrait quand même au début.
+                  _totalPages =
+                      _epubController?.tableOfContents().length ??
+                      (document.Chapters?.length ?? 0);
                 });
+                // La reprise, comme pour les PDF. Rien n'appliquait jamais
+                // _savedPage au contrôleur EPUB : un lecteur arrêté au
+                // chapitre 20 rouvrait TOUJOURS son livre au début. Même
+                // délai que le chemin PDF, le temps que la vue se pose.
+                if (_savedPage != null && _savedPage! > 0) {
+                  Future.delayed(const Duration(milliseconds: 300), () {
+                    if (mounted) _sauterALaPositionEnregistree();
+                  });
+                }
               }
             },
             onChapterChanged: (value) {
               if (mounted && value != null && value.chapter != null) {
+                // Le chapitre tient lieu de page pour un EPUB : sans cela,
+                // _currentPage restait figé à 1 et la sortie enregistrait
+                // « chapitre 1 sur N » quelle que soit la lecture — toute
+                // une classe de livres exclue de la reprise.
+                final int chapitre = value.chapterNumber;
+                final bool aBouge = chapitre > 0 && chapitre != _currentPage;
                 setState(() {
                   _currentChapterTitle = value.chapter!.Title ?? '';
+                  if (chapitre > 0) _currentPage = chapitre;
                 });
+
+                // Même mécanisme d'enregistrement différé que les PDF
+                // (_onPageChanged) : un vrai déplacement, jamais un extrait.
+                if (aBouge && !widget.isExtrait) {
+                  _peutEcrireLaProgression = true;
+                  _positionAppliquee = true;
+                  _saveTimer?.cancel();
+                  _saveTimer = Timer(const Duration(seconds: 2), () {
+                    _saveProgress(_currentPage);
+                  });
+                }
 
                 if (_ttsService.isPlaying) {
                   _speakCurrentPage();
@@ -1731,14 +2313,14 @@ class _ReadingPageState extends State<ReadingPage> {
             _isDocumentLoaded = true;
           });
 
-          if (_savedPage != null &&
-              _savedPage! > 0 &&
-              _savedPage! <= _totalPages) {
+          // La borne `_savedPage <= _totalPages` a disparu du test : quand la
+          // position dépassait le document, le saut n'avait JAMAIS lieu et
+          // `_currentPage` restait à 1 pour toute la séance. C'est
+          // _sauterALaPositionEnregistree qui écrête maintenant à la dernière
+          // page, plutôt que de renvoyer le lecteur au début sans le dire.
+          if (_savedPage != null && _savedPage! > 0) {
             Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) {
-                _pdfViewerController.jumpToPage(_savedPage!);
-                _updateChapterTitle(_savedPage!);
-              }
+              if (mounted) _sauterALaPositionEnregistree();
             });
           }
         }
@@ -2398,60 +2980,84 @@ class _ReadingPageState extends State<ReadingPage> {
       isScrollControlled: true,
       builder: (context) {
         AppColors.suivreLeTheme(context);
-        return DefaultTabController(
-          length: 3,
-          initialIndex: initialTab,
-          child: Container(
-            height: MediaQuery.of(context).size.height * 0.7,
-            // Meme confusion : la feuille entiere etait peinte dans la couleur
-            // du texte. Elle prend la surface des cartes, comme toutes les
-            // autres feuilles de l'application.
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(AppDimensions.radiusPill),
+        // La feuille se REPEINT toute seule.
+        //
+        // Elle vit dans une route a part : le setState de la liseuse ne la
+        // reconstruit pas. Supprimer un marque-page rechargeait bien la liste
+        // en memoire, mais la feuille continuait d afficher l ancien — le
+        // signet efface restait la jusqu a la fermeture — et un bouton
+        // « Reessayer » n aurait rien repeint du tout.
+        return StatefulBuilder(
+          builder: (contexteFeuille, repeindre) {
+            // Repeindre SEULEMENT si la feuille est encore a l ecran : un
+            // rechargement qui aboutit pendant que le lecteur la referme ne
+            // doit pas lever « setState called after dispose ».
+            void rafraichir() {
+              if (contexteFeuille.mounted) repeindre(() {});
+            }
+
+            return DefaultTabController(
+            length: 3,
+            initialIndex: initialTab,
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              // Meme confusion : la feuille entiere etait peinte dans la couleur
+              // du texte. Elle prend la surface des cartes, comme toutes les
+              // autres feuilles de l'application.
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppDimensions.radiusPill),
+                ),
               ),
-            ),
-            child: Column(
-              children: [
-                SizedBox(height: 12),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.textSecondary.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+              child: Column(
+                children: [
+                  SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textSecondary.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+                    ),
                   ),
-                ),
-                TabBar(
-                  indicatorColor: AppColors.primaryLight,
-                  labelColor: AppColors.primaryLight,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  labelStyle: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                  tabs: const [
-                    Tab(text: "Chapitres"),
-                    Tab(text: "Signets"),
-                    Tab(text: "Notes"),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      // Tab 1: PDF Chapters
-                      _buildChaptersList(),
-                      // Tab 2: User Bookmarks
-                      _buildUserBookmarksList(onlyWithNotes: false),
-                      // Tab 3: User Notes
-                      _buildUserBookmarksList(onlyWithNotes: true),
+                  TabBar(
+                    indicatorColor: AppColors.primaryLight,
+                    labelColor: AppColors.primaryLight,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    labelStyle: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    tabs: const [
+                      Tab(text: "Chapitres"),
+                      Tab(text: "Signets"),
+                      Tab(text: "Notes"),
                     ],
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        // Tab 1: PDF Chapters
+                        _buildChaptersList(),
+                        // Tab 2: User Bookmarks
+                        _buildUserBookmarksList(
+                          onlyWithNotes: false,
+                          rafraichir: rafraichir,
+                        ),
+                        // Tab 3: User Notes
+                        _buildUserBookmarksList(
+                          onlyWithNotes: true,
+                          rafraichir: rafraichir,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          );
+          },
         );
       },
     );
@@ -2509,7 +3115,53 @@ class _ReadingPageState extends State<ReadingPage> {
     );
   }
 
-  Widget _buildUserBookmarksList({bool onlyWithNotes = false}) {
+  /// [rafraichir] repeint la feuille qui contient cette liste — elle est sur
+  /// une autre route et ne suit pas le `setState` de la liseuse.
+  Widget _buildUserBookmarksList({
+    bool onlyWithNotes = false,
+    VoidCallback? rafraichir,
+  }) {
+    // UNE PANNE N'EST PAS UN VIDE.
+    //
+    // Tant que le chargement a échoué, on le dit et on propose de réessayer,
+    // au lieu d'annoncer « Vous n'avez pas encore de marque-page » à quelqu'un
+    // dont les repères sont bien sur le serveur, hors d'atteinte du réseau.
+    final erreur = _erreurMarquePages;
+    if (erreur != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off, color: AppColors.textSecondary, size: 48),
+            SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                erreur,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(color: AppColors.textSecondary),
+              ),
+            ),
+            SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () async {
+                await _loadBookmarks();
+                rafraichir?.call();
+              },
+              icon: Icon(Icons.refresh, size: 18, color: AppColors.accentInk),
+              label: Text(
+                "Réessayer",
+                style: GoogleFonts.poppins(
+                  color: AppColors.accentInk,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     List<BookmarkModel> bookmarks = List.from(_bookmarks);
 
     if (onlyWithNotes) {
@@ -2558,20 +3210,50 @@ class _ReadingPageState extends State<ReadingPage> {
           trailing: IconButton(
             icon: Icon(Icons.delete_outline, color: AppColors.error, size: 20),
             onPressed: () async {
+              // C'est le contexte de CETTE ligne qu'on vérifie, pas celui de
+              // la liseuse : la feuille vit sur une autre route et peut se
+              // fermer pendant que la suppression voyage.
               try {
                 final token = await TokenStorage.getToken();
-                if (token != null) {
-                  await _bookmarkService.deleteBookmark(bk.id, token);
-                  await _loadBookmarks();
-                  if (mounted) {
-                    AppNotifications.showSnackBar(
-                      context,
-                      message: 'Marque-page supprimé',
-                      isSuccess: true,
-                    );
-                  }
+                if (!context.mounted) return;
+                if (token == null) {
+                  // Sans jeton, l'appui ne faisait rien et ne disait rien.
+                  AppNotifications.showSnackBar(
+                    context,
+                    message: "Votre session a expiré. Reconnectez-vous.",
+                    isError: true,
+                  );
+                  return;
                 }
-              } catch (e) {}
+                await _bookmarkService.deleteBookmark(bk.id, token);
+                await _loadBookmarks();
+                if (context.mounted) {
+                  AppNotifications.showSnackBar(
+                    context,
+                    message: 'Marque-page supprimé',
+                    isSuccess: true,
+                  );
+                }
+                // La feuille se repeint EN DERNIER : ce rebuild retire la
+                // ligne de l'arbre, et son contexte avec elle. Sans ce
+                // rafraîchissement, le marque-page supprimé restait affiché
+                // jusqu'à la fermeture de la feuille, et le lecteur rappuyait
+                // sur « supprimer » d'un signet qui n'existait plus.
+                rafraichir?.call();
+              } catch (e) {
+                // L'échec était MUET : le signet restait à l'écran sans un mot,
+                // et rien ne distinguait « supprimé » de « pas supprimé ».
+                debugPrint('Marque-page non supprimé : $e');
+                if (!context.mounted) return;
+                AppNotifications.showSnackBar(
+                  context,
+                  message: messageLisible(
+                    e,
+                    repli: "Ce marque-page n'a pas pu être supprimé.",
+                  ),
+                  isError: true,
+                );
+              }
             },
           ),
           onTap: () {

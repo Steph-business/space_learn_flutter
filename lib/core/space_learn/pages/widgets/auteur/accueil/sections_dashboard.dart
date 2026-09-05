@@ -5,11 +5,13 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/boutique/livre_card.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/dm_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/accueil_auteur_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
@@ -28,9 +30,14 @@ class TopLivresSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
-    // Sort books by downloads (views) descending and take top 2 (original design had 2 items)
+    // Classement par nombre d'AVIS, la seule grandeur que le serveur donne
+    // pour cette liste. Le tri portait sur `telechargements`, que le modèle
+    // remplissait avec ce même nombre d'avis : le classement était donc déjà
+    // celui-ci, sous un nom qui disait autre chose. Les deux grandeurs sont
+    // désormais séparées, et `telechargements` reste à zéro faute de compteur
+    // côté serveur — trier dessus ne classerait plus rien.
     final sortedBooks = List<BookModel>.from(books);
-    sortedBooks.sort((a, b) => b.telechargements.compareTo(a.telechargements));
+    sortedBooks.sort((a, b) => b.nombreAvis.compareTo(a.nombreAvis));
     final topBooks = sortedBooks.take(2).toList();
 
     return Container(
@@ -103,7 +110,11 @@ class TopLivresSection extends StatelessWidget {
   }
 
   Widget _buildItem(BuildContext context, String rank, BookModel book) {
-    final views = book.telechargements.toString();
+    // « X lectures » venait de `telechargements`, que le modèle remplissait
+    // avec le compte d'AVIS : un auteur lu 500 fois et noté 2 fois lisait
+    // « 2 lectures ». Le serveur n'envoie pas de compteur de lectures dans
+    // cette liste ; on nomme donc ce qu'on a réellement.
+    final avis = book.nombreAvis;
     final priceDisplay = LivreCard.formatPrix(book.prix);
 
     return Row(
@@ -148,7 +159,7 @@ class TopLivresSection extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                "$views lectures",
+                "$avis avis",
                 style: GoogleFonts.poppins(
                   color: AppColors.textHint,
                   fontSize: 11,
@@ -183,8 +194,16 @@ class CommentairesRecentsSection extends StatefulWidget {
 class _CommentairesRecentsSectionState
     extends State<CommentairesRecentsSection> {
   final ReviewService _reviewService = ReviewService();
+  final DmService _dmService = DmService();
   List<ReviewModel> _comments = [];
   bool _isLoading = true;
+
+  /// Ce qui a empêché les commentaires d'arriver, s'il y a lieu.
+  ///
+  /// Sans lui, un appel refusé et un livre dont personne n'a parlé donnaient
+  /// le même écran : « Aucun commentaire récent ». L'auteur en concluait que
+  /// ses lecteurs se taisaient.
+  String? _echec;
 
   @override
   void initState() {
@@ -205,10 +224,18 @@ class _CommentairesRecentsSectionState
       if (mounted) {
         setState(() {
           _comments = [];
+          _echec = null;
           _isLoading = false;
         });
       }
       return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _echec = null;
+        _isLoading = true;
+      });
     }
 
     try {
@@ -232,12 +259,19 @@ class _CommentairesRecentsSectionState
       if (mounted) {
         setState(() {
           _comments = allReviews;
+          _echec = null;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _echec = messageLisible(
+            e,
+            repli: "Les commentaires n'ont pas pu être chargés.",
+          );
+          _isLoading = false;
+        });
       }
     }
   }
@@ -266,6 +300,36 @@ class _CommentairesRecentsSectionState
                     AppColors.secondaryVariant,
                   ),
                 ),
+              ),
+            )
+          // Une panne n'est pas un silence des lecteurs : elle se dit, et elle
+          // se réessaie.
+          else if (_echec != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 18,
+                    color: AppColors.error,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _echec!,
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _loadComments,
+                    child: const Text("Réessayer"),
+                  ),
+                ],
               ),
             )
           else if (_comments.isEmpty)
@@ -325,6 +389,13 @@ class _CommentairesRecentsSectionState
     final textController = TextEditingController();
     bool isSending = false;
 
+    /// Le refus du serveur, montré DANS la feuille.
+    ///
+    /// Une bannière en bas d'écran passerait sous la feuille elle-même ; et la
+    /// feuille doit de toute façon rester ouverte, puisqu'elle porte le texte
+    /// que l'auteur vient d'écrire.
+    String? erreurEnvoi;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -355,12 +426,14 @@ class _CommentairesRecentsSectionState
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "Répondre à $author",
-                          style: GoogleFonts.poppins(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                        Expanded(
+                          child: Text(
+                            "Répondre à $author en privé",
+                            style: GoogleFonts.poppins(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                         IconButton(
@@ -402,7 +475,9 @@ class _CommentairesRecentsSectionState
                       maxLines: 3,
                       style: GoogleFonts.poppins(color: AppColors.textPrimary),
                       decoration: InputDecoration(
-                        hintText: "Rédigez votre réponse à $author...",
+                        hintText:
+                            "Votre réponse à $author, envoyée en message "
+                            "privé...",
                         hintStyle: GoogleFonts.poppins(
                           color: AppColors.textHint,
                           fontSize: 13,
@@ -417,6 +492,30 @@ class _CommentairesRecentsSectionState
                         ),
                       ),
                     ),
+                    if (erreurEnvoi != null) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            size: 18,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              erreurEnvoi!,
+                              style: GoogleFonts.poppins(
+                                color: AppColors.error,
+                                fontSize: 12.5,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -464,36 +563,78 @@ class _CommentairesRecentsSectionState
                                     final replyText = textController.text
                                         .trim();
                                     if (replyText.isEmpty) return;
-                                    setModalState(() => isSending = true);
+                                    setModalState(() {
+                                      isSending = true;
+                                      erreurEnvoi = null;
+                                    });
                                     try {
                                       final token =
                                           await TokenStorage.getToken();
-                                      if (token != null && book.id.isNotEmpty) {
-                                        await _reviewService.addReview(
-                                          livreId: book.id,
-                                          note: 5,
-                                          commentaire: replyText,
-                                          authToken: token,
+                                      if (token == null || token.isEmpty) {
+                                        throw Exception(
+                                          "Votre session a expiré. "
+                                          "Reconnectez-vous.",
                                         );
                                       }
+                                      if (comment.utilisateurId.isEmpty) {
+                                        throw Exception(
+                                          "Ce commentaire ne dit pas qui l'a "
+                                          "écrit : impossible de lui répondre.",
+                                        );
+                                      }
+
+                                      // La réponse part en MESSAGE PRIVÉ au
+                                      // lecteur.
+                                      //
+                                      // Elle était déposée en avis 5 étoiles
+                                      // sur le livre, au nom de l'auteur :
+                                      // le serveur exige que le livre figure
+                                      // dans la bibliothèque de l'appelant,
+                                      // l'appel échouait donc presque toujours
+                                      // — et dans le cas contraire, l'auteur
+                                      // se notait lui-même 5/5 et gonflait sa
+                                      // propre moyenne. Aucun des deux
+                                      // chemins ne produisait une réponse. La
+                                      // messagerie privée, elle, arrive
+                                      // vraiment au lecteur.
+                                      final conversation = await _dmService
+                                          .ouvrirConversationAvec(
+                                            comment.utilisateurId,
+                                            token,
+                                          );
+                                      await _dmService.envoyerMessage(
+                                        conversation.id,
+                                        replyText,
+                                        token,
+                                      );
+
+                                      // On n'annonce l'envoi qu'ICI : le
+                                      // serveur a accepté. La feuille se
+                                      // fermait auparavant AVANT l'appel, et
+                                      // le même « Réponse envoyée ! » suivait
+                                      // le succès comme l'échec.
                                       if (ctx.mounted) Navigator.pop(ctx);
                                       if (context.mounted) {
                                         AppNotifications.showSnackBar(
                                           context,
-                                          message: "Réponse envoyée !",
+                                          message: "Réponse envoyée à $author.",
                                           isSuccess: true,
                                         );
                                       }
                                     } catch (e) {
-                                      setModalState(() => isSending = false);
-                                      if (ctx.mounted) Navigator.pop(ctx);
-                                      if (context.mounted) {
-                                        AppNotifications.showSnackBar(
-                                          context,
-                                          message: "Réponse envoyée !",
-                                          isSuccess: true,
+                                      // La feuille RESTE ouverte : le texte
+                                      // écrit y est encore, et repart d'un
+                                      // seul appui une fois la cause levée.
+                                      if (!ctx.mounted) return;
+                                      setModalState(() {
+                                        isSending = false;
+                                        erreurEnvoi = messageLisible(
+                                          e,
+                                          repli:
+                                              "Votre réponse n'a pas pu être "
+                                              "envoyée. Réessayez.",
                                         );
-                                      }
+                                      });
                                     }
                                   },
                             style: ElevatedButton.styleFrom(

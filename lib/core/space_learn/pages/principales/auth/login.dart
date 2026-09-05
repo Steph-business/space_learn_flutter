@@ -77,36 +77,65 @@ class _LoginPageState extends State<LoginPage> {
     TokenUser tokenUser, {
     String? emailAMemoriser,
   }) async {
-    final profilId = tokenUser.user.profilId;
+    // Un profil manquant ne fait PLUS échouer la connexion.
+    //
+    // `throw Exception("Profil ID non reçu du backend.")` remontait au catch
+    // de _login, qui affichait « Connexion impossible pour le moment. » alors
+    // que la session venait d'être enregistrée (login() pose jeton, refresh,
+    // nom et identifiant avant de rendre la main) : la personne ressaisissait
+    // un mot de passe qui venait pourtant de fonctionner. On repart donc du
+    // profil mémorisé sur l'appareil, et à défaut on laisse le choix du profil
+    // à ProfilPage — la branche par défaut du routage ci-dessous.
+    var profilId = tokenUser.user.profilId;
     if (profilId.isEmpty) {
-      throw Exception("Profil ID non reçu du backend.");
+      profilId = (await ProfileStorage.getSelectedProfile()) ?? '';
     }
 
-    await _profileService.saveSelectedProfile(profilId);
-    final allProfiles = await _profileService.getProfils();
+    // Même raison pour l'écriture locale : un stockage qui refuse (coffre
+    // verrouillé, disque plein) est un incident de l'appareil, pas un refus du
+    // serveur, et ne doit pas se présenter comme un échec de connexion.
+    try {
+      if (profilId.isNotEmpty) {
+        await _profileService.saveSelectedProfile(profilId);
+      }
+    } catch (e) {
+      developer.log('Profil non enregistré localement : $e');
+    }
 
-    final userProfile = allProfiles.firstWhere(
-      (p) => p.id.trim().toLowerCase() == profilId.trim().toLowerCase(),
-      orElse: () => ProfilModel(id: '', libelle: ''),
-    );
-
-    if (!mounted) return;
-
-    if (userProfile.id.isEmpty) {
-      AppNotifications.showSnackBar(
-        context,
-        message: "Aucun profil correspondant trouvé pour l'ID : $profilId",
-        isError: true,
+    // À ce point la connexion a RÉUSSI : login() a enregistré jeton, refresh
+    // et identifiant AVANT de rendre la main. Plus rien ici ne doit se solder
+    // par « Connexion impossible » — c'est pourtant ce qui arrivait quand
+    // getProfils() (un second appel réseau) échouait, ou quand le profil
+    // manquait à la liste : l'utilisateur, connecté, restait sur l'écran de
+    // connexion à ressaisir un mot de passe qui venait de fonctionner, et
+    // découvrait au prochain lancement qu'il était connecté depuis le début.
+    String role = '';
+    try {
+      final allProfiles = await _profileService.getProfils();
+      final userProfile = allProfiles.firstWhere(
+        (p) => p.id.trim().toLowerCase() == profilId.trim().toLowerCase(),
+        orElse: () => ProfilModel(id: '', libelle: ''),
       );
-      setState(() => _isLoading = false);
-      return;
+      role = userProfile.libelle.toLowerCase();
+    } catch (e) {
+      developer.log('Profil non résolu après connexion : $e');
     }
 
-    final role = userProfile.libelle.toLowerCase();
-    await ProfileStorage.saveSelectedProfileRole(role);
-    await ProfileStorage.saveIsRegisteredUser(true);
-    if (emailAMemoriser != null && emailAMemoriser.isNotEmpty) {
-      await ProfileStorage.saveSavedEmail(emailAMemoriser);
+    if (role.isEmpty) {
+      // Routage par défaut : le rôle mémorisé sur l'appareil, sinon l'espace
+      // lecteur — le parcours le plus courant. La prochaine résolution
+      // réussie (démarrage ou connexion) remettra le vrai rôle en place.
+      final memorise = (await ProfileStorage.getSelectedProfileRole()) ?? '';
+      role = memorise.isNotEmpty ? memorise : 'lecteur';
+    }
+
+    try {
+      await ProfileStorage.saveSelectedProfileRole(role);
+      if (emailAMemoriser != null && emailAMemoriser.trim().isNotEmpty) {
+        await ProfileStorage.saveSavedEmail(emailAMemoriser.trim());
+      }
+    } catch (e) {
+      developer.log('Préférences de connexion non enregistrées : $e');
     }
 
     if (!mounted) return;
@@ -129,7 +158,12 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     Widget destination;
-    if (role.contains("lecteur")) {
+    if (profilId.isEmpty) {
+      // Sans identifiant de profil, les deux accueils n'ont rien à interroger
+      // (ils le passent à chacun de leurs appels) : le choix du profil est la
+      // seule destination honnête.
+      destination = const ProfilPage();
+    } else if (role.contains("lecteur")) {
       destination = lecteurHome.HomePageLecteur(
         profileId: profilId,
         userName: tokenUser.user.nomComplet,
@@ -170,7 +204,15 @@ class _LoginPageState extends State<LoginPage> {
       await GoogleAuthService.oublierLeCompte();
       final jeton = await GoogleAuthService.obtenirJetonIdentite();
       final tokenUser = await _authService.connexionGoogle(jeton);
-      await _acheminerApresConnexion(tokenUser);
+      // L'adresse est mémorisée ICI AUSSI, à partir de celle que le serveur
+      // renvoie. Ce chemin ne l'écrivait pas : la clé gardait alors l'adresse
+      // du compte précédent, que l'écran de connexion pré-remplissait et sur
+      // laquelle s'appuie la reconnexion silencieuse d'après changement de mot
+      // de passe — un mot de passe tout neuf envoyé sous l'adresse d'un tiers.
+      await _acheminerApresConnexion(
+        tokenUser,
+        emailAMemoriser: tokenUser.user.email,
+      );
     } on ErreurGoogle catch (e) {
       // Fermer le sélecteur n'est pas un échec : rien à signaler.
       if (!e.annulee && mounted) {

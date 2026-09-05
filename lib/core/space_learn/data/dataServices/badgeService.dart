@@ -14,6 +14,33 @@ class BadgeService {
 
   static const String _cleCache = 'badges_cache';
 
+  /// La clé complète porte l'identifiant du compte connecté.
+  ///
+  /// La clé fixe 'badges_cache' survivait à la déconnexion : le compte suivant
+  /// sur le même téléphone, hors ligne ou sur un 500, voyait la collection
+  /// complète du précédent — badges débloqués, progressions — et l'accueil
+  /// comptait ces badges dans ses statistiques.
+  static Future<String> _cleCacheDuCompte() async {
+    final compte = await TokenStorage.getUserId() ?? '';
+    return compte.isEmpty ? _cleCache : '${_cleCache}_$compte';
+  }
+
+  /// Efface le cache de badges, tous comptes confondus.
+  ///
+  /// Appelée à la fin de session (SessionService.terminer), avec l'ancienne
+  /// clé fixe : un cache par-compte qui reste sur l'appareil après la
+  /// déconnexion est exactement la fuite que le suffixe cherche à éviter.
+  static Future<void> purgerCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cles = prefs
+        .getKeys()
+        .where((c) => c.startsWith(_cleCache))
+        .toList();
+    for (final cle in cles) {
+      await prefs.remove(cle);
+    }
+  }
+
   Future<List<BadgeModel>> getUserBadges() async {
     try {
       final token = await TokenStorage.getToken();
@@ -48,7 +75,7 @@ class BadgeService {
   Future<List<BadgeModel>> _dernierEtatConnu() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final brut = prefs.getString(_cleCache);
+      final brut = prefs.getString(await _cleCacheDuCompte());
       if (brut == null) return [];
 
       final Map<String, dynamic> decode = jsonDecode(brut);
@@ -62,7 +89,7 @@ class BadgeService {
   Future<void> _memoriser(String corps) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_cleCache, corps);
+      await prefs.setString(await _cleCacheDuCompte(), corps);
     } catch (_) {
       // Un cache qui ne s'écrit pas ne doit pas faire échouer l'affichage.
     }

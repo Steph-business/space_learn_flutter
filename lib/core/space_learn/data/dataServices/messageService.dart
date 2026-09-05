@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../model/messageModel.dart';
@@ -53,7 +54,24 @@ class MessageService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       final List<dynamic> list = responseData['data'] ?? [];
-      return list.map((json) => Message.fromJson(json)).toList();
+
+      // Une boucle plutôt qu'un `map`, comme dans `DmService` : `map` propage
+      // l'échec du premier élément mal formé à toute la liste, et le fil
+      // entier s'affiche alors en panne pour un seul message abîmé. Ici
+      // l'élément illisible est SAUTÉ et les autres s'affichent.
+      final messages = <Message>[];
+      for (final element in list) {
+        try {
+          messages.add(Message.fromJson(Map<String, dynamic>.from(element)));
+        } catch (e) {
+          // Sauté, mais pas en silence complet : une trace pour le journal,
+          // rien à l'écran — la personne qui lit n'a rien à faire de cette
+          // information, et un fil amputé d'un message reste utile.
+          debugPrint('Message illisible ignoré dans $discussionId : $e');
+          continue;
+        }
+      }
+      return messages;
     } else {
       throw Exception(
         messageDeLaReponse(

@@ -51,25 +51,25 @@ class _EvenementsPageState extends State<EvenementsPage> {
   bool _estAnnonce(Evenement e) =>
       e.typePublication.toLowerCase().trim() == 'annonce';
 
-  List<Evenement> get _liste {
-    final retenues = switch (_filtre) {
-      _annonces => widget.evenements.where(_estAnnonce),
-      _evenements => widget.evenements.where((e) => !_estAnnonce(e)),
-      _ => widget.evenements,
-    }.toList();
-
-    // Les plus récentes d'abord. Une publication sans date passe après celles
-    // qui en portent une, plutôt que de remonter en tête par accident.
-    retenues.sort((a, b) {
-      final da = a.dateEvenement;
-      final db = b.dateEvenement;
-      if (da == null && db == null) return 0;
-      if (da == null) return 1;
-      if (db == null) return -1;
-      return db.compareTo(da);
-    });
-    return retenues;
-  }
+  /// Le filtre RETIENT, il ne réordonne pas.
+  ///
+  /// Un tri local rangeait ici tout le monde par date décroissante. Il
+  /// contredisait ce que promet [_listeGroupee] juste en dessous — « regrouper
+  /// sans toucher à l'ordre » — et il retournait la seule famille où l'ordre
+  /// engage : sous « À venir », le rendez-vous le plus LOINTAIN passait en
+  /// tête et celui de demain, le seul qu'on puisse encore manquer, tombait en
+  /// bas de sa section.
+  ///
+  /// Le serveur trie déjà les trois familles chacune dans son sens (voir
+  /// `ordreCommunautaire`) : à venir du plus proche au plus lointain, annonces
+  /// et rendez-vous passés du plus récent au plus ancien. Le refaire ici, avec
+  /// une règle unique pour trois familles qui n'en veulent pas la même, ne
+  /// pouvait qu'en abîmer au moins une.
+  List<Evenement> get _liste => switch (_filtre) {
+    _annonces => widget.evenements.where(_estAnnonce).toList(),
+    _evenements => widget.evenements.where((e) => !_estAnnonce(e)).toList(),
+    _ => List<Evenement>.of(widget.evenements),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +155,17 @@ class _EvenementsPageState extends State<EvenementsPage> {
         Padding(
           padding: EdgeInsets.only(bottom: i == membres.length - 1 ? 8 : 12),
           child: CarteEvenement(
+            // La Key suit l'ÉVÉNEMENT, pas son rang dans la liste.
+            //
+            // Sans elle, Flutter apparie les cartes par position : au
+            // changement de filtre, ou après un rafraîchissement qui
+            // réordonne, le State du bouton « Me le rappeler » restait en
+            // place et se retrouvait rattaché à un AUTRE rendez-vous — il
+            // affichait « Rappel posé » là où aucun rappel n'existait, et le
+            // lecteur croyait qu'on le préviendrait la veille. Le
+            // didUpdateWidget du bouton n'est qu'un filet ; la réparation est
+            // ici, et elle vaut aussi pour tout état futur de la carte.
+            key: ValueKey(membres[i].id),
             evenement: membres[i],
             signature: widget.signature,
             onTap: () => widget.onOuvrir(context, membres[i]),

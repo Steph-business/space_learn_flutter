@@ -40,17 +40,17 @@ class ProfileStorage {
     await prefs.remove(_selectedProfileRoleKey);
   }
 
-  static const String _isRegisteredUserKey = "is_registered_user";
-
-  static Future<void> saveIsRegisteredUser(bool val) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_isRegisteredUserKey, val);
-  }
-
-  static Future<bool> getIsRegisteredUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_isRegisteredUserKey) ?? false;
-  }
+  // « is_registered_user » a été retirée d'ici, et ses deux écritures avec
+  // elle (login.dart, otp.dart).
+  //
+  // Elle était posée à chaque connexion et à chaque validation de code, et
+  // RELUE nulle part. Une donnée que personne ne consulte n'est pas un
+  // réglage : c'est une trace laissée sur l'appareil, qui survivait de surcroît
+  // à la déconnexion sans que rien ne la nettoie, et qu'un prochain lecteur du
+  // code aurait prise pour un état de session digne de confiance.
+  //
+  // Rien à migrer sur les appareils déjà installés : la valeur qui y dort est
+  // un booléen sans contenu nominatif que plus aucun code ne lit.
 
   static const String _savedEmailKey = "saved_email_key";
 
@@ -62,5 +62,18 @@ class ProfileStorage {
   static Future<String?> getSavedEmail() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_savedEmailKey);
+  }
+
+  /// Oublie l'adresse mémorisée.
+  ///
+  /// Cette clé n'était effacée par AUCUN chemin de déconnexion : sur un
+  /// téléphone partagé, l'écran de connexion s'ouvrait pré-rempli avec
+  /// l'adresse du compte précédent — et, depuis que la reconnexion silencieuse
+  /// d'après changement de mot de passe s'appuie dessus, elle pouvait faire
+  /// partir le nouveau mot de passe de B sous l'adresse de A. Elle part
+  /// désormais avec le reste, dans SessionService.terminer.
+  static Future<void> clearSavedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_savedEmailKey);
   }
 }

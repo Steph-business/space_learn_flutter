@@ -375,6 +375,16 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                             ),
                           ),
                           const SizedBox(height: 4),
+                          // Le SEUL écran qui affiche une heure — et donc le
+                          // seul où le fuseau se voit.
+                          //
+                          // `DateFormat` rend les champs de la date telle
+                          // qu'on la lui donne : une date restée en UTC
+                          // s'écrirait ici en UTC. Celle du modèle est déjà
+                          // ramenée à l'heure de l'appareil
+                          // (evenementModel), et rien n'est reconverti ici :
+                          // c'est bien « 17 h » qu'un lecteur d'Abidjan lit
+                          // d'une rencontre fixée à 18 h à Douala.
                           Text(
                             DateFormat(
                               'EEEE d MMMM yyyy à HH:mm',

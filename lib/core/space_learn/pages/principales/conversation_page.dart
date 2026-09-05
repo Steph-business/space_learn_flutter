@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
@@ -9,7 +12,9 @@ import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/dm_service.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/conversation_model.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
 
 /// Un échange privé avec quelqu'un.
 ///
@@ -40,28 +45,166 @@ class _ConversationPageState extends State<ConversationPage> {
   /// quand le réseau traîne, publierait deux fois le même message.
   bool _envoiEnCours = false;
 
+  /// Le flux temps réel auquel ce fil est branché.
+  ///
+  /// Le fil n'ouvre pas sa propre connexion : il écoute celle des
+  /// notifications, déjà ouverte pour toute l'application. La référence est
+  /// gardée ici parce que `dispose` ne peut plus interroger l'arbre des
+  /// fournisseurs — s'y désabonner par `context.read` y lève une exception.
+  NotificationProvider? _flux;
+
+  /// La dernière notification de ce fil déjà prise en compte.
+  ///
+  /// Le fournisseur prévient à chaque changement, y compris pour des
+  /// notifications étrangères à cette conversation ou pour une simple mise à
+  /// jour de « lu ». Sans ce repérage, la moindre notification de
+  /// l'application rechargerait le fil — et ouvrir une conversation dont la
+  /// notification était en attente déclencherait aussitôt un second
+  /// chargement.
+  String? _derniereNotificationVue;
+
+  /// Délai de garde entre deux rechargements déclenchés par le flux.
+  ///
+  /// Cinq messages envoyés coup sur coup valent cinq notifications SSE :
+  /// sans ce délai, cinq requêtes partiraient pour ramener presque exactement
+  /// la même liste.
+  static const Duration _delaiDeGarde = Duration(seconds: 3);
+
+  Timer? _rechargementDiffere;
+  DateTime? _dernierRechargement;
+
   @override
   void initState() {
     super.initState();
     _charger();
+    _ecouterLeFlux();
   }
 
   @override
   void dispose() {
+    _rechargementDiffere?.cancel();
+    _flux?.removeListener(_surNotification);
     _saisie.dispose();
     _defilement.dispose();
     super.dispose();
   }
 
-  Future<void> _charger() async {
-    if (mounted) setState(() => _erreur = null);
+  /// Branche le fil sur le flux des notifications.
+  ///
+  /// Le fil ne se chargeait qu'une fois, à l'ouverture : deux personnes
+  /// pouvaient s'écrire sans rien voir arriver tant qu'on ne tirait pas vers
+  /// le bas — et rien n'invitait à le faire, puisque le serveur marque les
+  /// messages reçus comme lus dès l'ouverture du fil (DmService.getMessages)
+  /// et qu'aucune pastille ne se rallume tant qu'on y reste. C'est le défaut
+  /// déjà corrigé dans les salons de forum (ForumMessagesPage), laissé intact
+  /// sur le seul écran où l'échange est à deux, donc où l'on attend le plus
+  /// d'immédiateté.
+  ///
+  /// Rien à ajouter côté serveur : à chaque message privé, il crée déjà une
+  /// notification « message_prive » portant l'identifiant de la conversation
+  /// en référence (space_learn_livres/modules/direct_message/service.go), et
+  /// ce flux arrive en direct par le SSE de NotificationProvider.
+  void _ecouterLeFlux() {
+    NotificationProvider flux;
+    try {
+      flux = context.read<NotificationProvider>();
+    } on ProviderNotFoundException {
+      // Hors de l'arbre de l'application — un écran isolé, un test — le fil
+      // reste consultable, simplement sans mise à jour spontanée. Mieux vaut
+      // ça qu'une page qui refuse de s'afficher.
+      return;
+    }
+    _flux = flux;
+    // Ce qui est déjà arrivé avant l'ouverture n'est pas une nouveauté.
+    _derniereNotificationVue = _derniereDuFil(flux);
+    flux.addListener(_surNotification);
+  }
+
+  /// L'identifiant de la notification la plus récente portant sur ce fil.
+  String? _derniereDuFil(NotificationProvider flux) {
+    for (final n in flux.notifications) {
+      if (_concerneCeFil(n)) return n.id;
+    }
+    return null;
+  }
+
+  /// Cette notification parle-t-elle de la conversation ouverte ?
+  ///
+  /// La référence dit de quoi on parle, le type dit à quel titre — et le type
+  /// se compare EXACTEMENT, jamais par `contains('message')` : c'est la règle
+  /// déjà posée par `concerneLesDeuxProfils`, qu'on appelle ici plutôt que de
+  /// réécrire la comparaison, pour n'avoir qu'un seul endroit à corriger le
+  /// jour où le serveur renommerait ce type (elle tolère au passage la
+  /// variante accentuée qu'une vieille ligne en base pourrait encore porter).
+  /// Un fragment aurait fait recharger ce fil sur les messages de salon.
+  bool _concerneCeFil(NotificationModel n) {
+    if (n.referenceId?.trim() != widget.conversation.id) return false;
+    return NotificationProvider.concerneLesDeuxProfils(n.type);
+  }
+
+  void _surNotification() {
+    final flux = _flux;
+    if (flux == null || !mounted) return;
+
+    final derniere = _derniereDuFil(flux);
+    if (derniere == null || derniere == _derniereNotificationVue) return;
+
+    _derniereNotificationVue = derniere;
+    _programmerRechargement();
+  }
+
+  /// Recharge le fil, sans jamais plus d'une requête par délai de garde.
+  void _programmerRechargement() {
+    if (_rechargementDiffere?.isActive ?? false) return;
+
+    final dernier = _dernierRechargement;
+    final ecoule = dernier == null
+        ? _delaiDeGarde
+        : DateTime.now().difference(dernier);
+
+    if (ecoule >= _delaiDeGarde) {
+      _charger(enArrierePlan: true);
+      return;
+    }
+    _rechargementDiffere = Timer(_delaiDeGarde - ecoule, () {
+      if (!mounted) return;
+      _charger(enArrierePlan: true);
+    });
+  }
+
+  /// Charge le fil depuis le serveur.
+  ///
+  /// `enArrierePlan` distingue le rechargement que personne n'a demandé — le
+  /// flux temps réel — du chargement que l'on attend. Le premier ne prend
+  /// jamais la place de ce qui est lisible à l'écran.
+  Future<void> _charger({bool enArrierePlan = false}) async {
+    _dernierRechargement = DateTime.now();
+    if (mounted) {
+      setState(() {
+        // On repart de l'INCONNU, pas du vide. Depuis l'état d'erreur,
+        // `_chargement` valait déjà false et la liste était vide : effacer
+        // `_erreur` faisait donc tomber le build sur « Écrivez le premier
+        // message » — un fil qu'on n'a pas pu lire présenté comme un fil
+        // neuf — pendant toute la durée de la requête. Même correctif que la
+        // liste des conversations. Un fil réellement vide, lui, garde son
+        // message : rien ne le remplace par une roue qui tourne.
+        if (_erreur != null) _chargement = true;
+        _erreur = null;
+      });
+    }
     try {
       final token = await TokenStorage.getToken();
       if (token == null) {
         if (!mounted) return;
         setState(() {
           _chargement = false;
-          _erreur = "Votre session a expiré. Reconnectez-vous.";
+          // Même garde que le `catch` plus bas : un rechargement que personne
+          // n'a demandé ne remplace pas la conversation affichée par un écran
+          // d'erreur. La session finie se dira à l'envoi, qui est le moment
+          // où elle empêche vraiment quelque chose.
+          if (!enArrierePlan || _messages.isEmpty) {
+            _erreur = "Votre session a expiré. Reconnectez-vous.";
+          }
         });
         return;
       }
@@ -73,11 +216,22 @@ class _ConversationPageState extends State<ConversationPage> {
         moiId: moi,
       );
       if (!mounted) return;
+
+      // Qui remonte l'historique doit pouvoir continuer : un message qui
+      // arrive pendant ce temps ne doit pas nous ramener de force en bas. Le
+      // défilement était INCONDITIONNEL — sans conséquence tant que seule
+      // l'ouverture du fil rechargeait, arrachant l'écran à chaque message
+      // reçu maintenant que le flux recharge tout seul. À l'ouverture, la
+      // liste n'a pas encore de client : on est donc « en bas » et l'on
+      // descend bien sur le dernier message, comme avant.
+      final etaitEnBas = _estEnBasDuFil();
+      final combienAvant = _messages.length;
+
       setState(() {
         _messages = messages;
         _chargement = false;
       });
-      _descendreEnBas();
+      if (etaitEnBas && messages.length > combienAvant) _descendreEnBas();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -94,9 +248,22 @@ class _ConversationPageState extends State<ConversationPage> {
     }
   }
 
+  /// Lit-on la fin du fil ?
+  ///
+  /// Tant que la liste n'a pas de client — à l'ouverture, ou sur un fil trop
+  /// court pour défiler — il n'y a pas d'historique à préserver : on répond
+  /// oui, et le fil descend comme il l'a toujours fait.
+  bool _estEnBasDuFil() {
+    if (!_defilement.hasClients) return true;
+    final position = _defilement.position;
+    return position.pixels >= position.maxScrollExtent - 80;
+  }
+
   void _descendreEnBas() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_defilement.hasClients) return;
+      // `mounted` en plus du test de client : le rappel est différé d'une
+      // image, et le fil peut avoir été quitté entre-temps.
+      if (!mounted || !_defilement.hasClients) return;
       _defilement.jumpTo(_defilement.position.maxScrollExtent);
     });
   }

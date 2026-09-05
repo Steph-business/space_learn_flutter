@@ -827,11 +827,17 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                                   ForumMessagesPage(discussion: d),
                             ),
                           ).then((_) {
-                            TokenStorage.saveDiscussionLastViewed(d.id).then((
-                              _,
-                            ) {
-                              _loadDiscussions();
-                            });
+                            // On ne tamponne PAS « vu » ici. La visite se
+                            // note dans ForumMessagesPage, au moment où le
+                            // fil est réellement affiché (_loadMessages) —
+                            // c'est tout l'objet de son correctif. La
+                            // re-tamponner au retour l'annulait : un message
+                            // arrivé pendant la visite mais jamais affiché
+                            // (rechargement de fond en échec, silencieux par
+                            // construction) passait pour vu, et la pastille
+                            // « nouveau » ne s'allumait jamais. On se
+                            // contente de relire les dates enregistrées.
+                            _loadDiscussions();
                           });
                         },
                         child: _buildPostItem(

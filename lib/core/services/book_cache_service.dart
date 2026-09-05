@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service de cache local des fichiers de livres (PDF/EPUB).
 /// Permet la lecture hors-ligne en téléchargeant les fichiers
@@ -221,19 +222,36 @@ class BookCacheService {
     }
   }
 
+  /// Délai au-delà duquel un serveur muet est déclaré injoignable.
+  ///
+  /// Même borne que l'ApiClient : ce chemin-ci ne passe pas par lui — les URL
+  /// signées sont téléchargées avec un client nu — et n'avait donc AUCUN
+  /// délai d'attente. Sur un portail captif ou un serveur qui accepte la
+  /// connexion sans jamais répondre, l'ouverture du livre restait bloquée pour
+  /// toujours sur son indicateur de progression.
+  static const Duration _delaiReseau = Duration(seconds: 30);
+
   /// Télécharge le fichier depuis le réseau, le sauvegarde en cache local,
   /// et retourne les bytes du fichier.
   /// [onProgress] est appelé avec une valeur entre 0.0 et 1.0.
+  ///
+  /// [majLe] : le marqueur de version du livre côté serveur, s'il est connu.
+  /// Il est mémorisé avec le fichier pour détecter un manuscrit remplacé
+  /// (voir [rafraichirSiSourceChangee]).
   Future<Uint8List?> downloadAndCache(
     String bookId,
     String url, {
     void Function(double progress)? onProgress,
     bool extrait = false,
+    String? majLe,
   }) async {
+    // Le client est créé ici pour être refermé dans le finally : il ne
+    // l'était jamais, et une connexion fuyait à chaque téléchargement.
+    final client = http.Client();
     try {
       // Téléchargement avec suivi de progression
       final request = http.Request('GET', Uri.parse(url));
-      final response = await http.Client().send(request);
+      final response = await client.send(request).timeout(_delaiReseau);
 
       if (response.statusCode != 200) {
         debugPrint('Erreur HTTP ${response.statusCode} lors du téléchargement');
@@ -244,7 +262,10 @@ class BookCacheService {
       final List<int> receivedBytes = [];
       int downloadedBytes = 0;
 
-      await for (final chunk in response.stream) {
+      // Le délai porte sur l'INACTIVITÉ entre deux paquets, pas sur le
+      // téléchargement entier : un gros livre sur réseau lent doit pouvoir
+      // durer, mais un flux qui se tait trente secondes est mort.
+      await for (final chunk in response.stream.timeout(_delaiReseau)) {
         receivedBytes.addAll(chunk);
         downloadedBytes += chunk.length;
 
@@ -296,6 +317,9 @@ class BookCacheService {
           debugPrint(
             'Livre $bookId mis en cache : ${(bytes.length / 1024 / 1024).toStringAsFixed(2)} Mo',
           );
+          // L'empreinte de la source, mémorisée avec le fichier : c'est elle
+          // qui permettra de voir qu'un auteur a remplacé son manuscrit.
+          await _memoriserSource(bookId, url, majLe: majLe, extrait: extrait);
         } else {
           debugPrint(
             'Cache : $bookId écrit partiellement ($ecrit / ${bytes.length} '
@@ -309,6 +333,170 @@ class BookCacheService {
     } catch (e) {
       debugPrint('Erreur téléchargement/cache: $e');
       return null;
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Préfixe des empreintes de source, une par livre mis en cache.
+  ///
+  /// Dans les préférences et non dans le dossier du cache : un fichier
+  /// `<id>.src` posé à côté du livre serait pris pour le livre lui-même par
+  /// [_fichierDuLivre], qui retrouve les fichiers par identifiant sans
+  /// regarder l'extension.
+  static const String _cleSourcePrefixe = 'cache_livre_source_';
+
+  String _cleSource(String bookId, bool extrait) =>
+      '$_cleSourcePrefixe${extrait ? 'extrait_' : ''}$bookId';
+
+  /// Le chemin de l'URL, hors signature.
+  ///
+  /// L'adresse est signée pour quinze minutes : sa partie requête change à
+  /// chaque ouverture et ne dit rien du contenu. L'hôte et le chemin, eux,
+  /// désignent le fichier.
+  String _cheminHorsSignature(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return '${uri.host}${uri.path}';
+    } catch (_) {
+      return url;
+    }
+  }
+
+  Future<void> _memoriserSource(
+    String bookId,
+    String url, {
+    String? majLe,
+    required bool extrait,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _cleSource(bookId, extrait),
+        '${_cheminHorsSignature(url)}|${majLe ?? ''}',
+      );
+    } catch (e) {
+      debugPrint('Empreinte de source non mémorisée : $e');
+    }
+  }
+
+  /// La source a-t-elle changé depuis la mise en cache ?
+  ///
+  /// Comparaison prudente : on ne conclut au changement que sur une
+  /// information réellement présente DES DEUX côtés. Un `maj_le` absent d'un
+  /// côté ne prouve rien — conclure sur lui ferait retélécharger toute la
+  /// bibliothèque des caches d'avant ce marqueur.
+  bool _sourceAChange(String connue, String chemin, String maj) {
+    final barre = connue.indexOf('|');
+    final cheminConnu = barre >= 0 ? connue.substring(0, barre) : connue;
+    final majConnue = barre >= 0 ? connue.substring(barre + 1) : '';
+
+    if (cheminConnu.isNotEmpty && chemin.isNotEmpty && cheminConnu != chemin) {
+      return true;
+    }
+    if (majConnue.isNotEmpty && maj.isNotEmpty && majConnue != maj) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Retélécharge le livre si le manuscrit du serveur a changé.
+  ///
+  /// Le cache n'expirait jamais et ne stockait ni empreinte ni version : un
+  /// auteur qui remplaçait son manuscrit (coquilles, chapitre manquant) ne
+  /// rejoignait JAMAIS les appareils détenant l'ancien fichier — le lecteur
+  /// lisait indéfiniment une version périmée du livre qu'il a payé, sans
+  /// moyen de le découvrir dans l'application.
+  ///
+  /// À appeler EN ARRIÈRE-PLAN après une ouverture depuis le cache : la
+  /// lecture en cours n'est pas interrompue (les octets sont déjà en
+  /// mémoire), c'est la prochaine ouverture qui verra la version corrigée.
+  /// Sans réseau, tout échoue en silence — le cache garde tout son intérêt.
+  Future<void> rafraichirSiSourceChangee(
+    String bookId,
+    String url, {
+    String? majLe,
+    bool extrait = false,
+  }) async {
+    if (kIsWeb || bookId.isEmpty || url.isEmpty) return;
+    try {
+      final fichier = await _fichierDuLivre(bookId, extrait: extrait);
+      if (fichier == null) return; // rien en cache : rien à rafraîchir
+
+      final prefs = await SharedPreferences.getInstance();
+      final cle = _cleSource(bookId, extrait);
+      final connue = prefs.getString(cle);
+      final chemin = _cheminHorsSignature(url);
+      final maj = majLe ?? '';
+
+      if (connue == null || !_sourceAChange(connue, chemin, maj)) {
+        // Cache d'avant l'empreinte, ou source inchangée : on (ré)adopte
+        // l'empreinte courante, qui peut être plus riche que celle stockée.
+        await prefs.setString(cle, '$chemin|$maj');
+        return;
+      }
+
+      debugPrint('Cache : le manuscrit de $bookId a changé — retéléchargement.');
+      await downloadAndCache(bookId, url, extrait: extrait, majLe: majLe);
+    } catch (e) {
+      debugPrint('Rafraîchissement du cache impossible : $e');
+    }
+  }
+
+  /// Oublie l'empreinte de source d'un livre.
+  ///
+  /// Le fichier peut disparaître par quatre chemins (suppression manuelle,
+  /// éviction du plafond, vidage complet, déconnexion) ; l'empreinte, elle, ne
+  /// partait par aucun. Une clé `cache_livre_source_<id>` restait donc dans les
+  /// préférences pour chaque livre jamais lu sur l'appareil, indéfiniment.
+  Future<void> _oublierEmpreinte(String bookId, {bool extrait = false}) async {
+    if (bookId.isEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_cleSource(bookId, extrait));
+    } catch (e) {
+      debugPrint('Empreinte de source non effacée : $e');
+    }
+  }
+
+  /// L'empreinte correspondant à un fichier du cache, désigné par son chemin.
+  ///
+  /// Le nom du fichier porte l'identifiant du livre, et le sous-dossier
+  /// [_extraitsDirName] dit s'il s'agit d'un aperçu : c'est tout ce qu'il faut
+  /// pour retrouver la clé, sans avoir à reconstruire l'adresse d'origine.
+  Future<void> _oublierEmpreinteDuChemin(String chemin) async {
+    try {
+      final morceaux = chemin.split(RegExp(r'[/\\]'));
+      final nom = morceaux.last;
+      final point = nom.lastIndexOf('.');
+      final id = point > 0 ? nom.substring(0, point) : nom;
+      final extrait =
+          morceaux.length >= 2 &&
+          morceaux[morceaux.length - 2] == _extraitsDirName;
+      await _oublierEmpreinte(id, extrait: extrait);
+    } catch (e) {
+      debugPrint('Empreinte de source non effacée ($chemin) : $e');
+    }
+  }
+
+  /// Efface toutes les empreintes de source.
+  ///
+  /// Appelée par [clearAllCache], donc par SessionService.terminer — le point
+  /// de nettoyage unique. Sans elle, la déconnexion laissait sur l'appareil la
+  /// liste des identifiants de livres lus par le compte précédent et le chemin
+  /// de stockage de chaque manuscrit.
+  Future<void> purgerEmpreintes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cles = prefs
+          .getKeys()
+          .where((k) => k.startsWith(_cleSourcePrefixe))
+          .toList();
+      for (final cle in cles) {
+        await prefs.remove(cle);
+      }
+    } catch (e) {
+      debugPrint('Empreintes de source non purgées : $e');
     }
   }
 
@@ -328,6 +516,9 @@ class BookCacheService {
     } catch (e) {
       debugPrint('Erreur suppression cache: $e');
     }
+    // Hors du try : l'empreinte doit partir même si le fichier était déjà
+    // absent, sinon elle survit précisément aux cas où le cache est incohérent.
+    await _oublierEmpreinte(bookId, extrait: extrait);
   }
 
   /// Supprime les livres les moins recemment lus jusqu'a repasser sous le
@@ -359,6 +550,9 @@ class BookCacheService {
         if (total <= tailleMaxCacheOctets) break;
         try {
           await f.fichier.delete();
+          // L'empreinte suit le fichier : gardée seule, elle ferait croire à un
+          // livre encore en cache et resterait là pour toujours.
+          await _oublierEmpreinteDuChemin(f.fichier.path);
           total -= f.taille;
           debugPrint(
             'Cache : ${f.fichier.path.split('/').last} supprime '
@@ -425,6 +619,10 @@ class BookCacheService {
       final f = File(chemin);
       if (!await f.exists()) return false;
       await f.delete();
+      // La suppression depuis « Téléchargements » efface aussi l'empreinte :
+      // sinon elle désignait le chemin d'un manuscrit que le lecteur croit
+      // avoir retiré de son appareil.
+      await _oublierEmpreinteDuChemin(chemin);
       return true;
     } catch (e) {
       debugPrint('Erreur suppression du fichier en cache: $e');
@@ -462,6 +660,11 @@ class BookCacheService {
     } catch (e) {
       debugPrint('Erreur vidage cache: $e');
     }
+    // Hors du try, et toujours : c'est ce chemin qu'emprunte
+    // SessionService.terminer. Les empreintes sont une donnée PAR COMPTE — la
+    // liste des livres lus et l'emplacement de chaque manuscrit — et elles
+    // n'avaient jusqu'ici aucun point de purge.
+    await purgerEmpreintes();
   }
 }
 

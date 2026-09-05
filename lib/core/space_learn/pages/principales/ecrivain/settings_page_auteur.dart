@@ -10,6 +10,7 @@ import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/profilePage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/base_settings_layout.dart';
 import 'package:space_learn_flutter/core/utils/profile_storage.dart';
@@ -26,12 +27,52 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/sales_report_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/terms_of_use_page.dart';
 
-class SettingsPageAuteur extends StatelessWidget {
+/// Réglages de l'espace auteur.
+///
+/// Écran devenu STATEFUL pour une seule raison : « Passer au mode Lecteur »
+/// n'est plus une écriture locale mais un appel réseau (POST
+/// /utilisateurs/me/profil). Il lui fallait donc ce que possède la bascule
+/// inverse (settings_page.dart) — un garde-fou anti-double-appui — et ce qui
+/// lui manquait des deux côtés : un retour visible pendant l'attente.
+class SettingsPageAuteur extends StatefulWidget {
   const SettingsPageAuteur({super.key});
+
+  @override
+  State<SettingsPageAuteur> createState() => _SettingsPageAuteurState();
+}
+
+class _SettingsPageAuteurState extends State<SettingsPageAuteur> {
+  /// Empêche un second appel pendant que le serveur répond, et voile l'écran.
+  ///
+  /// Le dialogue de confirmation se referme AVANT l'appel (showPremiumDialog
+  /// ferme puis exécute onConfirm) : l'écran des réglages restait affiché et
+  /// inerte le temps de la requête. Deux appuis rapprochés lançaient deux
+  /// SelectProfile, chacun régénérant un jeton, et le second pouvait arriver
+  /// après la navigation.
+  bool _basculeEnCours = false;
 
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
+    return Stack(
+      children: [
+        _construireLesReglages(context),
+        // Le voile dit qu'il se passe quelque chose ET absorbe les appuis :
+        // les deux moitiés du même problème.
+        if (_basculeEnCours)
+          Positioned.fill(
+            child: AbsorbPointer(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.35),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _construireLesReglages(BuildContext context) {
     return BaseSettingsLayout(
       title: "Paramètres Auteur",
       primaryAccentColor: AppColors.secondaryVariant,
@@ -397,6 +438,15 @@ class SettingsPageAuteur extends StatelessWidget {
   }
 
   void _switchToReaderMode(BuildContext context) {
+    // Rouvrir la confirmation pendant que la première est en vol n'aurait
+    // aucun sens : on le dit au lieu de ne rien faire.
+    if (_basculeEnCours) {
+      AppNotifications.showSnackBar(
+        context,
+        message: "Bascule en cours, veuillez patienter…",
+      );
+      return;
+    }
     AppNotifications.showPremiumDialog(
       context,
       title: "Mode Lecteur",
@@ -407,34 +457,61 @@ class SettingsPageAuteur extends StatelessWidget {
     );
   }
 
+  /// Bascule vers l'espace lecteur — côté SERVEUR, et pas seulement à l'écran.
+  ///
+  /// Cette bascule ne faisait que getUser puis une écriture locale du rôle :
+  /// le profil en base et le rôle porté par le jeton restaient « auteur »,
+  /// donc la bascule ne survivait pas à une reconnexion — même appareil ou
+  /// autre — et l'écran lecteur tournait avec l'identifiant du profil AUTEUR.
+  /// C'est exactement le défaut que la bascule inverse a corrigé
+  /// (_executeSwitchToAuthorMode, settings_page.dart) : on demande le profil
+  /// au serveur, on attend son accord, et on ne navigue qu'ensuite.
   Future<void> _executeSwitchToReaderMode(BuildContext context) async {
+    // Même garde-fou que la bascule inverse (settings_page.dart), posé AVANT
+    // l'await : le voile de build() suit le drapeau.
+    if (_basculeEnCours) return;
+    setState(() => _basculeEnCours = true);
+
     try {
-      final token = await TokenStorage.getToken();
-      if (token == null) return;
-      final authService = AuthService();
-      final user = await authService.getUser(token);
-      if (user == null) return;
+      // Le serveur résout le profil par son libellé, et n'accepte que les
+      // profils librement attribuables — « Lecteur » en fait partie. Le jeton
+      // renvoyé porte le nouveau rôle ; le service l'enregistre.
+      final tokenUser = await AuthService().updateProfileForUser("Lecteur");
 
       await ProfileStorage.saveSelectedProfileRole("lecteur");
+      // Le nouveau profil (lecteur) remplace l'ancien dans le stockage : le
+      // démarrage hors ligne route selon lui.
+      await ProfileStorage.saveSelectedProfile(tokenUser.user.profilId);
       if (!context.mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
           builder: (context) => lecteurHome.HomePageLecteur(
-            profileId: user.profilId,
-            userName: user.nomComplet,
+            // L'identifiant du NOUVEAU profil, renvoyé par le serveur — pas
+            // celui du profil auteur qu'on vient de quitter.
+            profileId: tokenUser.user.profilId,
+            userName: tokenUser.user.nomComplet,
           ),
         ),
         (route) => false,
       );
     } catch (e) {
       if (context.mounted) {
+        // Le message du serveur dit la cause (profil refusé, compte inactif,
+        // réseau) ; un « Erreur » générique ne dit rien à personne.
         AppNotifications.showSnackBar(
           context,
-          message: "Erreur lors du changement de profil.",
+          message: messageLisible(
+            e,
+            repli: "Le passage en mode lecteur a échoué.",
+          ),
           isError: true,
         );
       }
+    } finally {
+      // Après la navigation réussie, l'écran est démonté : le test évite le
+      // setState sur un State disposé.
+      if (mounted) setState(() => _basculeEnCours = false);
     }
   }
 }

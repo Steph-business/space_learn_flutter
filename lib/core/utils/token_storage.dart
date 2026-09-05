@@ -81,6 +81,29 @@ class TokenStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey); // résidu d'une version antérieure
     await prefs.remove(_userNameKey);
+
+    // Les transactions CinetPay encore ouvertes de CE compte partent avec la
+    // session, et AVANT l'identifiant qui sert à les retrouver.
+    //
+    // TransactionEnCoursStore range chaque paiement en cours sous
+    // « paiement_en_cours_<compte>_<livre> » et l'écarte au bout de 24 h. Ces
+    // entrées survivaient à la déconnexion : elles ne servaient plus à
+    // personne — leur porteur ne peut plus être sondé sans son jeton — et
+    // restaient sur l'appareil avec un montant et une référence de
+    // transaction. Lire l'identifiant après l'avoir effacé n'aurait rien
+    // trouvé : d'où cet ordre.
+    final userId = prefs.getString(_userIdKey)?.trim() ?? '';
+    if (userId.isNotEmpty) {
+      final prefixe = 'paiement_en_cours_${userId}_';
+      final cles = prefs
+          .getKeys()
+          .where((c) => c.startsWith(prefixe))
+          .toList();
+      for (final cle in cles) {
+        await prefs.remove(cle);
+      }
+    }
+
     // Sans cela, le lecteur suivant sur le même téléphone héritait du temps de
     // lecture, de la série de jours et des titres lus par le précédent.
     await prefs.remove(_userIdKey);
@@ -119,11 +142,24 @@ class TokenStorage {
     return prefs.getString(_userNameKey);
   }
 
+  static const String _discussionViewedPrefix = "discussion_viewed_";
+
+  /// `discussion_viewed_<compte>_<discussion>` : rattachée au compte.
+  ///
+  /// La clé ne portait que l'identifiant de la discussion : les marqueurs
+  /// « vu le » du compte A survivaient à sa déconnexion, et le compte B, sur
+  /// le même téléphone, voyait des discussions jamais ouvertes présentées
+  /// comme déjà lues — les pastilles de non-lus s'éteignaient à tort.
+  static Future<String> _cleDiscussionVue(String discussionId) async {
+    final compte = await getUserId() ?? '';
+    return "$_discussionViewedPrefix${compte}_$discussionId";
+  }
+
   /// Sauvegarder la date de dernière vue d'une discussion
   static Future<void> saveDiscussionLastViewed(String discussionId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-      "discussion_viewed_$discussionId",
+      await _cleDiscussionVue(discussionId),
       DateTime.now().toIso8601String(),
     );
   }
@@ -131,8 +167,25 @@ class TokenStorage {
   /// Récupérer la date de dernière vue d'une discussion
   static Future<DateTime?> getDiscussionLastViewed(String discussionId) async {
     final prefs = await SharedPreferences.getInstance();
-    final val = prefs.getString("discussion_viewed_$discussionId");
+    final val = prefs.getString(await _cleDiscussionVue(discussionId));
     if (val != null) return DateTime.tryParse(val);
     return null;
+  }
+
+  /// Efface tous les marqueurs « discussion vue le », anciens formats compris.
+  ///
+  /// Appelée à la fin de session (SessionService.terminer) : ces dates sont un
+  /// état de lecture personnel et ne doivent pas être héritées par le compte
+  /// suivant. Les clés d'avant le suffixe (`discussion_viewed_<id>`)
+  /// partagent le même préfixe et partent avec.
+  static Future<void> clearDiscussionMarkers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cles = prefs
+        .getKeys()
+        .where((c) => c.startsWith(_discussionViewedPrefix))
+        .toList();
+    for (final cle in cles) {
+      await prefs.remove(cle);
+    }
   }
 }

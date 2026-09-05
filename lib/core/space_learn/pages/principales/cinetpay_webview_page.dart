@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import '../../data/dataServices/paymentService.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 import 'cinetpay_result_page.dart';
@@ -40,19 +42,45 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
   }
 
   void _setupWebView() {
-    _controller = WebViewController()
+    // Le contrôleur est affecté AVANT d'être configuré. Dans la forme
+    // précédente (`_controller = WebViewController()..setJavaScriptMode(...)`),
+    // l'affectation n'avait lieu qu'au bout de la cascade : une URL de paiement
+    // malformée renvoyée par le serveur fait lever `Uri.parse` en fin de
+    // cascade, le champ `late` restait alors non initialisé et le dispose
+    // ajouté plus bas aurait levé une LateInitializationError qui aurait
+    // masqué la vraie cause.
+    _controller = WebViewController();
+    _controller
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(AppColors.scaffoldBackground)
       ..setNavigationDelegate(
         NavigationDelegate(
+          // Ces trois callbacks peuvent arriver APRÈS la mort de l'écran, et
+          // ils le faisaient sans garde. `WebViewWidget` est un
+          // StatelessWidget : il ne possède pas le contrôleur et ne le libère
+          // pas, et rien ne détachait la délégation. Un chargement encore en
+          // cours quand on quitte la page — « Annuler le paiement ? » pendant
+          // « Chargement du paiement... » sur réseau mobile lent, ou le
+          // pushReplacement vers l'écran de résultat — se terminait ensuite et
+          // rappelait onPageFinished sur un State défunt.
+          //
+          // Rien n'était visible : le pont pigeon avale l'exception et la
+          // renvoie à la plateforme, en debug comme en release. C'est
+          // justement ce qui rend le défaut sournois — dans onPageStarted,
+          // setState levait AVANT `_checkIfReturnUrl(url)` et coupait le reste
+          // du callback en silence. La garde passe donc devant le setState,
+          // pas après, sur le chemin où circule l'argent.
           onPageStarted: (url) {
+            if (!mounted) return;
             setState(() => _isLoading = true);
             _checkIfReturnUrl(url);
           },
           onPageFinished: (url) {
+            if (!mounted) return;
             setState(() => _isLoading = false);
           },
           onWebResourceError: (error) {
+            if (!mounted) return;
             setState(() => _isLoading = false);
           },
           onNavigationRequest: (request) {
@@ -66,6 +94,34 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
         ),
       )
       ..loadRequest(Uri.parse(widget.paymentUrl));
+  }
+
+  /// Coupe la WebView en quittant l'écran, au lieu de la laisser vivre.
+  ///
+  /// Cet écran n'avait AUCUN dispose. Comme `WebViewWidget` est un
+  /// StatelessWidget qui ne possède ni ne libère le contrôleur, la WebView
+  /// native survivait à la route : elle continuait de charger la page de
+  /// checkout abandonnée jusqu'au passage du ramasse-miettes — du réseau et de
+  /// la mémoire dépensés dans le vide sur les téléphones d'entrée de gamme
+  /// visés par l'application — et ses callbacks continuaient de remonter sur
+  /// un State défunt. Les gardes `mounted` ci-dessus traitent le symptôme ;
+  /// ceci traite la cause.
+  ///
+  /// L'ordre compte : on remplace d'abord la délégation par une délégation
+  /// vide, pour que plus aucun callback ne remonte, PUIS on charge
+  /// `about:blank` pour interrompre le chargement en cours — le paquet
+  /// n'expose pas de `stopLoading`, naviguer ailleurs est le seul moyen.
+  /// L'enchaînement par `then` garantit cet ordre (les deux appels ne passent
+  /// pas par le même canal de plateforme), et `ignore()` neutralise l'erreur
+  /// attendue si la vue native est déjà détruite : personne n'attend plus
+  /// cette réponse.
+  @override
+  void dispose() {
+    _controller
+        .setNavigationDelegate(NavigationDelegate())
+        .then((_) => _controller.loadRequest(Uri.parse('about:blank')))
+        .ignore();
+    super.dispose();
   }
 
   /// Reconnaît la page de retour, celle où CinetPay renvoie après paiement.
@@ -103,11 +159,27 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
 
   Future<void> _verifyPaymentStatus() async {
     if (_isCheckingStatus) return;
+    // Atteignable après dispose : onPageStarted et onNavigationRequest peuvent
+    // encore la déclencher tant que la WebView native n'est pas arrêtée. Ce
+    // premier setState était le seul de la méthode à ne pas être gardé — les
+    // suivants le sont déjà, plus bas.
+    if (!mounted) return;
     setState(() => _isCheckingStatus = true);
 
     try {
       final token = await TokenStorage.getToken();
-      if (token == null) return;
+      if (token == null) {
+        // L'ancien `return` sec laissait _isCheckingStatus à true : le bouton
+        // « J'ai payé » restait grisé pour toujours, sans un mot.
+        if (!mounted) return;
+        setState(() => _isCheckingStatus = false);
+        AppNotifications.showSnackBar(
+          context,
+          message: 'Votre session a expiré. Reconnectez-vous.',
+          isError: true,
+        );
+        return;
+      }
 
       final paymentService = PaymentService();
       final result = await paymentService.getCinetpayStatus(
@@ -122,16 +194,36 @@ class _CinetpayWebViewPageState extends State<CinetpayWebViewPage> {
           builder: (_) => CinetpayResultPage(
             status: result.status,
             book: widget.book,
-            montant: widget.montant,
-            paymentMethod: result.paymentMethod,
+            // Le montant OFFICIEL relu en base par le serveur, quand la
+            // réponse le porte. Le montant local de la fiche peut être périmé
+            // si l'auteur a changé son prix : c'est CinetPay qui encaisse le
+            // prix en base, l'écran de résultat doit annoncer le même.
+            montant: result.montantServeur ?? widget.montant,
+            // L'issue « refusé » se déduit de ce que le serveur dit vraiment
+            // (paiement.statut, statut CinetPay du message) — le statut
+            // "REFUSED" nu n'est jamais rendu par la route.
+            estDefinitivementEchoue: result.definitivementEchoue,
             transactionId: widget.transactionId,
           ),
         ),
       );
     } catch (e) {
+      // Le TypeError sur `"paiement": null` et les pannes réseau tombaient ici
+      // en silence : le lecteur qui venait de payer tapait « J'ai payé » et ne
+      // voyait STRICTEMENT rien se passer. L'échec de vérification s'affiche —
+      // il ne dit rien du paiement lui-même, seulement que la vérification n'a
+      // pas abouti.
       if (!mounted) return;
       setState(() => _isCheckingStatus = false);
-      // Si la vérification échoue, on reste sur la page
+      AppNotifications.showSnackBar(
+        context,
+        message: messageLisible(
+          e,
+          repli:
+              "La vérification du paiement n'a pas abouti. Réessayez « J'ai payé » dans un instant.",
+        ),
+        isError: true,
+      );
     }
   }
 

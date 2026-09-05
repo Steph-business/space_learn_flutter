@@ -52,9 +52,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       if (mounted) {
         AppNotifications.showPremiumDialog(
           context,
-          title: "Code de récupération envoyé",
+          title: "Demande envoyée",
+          // Le serveur répond volontairement dans le vague (anti-énumération)
+          // : il rend 200 même quand aucun compte n'existe et qu'aucun
+          // courriel n'est parti. Affirmer « un code a été envoyé à X »
+          // transformait ce flou en certitude — une adresse mal tapée
+          // (gmial.com) laissait attendre un code qui ne pouvait pas
+          // arriver. On reprend sa formulation conditionnelle.
           message:
-              "Un code de validation OTP à 6 chiffres a été envoyé à l'adresse $email.",
+              "Si un compte est associé à l'adresse $email, un code de validation à 6 chiffres vient d'y être envoyé. Si rien n'arrive, vérifiez vos courriers indésirables et l'orthographe de l'adresse.",
           confirmText: "Entrer le code",
           isSuccess: true,
           onConfirm: () {
@@ -75,9 +81,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // Le bouton retour reste actif pendant l'envoi : sans cette garde, la
+      // réponse qui arrive après un retour arrière frappait un State disposé
+      // (« setState() called after dispose() ») — défaut jumeau de celui
+      // corrigé dans otp.dart.
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

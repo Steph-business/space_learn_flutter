@@ -15,6 +15,10 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/lecteur/b
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_messages_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/dm_service.dart';
+import 'package:space_learn_flutter/core/space_learn/data/model/conversation_model.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/conversation_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/messages_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/communaute_page.dart'
     as ecrivainTeams;
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
@@ -47,19 +51,42 @@ class NotificationService {
           try {
             final Map<String, dynamic> data = jsonDecode(response.payload!);
             final notif = NotificationModel.fromJson(data);
-            handleNotificationTap(notif);
+            // Même règle que dans la liste : on ne marque lu que ce qui a
+            // vraiment mené quelque part. Les destinations différées se
+            // marquent seules (voir [marquerLue]).
+            if (handleNotificationTap(notif) && !notif.lu) {
+              marquerLue?.call(notif.id);
+            }
           } catch (e) {}
         }
       },
     );
   }
 
+  /// Le geste « marquer cette notification comme lue », prête par le provider.
+  ///
+  /// POURQUOI UN GESTE PRÊTÉ. La moitié des destinations ne s'ouvre qu'après
+  /// un aller-retour réseau (retrouver le livre, la discussion, la
+  /// conversation). `handleNotificationTap` est synchrone : il rendait `true`
+  /// sans condition, et l'appelant marquait la notification lue sur une simple
+  /// promesse. Réseau coupé au moment du doigt, la notification passait lue et
+  /// déposait l'utilisateur sur un écran de repli — pour un message privé,
+  /// c'était le seul pointeur vers la conversation qui disparaissait.
+  ///
+  /// Le service ne connaît ni provider ni BuildContext : NotificationProvider
+  /// lui confie ce geste à sa construction, et le service ne l'appelle
+  /// qu'après avoir VU la destination s'ouvrir.
+  static Future<void> Function(String id)? marquerLue;
+
   /// Ouvre l'ecran que la notification designe.
   ///
-  /// Rend `false` quand aucune destination n'a pu etre ouverte. L'appelant s'en
-  /// sert pour ne PAS marquer la notification comme lue : une notification
-  /// qu'on n'a pas pu suivre doit rester la, non lue, pour qu'on puisse
-  /// reessayer — plutot que de disparaitre en emportant ce qu'on n'a jamais vu.
+  /// Rend `false` quand la destination promise n'a PAS pu etre atteinte tout
+  /// de suite — soit qu'elle ait echoue, soit qu'elle ne soit connue qu'apres
+  /// coup. L'appelant s'en sert pour ne PAS marquer la notification comme
+  /// lue : une notification qu'on n'a pas pu suivre doit rester la, non lue,
+  /// pour qu'on puisse reessayer — plutot que de disparaitre en emportant ce
+  /// qu'on n'a jamais vu. Les destinations differees se marquent seules, via
+  /// [marquerLue], une fois l'ecran reellement ouvert.
   static bool handleNotificationTap(NotificationModel notif) {
     final context = navigatorKey.currentContext;
     if (context == null) {
@@ -73,6 +100,17 @@ class NotificationService {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
 
+    /// Une destination qui n'est connue qu'apres coup.
+    ///
+    /// On rend `false` — l'appelant ne marque donc rien — et c'est ici qu'on
+    /// marque, si et seulement si l'ecran promis s'est ouvert.
+    bool quandOuverte(Future<bool> ouverture) {
+      ouverture.then((ouverte) {
+        if (ouverte && !notif.lu) marquerLue?.call(notif.id);
+      });
+      return false;
+    }
+
     // Role check (normalization)
     final isLecteur = (notif.role == 'lecteur' || notif.role == null);
 
@@ -84,7 +122,9 @@ class NotificationService {
       // maintenant son propre type et l'identifiant du livre — et c'est la
       // fiche qu'il faut, puisque les avis s'y affichent. La page reconnait
       // l'auteur toute seule.
-      _ouvrirLaFicheDuLivre(context, notif.referenceId, isLecteur, popToRoot);
+      return quandOuverte(
+        _ouvrirLaFicheDuLivre(context, notif.referenceId, isLecteur, popToRoot),
+      );
     } else if (type == 'nouvel_abonne') {
       // On montre QUI vient de s'abonner : la liste des abonnes du
       // destinataire, ou le nouveau venu figure avec son nom et sa photo.
@@ -99,6 +139,27 @@ class NotificationService {
           builder: (context) => AbonnesPage(authorId: notif.utilisateurId),
         ),
       );
+      // Poussee a l'instant, sans reseau : le verdict est certain.
+      return true;
+    } else if (type == 'message_prive') {
+      // « Nouveau message de X » ouvre la CONVERSATION PRIVÉE, pas le forum.
+      //
+      // reference_id est l'identifiant de la conversation
+      // (direct_message/service.go : CreateNotification(..., convID)). Le type
+      // contient « message » et tombait donc dans la branche des salons :
+      // getDiscussionById répondait 404 — ce n'est pas une discussion — et le
+      // repli poussait le hall du forum, sans rapport avec le message reçu.
+      // La notification était ensuite marquée lue : le seul pointeur vers la
+      // conversation disparaissait. Cette branche passe AVANT le test
+      // `contains('message')`, sinon elle est inatteignable.
+      //
+      // Elle partait aussi sans `await`, si bien que l'appelant marquait lu
+      // avant meme de savoir si la conversation avait ete retrouvee : le
+      // pointeur disparaissait quand meme. C'est desormais l'ouverture qui
+      // decide.
+      return quandOuverte(
+        _ouvrirLaConversationPrivee(context, notif.referenceId),
+      );
     } else if (type.contains('message') ||
         type.contains('reponse') ||
         type.contains('communaute')) {
@@ -110,21 +171,25 @@ class NotificationService {
       // le type reellement emis pour « Nouveau message dans votre salon » —
       // n'etait reconnu par aucune branche : il tombait dans le cas par
       // defaut, qui renvoie a la bibliotheque.
-      _ouvrirLeSalon(context, notif.referenceId, popToRoot);
+      return quandOuverte(_ouvrirLeSalon(context, notif.referenceId));
     } else if (type.contains('annonce') || type.contains('evenement')) {
       // On ouvre LA publication, pas « la communaute ».
       //
       // La notification dit « Nouvelle annonce de l'auteur : … » et deposait le
       // lecteur sur l'onglet Communaute, a lui de retrouver de quoi on lui
       // parlait — alors que son identifiant voyage dans la notification.
-      _ouvrirLaPublication(context, notif.referenceId, isLecteur, popToRoot);
+      return quandOuverte(
+        _ouvrirLaPublication(context, notif.referenceId, isLecteur, popToRoot),
+      );
     } else if (type.contains('nouveau_livre')) {
       // « Nouveau livre publie » doit montrer LE livre.
       //
       // Le lecteur ne le possede pas encore : l'envoyer dans sa bibliotheque
       // lui fait chercher un ouvrage qui n'y est pas. C'est la fiche qu'il
       // faut ouvrir — celle ou l'on peut justement l'acquerir.
-      _ouvrirLaFicheDuLivre(context, notif.referenceId, isLecteur, popToRoot);
+      return quandOuverte(
+        _ouvrirLaFicheDuLivre(context, notif.referenceId, isLecteur, popToRoot),
+      );
     } else if (type.contains('rappel_lecture')) {
       // « Vous n'avez pas lu X depuis plus de 24h » doit rouvrir X.
       //
@@ -132,7 +197,9 @@ class NotificationService {
       // l'ouvrage dont on venait de lui parler, alors que la notification en
       // porte l'identifiant. C'est un geste de plus a chaque fois, et le
       // rappel perd ce qui le rendait utile.
-      _ouvrirLeLivre(context, notif.referenceId, popToRoot);
+      return quandOuverte(
+        _ouvrirLeLivre(context, notif.referenceId, popToRoot),
+      );
     } else if (type.contains('paiement') ||
         type.contains('achat') ||
         type.contains('vente') ||
@@ -166,7 +233,10 @@ class NotificationService {
   }
 
   /// Ouvre la fiche d'un livre qu'on ne possede pas encore.
-  static Future<void> _ouvrirLaFicheDuLivre(
+  ///
+  /// Rend `false` sur chaque repli : la bibliotheque n'est pas la fiche
+  /// promise. La notification reste alors non lue et le geste se retente.
+  static Future<bool> _ouvrirLaFicheDuLivre(
     BuildContext context,
     String? livreId,
     bool isLecteur,
@@ -175,23 +245,25 @@ class NotificationService {
     if (livreId == null || livreId.trim().isEmpty) {
       popToRoot();
       MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
-      return;
+      return false;
     }
 
     try {
       final token = await TokenStorage.getToken();
       final livre = await BookService().getBookById(livreId, authToken: token);
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => BookDetailPage(book: livre, isOwned: false),
         ),
       );
+      return true;
     } catch (_) {
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       popToRoot();
       MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
+      return false;
     }
   }
 
@@ -199,14 +271,14 @@ class NotificationService {
   ///
   /// Sans identifiant exploitable, on retombe sur la communaute plutot que de
   /// ne rien faire — mais c'est le repli, plus la regle.
-  static Future<void> _ouvrirLaPublication(
+  static Future<bool> _ouvrirLaPublication(
     BuildContext context,
     String? evenementId,
     bool isLecteur,
     VoidCallback popToRoot,
   ) async {
-    Future<void> repli() async {
-      if (!context.mounted) return;
+    Future<bool> repli() async {
+      if (!context.mounted) return false;
       if (isLecteur) {
         popToRoot();
         MainNavBar.mainNavBarKey.currentState?.navigateToCommunaute();
@@ -218,6 +290,7 @@ class NotificationService {
           ),
         );
       }
+      return false;
     }
 
     if (evenementId == null || evenementId.trim().isEmpty) return repli();
@@ -229,11 +302,15 @@ class NotificationService {
         evenementId,
         token,
       );
-      if (!context.mounted) return;
-      await afficherEvenement(context, publication);
+      if (!context.mounted) return false;
+      // La feuille est poussee ici et se referme quand l'utilisateur le
+      // decide : l'attendre retarderait le verdict jusqu'a sa fermeture, alors
+      // que la publication est deja a l'ecran — donc deja suivie.
+      unawaited(afficherEvenement(context, publication));
+      return true;
     } catch (_) {
       // La publication a pu etre retiree depuis l'envoi de la notification.
-      await repli();
+      return repli();
     }
   }
 
@@ -242,7 +319,7 @@ class NotificationService {
   ///
   /// Sans identifiant exploitable, on retombe sur la bibliotheque plutot que
   /// de ne rien faire.
-  static Future<void> _ouvrirLeLivre(
+  static Future<bool> _ouvrirLeLivre(
     BuildContext context,
     String? livreId,
     VoidCallback popToRoot,
@@ -250,24 +327,26 @@ class NotificationService {
     if (livreId == null || livreId.trim().isEmpty) {
       popToRoot();
       MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
-      return;
+      return false;
     }
 
     try {
       final token = await TokenStorage.getToken();
       final livre = await BookService().getBookById(livreId, authToken: token);
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ReadingPage(book: livre.toJson()),
         ),
       );
+      return true;
     } catch (_) {
       // Le livre a pu etre retire du catalogue depuis l'envoi du rappel.
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       popToRoot();
       MainNavBar.mainNavBarKey.currentState?.navigateToBibliotheque();
+      return false;
     }
   }
 
@@ -275,37 +354,96 @@ class NotificationService {
   ///
   /// Faute d'identifiant exploitable — vieille notification, reference
   /// manquante — on retombe sur le salon commun plutot que de ne rien faire.
-  static Future<void> _ouvrirLeSalon(
+  static Future<bool> _ouvrirLeSalon(
     BuildContext context,
     String? discussionId,
-    VoidCallback popToRoot,
   ) async {
     if (discussionId == null || discussionId.trim().isEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ForumDiscussionPage()),
       );
-      return;
+      return false;
     }
 
     try {
       final discussion = await DiscussionService().getDiscussionById(
         discussionId,
       );
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ForumMessagesPage(discussion: discussion),
         ),
       );
+      return true;
     } catch (_) {
       // La discussion a pu etre supprimee entre-temps.
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ForumDiscussionPage()),
       );
+      return false;
+    }
+  }
+
+  /// Ouvre la conversation privée désignée par la notification.
+  ///
+  /// Le serveur n'offre pas de lecture d'une conversation par identifiant :
+  /// on la retrouve dans la liste des conversations — c'est d'ailleurs elle
+  /// qui porte le correspondant, dont l'écran a besoin. Faute de la retrouver
+  /// (réseau, fil disparu), on dépose sur l'écran Messages : le fil y est, ou
+  /// son absence s'y explique — jamais sur le forum, qui n'a rien à voir.
+  /// Rend `true` UNIQUEMENT si la conversation elle-meme s'est ouverte.
+  ///
+  /// L'ecran Messages est un repli, pas la destination promise : reseau coupe
+  /// au moment du doigt, ou fil introuvable, la notification doit rester non
+  /// lue. Elle porte le seul identifiant de conversation dont on dispose — la
+  /// marquer lue effaçait ce pointeur, et le fil n'etait plus retrouvable
+  /// qu'en fouillant la messagerie.
+  static Future<bool> _ouvrirLaConversationPrivee(
+    BuildContext context,
+    String? conversationId,
+  ) async {
+    Future<bool> versLaListe() async {
+      if (!context.mounted) return false;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MessagesPage()),
+      );
+      return false;
+    }
+
+    final id = conversationId?.trim();
+    if (id == null || id.isEmpty) return versLaListe();
+
+    try {
+      final token = await TokenStorage.getToken();
+      if (token == null) return versLaListe();
+
+      final conversations = await DmService().getConversations(token);
+      Conversation? trouvee;
+      for (final c in conversations) {
+        if (c.id == id) {
+          trouvee = c;
+          break;
+        }
+      }
+      final conversation = trouvee;
+      if (conversation == null) return versLaListe();
+
+      if (!context.mounted) return false;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ConversationPage(conversation: conversation),
+        ),
+      );
+      return true;
+    } catch (_) {
+      return versLaListe();
     }
   }
 
@@ -365,6 +503,13 @@ class NotificationService {
             grouped[key] = value
                 .map((json) => NotificationModel.fromJson(json, role: key))
                 .toList();
+          } else {
+            // Un seau sans élément arrive `null`, pas `[]` : côté Go, un
+            // slice nil se sérialise en null (notification/controller.go).
+            // L'ignorer faisait disparaître la clé du rôle, et l'écran, ne
+            // trouvant pas son seau, se rabattait sur la liste À PLAT des
+            // deux profils. Un seau nul est un seau VIDE, pas un seau absent.
+            grouped[key] = <NotificationModel>[];
           }
         });
         return grouped;

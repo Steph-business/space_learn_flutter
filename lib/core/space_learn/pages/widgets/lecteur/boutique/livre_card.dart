@@ -22,7 +22,22 @@ class LivreCard extends StatelessWidget {
   final BookModel book;
   final bool isOwned;
 
-  const LivreCard({super.key, required this.book, this.isOwned = false});
+  /// La note que CE lecteur a donnée au livre, de 1 à 5 — nulle s'il ne l'a
+  /// pas noté.
+  ///
+  /// Elle arrivait autrefois écrite dans `book.noteMoyenne` : la boutique la
+  /// versait dans le livre avant de le passer ici, et l'étoile ci-dessous, qui
+  /// dit la moyenne de l'ouvrage, affichait en réalité la note du lecteur —
+  /// « 2,0 » sur un livre moyenné 4,3. Un chiffre en remplaçait un autre sans
+  /// le dire. Elle voyage désormais à part, et la carte la NOMME.
+  final int? noteDuLecteur;
+
+  const LivreCard({
+    super.key,
+    required this.book,
+    this.isOwned = false,
+    this.noteDuLecteur,
+  });
 
   /// Proportion d'une couverture : deux de large pour trois de haut.
   static const double rapportCouverture = 2 / 3;
@@ -177,6 +192,10 @@ class LivreCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        // La moyenne du livre, telle que le serveur la rend.
+                        // Absente ou nulle, on n'affiche rien : « 0,0 » se
+                        // lirait comme un mauvais livre alors que personne ne
+                        // l'a encore noté.
                         if (book.noteMoyenne > 0) ...[
                           const Icon(
                             Icons.star_rounded,
@@ -195,6 +214,38 @@ class LivreCard extends StatelessWidget {
                         ],
                       ],
                     ),
+                    // Sa propre note, dite comme telle et sur une ligne à
+                    // elle : une carte de boutique reste petite, une mention
+                    // courte suffit à la distinguer de la moyenne ci-dessus.
+                    // Un livre que le lecteur n'a pas noté n'affiche rien de
+                    // plus qu'avant.
+                    if (noteDuLecteur != null) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Blanc atténué, et non l'or de la moyenne : la
+                          // couleur elle-même dit qu'il ne s'agit pas de la
+                          // même note.
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Colors.white70,
+                            size: 11,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            "Votre note $noteDuLecteur/5",
+                            style: GoogleFonts.poppins(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white70,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -263,7 +314,18 @@ class LivreListCard extends StatelessWidget {
   final BookModel book;
   final bool isOwned;
 
-  const LivreListCard({super.key, required this.book, this.isOwned = false});
+  /// La note de ce lecteur, de 1 à 5 — voir [LivreCard.noteDuLecteur].
+  ///
+  /// La liste souffrait du même défaut que la grille : le livre lui arrivait
+  /// avec sa moyenne déjà remplacée, plus haut dans la boutique.
+  final int? noteDuLecteur;
+
+  const LivreListCard({
+    super.key,
+    required this.book,
+    this.isOwned = false,
+    this.noteDuLecteur,
+  });
 
   bool get _estGratuit => book.prix <= 0;
 
@@ -399,6 +461,8 @@ class LivreListCard extends StatelessWidget {
                             ],
                           ),
                         )
+                      // Comme en grille : la moyenne du serveur, et rien
+                      // quand il n'y en a pas encore.
                       else if (book.noteMoyenne > 0)
                         Row(
                           children: [
@@ -420,6 +484,31 @@ class LivreListCard extends StatelessWidget {
                         ),
                     ],
                   ),
+                  // Sa propre note, nommée — jamais à la place de la moyenne.
+                  if (noteDuLecteur != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.star_rounded,
+                          color: AppColors.warning,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          "Votre note $noteDuLecteur/5",
+                          style: GoogleFonts.poppins(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

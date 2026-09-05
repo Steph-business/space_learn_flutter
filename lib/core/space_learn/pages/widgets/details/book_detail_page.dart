@@ -10,6 +10,9 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookServi
 import 'reading_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/paymentService.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/cinetpay_webview_page.dart';
+import 'package:space_learn_flutter/core/services/book_cache_service.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/review_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
@@ -57,6 +60,20 @@ class _BookDetailPageState extends State<BookDetailPage> {
   List<BookModel> _categoryBooks = [];
   bool _isLoadingRelated = true;
 
+  /// Ce qui a empêché chaque bloc de recommandations d'arriver.
+  ///
+  /// Deux champs et non un : les deux listes viennent de deux routes
+  /// distinctes, et l'échec de l'une ne dit rien de l'autre. Une seule panne
+  /// partagée aurait fait disparaître les deux sections pour un seul incident.
+  String? _erreurLivresAuteur;
+  String? _erreurLivresCategorie;
+
+  /// Un « Réessayer » sans retour visible se fait appuyer trois fois : tant que
+  /// la nouvelle tentative court, le bouton le dit et ne se laisse pas
+  /// relancer.
+  bool _rechargementLivresAuteur = false;
+  bool _rechargementLivresCategorie = false;
+
   bool _isFavorite = false;
   bool _isLoadingFavorite = true;
   final FavoriteService _favoriteService = FavoriteService();
@@ -75,6 +92,69 @@ class _BookDetailPageState extends State<BookDetailPage> {
   /// Un livre a prix nul.
   bool get _estGratuit => (_fullBook ?? widget.book).prix <= 0;
   bool _isLoadingOwnership = true;
+
+  /// La vérification de possession a ÉCHOUÉ — ce qui n'est pas « pas possédé ».
+  ///
+  /// Avant ce drapeau, un échec réseau de `_checkOwnershipStatus` laissait
+  /// `_isOwned` à sa valeur d'entrée (souvent false en arrivant par la
+  /// recherche) : un acheteur voyait « Acheter » sur son propre livre et tous
+  /// les chapitres verrouillés, sans aucun signal qu'une vérification avait
+  /// échoué. Une panne ne doit jamais s'afficher comme une certitude.
+  bool _verificationPossessionImpossible = false;
+
+  /// La vérification a échoué parce que la SESSION est finie.
+  ///
+  /// Une session expirée n'est pas une panne de réseau : « Réessayer » y est un
+  /// bouton qui, par construction, ne peut jamais aboutir. On le dit tel quel
+  /// et on ramène à la connexion.
+  bool _sessionExpiree = false;
+
+  /// On IGNORE si le lecteur possède ce livre — ce qui n'est pas « il ne le
+  /// possède pas ».
+  ///
+  /// La barre du bas respectait déjà ce doute, mais la liste des chapitres
+  /// affirmait le contraire dans le même écran : « Contenu verrouillé - Achetez
+  /// le livre », et un appui lançait le paiement. L'écran refusait donc de
+  /// vendre en bas tout en proposant d'acheter au milieu — soit exactement le
+  /// « faire repayer son propre livre » que le drapeau voulait empêcher.
+  bool get _possessionIncertaine =>
+      _verificationPossessionImpossible && !_isOwned;
+
+  /// Ce qu'un chapitre non lisible doit dire — et il ne doit pas mentir.
+  String get _texteChapitreVerrouille => _possessionIncertaine
+      ? (_sessionExpiree
+            ? "Votre session a expiré — reconnectez-vous pour accéder à ce livre."
+            : "Vérification de votre bibliothèque impossible — appuyez pour réessayer.")
+      : "Contenu verrouillé - Achetez le livre pour lire la suite.";
+
+  /// La réponse à un appui quand la possession est incertaine : relancer la
+  /// vérification, ou dire que la session est finie. Jamais ouvrir un paiement.
+  void _traiterAppuiPossessionIncertaine() {
+    if (_sessionExpiree) {
+      AppNotifications.showSnackBar(
+        context,
+        message:
+            "Votre session a expiré. Reconnectez-vous pour accéder à ce livre.",
+        isError: true,
+      );
+      return;
+    }
+    _reessayerVerificationPossession();
+  }
+
+  /// Fin de session complète, puis retour à l'écran de connexion.
+  ///
+  /// [SessionService.terminer] est le point de nettoyage UNIQUE : effacer le
+  /// seul jeton laisserait au compte suivant le cache et les préférences du
+  /// précédent.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
+  }
 
   String _getAuthorDisplayName(BookModel book) {
     if (book.authorName.isNotEmpty && book.authorName != 'Auteur inconnu') {
@@ -106,6 +186,47 @@ class _BookDetailPageState extends State<BookDetailPage> {
       return progressions.first.pourcentage.round().clamp(0, 100);
     }
     return 0;
+  }
+
+  /// La moyenne du livre, ou `null` quand il n'y en a pas encore.
+  ///
+  /// L'ancien calcul retombait sur zéro et l'écrivait tel quel : un ouvrage
+  /// compté « 37 avis » mais dont le serveur ne rendait pas de moyenne
+  /// s'affichait « 0.0 (37 avis) », cinq étoiles vides — soit un livre
+  /// unanimement détesté, alors que la moyenne était simplement absente. Un
+  /// VIDE n'est pas un zéro : `null` dit l'absence, l'affichage la nomme.
+  double? get _moyenneDesAvis {
+    final moyenneServeur = (_fullBook ?? widget.book).noteMoyenne;
+    if (moyenneServeur > 0) return moyenneServeur;
+    // Faute de moyenne rendue, les avis reçus la donnent : ce sont les notes
+    // elles-mêmes, les moyenner n'invente rien.
+    if (_reviews.isNotEmpty) {
+      final somme = _reviews.fold<int>(0, (total, r) => total + r.note);
+      return somme / _reviews.length;
+    }
+    return null;
+  }
+
+  /// La note que CE lecteur a déposée sur ce livre, s'il en a déposé une.
+  ///
+  /// Elle arrivait autrefois par la bande : la boutique écrasait la
+  /// `noteMoyenne` du livre avec elle (`_enrichir`) avant d'ouvrir cette
+  /// fiche, qui héritait de l'objet et affichait « 2.0 (37 avis) » — la note
+  /// d'une seule personne présentée comme la moyenne de l'ouvrage. La fiche va
+  /// désormais la chercher à sa source, dans les avis du livre, et la donne
+  /// sous son nom, à côté de la moyenne et jamais à sa place.
+  ///
+  /// `utilisateur_id` d'un avis est l'identifiant du compte (JWT `user_id`,
+  /// avis/model.go), celui-là même que rend `/utilisateurs/me` : la
+  /// correspondance est exacte, pas approchée par le nom. Nulle tant que le
+  /// profil n'est pas revenu — une absence, jamais une affirmation.
+  int? get _noteDuLecteur {
+    final moi = _currentUser?.id;
+    if (moi == null || moi.isEmpty) return null;
+    for (final avis in _reviews) {
+      if (avis.utilisateurId == moi) return avis.note;
+    }
+    return null;
   }
 
   @override
@@ -152,6 +273,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
         final user = await authService.getUser(token);
         final currentBook = _fullBook ?? widget.book;
 
+        // « Je suis l'auteur » se décide par IDENTIFIANTS, jamais par nom.
+        //
+        // La comparaison de `nomComplet` avec `authorName` a été retirée : un
+        // lecteur homonyme d'un auteur devenait « propriétaire » du livre —
+        // bouton d'achat disparu, chapitres prétendus déverrouillés — alors
+        // que le serveur, qui compare les UUID, ne lui livrait que l'extrait.
         final isAuthor =
             user != null &&
             ((currentBook.auteurId.isNotEmpty &&
@@ -160,11 +287,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 (currentBook.auteur != null &&
                     (currentBook.auteur!.id == user.id ||
                         currentBook.auteur!.profilId == user.id ||
-                        currentBook.auteur!.id == user.profilId)) ||
-                (currentBook.authorName.isNotEmpty &&
-                    currentBook.authorName != 'Auteur inconnu' &&
-                    user.nomComplet.trim().toLowerCase() ==
-                        currentBook.authorName.trim().toLowerCase()));
+                        currentBook.auteur!.id == user.profilId)));
 
         final library = await _libraryService.getUserLibrary(token);
         final found = library.any((item) => item.livreId == widget.book.id);
@@ -182,6 +305,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
             _isOwned = _isOwned || isAuthor || found;
             _ownedBookIds = library.map((e) => e.livreId).toSet();
             _isLoadingOwnership = false;
+            _verificationPossessionImpossible = false;
+            _sessionExpiree = false;
             if (matchingItem?.livre?.progressions != null &&
                 matchingItem!.livre!.progressions!.isNotEmpty) {
               _readingProgress = matchingItem.livre!.progressions!.first;
@@ -192,11 +317,37 @@ class _BookDetailPageState extends State<BookDetailPage> {
           }
         }
       } else {
+        // Pas de session : « non possédé » est ici une certitude, pas une panne.
         if (mounted) setState(() => _isLoadingOwnership = false);
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingOwnership = false);
+      // PANNE ≠ « pas possédé » : on lève un drapeau distinct plutôt que de
+      // laisser la fiche affirmer que le lecteur doit acheter le livre.
+      //
+      // Et une SESSION EXPIRÉE n'est pas une panne : AuthService.getUser rend
+      // « Votre session a expiré. Reconnectez-vous. » sur un jeton mort, et
+      // offrir « Réessayer » dans ce cas, c'est offrir un bouton qui ne peut
+      // pas aboutir. `estSessionExpiree` existe exactement pour cette
+      // distinction ; le doute sur la possession, lui, reste entier dans les
+      // deux cas — la fiche ne doit toujours pas proposer d'acheter.
+      if (mounted) {
+        setState(() {
+          _isLoadingOwnership = false;
+          _verificationPossessionImpossible = true;
+          _sessionExpiree = estSessionExpiree(e);
+        });
+      }
     }
+  }
+
+  /// Relance la vérification de possession après une panne.
+  Future<void> _reessayerVerificationPossession() async {
+    setState(() {
+      _isLoadingOwnership = true;
+      _verificationPossessionImpossible = false;
+      _sessionExpiree = false;
+    });
+    await _checkOwnershipStatus();
   }
 
   Future<void> _loadReadingProgress() async {
@@ -226,8 +377,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-        });
+        setState(() {});
       }
     }
   }
@@ -403,7 +553,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   Text(
                     chaptersList.isNotEmpty
                         ? "${chaptersList.length} chapitres"
-                        : "3 chapitres",
+                        : "",
                     style: GoogleFonts.poppins(
                       color: AppColors.textSecondary,
                       fontSize: 12,
@@ -439,7 +589,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           description: ch.description.isNotEmpty
                               ? ch.description
                               : (isLocked
-                                    ? "Contenu verrouillé - Achetez le livre pour lire la suite."
+                                    ? _texteChapitreVerrouille
                                     : "Extrait gratuit - Disponible à la lecture."),
                           isLocked: isLocked,
                           onTap: () async {
@@ -468,93 +618,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       },
                     );
                   }
-                  final bool isIntroExtrait = isOwned || hasExtrait;
+                  // Meme fabrication qu'en page, meme retrait.
                   return ListView(
                     children: [
-                      _buildChapterTile(
-                        number: "01",
-                        title: "Introduction",
-                        description: isIntroExtrait
-                            ? (isOwned
-                                  ? "Disponible dans l'ouvrage."
-                                  : "Découvrez cet extrait gratuit.")
-                            : "Contenu verrouillé - Achetez le livre pour lire la suite.",
-                        isLocked: !isIntroExtrait,
-                        onTap: () async {
-                          Navigator.pop(context);
-                          if (!isIntroExtrait) {
-                            _lancerPaiementDirect(book);
-                          } else {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReadingPage(
-                                  book: book.toJson(),
-                                  isExtrait: !isOwned,
-                                ),
-                              ),
-                            );
-                            if (mounted && _isOwned) {
-                              _loadReadingProgress();
-                            }
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _buildChapterTile(
-                        number: "02",
-                        title: "Développement",
-                        description: isIntroExtrait
-                            ? (isOwned
-                                  ? "Disponible dans l'ouvrage."
-                                  : "Découvrez cet extrait gratuit.")
-                            : "Contenu verrouillé - Achetez le livre pour lire la suite.",
-                        isLocked: !isIntroExtrait,
-                        onTap: () async {
-                          Navigator.pop(context);
-                          if (!isIntroExtrait) {
-                            _lancerPaiementDirect(book);
-                          } else {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReadingPage(
-                                  book: book.toJson(),
-                                  isExtrait: !isOwned,
-                                ),
-                              ),
-                            );
-                            if (mounted && _isOwned) {
-                              _loadReadingProgress();
-                            }
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _buildChapterTile(
-                        number: "03",
-                        title: "Conclusion",
-                        description: isOwned
-                            ? "Disponible dans l'ouvrage."
-                            : "Contenu verrouillé - Achetez le livre pour lire la suite.",
-                        isLocked: !isOwned,
-                        onTap: () async {
-                          Navigator.pop(context);
-                          if (!isOwned) {
-                            _lancerPaiementDirect(book);
-                          } else {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ReadingPage(book: book.toJson()),
-                              ),
-                            );
-                            if (mounted && _isOwned) {
-                              _loadReadingProgress();
-                            }
-                          }
-                        },
+                      _buildSommaireNonDetaille(
+                        book,
+                        isOwned,
+                        contexteFeuille: context,
                       ),
                     ],
                   );
@@ -567,51 +637,152 @@ class _BookDetailPageState extends State<BookDetailPage> {
     );
   }
 
+  /// Les deux blocs de recommandations, chargés ENSEMBLE mais indépendants.
+  ///
+  /// Les deux appels partageaient un seul `Future.wait` et un seul `catch`.
+  /// Tant que getBooksByAuthorId rendait `[]` sur échec, seul le bloc « du même
+  /// auteur » restait vide ; depuis qu'elle lève, une panne confinée à
+  /// /api/books/author/:id faisait rejeter tout le `Future.wait` et effaçait
+  /// AUSSI les livres de la même catégorie, qui étaient pourtant arrivés.
+  ///
+  /// Le `catchError((_) => [])` qui a suivi a décorrélé les deux échecs, mais
+  /// il les a rendus MUETS : une panne se présentait comme « cet auteur n'a
+  /// rien d'autre » et le bloc disparaissait sans un mot. Chaque section a
+  /// donc désormais son try/catch, sa panne affichée et son « Réessayer » —
+  /// même geste que _chargerLesLivres / _chargerLesAbonnes dans
+  /// author_profile_page.dart.
   Future<void> _loadRelatedBooks() async {
+    setState(() {
+      _isLoadingRelated = true;
+      _erreurLivresAuteur = null;
+      _erreurLivresCategorie = null;
+    });
+
+    // Les deux méthodes ne lèvent jamais : ce `Future.wait` ne sert qu'à
+    // attendre la fin des deux, pas à propager un échec.
+    await Future.wait([
+      _chargerLivresDeLAuteur(),
+      _chargerLivresDeLaCategorie(),
+    ]);
+
+    if (!mounted) return;
+    setState(() => _isLoadingRelated = false);
+  }
+
+  Future<void> _chargerLivresDeLAuteur() async {
+    // Sans identifiant d'auteur, la route /api/books/author/ répondrait 404 :
+    // ce n'est pas une panne à annoncer, il n'y a simplement rien à demander.
+    if (widget.book.auteurId.isEmpty) return;
     try {
-      final futures = [
-        _bookService.getBooksByAuthorId(widget.book.auteurId),
-        if (widget.book.categorieId != null &&
-            widget.book.categorieId!.isNotEmpty)
-          _bookService.getBooksByCategory(widget.book.categorieId!),
-      ];
-
-      final results = await Future.wait(futures);
-
-      if (mounted) {
-        setState(() {
-          // Filter out the current book
-          _authorBooks = results[0]
-              .where((b) => b.id != widget.book.id)
-              .toList();
-
-          if (results.length > 1) {
-            _categoryBooks = results[1]
-                .where((b) => b.id != widget.book.id)
-                .toList();
-          }
-          _isLoadingRelated = false;
-        });
-      }
+      final livres = await _bookService.getBooksByAuthorId(
+        widget.book.auteurId,
+      );
+      if (!mounted) return;
+      setState(() {
+        // Le livre affiché ne se recommande pas lui-même.
+        _authorBooks = livres.where((b) => b.id != widget.book.id).toList();
+        // Une tentative qui aboutit efface la panne précédente : sans cela le
+        // bandeau d'erreur resterait affiché au-dessus des livres arrivés.
+        _erreurLivresAuteur = null;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingRelated = false);
-      }
+      if (!mounted) return;
+      setState(() {
+        _erreurLivresAuteur = messageLisible(
+          e,
+          repli: "Les autres livres de cet auteur n'ont pas pu être chargés.",
+        );
+      });
     }
   }
 
+  Future<void> _chargerLivresDeLaCategorie() async {
+    final categorieId = widget.book.categorieId;
+    if (categorieId == null || categorieId.isEmpty) return;
+    try {
+      final livres = await _bookService.getBooksByCategory(categorieId);
+      if (!mounted) return;
+      setState(() {
+        _categoryBooks = livres.where((b) => b.id != widget.book.id).toList();
+        _erreurLivresCategorie = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _erreurLivresCategorie = messageLisible(
+          e,
+          repli: "Les livres similaires n'ont pas pu être chargés.",
+        );
+      });
+    }
+  }
+
+  /// Relance UNE section, pas les deux : l'autre appel avait abouti, le
+  /// refaire ferait clignoter des livres déjà affichés.
+  Future<void> _reessayerLivresAuteur() async {
+    setState(() => _rechargementLivresAuteur = true);
+    await _chargerLivresDeLAuteur();
+    if (!mounted) return;
+    setState(() => _rechargementLivresAuteur = false);
+  }
+
+  Future<void> _reessayerLivresCategorie() async {
+    setState(() => _rechargementLivresCategorie = true);
+    await _chargerLivresDeLaCategorie();
+    if (!mounted) return;
+    setState(() => _rechargementLivresCategorie = false);
+  }
+
+  /// Met le livre en vente — la SEULE voie de mise en vente de l'application.
+  ///
+  /// L'écran de modification y menait aussi, à l'insu de l'auteur : son bouton
+  /// « Modifier » réécrivait 'publie' à chaque enregistrement, de sorte qu'un
+  /// livre retiré de la vente repartait au catalogue parce qu'on avait corrigé
+  /// son résumé — et que tous les abonnés recevaient « Nouveau livre publié ».
+  /// Ce formulaire ne touche plus au statut (ajouter_livre_page.dart) : le
+  /// geste vit ici, sous un libellé que l'auteur lit avant d'appuyer.
   Future<void> _publierLivre(BuildContext context, BookModel book) async {
     try {
       final token = await TokenStorage.getToken();
-      if (token == null) return;
+      // `context.mounted` et non `mounted` : c'est CE context — celui du menu,
+      // reçu en paramètre — qui va servir, et lui seul dit s'il est encore
+      // valide après l'attente.
+      if (!context.mounted) return;
+      if (token == null) {
+        // Une session expirée se DIT. Le `return` muet laissait l'auteur
+        // devant un menu qui se referme sans rien faire, persuadé d'avoir mis
+        // son livre en vente.
+        AppNotifications.showSnackBar(
+          context,
+          message: "Votre session a expiré. Reconnectez-vous pour publier.",
+          isError: true,
+        );
+        return;
+      }
       await BookService().updateBook(book.id, {'statut': 'publie'}, token);
       if (!mounted) return;
+      // On annonce la CONSÉQUENCE, pas seulement le succès : le serveur
+      // prévient tous les abonnés à chaque entrée au catalogue
+      // (livre/service.go, Update → notifyFollowers). L'auteur doit le savoir
+      // au moment où il appuie, pas en lisant les réactions.
+      //
+      // Et même lecture que le libellé du menu : une œuvre déjà parue revient
+      // en vente, elle ne paraît pas une seconde fois.
+      final bool remiseEnVente =
+          book.statut.trim().toLowerCase() == 'en_revision' ||
+          book.publieLe != null;
       AppNotifications.showSnackBar(
         context,
-        message: '"${book.titre}" est maintenant publié !',
+        message: remiseEnVente
+            ? '"${book.titre}" est de nouveau en vente. Vos abonnés en sont informés.'
+            : '"${book.titre}" est maintenant en vente. Vos abonnés en sont informés.',
         isSuccess: true,
       );
-      setState(() {});
+      // Recharge la fiche plutôt qu'un setState à vide : le menu se décide sur
+      // `book.statut`, qui vient de changer côté serveur. Sans cela il
+      // proposait encore « Publier » un livre déjà publié, et jamais
+      // « Retirer de la vente ».
+      await _loadFullBookDetails();
     } catch (e) {
       if (!mounted) return;
       AppNotifications.showSnackBar(
@@ -622,146 +793,180 @@ class _BookDetailPageState extends State<BookDetailPage> {
     }
   }
 
-  Future<void> _archiverLivre(BuildContext context, BookModel book) async {
+  /// Retire le livre de la boutique sans toucher à ses acheteurs.
+  ///
+  /// L'action s'appelait « Archiver » et envoyait {'statut': 'archive'} — un
+  /// statut que le serveur n'a jamais accepté (oneof=publie brouillon
+  /// en_revision, livre/controller.go) : elle répondait 400 à chaque essai, et
+  /// c'était pourtant la seule voie offerte pour retirer un livre vendu.
+  /// Retirer de la vente = repasser en 'brouillon' : le livre quitte la
+  /// boutique, ceux qui l'ont acheté y gardent accès.
+  Future<void> _retirerDeLaVente(BuildContext context, BookModel book) async {
     try {
       final token = await TokenStorage.getToken();
-      if (token == null) return;
-      await BookService().updateBook(book.id, {'statut': 'archive'}, token);
+      if (!context.mounted) return;
+      if (token == null) {
+        // Même règle qu'à la mise en vente : un retrait qui n'a pas eu lieu se
+        // dit, sinon l'auteur croit son livre hors boutique alors qu'il s'y
+        // vend toujours.
+        AppNotifications.showSnackBar(
+          context,
+          message:
+              "Votre session a expiré. Reconnectez-vous pour retirer ce "
+              "livre de la vente.",
+          isError: true,
+        );
+        return;
+      }
+      await BookService().updateBook(book.id, {'statut': 'brouillon'}, token);
       if (!mounted) return;
       AppNotifications.showSnackBar(
         context,
         message:
-            '"${book.titre}" a été archivé. Il reste accessible à ses acheteurs.',
+            '"${book.titre}" a été retiré de la vente. Ses acheteurs y gardent accès.',
         isSuccess: true,
       );
-      setState(() {});
+      // Recharge la fiche : le menu se décide sur `book.statut`, qui vient de
+      // changer côté serveur — sans cela il proposerait encore le retrait.
+      await _loadFullBookDetails();
     } catch (e) {
       if (!mounted) return;
       AppNotifications.showSnackBar(
         context,
-        message: messageLisible(e, repli: "Impossible d'archiver ce livre."),
+        message: messageLisible(
+          e,
+          repli: "Impossible de retirer ce livre de la vente.",
+        ),
         isError: true,
       );
     }
   }
 
   Future<void> _supprimerLivre(BuildContext context, BookModel book) async {
-    // RÈGLE MÉTIER : Si le livre a déjà des acheteurs/lecteurs (> 0), la suppression
-    // définitive est bloquée pour préserver l'accès dans leur bibliothèque.
-    // L'auteur est invité à l'archiver à la place.
-    if (book.telechargements > 0) {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.cardBackground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: AppColors.warning,
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Suppression impossible',
+    // L'ancienne garde bloquait la suppression « si le livre a des acheteurs »
+    // en testant `book.telechargements > 0`. Or ce champ est rempli depuis
+    // `nombre_avis` (book_model.dart) : le serveur n'envoie AUCUN compte de
+    // ventes. Un livre acheté trente fois mais jamais noté passait la garde,
+    // et ses acheteurs perdaient l'accès — le serveur supprime sans contrôle.
+    // Le nombre d'acheteurs n'existant pas côté client, on ne prétend plus le
+    // connaître : avertissement honnête + recopie du titre pour confirmer.
+    final saisieTitre = TextEditingController();
+    final bool estEnVente = book.statut.toLowerCase() == 'publie';
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final titreConfirme =
+              saisieTitre.text.trim().toLowerCase() ==
+              book.titre.trim().toLowerCase();
+          return AlertDialog(
+            backgroundColor: AppColors.cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+            ),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppColors.warning,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Supprimer définitivement ?',
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Si des lecteurs ont acheté "${book.titre}", ils en perdront '
+                  'définitivement l\'accès : leur bibliothèque ne pourra plus '
+                  'l\'ouvrir.\n\n'
+                  'Pour retirer le livre de la boutique en préservant ses '
+                  'acheteurs, utilisez plutôt « Retirer de la vente ».\n\n'
+                  'Pour supprimer malgré tout, recopiez le titre exact du livre :',
                   style: GoogleFonts.poppins(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: saisieTitre,
+                  onChanged: (_) => setDialogState(() {}),
+                  style: TextStyle(color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: book.titre,
+                    hintStyle: TextStyle(
+                      color: AppColors.textPrimary.withValues(alpha: 0.4),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.surfaceVariant,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusInner,
+                      ),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(
+                  'Annuler',
+                  style: GoogleFonts.poppins(color: AppColors.textSecondary),
+                ),
+              ),
+              if (estEnVente)
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx, false);
+                    _retirerDeLaVente(context, book);
+                  },
+                  child: Text(
+                    'Retirer de la vente',
+                    style: GoogleFonts.poppins(
+                      color: AppColors.secondaryVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ElevatedButton(
+                // Tant que le titre n'est pas recopié, la suppression reste
+                // hors de portée : c'est le prix d'une action irréversible.
+                onPressed: titreConfirme
+                    ? () => Navigator.pop(ctx, true)
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  disabledBackgroundColor: AppColors.error.withValues(
+                    alpha: 0.3,
+                  ),
+                ),
+                child: Text(
+                  'Supprimer',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
-          ),
-          content: Text(
-            'Ce livre a déjà été acheté / lu par ${book.telechargements} lecteur(s).\n\n'
-            'Pour préserver l\'accès des acheteurs à leur bibliothèque, vous ne pouvez pas le supprimer définitivement. Vous pouvez plutôt l\'archiver pour le retirer de la boutique.',
-            style: GoogleFonts.poppins(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'Annuler',
-                style: GoogleFonts.poppins(color: AppColors.textSecondary),
-              ),
-            ),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _archiverLivre(context, book);
-              },
-              icon: Icon(
-                Icons.archive_outlined,
-                size: 16,
-                color: AppColors.onAccent,
-              ),
-              label: Text(
-                'Archiver le livre',
-                style: GoogleFonts.poppins(
-                  color: AppColors.onAccent,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondaryVariant,
-              ),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-        ),
-        title: Text(
-          'Supprimer ce livre ?',
-          style: GoogleFonts.poppins(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: Text(
-          '"${book.titre}" sera supprimé définitivement. Cette action est irréversible.',
-          style: GoogleFonts.poppins(
-            color: AppColors.textSecondary,
-            fontSize: 13,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Annuler',
-              style: GoogleFonts.poppins(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text(
-              'Supprimer',
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
 
@@ -885,8 +1090,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   case 'publish':
                     await _publierLivre(context, book);
                     break;
-                  case 'archive':
-                    await _archiverLivre(context, book);
+                  case 'retirer':
+                    await _retirerDeLaVente(context, book);
                     break;
                   case 'delete':
                     await _supprimerLivre(context, book);
@@ -894,8 +1099,20 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 }
               },
               itemBuilder: (context) {
-                final isPublished = book.statut.toLowerCase() == 'publie';
-                final isArchived = book.statut.toLowerCase() == 'archive';
+                // Le statut 'archive' n'existe pas côté serveur (oneof=publie
+                // brouillon en_revision) : le menu testait un état impossible.
+                // La seule question est : le livre est-il en vente ?
+                final statut = book.statut.trim().toLowerCase();
+                final isPublished = statut == 'publie';
+                // « Publier » laissait croire à une PREMIÈRE parution. Or
+                // cette entrée s'affiche aussi pour un livre archivé depuis le
+                // site ('en_revision') ou retiré de la vente depuis ce menu :
+                // dans ces cas, l'auteur remet en vente une œuvre déjà parue —
+                // le serveur lui garde d'ailleurs sa date de parution
+                // d'origine (livre/service.go). `publieLe` est renseigné dès
+                // la première mise en vente : il dit exactement cela.
+                final dejaParu =
+                    statut == 'en_revision' || book.publieLe != null;
                 return [
                   PopupMenuItem(
                     value: 'edit',
@@ -952,7 +1169,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            'Publier',
+                            dejaParu ? 'Remettre en vente' : 'Publier',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -962,20 +1179,23 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         ],
                       ),
                     ),
-                  if (!isArchived)
+                  // « Archiver » promettait un statut que le serveur refuse ;
+                  // l'action honnête est le retour en brouillon, proposée
+                  // uniquement quand le livre est effectivement en vente.
+                  if (isPublished)
                     PopupMenuItem(
-                      value: 'archive',
+                      value: 'retirer',
                       height: 40,
                       child: Row(
                         children: [
                           Icon(
-                            Icons.archive_outlined,
+                            Icons.remove_shopping_cart_outlined,
                             color: AppColors.textSecondary,
                             size: 18,
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            'Archiver',
+                            'Retirer de la vente',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -1091,36 +1311,42 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if (book.telechargements > 0 || _reviews.isNotEmpty)
-                            Row(
-                              children: [
-                                (() {
-                                  double avg = book.noteMoyenne;
-                                  if (avg == 0 && _reviews.isNotEmpty) {
-                                    avg =
-                                        _reviews
-                                            .map((e) => e.note)
-                                            .reduce((a, b) => a + b) /
-                                        _reviews.length;
-                                  }
-                                  return _buildStars(avg);
-                                })(),
-                                SizedBox(width: 8),
-                                Text(
-                                  "${(() {
-                                    double avg = book.noteMoyenne;
-                                    if (avg == 0 && _reviews.isNotEmpty) {
-                                      avg = _reviews.map((e) => e.note).reduce((a, b) => a + b) / _reviews.length;
-                                    }
-                                    return avg.toStringAsFixed(1);
-                                  })()} (${book.telechargements > 0 ? book.telechargements : _reviews.length} avis)",
-                                  style: GoogleFonts.poppins(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                          // `telechargements` portait ici le nombre d'avis :
+                          // le modèle le remplissait depuis `nombre_avis`. Le
+                          // champ dit maintenant la vérité de son nom, et
+                          // c'est `nombreAvis` qu'on lit — sans quoi cette
+                          // ligne compterait des téléchargements en les
+                          // appelant « avis ».
+                          if (book.nombreAvis > 0 || _reviews.isNotEmpty)
+                            Builder(
+                              builder: (_) {
+                                final moyenne = _moyenneDesAvis;
+                                final nombre = book.nombreAvis > 0
+                                    ? book.nombreAvis
+                                    : _reviews.length;
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Sans moyenne connue, pas d'étoiles : cinq
+                                    // étoiles vides sont un jugement, pas une
+                                    // absence de réponse.
+                                    if (moyenne != null) ...[
+                                      _buildStars(moyenne),
+                                      SizedBox(width: 8),
+                                    ],
+                                    Text(
+                                      moyenne != null
+                                          ? "${moyenne.toStringAsFixed(1)} ($nombre avis)"
+                                          : "Pas encore de note",
+                                      style: GoogleFonts.poppins(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                           if (book.nombreMessages > 0) ...[
                             SizedBox(width: 12),
@@ -1141,6 +1367,35 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           ],
                         ],
                       ),
+                      // Sa note à lui, sur une ligne à elle et sous son nom.
+                      //
+                      // C'est ce que la boutique montrait à la place de la
+                      // moyenne : la note du lecteur passait pour celle de
+                      // l'ouvrage. Elle reste affichée — la décision est de la
+                      // garder — mais dite, et à côté de la moyenne, non
+                      // dessus.
+                      if (_noteDuLecteur != null) ...[
+                        SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.star_rounded,
+                              color: AppColors.warning,
+                              size: 14,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              "Votre note : $_noteDuLecteur/5",
+                              style: GoogleFonts.poppins(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       SizedBox(height: 30),
                     ],
                   ),
@@ -1233,10 +1488,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text('Sommaire', style: AppTextStyles.sectionTitle),
+                          // « 3 CHAPITRES » s'affichait des que la liste
+                          // etait vide : un compte invente, jamais celui du
+                          // livre. Sans chapitre connu, on n'annonce rien.
                           Text(
                             _chapitres.isNotEmpty
                                 ? "${_chapitres.length} CHAPITRES"
-                                : "3 CHAPITRES",
+                                : "",
                             style: GoogleFonts.poppins(
                               fontSize: 10,
                               color: AppColors.textSecondary,
@@ -1275,7 +1533,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               description: ch.description.isNotEmpty
                                   ? ch.description
                                   : (isLocked
-                                        ? "Contenu verrouillé - Achetez le livre pour lire la suite."
+                                        ? _texteChapitreVerrouille
                                         : "Extrait gratuit - Disponible à la lecture."),
                               isLocked: isLocked,
                               onTap: () async {
@@ -1302,134 +1560,48 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             ),
                           );
                         }).toList()
-                      else ...[
-                        () {
-                          final bool hasExtrait = _hasExtraitAvailable(book);
-                          final bool isIntroExtrait = isOwned || hasExtrait;
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildChapterTile(
-                                number: "01",
-                                title: "Introduction",
-                                description: isIntroExtrait
-                                    ? (isOwned
-                                          ? "Disponible dans l'ouvrage."
-                                          : "Extrait gratuit - Disponible à la lecture.")
-                                    : "Contenu verrouillé - Achetez le livre pour lire la suite.",
-                                isLocked: !isIntroExtrait,
-                                onTap: () async {
-                                  if (!isIntroExtrait) {
-                                    _lancerPaiementDirect(book);
-                                  } else {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ReadingPage(
-                                          book: book.toJson(),
-                                          isExtrait: !isOwned,
-                                        ),
-                                      ),
-                                    );
-                                    if (mounted && _isOwned) {
-                                      _loadReadingProgress();
-                                    }
-                                  }
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                              _buildChapterTile(
-                                number: "02",
-                                title: "Développement",
-                                description: isIntroExtrait
-                                    ? (isOwned
-                                          ? "Disponible dans l'ouvrage."
-                                          : "Extrait gratuit - Disponible à la lecture.")
-                                    : "Contenu verrouillé - Achetez le livre pour lire la suite.",
-                                isLocked: !isIntroExtrait,
-                                onTap: () async {
-                                  if (!isIntroExtrait) {
-                                    _lancerPaiementDirect(book);
-                                  } else {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ReadingPage(
-                                          book: book.toJson(),
-                                          isExtrait: !isOwned,
-                                        ),
-                                      ),
-                                    );
-                                    if (mounted && _isOwned) {
-                                      _loadReadingProgress();
-                                    }
-                                  }
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                              _buildChapterTile(
-                                number: "03",
-                                title: "Conclusion",
-                                description: isOwned
-                                    ? "Disponible dans l'ouvrage."
-                                    : "Contenu verrouillé - Achetez le livre pour lire la suite.",
-                                isLocked: !isOwned,
-                                onTap: () async {
-                                  if (!isOwned) {
-                                    _lancerPaiementDirect(book);
-                                  } else {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ReadingPage(book: book.toJson()),
-                                      ),
-                                    );
-                                    if (mounted && _isOwned) {
-                                      _loadReadingProgress();
-                                    }
-                                  }
-                                },
-                              ),
-                            ],
-                          );
-                        }(),
-                      ],
+                      else
+                        _buildSommaireNonDetaille(book, isOwned),
 
                       const SizedBox(height: 12),
-                      Center(
-                        child: InkWell(
-                          onTap: () => _showAllChaptersModal(context),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                      // « Voir tous les chapitres » n'a de sens que si le
+                      // serveur en connaît : sans chapitre, la feuille
+                      // n'aurait rien de plus que ce qui est déjà à l'écran,
+                      // et le lien promettrait une liste qui n'existe pas.
+                      if (_chapitres.isNotEmpty)
+                        Center(
+                          child: InkWell(
+                            onTap: () => _showAllChaptersModal(context),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusSmall,
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  "Voir tous les chapitres",
-                                  style: GoogleFonts.poppins(
-                                    color: AppColors.accentInk,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "Voir tous les chapitres",
+                                    style: GoogleFonts.poppins(
+                                      color: AppColors.accentInk,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  color: AppColors.accentInk,
-                                  size: 12,
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    color: AppColors.accentInk,
+                                    size: 12,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
                       SizedBox(height: 40),
 
@@ -1556,12 +1728,27 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       // `_loadRelatedBooks()` tournait deja pour tout le monde
                       // (initState) : la liste etait chargee puis jetee.
                       if (!_isLoadingRelated) ...[
-                        if (_authorBooks.isNotEmpty)
-                          _buildRelatedSection(
-                            "Du même auteur",
-                            _authorBooks,
-                          ),
-                        if (_categoryBooks.isNotEmpty)
+                        // La panne AVANT le vide, section par section : sans
+                        // cela un 500 sur /books/author/:id retirait le bloc
+                        // « Du même auteur » en silence, ce qui se lit comme
+                        // « il n'a rien écrit d'autre ».
+                        if (_erreurLivresAuteur != null)
+                          _buildRelatedErrorSection(
+                            titre: "Du même auteur",
+                            message: _erreurLivresAuteur!,
+                            enCours: _rechargementLivresAuteur,
+                            relancer: _reessayerLivresAuteur,
+                          )
+                        else if (_authorBooks.isNotEmpty)
+                          _buildRelatedSection("Du même auteur", _authorBooks),
+                        if (_erreurLivresCategorie != null)
+                          _buildRelatedErrorSection(
+                            titre: "Livres similaires",
+                            message: _erreurLivresCategorie!,
+                            enCours: _rechargementLivresCategorie,
+                            relancer: _reessayerLivresCategorie,
+                          )
+                        else if (_categoryBooks.isNotEmpty)
                           _buildRelatedSection(
                             "Livres similaires",
                             _categoryBooks,
@@ -1605,6 +1792,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           style: TextStyle(color: AppColors.textPrimary),
                         ),
                       )
+                    // Vérification de possession en PANNE : on ne sait pas si
+                    // le lecteur possède le livre, donc on ne lui montre pas
+                    // « Acheter » comme seule vérité — état d'erreur + relance.
+                    : _verificationPossessionImpossible && !isOwned
+                    ? _bandeauVerificationImpossible()
                     // Un livre gratuit ne se vend pas.
                     //
                     // Proposer un panier et un bouton « Acheter » sur un
@@ -1945,6 +2137,76 @@ class _BookDetailPageState extends State<BookDetailPage> {
     );
   }
 
+  /// Une section de recommandations qui n'a pas pu être chargée.
+  ///
+  /// Elle garde son titre : sans lui, le lecteur ne saurait même pas QUELLE
+  /// liste manque. Le message vient du serveur quand il en a donné un, et le
+  /// bouton relance cette seule section.
+  Widget _buildRelatedErrorSection({
+    required String titre,
+    required String message,
+    required bool enCours,
+    required Future<void> Function() relancer,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        Text(titre, style: AppTextStyles.sectionTitle),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 20,
+                    color: AppColors.error,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  // Désactivé pendant la tentative : réappuyer lancerait un
+                  // second appel dont la réponse écraserait la première.
+                  onPressed: enCours ? null : () => relancer(),
+                  child: Text(
+                    enCours ? "Nouvelle tentative..." : "Réessayer",
+                    style: GoogleFonts.poppins(
+                      color: AppColors.accentInk,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildRelatedSection(String title, List<BookModel> books) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2087,6 +2349,62 @@ class _BookDetailPageState extends State<BookDetailPage> {
     );
   }
 
+  /// Barre affichée quand la vérification de possession a échoué.
+  ///
+  /// Elle remplace la barre d'achat : proposer de payer alors qu'on ignore si
+  /// le livre est déjà possédé, c'est risquer de faire repayer un acheteur.
+  ///
+  /// Deux échecs, deux recours : une panne se réessaie, une session finie se
+  /// reconnecte. « Réessayer » sur un jeton mort ne pouvait qu'échouer encore.
+  Widget _bandeauVerificationImpossible() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          _sessionExpiree
+              ? "Votre session a expiré. Reconnectez-vous pour retrouver votre bibliothèque."
+              : "Impossible de vérifier si vous possédez déjà ce livre.",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 12.5,
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: OutlinedButton.icon(
+            onPressed: _sessionExpiree
+                ? _seReconnecter
+                : _reessayerVerificationPossession,
+            icon: Icon(
+              _sessionExpiree ? Icons.login : Icons.refresh,
+              size: 18,
+              color: AppColors.textPrimary,
+            ),
+            label: Text(
+              _sessionExpiree ? "Se reconnecter" : "Réessayer",
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                color: AppColors.textPrimary.withValues(alpha: 0.2),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// Le seul bouton d'un livre gratuit.
   ///
   /// Il fait les deux gestes d'un coup : le livre entre dans la bibliotheque —
@@ -2144,6 +2462,16 @@ class _BookDetailPageState extends State<BookDetailPage> {
       return;
     }
 
+    // On ignore si ce livre est DÉJÀ acquis : ne pas proposer de le payer.
+    //
+    // La garde est posée ici, au seul point de départ des achats de la fiche :
+    // les huit chapitres verrouillés et la barre du bas y passent tous, et la
+    // règle ne peut donc plus diverger d'un bouton à l'autre.
+    if (_possessionIncertaine) {
+      _traiterAppuiPossessionIncertaine();
+      return;
+    }
+
     setState(() => _paiementEnCours = true);
 
     try {
@@ -2172,6 +2500,24 @@ class _BookDetailPageState extends State<BookDetailPage> {
       }
 
       final paymentService = PaymentService();
+
+      // GARDE ANTI-DOUBLE-DÉBIT.
+      //
+      // Le serveur crée TOUJOURS une ligne neuve à l'initiation et sa seule
+      // garde compte les achats CONFIRMÉS : revenu sur la fiche pendant que
+      // son premier paiement attendait l'opérateur, le lecteur pouvait rouvrir
+      // une transaction et être débité deux fois pour un seul livre. Le site
+      // web porte le même correctif (paiement.ts / transactionEnCours) ; ici,
+      // faute de trace locale, on demande au serveur la liste des paiements.
+      final poursuivre = await _verifierPaiementDejaOuvert(
+        paymentService,
+        book,
+        token,
+        user.id,
+      );
+      if (!poursuivre) return;
+      if (!mounted) return;
+
       final result = await paymentService.initiateCinetpayPayment(
         livreId: book.id,
         montant: amount,
@@ -2184,6 +2530,28 @@ class _BookDetailPageState extends State<BookDetailPage> {
             : "client@spacelearn.com",
       );
 
+      // Le montant OFFICIEL : celui que le serveur a relu en base au moment
+      // d'ouvrir la transaction, pas le prix affiché par la fiche. Entre le
+      // chargement de l'écran et l'achat, l'auteur a pu changer son prix, et
+      // c'est le débit réel qu'il faut annoncer.
+      final double montantServeur = result.paiement.montant > 0
+          ? result.paiement.montant
+          : amount;
+
+      // La transaction est MÉMORISÉE avant d'envoyer le lecteur payer.
+      //
+      // Cette trace locale n'était écrite que par l'écran de paiement, qu'aucune
+      // route n'atteint : la garde anti-double-débit ne disposait donc, sur les
+      // chemins réellement empruntés, que de la liste du serveur — inutilisable
+      // dès que le réseau flanche, c'est-à-dire précisément au moment où un
+      // lecteur revient réessayer.
+      await TransactionEnCoursStore.memoriser(
+        userId: user.id,
+        livreId: book.id,
+        transactionId: result.paiement.transactionId,
+        montant: montantServeur,
+      );
+
       if (!mounted) return;
 
       await Navigator.push(
@@ -2193,13 +2561,26 @@ class _BookDetailPageState extends State<BookDetailPage> {
             paymentUrl: result.paymentUrl,
             transactionId: result.paiement.transactionId,
             book: book.toJson(),
-            montant: amount,
+            montant: montantServeur,
           ),
         ),
       );
 
       if (mounted) {
-        await _checkOwnershipStatus();
+        // Au retour, la fiche RECHARGE le livre — la seule vérification de
+        // possession ne suffisait pas.
+        //
+        // `_fullBook` a été reçu avant l'achat : son `fichier_url` est l'URL
+        // signée de l'EXTRAIT, que le serveur substitue au manuscrit pour un
+        // non-possesseur (livre/service.go). Le bouton « Lire » ouvrait la
+        // liseuse avec cet objet, la liseuse trouvait une URL non vide, ne
+        // redemandait rien, et écrivait l'aperçu dans l'emplacement du livre
+        // complet : l'acheteur relisait ses deux pages d'extrait. Le ménage de
+        // l'écran de résultat ne couvre pas ce chemin — on peut fermer la
+        // webview ou revenir par un geste retour sans jamais y passer.
+        await BookCacheService().clearBookCache(book.id, '', extrait: false);
+        if (!mounted) return;
+        await _loadFullBookDetails();
       }
     } catch (e) {
       if (mounted) {
@@ -2217,6 +2598,111 @@ class _BookDetailPageState extends State<BookDetailPage> {
         setState(() => _paiementEnCours = false);
       }
     }
+  }
+
+  /// Cherche une transaction déjà ouverte pour ce livre avant d'en créer une.
+  ///
+  /// Rend `false` quand il ne faut PAS lancer de nouveau paiement : soit le
+  /// précédent vient d'être confirmé (le livre est déjà accordé), soit le
+  /// lecteur a choisi d'attendre la confirmation plutôt que de repayer.
+  ///
+  /// La règle elle-même n'est plus écrite ici : elle vit dans
+  /// [PaymentService.examinerTransactionOuverte], partagée avec les deux autres
+  /// écrans qui lancent un paiement. Chacun en portait sa version, et elles
+  /// s'étaient mises à se contredire — notamment sur ce qu'il faut faire quand
+  /// le statut de la transaction précédente est invérifiable. Cet écran ne
+  /// décide plus que de ce qu'il MONTRE.
+  Future<bool> _verifierPaiementDejaOuvert(
+    PaymentService paymentService,
+    BookModel book,
+    String token,
+    String userId,
+  ) async {
+    final garde = await paymentService.examinerTransactionOuverte(
+      userId: userId,
+      livreId: book.id,
+      authToken: token,
+    );
+    if (!mounted) return false;
+
+    if (garde.verdict == VerdictPaiement.dejaAcquis) {
+      AppNotifications.showSnackBar(
+        context,
+        message:
+            "Votre paiement précédent a été confirmé : ce livre est déjà dans votre bibliothèque.",
+        isSuccess: true,
+      );
+      await _checkOwnershipStatus();
+      return false;
+    }
+
+    if (garde.verdict == VerdictPaiement.aConfirmerParLaPersonne) {
+      // Ni confirmée ni close : peut-être réglée (webhook en retard, jusqu'à
+      // ~13 min), peut-être abandonnée. Seul le lecteur le sait — on lui pose
+      // la question au lieu d'ouvrir une seconde transaction en silence.
+      final payerQuandMeme = await _confirmerNouveauPaiement(garde);
+      return payerQuandMeme == true;
+    }
+
+    // VerdictPaiement.laisserPasser — y compris sur une vérification en panne :
+    // refuser un achat parce qu'on n'a pas pu lire la liste des paiements
+    // fermerait la boutique, et le serveur reste seul à accorder le livre.
+    return true;
+  }
+
+  /// Demande au lecteur quoi faire d'une transaction encore ouverte.
+  Future<bool?> _confirmerNouveauPaiement(GardePaiement enAttente) {
+    final quand = enAttente.ouverteLe != null
+        ? " ouverte le ${DateFormat('dd/MM/yyyy à HH:mm').format(enAttente.ouverteLe!.toLocal())}"
+        : "";
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+        ),
+        title: Text(
+          'Un paiement est déjà en cours',
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
+        content: Text(
+          'Une transaction pour ce livre$quand attend encore la confirmation '
+          'de l\'opérateur (référence ${enAttente.transactionId}).\n\n'
+          'Si vous avez déjà réglé, la confirmation peut prendre quelques '
+          'minutes : payer à nouveau vous ferait débiter une seconde fois. '
+          'Ne relancez un paiement que si vous aviez abandonné le précédent.',
+          style: GoogleFonts.poppins(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Attendre la confirmation',
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+              foregroundColor: AppColors.onAccent,
+            ),
+            child: Text(
+              'Payer à nouveau',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _lireGratuitement() async {
@@ -2257,9 +2743,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
       );
     } catch (e) {
       if (!mounted) return;
+      // Le message du SERVEUR, tel quel : « Ce livre est payant » (402) ou
+      // « Votre session a expiré » ne se réparent pas en vérifiant sa
+      // connexion, et c'est pourtant ce que la phrase unique conseillait.
       AppNotifications.showSnackBar(
         context,
-        message: "Le livre n'a pas pu être ouvert. Vérifiez votre connexion.",
+        message: messageLisible(
+          e,
+          repli: "Le livre n'a pas pu être ouvert. Vérifiez votre connexion.",
+        ),
         isError: true,
       );
     } finally {
@@ -2450,7 +2942,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     ),
                   ),
                   onPressed: () async {
-                    Navigator.pop(context);
+                    // Le dialogue fermait AVANT l'envoi : au premier échec —
+                    // réseau, ou 403 « vous ne pouvez noter qu'un ouvrage de
+                    // votre bibliothèque » — le commentaire rédigé était
+                    // irrécupérable. On ne ferme qu'APRÈS le succès confirmé
+                    // par le serveur ; sur échec, le dialogue reste ouvert,
+                    // texte intact, et le message du serveur s'affiche.
                     final token = await TokenStorage.getToken();
                     if (!context.mounted) return;
                     if (token == null) {
@@ -2470,10 +2967,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         commentaire: commentController.text,
                         authToken: token,
                       );
-                      _loadReviews(); // Reload the reviews
+                      // Succès confirmé : la saisie ne risque plus rien.
                       if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                      _loadReviews(); // Reload the reviews
+                      if (mounted) {
                         AppNotifications.showSnackBar(
-                          context,
+                          this.context,
                           message: "Avis ajouté avec succès !",
                           isSuccess: true,
                         );
@@ -2482,7 +2983,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       if (context.mounted) {
                         AppNotifications.showSnackBar(
                           context,
-                          message: "Erreur lors de l'ajout de l'avis.",
+                          message: messageLisible(
+                            e,
+                            repli: "L'avis n'a pas pu être envoyé.",
+                          ),
                           isError: true,
                         );
                       }
@@ -2501,6 +3005,134 @@ class _BookDetailPageState extends State<BookDetailPage> {
     );
   }
 
+  /// Ce qui s'affiche quand le serveur ne rend AUCUN chapitre pour ce livre.
+  ///
+  /// Trois tuiles tenaient cette place : « 01 Introduction », « 02
+  /// Développement », « 03 Conclusion ». Elles n'avaient aucune source — ni le
+  /// livre, ni le serveur ne les avaient jamais nommées ; ces titres étaient
+  /// écrits ici et s'affichaient pour TOUT ouvrage dont
+  /// /api/books/:id/chapters ne rend rien. Un lecteur y lisait la structure de
+  /// l'ouvrage, un auteur y voyait un sommaire qu'il n'avait pas saisi.
+  ///
+  /// Une seule entrée honnête les remplace : elle ouvre ce qui est réellement
+  /// accessible (l'ouvrage pour qui le possède, l'extrait sinon), reste
+  /// verrouillée quand rien ne l'est, et ne prétend rien décrire.
+  ///
+  /// [contexteFeuille] est le contexte de la feuille « Tous les chapitres »
+  /// quand l'entrée y est posée : c'est LUI qu'il faut refermer, celui de la
+  /// page fermerait la fiche.
+  Widget _buildSommaireNonDetaille(
+    BookModel book,
+    bool isOwned, {
+    BuildContext? contexteFeuille,
+  }) {
+    final bool hasExtrait = _hasExtraitAvailable(book);
+    final bool ouvrable = isOwned || hasExtrait;
+    final String titre = isOwned
+        ? "Ouvrir le livre"
+        : hasExtrait
+        ? "Lire l'extrait gratuit"
+        : "Lecture verrouillée";
+    final String detail = ouvrable
+        ? (isOwned
+              ? "Disponible dans l'ouvrage."
+              : "Extrait gratuit - Disponible à la lecture.")
+        : _texteChapitreVerrouille;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Le sommaire de ce livre n'est pas détaillé.",
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () {
+            if (contexteFeuille != null) Navigator.pop(contexteFeuille);
+            if (!ouvrable) {
+              // Verrouillé : le seul appui qui a un sens ici est celui qui
+              // relance une vérification de possession en panne. Ouvrir un
+              // paiement depuis une tuile grisée, sans confirmation, n'en a
+              // jamais eu — l'achat se fait par le bouton du bas.
+              if (_possessionIncertaine) _traiterAppuiPossessionIncertaine();
+              return;
+            }
+            _ouvrirLaLiseuse(book, isOwned);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
+              border: Border.all(
+                color: ouvrable
+                    ? AppColors.primary.withOpacity(0.15)
+                    : AppColors.textPrimary.withOpacity(0.04),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        titre,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: ouvrable
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        detail,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  ouvrable ? Icons.play_circle_outline : Icons.lock_outline,
+                  color: ouvrable
+                      ? AppColors.accentInk
+                      : AppColors.textSecondary,
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Ouvre la liseuse, puis relit la progression au retour.
+  Future<void> _ouvrirLaLiseuse(BookModel book, bool isOwned) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReadingPage(book: book.toJson(), isExtrait: !isOwned),
+      ),
+    );
+    // Sans ce garde, un retour apres fermeture de la fiche appellerait
+    // setState sur un widget demonte.
+    if (!mounted) return;
+    if (_isOwned) _loadReadingProgress();
+  }
+
   Widget _buildChapterTile({
     required String number,
     required String title,
@@ -2509,7 +3141,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
     VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: isLocked ? null : onTap,
+      // Une tuile verrouillée avalait TOUS les appuis. Quand la possession est
+      // incertaine, sa description dit pourtant « appuyez pour réessayer » :
+      // la promesse était morte, le geste ne relançait rien. Le doute rend
+      // donc la tuile sensible — l'appui repart vers
+      // `_traiterAppuiPossessionIncertaine`, qui relance la vérification ou
+      // annonce la session finie. Le verrou ordinaire, lui, reste inerte :
+      // l'achat se décide au bouton du bas, prix sous les yeux.
+      onTap: isLocked && !_possessionIncertaine ? null : onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(

@@ -66,31 +66,51 @@ class MinutesEnAttente {
     return id.trim();
   }
 
+  /// Un identifiant utilisable, ou null s'il n'y en a pas.
+  static String? _nettoyer(String? valeur) {
+    final v = valeur?.trim();
+    return (v == null || v.isEmpty) ? null : v;
+  }
+
   /// Porte des secondes de lecture au crédit du lecteur et du livre.
   ///
   /// Rien n'est perdu si le serveur ne répond pas : le solde reste en attente
   /// et repartira à la prochaine occasion.
-  static Future<void> porter({String? livreId, required int secondes}) async {
+  ///
+  /// [uid] est l'identifiant du compte AU NOM DUQUEL ces secondes ont été
+  /// lues, quand l'appelant le connaît. Sans lui, le compte est relu dans
+  /// [TokenStorage] à l'instant de l'écriture — or cet instant peut tomber
+  /// APRÈS `TokenStorage.clearToken` : à la déconnexion, le report final de la
+  /// lecture audio n'est attendu que quelques secondes, puis il poursuit seul
+  /// pendant que la session s'efface. Le compte devenu introuvable, `porter`
+  /// rendait la main sans rien poser : les dernières minutes de la séance
+  /// étaient perdues au lieu d'attendre sur l'appareil. Passer l'identifiant
+  /// de séance supprime cette course.
+  static Future<void> porter({
+    String? livreId,
+    required int secondes,
+    String? uid,
+  }) async {
     if (secondes <= 0) return;
 
-    final uid = await _utilisateur();
-    if (uid == null) return; // pas de compte : rien à porter
+    final compte = _nettoyer(uid) ?? await _utilisateur();
+    if (compte == null) return; // pas de compte : rien à porter
 
     final prefs = await SharedPreferences.getInstance();
 
-    final cleSecondes = '$_cleSecondes$uid';
+    final cleSecondes = '$_cleSecondes$compte';
     final cumul = (prefs.getInt(cleSecondes) ?? 0) + secondes;
     final minutes = cumul ~/ 60;
     await prefs.setInt(cleSecondes, cumul % 60);
 
     if (minutes > 0) {
-      await _ajouter(prefs, '$_cleLecteur$uid', minutes);
+      await _ajouter(prefs, '$_cleLecteur$compte', minutes);
       if (livreId != null && livreId.isNotEmpty) {
-        await _ajouter(prefs, '$_cleLivre${uid}_$livreId', minutes);
+        await _ajouter(prefs, '$_cleLivre${compte}_$livreId', minutes);
       }
     }
 
-    await vider();
+    await vider(uid: compte);
   }
 
   static Future<void> _ajouter(
@@ -105,16 +125,29 @@ class MinutesEnAttente {
   ///
   /// À appeler aussi à l'ouverture d'un livre : c'est ce qui rattrape les
   /// minutes d'une session lue hors réseau.
-  static Future<void> vider() async {
+  ///
+  /// [uid] désigne le compte dont on veut vider le solde. Il n'est envoyé QUE
+  /// s'il est bien celui du jeton présent : les deux requêtes de
+  /// [ReaderStatsService] partent avec le jeton du stockage, et pousser le
+  /// solde de A avec le jeton de B créditerait B des minutes de A. Un solde
+  /// qu'on n'envoie pas n'est pas un solde perdu — il reste sous la clé de son
+  /// compte et repartira à la prochaine ouverture d'un livre par celui-ci.
+  static Future<void> vider({String? uid}) async {
     if (_envoiEnCours) return;
     _envoiEnCours = true;
     try {
-      final uid = await _utilisateur();
-      if (uid == null) return;
+      // Le compte du JETON courant : c'est lui qui signera les requêtes.
+      final courant = await _utilisateur();
+      if (courant == null) return;
+
+      // Une déconnexion en cours peut avoir déjà changé de compte pendant que
+      // le report final voyageait : on garde alors le solde pour plus tard.
+      final cible = _nettoyer(uid) ?? courant;
+      if (cible != courant) return;
 
       final prefs = await SharedPreferences.getInstance();
-      await _viderLecteur(prefs, uid);
-      await _viderLivres(prefs, uid);
+      await _viderLecteur(prefs, courant);
+      await _viderLivres(prefs, courant);
     } catch (e) {
       debugPrint('Minutes en attente non envoyées : $e');
     } finally {

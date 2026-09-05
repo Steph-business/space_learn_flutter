@@ -12,6 +12,8 @@ import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class LivresPage extends StatefulWidget {
@@ -36,9 +38,14 @@ class _LivresPageState extends State<LivresPage> {
 
   final List<String> _filters = ["Tous", "Publiés", "Brouillons", "Populaires"];
 
-  /// Vrai quand l'erreur est liée à la session (token absent / expiré).
-  bool get _isSessionError =>
-      _error != null && _error!.contains("Session");
+  /// Vrai quand l'erreur est liée à la session (jeton absent / expiré).
+  ///
+  /// Ce drapeau est posé à la source. Il se déduisait du texte de `_error`, en
+  /// cherchant « Session » avec une majuscule : dès que le message vient du
+  /// serveur — « Votre session a expiré. » —, la recherche échouait et l'écran
+  /// proposait « Réessayer » à quelqu'un qui devait se reconnecter.
+  bool _erreurDeSession = false;
+  bool get _isSessionError => _erreurDeSession;
 
   @override
   void initState() {
@@ -51,11 +58,14 @@ class _LivresPageState extends State<LivresPage> {
       setState(() {
         _isLoading = true;
         _error = null;
+        _erreurDeSession = false;
       });
 
       final token = await TokenStorage.getToken();
+      if (!mounted) return;
       if (token == null) {
         setState(() {
+          _erreurDeSession = true;
           _error = "Session expirée. Veuillez vous reconnecter.";
           _isLoading = false;
         });
@@ -63,9 +73,10 @@ class _LivresPageState extends State<LivresPage> {
       }
 
       final user = await _authService.getUser(token);
+      if (!mounted) return;
       if (user == null) {
         setState(() {
-          _error = "Utilisateur non trouvé.";
+          _error = "Votre compte n'a pas pu être chargé.";
           _isLoading = false;
         });
         return;
@@ -83,11 +94,34 @@ class _LivresPageState extends State<LivresPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = "Erreur lors du chargement des livres.";
+          // La cause, telle que le serveur l'a dite. « Erreur lors du
+          // chargement des livres. » cachait aussi bien une session expirée
+          // qu'un réseau coupé, et l'auteur ne pouvait qu'appuyer à nouveau.
+          _erreurDeSession = estSessionExpiree(e);
+          _error = messageLisible(
+            e,
+            repli: "Vos livres n'ont pas pu être chargés.",
+          );
           _isLoading = false;
         });
       }
     }
+  }
+
+  /// Fin de session complète, puis retour à l'écran de connexion.
+  ///
+  /// Ce bouton n'effaçait que le jeton : le cache des livres téléchargés et le
+  /// profil sélectionné restaient sur l'appareil, et le compte suivant y
+  /// retrouvait la bibliothèque du précédent — lisible en entier depuis
+  /// Paramètres → Téléchargements. SessionService.terminer() est le point de
+  /// nettoyage unique que tous les autres chemins de déconnexion empruntent.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
   }
 
   List<BookModel> get _filteredBooks {
@@ -111,8 +145,14 @@ class _LivresPageState extends State<LivresPage> {
             .toList();
         break;
       case "Populaires":
+        // Le tri portait sur `telechargements`, que le modèle remplissait avec
+        // le NOMBRE D'AVIS : il classait donc déjà sur les avis, sous un nom
+        // qui laissait croire au contraire. Les deux grandeurs sont désormais
+        // séparées et `telechargements` reste à zéro faute de compteur côté
+        // serveur — trier dessus ne classerait plus rien du tout. On trie sur
+        // la seule grandeur que le serveur donne vraiment.
         books = List.from(books)
-          ..sort((a, b) => b.telechargements.compareTo(a.telechargements));
+          ..sort((a, b) => b.nombreAvis.compareTo(a.nombreAvis));
         break;
     }
 
@@ -152,10 +192,16 @@ class _LivresPageState extends State<LivresPage> {
                         AppColors.success,
                       ),
                       SizedBox(width: 10),
+                      // « Lectures » nourri par `telechargements` était un
+                      // mensonge : le serveur n'envoie aucun compteur de
+                      // lectures dans cette liste, et le modèle y versait le
+                      // nombre d'AVIS — un auteur lu 500 fois mais noté 2 fois
+                      // lisait « 2 lectures ». On affiche donc la grandeur
+                      // réellement reçue, sous son vrai nom.
                       _buildStatSession(
-                        "${_books.fold<int>(0, (sum, b) => sum + b.telechargements)}",
-                        "Lectures",
-                        Iconsax.eye,
+                        "${_books.fold<int>(0, (sum, b) => sum + b.nombreAvis)}",
+                        "Avis",
+                        Iconsax.star_1,
                         AppColors.warning,
                       ),
                     ],
@@ -266,10 +312,11 @@ class _LivresPageState extends State<LivresPage> {
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: (_isSessionError
-                                            ? AppColors.warning
-                                            : AppColors.error)
-                                        .withOpacity(0.1),
+                                    color:
+                                        (_isSessionError
+                                                ? AppColors.warning
+                                                : AppColors.error)
+                                            .withOpacity(0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -311,17 +358,7 @@ class _LivresPageState extends State<LivresPage> {
                                 // Bouton contextuel — filled
                                 GestureDetector(
                                   onTap: _isSessionError
-                                      ? () {
-                                          TokenStorage.clearToken();
-                                          Navigator.of(context)
-                                              .pushAndRemoveUntil(
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const LoginPage(),
-                                            ),
-                                            (route) => false,
-                                          );
-                                        }
+                                      ? _seReconnecter
                                       : _loadBooks,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(

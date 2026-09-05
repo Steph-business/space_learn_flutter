@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/favoriteModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/boutique/livre_card.dart';
 
@@ -22,6 +23,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
   List<FavoriteModel> _favorites = [];
   bool _isLoading = true;
 
+  /// Ce qui a empêché le chargement d'aboutir.
+  ///
+  /// Le catch se contentait de couper l'indicateur : une panne réseau
+  /// laissait `_favorites` vide et l'écran affirmait « Aucune favorie pour le
+  /// moment » — des favoris existants passaient pour absents, sans Réessayer.
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -29,6 +37,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   Future<void> _loadFavorites() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final token = await TokenStorage.getToken();
       if (token != null) {
@@ -40,29 +52,68 @@ class _FavoritesPageState extends State<FavoritesPage> {
           });
         }
       } else {
-        if (mounted) setState(() => _isLoading = false);
+        // Sans jeton, la liste n'a pas pu être demandée : ce n'est pas un
+        // vide, c'est une session finie.
+        if (mounted) {
+          setState(() {
+            _error = "Votre session a expiré. Reconnectez-vous.";
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _error = messageLisible(
+            e,
+            repli: "Impossible de charger vos favoris.",
+          );
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _removeFavorite(String livreId) async {
     try {
       final token = await TokenStorage.getToken();
-      if (token != null) {
-        await _favoriteService.removeFavorite(livreId, token);
-        setState(() {
-          _favorites.removeWhere((f) => f.livreId == livreId);
-        });
-        if (mounted) {
-          AppNotifications.showSnackBar(
-            context,
-            message: "Retiré de ma favorie",
-          );
-        }
+      if (token == null) {
+        // Sortir en silence rendait l'appui sur le cœur strictement sans
+        // effet : ni retrait, ni message — le défaut que le catch a supprimé
+        // pour la panne réseau, resté intact pour la session expirée. Le
+        // chargement de la liste dit déjà « Votre session a expiré » dans la
+        // même situation : les deux moitiés de l'écran parlent d'une voix.
+        if (!mounted) return;
+        AppNotifications.showSnackBar(
+          context,
+          message: "Votre session a expiré. Reconnectez-vous.",
+          isError: true,
+        );
+        return;
       }
-    } catch (e) {}
+      await _favoriteService.removeFavorite(livreId, token);
+      // `mounted` AVANT le setState : quitter la page pendant la requête
+      // déclenchait « setState() called after dispose() ».
+      if (!mounted) return;
+      setState(() {
+        _favorites.removeWhere((f) => f.livreId == livreId);
+      });
+      AppNotifications.showSnackBar(context, message: "Retiré de ma favorie");
+    } catch (e) {
+      // Le `catch (e) {}` d'avant rendait l'échec invisible : le cœur restait
+      // rouge, rien ne se passait, et la personne croyait n'avoir jamais
+      // appuyé. Le livre reste dans la liste — il est toujours favori côté
+      // serveur — et l'échec se dit avec le message du serveur.
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: messageLisible(
+          e,
+          repli: "Ce livre n'a pas pu être retiré de vos favoris.",
+        ),
+        isError: true,
+      );
+    }
   }
 
   @override
@@ -87,6 +138,35 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: Text(
                 "Chargement...",
                 style: GoogleFonts.poppins(color: AppColors.textSecondary),
+              ),
+            )
+          // La panne AVANT le vide : sinon un échec réseau s'affiche
+          // « Aucune favorie pour le moment », ce qui est un mensonge.
+          : _error != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      size: 48,
+                      color: AppColors.error,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(color: AppColors.textPrimary),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _loadFavorites,
+                      child: const Text("Réessayer"),
+                    ),
+                  ],
+                ),
               ),
             )
           : _favorites.isEmpty

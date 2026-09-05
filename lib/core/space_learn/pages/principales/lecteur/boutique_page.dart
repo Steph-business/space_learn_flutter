@@ -17,6 +17,7 @@ import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/categorie_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/categorie.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 class MarketplacePage extends StatefulWidget {
   const MarketplacePage({super.key});
@@ -33,7 +34,24 @@ class _MarketplacePageState extends State<MarketplacePage> {
   List<BookModel> _books = [];
   List<Categorie> _categories = [];
   Set<String> _ownedBookIds = {};
-  Map<String, double> _notesDuLecteur = {};
+
+  /// La note que CE lecteur a déposée, par livre — portée à part, jamais
+  /// versée dans le livre.
+  ///
+  /// `_enrichir` faisait `copyWith(noteMoyenne: note)` : la note personnelle
+  /// ÉCRASAIT la moyenne du serveur. Un ouvrage moyenné 4,3 sur 37 avis mais
+  /// noté 2 par ce lecteur affichait « 2,0 » sur sa carte, et la fiche, ouverte
+  /// avec le même objet, en héritait — « 2.0 (37 avis) ». Un chiffre en
+  /// remplaçait un autre sans le dire, ce qui est exactement ce que la maison
+  /// ne fait pas.
+  ///
+  /// La moyenne affichée est désormais TOUJOURS celle du serveur ; cette
+  /// note-ci descend séparément dans la carte, qui la nomme.
+  ///
+  /// Entier et non réel : une note d'avis vaut 1 à 5 (contrainte du serveur,
+  /// `note BETWEEN 1 AND 5`). La convertir en double n'avait de sens que pour
+  /// la faire passer pour une moyenne.
+  Map<String, int> _notesDuLecteur = {};
   bool _isLoading = true;
   String? _error;
 
@@ -65,6 +83,24 @@ class _MarketplacePageState extends State<MarketplacePage> {
   bool _chargeLaSuite = false;
   bool _finDuCatalogue = false;
 
+  /// Ce qui a empêché la page suivante d'arriver.
+  ///
+  /// L'échec était TOTALEMENT muet : le pied de liste n'affichait la roue que
+  /// pendant le chargement et le message de fin qu'en fin de catalogue —
+  /// après un échec, rien. Le lecteur arrivait en bas, la liste s'arrêtait,
+  /// aucun message, aucun bouton, et la reprise dépendait d'un nouveau
+  /// défilement qu'il n'avait aucune raison de tenter.
+  String? _echecSuite;
+
+  /// Jeton de la requête courante : le filtre affiché et la réponse reçue
+  /// doivent venir de la même génération.
+  ///
+  /// Sans lui, la page suivante de « Tout », partie avant un tap sur
+  /// « Romans », arrivait APRÈS le rechargement : ses livres hors-catégorie
+  /// se concaténaient à la liste filtrée et son curseur écrasait celui du
+  /// nouveau filtre — le défilement continuait l'ancien parcours.
+  int _generation = 0;
+
   /// Frappe au clavier : on attend une pause avant d'interroger le serveur.
   ///
   /// Sans cela, « quantique » declenche neuf recherches, dont huit sont
@@ -93,6 +129,12 @@ class _MarketplacePageState extends State<MarketplacePage> {
   /// est. Attendre le bas exact ferait apparaitre un vide a chaque palier.
   void _auDefilement() {
     if (!_defilement.hasClients) return;
+    // Après un échec, le défilement ne relance plus de lui-même : ce
+    // listener est notifié à chaque pixel parcouru — pendant un lancer, une
+    // soixantaine de tentatives par seconde, que le limiteur du serveur
+    // transformerait en 429. La reprise passe par le bouton « Réessayer » du
+    // pied de liste, seul geste volontaire.
+    if (_echecSuite != null) return;
     final reste =
         _defilement.position.maxScrollExtent - _defilement.position.pixels;
     if (reste < 600) _chargerLaSuite();
@@ -116,11 +158,21 @@ class _MarketplacePageState extends State<MarketplacePage> {
   /// Recharge tout : c'est le point d'entree de l'ecran, du tirer-pour-
   /// rafraichir, d'un changement de categorie et d'une nouvelle recherche.
   Future<void> _loadBooks() async {
+    // Toute réponse encore en vol appartient à la génération précédente :
+    // elle sera jetée à l'arrivée, y compris une page suivante.
+    final generation = ++_generation;
     setState(() {
       _isLoading = true;
       _error = null;
       _curseur = null;
       _finDuCatalogue = false;
+      // L'échec de pagination appartient à l'ancien parcours : le nouveau
+      // repart sans lui, sinon le pied de liste garderait un « Réessayer »
+      // qui ne concerne plus rien.
+      _echecSuite = null;
+      // Une suite en vol ne doit pas bloquer la pagination du nouveau
+      // filtre : sa réponse sera ignorée, c'est ici qu'on libère le verrou.
+      _chargeLaSuite = false;
     });
 
     try {
@@ -146,7 +198,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
             : Future.value(<ReviewModel>[]),
       ]);
 
-      if (!mounted) return;
+      // Une réponse d'une génération dépassée ne touche plus à rien : un
+      // rechargement plus récent est déjà parti, c'est lui qui fait foi.
+      if (!mounted || generation != _generation) return;
 
       final premiere = resultats[0] as PageCatalogue;
       final categories = resultats[1] as List<Categorie>;
@@ -157,17 +211,24 @@ class _MarketplacePageState extends State<MarketplacePage> {
         _categories = categories;
         _ownedBookIds = bibliotheque.map((e) => e.livreId).toSet();
         _notesDuLecteur = {
-          for (final a in avis) a.livreId: a.note.toDouble(),
+          for (final a in avis) a.livreId: a.note,
         };
-        _books = _enrichir(premiere.livres);
+        // Les livres arrivent tels que le serveur les a rendus : leur
+        // `noteMoyenne` n'est plus retouchée par personne.
+        _books = premiere.livres;
         _curseur = premiere.curseurSuivant;
         _finDuCatalogue = !premiere.aUneSuite;
         _isLoading = false;
       });
     } catch (e) {
-      if (mounted) {
+      if (mounted && generation == _generation) {
         setState(() {
-          _error = "Erreur lors du chargement des livres.";
+          // Le message du serveur tel quel : « Trop de tentatives » ou
+          // « Pas de connexion » disent quoi faire, un texte générique non.
+          _error = messageLisible(
+            e,
+            repli: "Erreur lors du chargement des livres.",
+          );
           _isLoading = false;
         });
       }
@@ -182,7 +243,11 @@ class _MarketplacePageState extends State<MarketplacePage> {
     if (_chargeLaSuite || _finDuCatalogue || _isLoading || _curseur == null) {
       return;
     }
-    setState(() => _chargeLaSuite = true);
+    final generation = _generation;
+    setState(() {
+      _chargeLaSuite = true;
+      _echecSuite = null;
+    });
 
     try {
       final token = await TokenStorage.getToken();
@@ -194,26 +259,38 @@ class _MarketplacePageState extends State<MarketplacePage> {
         apres: _curseur,
       );
 
-      if (!mounted) return;
+      // Reponse d'un ancien filtre : on la jette. Concatener ici melait des
+      // livres hors-categorie a la liste filtree et ecrasait le curseur du
+      // nouveau parcours. `_loadBooks` a deja remis `_chargeLaSuite` a false.
+      if (!mounted || generation != _generation) return;
       setState(() {
-        _books = [..._books, ..._enrichir(suite.livres)];
+        _books = [..._books, ...suite.livres];
         _curseur = suite.curseurSuivant;
         // Le serveur dit lui-meme s'il reste quelque chose : il demande une
         // ligne de plus que necessaire pour le savoir, sans compter la table.
         _finDuCatalogue = !suite.aUneSuite;
         _chargeLaSuite = false;
       });
-    } catch (_) {
-      if (mounted) setState(() => _chargeLaSuite = false);
+    } catch (e) {
+      // Un echec ne pose plus « fin du catalogue » : getCataloguePage rendait
+      // une page vide avec aUneSuite=false sur une coupure reseau, la ligne
+      // au-dessus posait _finDuCatalogue=true et _curseur=null, et le garde
+      // d'entree interdisait toute reprise — l'ecran affirmait « Vous avez vu
+      // tous les livres ». Le service leve desormais, curseur et drapeau sont
+      // intacts.
+      //
+      // Et l'echec se DIT : garder le curseur ne suffisait pas, puisque rien
+      // a l'ecran n'indiquait qu'il restait quelque chose a charger.
+      if (mounted && generation == _generation) {
+        setState(() {
+          _echecSuite = messageLisible(
+            e,
+            repli: "La suite du catalogue n'a pas pu être chargée.",
+          );
+          _chargeLaSuite = false;
+        });
+      }
     }
-  }
-
-  /// Applique au livre ce que le lecteur en sait deja : sa propre note.
-  List<BookModel> _enrichir(List<BookModel> livres) {
-    return livres.map((b) {
-      final note = _notesDuLecteur[b.id];
-      return note == null ? b : b.copyWith(noteMoyenne: note);
-    }).toList();
   }
 
   /// Nouvelle recherche, apres une pause dans la frappe.
@@ -449,6 +526,10 @@ class _MarketplacePageState extends State<MarketplacePage> {
                       return LivreCard(
                         book: book,
                         isOwned: _ownedBookIds.contains(book.id),
+                        // Sa note voyage à côté du livre, plus dedans : la
+                        // carte l'affiche sous son nom, l'étoile du haut
+                        // restant celle de la moyenne du serveur.
+                        noteDuLecteur: _notesDuLecteur[book.id],
                       );
                     },
                   );
@@ -467,6 +548,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   return LivreListCard(
                     book: book,
                     isOwned: _ownedBookIds.contains(book.id),
+                    // Même règle en liste qu'en grille : les deux
+                    // présentations de la boutique montrent la même moyenne.
+                    noteDuLecteur: _notesDuLecteur[book.id],
                   );
                 },
               ),
@@ -483,6 +567,45 @@ class _MarketplacePageState extends State<MarketplacePage> {
                     color: AppColors.accentInk,
                   ),
                 ),
+              ),
+            )
+          // Une PANNE n'est pas une fin de catalogue : elle se dit, avec de
+          // quoi la relancer. Sans cette ligne, la liste s'arretait en bas
+          // sans un mot et le lecteur croyait avoir tout vu.
+          else if (_echecSuite != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 24,
+                horizontal: 20,
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    _echecSuite!,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12.5,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton.icon(
+                    onPressed: _chargerLaSuite,
+                    icon: Icon(
+                      Icons.refresh_rounded,
+                      size: 18,
+                      color: AppColors.accentInk,
+                    ),
+                    label: Text(
+                      "Réessayer",
+                      style: GoogleFonts.poppins(
+                        color: AppColors.accentInk,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             )
           else if (_finDuCatalogue && _books.length > BookService.taillePage)

@@ -79,12 +79,20 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
     }
   }
 
-  /// Enregistre les trois choix, d'un seul envoi.
+  /// Enregistre les trois choix, d'un seul envoi. Rend vrai si le serveur a
+  /// confirmé.
   ///
   /// Chaque bascule écrivait auparavant dans les préférences du téléphone, et
   /// le bouton « Enregistrer » réécrivait les mêmes clés : rien ne quittait
   /// l'appareil, et rien n'agissait sur les livres.
-  Future<void> _enregistrer() async {
+  ///
+  /// Le résultat est rendu par la méthode elle-même : le bouton testait
+  /// « _erreur == null » pour décider de fermer la page, or _erreur n'est
+  /// écrit que par le chargement initial — jamais ici. Après un échec réseau,
+  /// la condition restait vraie et la page se fermait comme après un succès :
+  /// visibilité, licence et devise choisies étaient perdues, et le snackbar
+  /// d'erreur, affiché pendant la fermeture, se ratait facilement.
+  Future<bool> _enregistrer() async {
     setState(() => _enregistrement = true);
     try {
       final token = await TokenStorage.getToken();
@@ -97,7 +105,9 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
         licenceParDefaut: _defaultLicense,
         deviseParDefaut: _defaultCurrency,
       );
-      if (!mounted) return;
+      // Le serveur a confirmé : l'enregistrement est acquis, que l'écran soit
+      // encore là ou non.
+      if (!mounted) return true;
       setState(() {
         _partAuteur = p.partAuteurPourcent;
         _commission = p.commissionPourcent;
@@ -108,14 +118,16 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
         message: "Préférences de publication enregistrées.",
         isSuccess: true,
       );
+      return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() => _enregistrement = false);
       AppNotifications.showSnackBar(
         context,
         message: _lisible(e),
         isError: true,
       );
+      return false;
     }
   }
 
@@ -151,6 +163,50 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
       ),
       body: _chargement
           ? Center(child: CircularProgressIndicator(color: AppColors.accentInk))
+          // Une panne n'est pas un vide : quand le chargement initial échoue,
+          // _erreur était posé puis ignoré, et l'écran affichait un formulaire
+          // rempli de valeurs par défaut — qu'un « Enregistrer » aurait
+          // écrites par-dessus les vraies préférences. On montre la panne et
+          // on propose de réessayer.
+          : _erreur != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.cloud_off_outlined,
+                      size: 40,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _erreur!,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadPublicationSettings,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onAccent,
+                      ),
+                      child: Text(
+                        "Réessayer",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -325,9 +381,14 @@ class _PublicationSettingsPageState extends State<PublicationSettingsPage> {
                     onPressed: _enregistrement
                         ? null
                         : () async {
-                            await _enregistrer();
-                            if (mounted && _erreur == null)
+                            // La page ne se ferme que sur le succès CONFIRMÉ
+                            // par _enregistrer : sur un échec, elle reste
+                            // ouverte avec les choix intacts, prête à
+                            // réessayer.
+                            final ok = await _enregistrer();
+                            if (ok && mounted) {
                               Navigator.of(context).pop();
+                            }
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,

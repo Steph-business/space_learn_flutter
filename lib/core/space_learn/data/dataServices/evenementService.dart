@@ -5,6 +5,22 @@ import '../../../utils/api_routes.dart';
 import '../model/evenementModel.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
+/// L'instant du rendez-vous, tel que le serveur doit le recevoir.
+///
+/// `toIso8601String()` sur un DateTime LOCAL produit une chaîne sans aucun
+/// indicateur de fuseau — « 2026-09-05T18:00:00.000 ». Le serveur
+/// (space_learn_livres, modules/evenement/controller.go, `parserDate`) la relit
+/// alors comme de l'UTC : l'heure murale de l'organisateur devenait un instant
+/// faux de tout son décalage horaire. L'aller-retour ne se compensait qu'en
+/// UTC+0 — la Côte d'Ivoire — et se décalait partout ailleurs.
+///
+/// Une date d'événement désigne un INSTANT : 18 h à Douala, c'est 17 h à
+/// Abidjan. L'instant part donc en UTC explicite, avec son « Z ». `parserDate`
+/// le reconnaît par ses deux premiers gabarits — RFC3339Nano puis RFC3339 —
+/// qui exigent justement un fuseau, celui-là même qu'une date locale Dart
+/// n'avait pas.
+String _instantPourLeServeur(DateTime date) => date.toUtc().toIso8601String();
+
 class EvenementService {
   final http.Client client;
 
@@ -31,7 +47,7 @@ class EvenementService {
     }
     if (imageUrl != null) body['image_url'] = imageUrl;
     if (dateEvenement != null) {
-      body['date_evenement'] = dateEvenement.toIso8601String();
+      body['date_evenement'] = _instantPourLeServeur(dateEvenement);
     }
     if (lienVisio != null && lienVisio.trim().isNotEmpty) {
       body['lien_visio'] = lienVisio.trim();
@@ -128,7 +144,10 @@ class EvenementService {
     }
     if (imageUrl != null) body['image_url'] = imageUrl;
     if (dateEvenement != null) {
-      body['date_evenement'] = dateEvenement.toIso8601String();
+      // Même règle qu'à la création : l'instant part en UTC explicite.
+      // Une modification qui renverrait l'heure murale décalerait le
+      // rendez-vous à chaque enregistrement pour tout organisateur hors UTC+0.
+      body['date_evenement'] = _instantPourLeServeur(dateEvenement);
     }
     // Envoyer une chaîne vide pour effacer le lien existant
     body['lien_visio'] = lienVisio?.trim() ?? '';

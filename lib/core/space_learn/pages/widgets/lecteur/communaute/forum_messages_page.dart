@@ -526,52 +526,66 @@ class _ForumMessagesPageState extends State<ForumMessagesPage> {
                           ),
                   ),
           ),
+          // La couleur est posée sur ce Container ENGLOBANT la SafeArea :
+          // c'est elle qui doit peindre aussi la zone sûre, sinon une bande
+          // de la couleur du fond d'écran apparaît sous le champ de saisie.
           Container(
-            padding: EdgeInsets.all(16),
             color: AppColors.cardBackground,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _msgController,
-                    style: TextStyle(color: AppColors.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: "Écrire un message...",
-                      hintStyle: TextStyle(
-                        color: AppColors.textPrimary.withValues(alpha: 0.4),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.scaffoldBackground,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusPill,
+            // Sans cette SafeArea, le champ de saisie glissait sous la barre
+            // de gestes d'Android et la poignée d'iOS — le compositeur était
+            // « trop rentré en bas du téléphone ». Le haut est déjà géré par
+            // l'AppBar, d'où top: false ; et SafeArea ne pousse que du
+            // montant réel de l'appareil, donc rien ne change sur un
+            // téléphone à boutons.
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _msgController,
+                        style: TextStyle(color: AppColors.textPrimary),
+                        decoration: InputDecoration(
+                          hintText: "Écrire un message...",
+                          hintStyle: TextStyle(
+                            color: AppColors.textPrimary.withValues(alpha: 0.4),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.scaffoldBackground,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusPill,
+                            ),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
                         ),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
                       ),
                     ),
-                  ),
-                ),
-                SizedBox(width: 12),
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryVariant,
-                      shape: BoxShape.circle,
+                    SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: _sendMessage,
+                      child: Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryVariant,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Iconsax.send_1,
+                          color: AppColors.onAccent,
+                          size: 20,
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      Iconsax.send_1,
-                      color: AppColors.onAccent,
-                      size: 20,
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],

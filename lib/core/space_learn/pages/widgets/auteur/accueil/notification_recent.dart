@@ -168,13 +168,42 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
     return 'Il y a ${diff.inDays}j';
   }
 
-  Future<void> _supprimer(BuildContext context, NotificationModel notif) async {
+  /// Retire la notification, et ne laisse la ligne partir QUE si le serveur
+  /// a accepté.
+  ///
+  /// Elle était branchée sur `onDismissed`, c'est-à-dire APRÈS que la ligne
+  /// ait quitté l'écran : un refus du serveur — ou un jeton absent — la
+  /// remettait dans la liste alors que son `Dismissible` venait d'être
+  /// dissous. Flutter refuse ce cas (« A dismissed Dismissible widget is still
+  /// part of the tree ») : écran rouge en débogage, et en production une ligne
+  /// de hauteur nulle — la notification existait encore, mais plus personne ne
+  /// pouvait la voir ni la rouvrir.
+  ///
+  /// Branchée sur `confirmDismiss`, la ligne revient à sa place d'elle-même
+  /// quand la réponse est non. Aucun succès sans confirmation du serveur.
+  ///
+  /// Le contexte employé est celui de CET état, pas celui de la ligne : le
+  /// provider retire la notification de la liste avant d'appeler le serveur,
+  /// ce qui démonte l'élément de la ligne — dont le `context.mounted` passait
+  /// alors à faux, et le message d'échec ne s'affichait jamais, précisément
+  /// dans le seul cas où il fallait le voir.
+  Future<bool> _supprimer(NotificationModel notif) async {
     final provider = context.read<NotificationProvider>();
     final token = await TokenStorage.getToken();
-    if (token == null) return;
+    if (!mounted) return false;
+    if (token == null) {
+      // Session expirée : le dire, plutôt que d'avaler le geste en silence et
+      // de laisser croire que le retrait a échoué tout seul.
+      AppNotifications.showSnackBar(
+        context,
+        message: "Votre session a expiré. Reconnectez-vous pour continuer.",
+        isError: true,
+      );
+      return false;
+    }
 
     final retire = await provider.supprimer(notif.id, token);
-    if (!retire && context.mounted) {
+    if (!retire && mounted) {
       // Elle est revenue a sa place : il faut le dire, sinon on croit l'avoir
       // ecartee et on la retrouve au prochain affichage sans comprendre.
       AppNotifications.showSnackBar(
@@ -183,6 +212,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
         isError: true,
       );
     }
+    return retire;
   }
 
   /// Ouvrir la notification, PUIS la marquer lue.
@@ -197,18 +227,36 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
   /// soit poussé. Et si la navigation ne mène nulle part, la notification
   /// reste là, non lue : on peut réessayer, au lieu de perdre la trace de ce
   /// qu'on n'a jamais vu.
-  Future<void> _handleNotificationTap(
-    BuildContext context,
-    NotificationModel notif,
-  ) async {
+  ///
+  /// Même remarque que pour [_supprimer] sur le contexte : marquer lue fait
+  /// sortir la ligne de la liste quand le filtre « non lues » est actif, et
+  /// le contexte de la ligne ne serait plus monté pour porter le message.
+  Future<void> _handleNotificationTap(NotificationModel notif) async {
     final notifProvider = context.read<NotificationProvider>();
 
     final ouverte = NotificationService.handleNotificationTap(notif);
     if (!ouverte) return;
 
     final token = await TokenStorage.getToken();
-    if (token != null && !notif.lu) {
-      notifProvider.markAsRead(notif.id, token);
+    if (token == null || notif.lu) return;
+
+    // On ATTEND le verdict du serveur.
+    //
+    // L'appel partait sans être attendu et son résultat était jeté : le
+    // provider rend pourtant `false` quand le PUT a échoué. La notification
+    // s'affichait donc lue — pastille éteinte, texte grisé — alors que le
+    // serveur la tenait toujours pour non lue ; au rechargement suivant elle
+    // redevenait non lue sans que rien ne l'explique, et le compteur de
+    // l'accueil sautait d'un cran dans l'autre sens. Aucun succès ne
+    // s'annonce sans réponse du serveur : on le dit, comme le fait
+    // `_supprimer` juste au-dessus.
+    final marquee = await notifProvider.markAsRead(notif.id, token);
+    if (!marquee && mounted) {
+      AppNotifications.showSnackBar(
+        context,
+        message: "La notification n'a pas pu être marquée comme lue.",
+        isError: true,
+      );
     }
   }
 
@@ -319,13 +367,15 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
                 ),
                 child: Icon(Iconsax.trash, color: AppColors.error, size: 20),
               ),
-              onDismissed: (_) => _supprimer(context, notif),
+              // `confirmDismiss` et non `onDismissed` : la ligne ne quitte la
+              // liste que si le serveur a dit oui. Voir [_supprimer].
+              confirmDismiss: (_) => _supprimer(notif),
               child: _NotificationCardFromModel(
                 model: notif,
                 icon: iconeDuTypeDeNotification(notif.type),
                 accentColor: couleurDuTypeDeNotification(notif.type),
                 timeAgo: _formatTimeAgo(notif.creeLe),
-                onTap: () => _handleNotificationTap(context, notif),
+                onTap: () => _handleNotificationTap(notif),
               ),
             );
           },

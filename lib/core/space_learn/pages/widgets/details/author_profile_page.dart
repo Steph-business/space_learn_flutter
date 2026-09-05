@@ -36,6 +36,14 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
   bool _isFollowing = false;
   int _followerCount = 0;
 
+  /// Ce qui a empêché les livres de cet auteur d'arriver.
+  ///
+  /// `getBooksByAuthorId` lève désormais sur un 500 ou un réseau coupé, et le
+  /// catch se contentait de couper l'indicateur : la page d'un auteur qui
+  /// vend dix livres annonçait « Aucun livre publié pour le moment » — une
+  /// panne présentée comme un catalogue vide, sans moyen de réessayer.
+  String? _erreurLivres;
+
   @override
   void initState() {
     super.initState();
@@ -43,25 +51,52 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
     _loadAuthorData();
   }
 
+  /// Les livres et les abonnés, ensemble mais INDÉPENDANTS.
+  ///
+  /// Les deux appels partaient dans un même `Future.wait`, qui rejette en
+  /// bloc : depuis que le service lève, l'échec des livres emportait aussi le
+  /// nombre d'abonnés que `getFollowers` avait pourtant obtenu, et le profil
+  /// affichait « 0 abonné ». Chaque chargement attrape maintenant son propre
+  /// échec ; ils restent lancés en même temps.
   Future<void> _loadAuthorData() async {
-    setState(() => _isLoadingBooks = true);
-    try {
-      final results = await Future.wait([
-        _bookService.getBooksByAuthorId(widget.author.id),
-        _relationService.getFollowers(widget.author.id),
-      ]);
+    setState(() {
+      _isLoadingBooks = true;
+      _erreurLivres = null;
+    });
 
-      if (mounted) {
-        setState(() {
-          _authorBooks = results[0] as List<BookModel>;
-          _followerCount = (results[1] as List).length;
-          _isLoadingBooks = false;
-        });
-      }
+    // Les deux méthodes ne lèvent jamais : ce `Future.wait` ne sert qu'à
+    // attendre la fin des deux.
+    await Future.wait([_chargerLesLivres(), _chargerLesAbonnes()]);
+
+    if (!mounted) return;
+    setState(() => _isLoadingBooks = false);
+  }
+
+  Future<void> _chargerLesLivres() async {
+    try {
+      final livres = await _bookService.getBooksByAuthorId(widget.author.id);
+      if (!mounted) return;
+      setState(() => _authorBooks = livres);
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingBooks = false);
-      }
+      if (!mounted) return;
+      setState(() {
+        _erreurLivres = messageLisible(
+          e,
+          repli: "Les livres de cet auteur n'ont pas pu être chargés.",
+        );
+      });
+    }
+  }
+
+  Future<void> _chargerLesAbonnes() async {
+    try {
+      final abonnes = await _relationService.getFollowers(widget.author.id);
+      if (!mounted) return;
+      setState(() => _followerCount = abonnes.length);
+    } catch (_) {
+      // Le compteur d'abonnés est secondaire : son échec laisse la valeur
+      // déjà affichée en place plutôt que d'occuper tout l'écran, et surtout
+      // il n'empêche plus les livres de s'afficher.
     }
   }
 
@@ -188,7 +223,12 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
             children: [
               _buildStatWidget(_followerCount.toString(), "Abonnés"),
               SizedBox(width: 40),
-              _buildStatWidget(_authorBooks.length.toString(), "Livres"),
+              // « 0 » sur une panne serait un chiffre faux : tant que la
+              // liste n'a pas pu être chargée, le compte reste inconnu.
+              _buildStatWidget(
+                _erreurLivres != null ? "—" : _authorBooks.length.toString(),
+                "Livres",
+              ),
             ],
           ),
           SizedBox(height: 32),
@@ -245,6 +285,38 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
           child: Text(
             "Chargement des livres...",
             style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    // La panne AVANT le vide : sinon un 500 s'affiche « Aucun livre publié
+    // pour le moment », ce qui est faux pour un auteur qui en vend dix.
+    if (_erreurLivres != null) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40.0),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: AppColors.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _erreurLivres!,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _loadAuthorData,
+                  child: const Text("Réessayer"),
+                ),
+              ],
+            ),
           ),
         ),
       );

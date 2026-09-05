@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../model/discussionModel.dart';
@@ -10,6 +11,31 @@ class DiscussionService {
 
   DiscussionService({http.Client? client})
     : client = client ?? ApiClient.instance;
+
+  /// Les salons d'une réponse, un par un.
+  ///
+  /// Une boucle plutôt qu'un `map`, comme dans `DmService` : `map` propage
+  /// l'échec du premier élément mal formé à toute la liste, et la page de
+  /// forum entière s'affiche alors en panne pour un seul salon abîmé. Ici
+  /// l'élément illisible est SAUTÉ et les autres s'affichent.
+  ///
+  /// Les quatre lectures de liste passent par ici : la règle vit en un seul
+  /// endroit, sinon quatre copies finiraient par diverger.
+  List<Discussion> _salons(List<dynamic> liste, String provenance) {
+    final salons = <Discussion>[];
+    for (final element in liste) {
+      try {
+        salons.add(Discussion.fromJson(Map<String, dynamic>.from(element)));
+      } catch (e) {
+        // Sauté, mais pas en silence complet : une trace pour le journal, rien
+        // à l'écran — la personne qui lit n'a rien à faire de cette
+        // information, et une liste amputée d'un salon reste utile.
+        debugPrint('Salon illisible ignoré ($provenance) : $e');
+        continue;
+      }
+    }
+    return salons;
+  }
 
   Future<Discussion> createDiscussion({
     required String type,
@@ -53,7 +79,7 @@ class DiscussionService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       final List<dynamic> list = responseData['data'] ?? [];
-      return list.map((json) => Discussion.fromJson(json)).toList();
+      return _salons(list, 'salons publics');
     } else {
       throw Exception(
         messageDeLaReponse(
@@ -74,7 +100,7 @@ class DiscussionService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       final List<dynamic> list = responseData['data'] ?? [];
-      return list.map((json) => Discussion.fromJson(json)).toList();
+      return _salons(list, "salons de l'auteur $auteurId");
     } else {
       throw Exception(
         messageDeLaReponse(
@@ -98,7 +124,7 @@ class DiscussionService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       final List<dynamic> list = responseData['data'] ?? [];
-      return list.map((json) => Discussion.fromJson(json)).toList();
+      return _salons(list, 'salons du livre $livreId');
     } else {
       throw Exception(
         messageDeLaReponse(
@@ -118,7 +144,7 @@ class DiscussionService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       final List<dynamic> list = responseData['data'] ?? [];
-      return list.map((json) => Discussion.fromJson(json)).toList();
+      return _salons(list, 'mes salons');
     } else {
       throw Exception(
         messageDeLaReponse(

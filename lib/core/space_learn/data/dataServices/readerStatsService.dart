@@ -3,53 +3,23 @@ import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
 import '../../../utils/token_storage.dart';
-import '../model/readerStatsModel.dart';
-import '../model/bookReaderStatsModel.dart';
 
+/// Le temps de lecture du LECTEUR, vu du serveur.
+///
+/// Ce service portait aussi `getReaderStats` et `getBookReaderStats`, tous deux
+/// retirés : ils interrogeaient `GET /api/analytics/reader/:livre_id`, une route
+/// qui rend les statistiques D'UN LIVRE, en lui passant un identifiant
+/// d'UTILISATEUR. Le serveur ne trouvait rien, et le premier rendait alors des
+/// statistiques factices (`_getMockStats`, tout à zéro) que l'accueil prenait
+/// pour une réponse : une PANNE déguisée en compte à zéro.
+///
+/// Les deux vraies sources subsistent et suffisent : [lireBilan] pour le compte
+/// (total, journée, série, livres), `ReadingTimeStorage` pour l'appareil.
 class ReaderStatsService {
   final http.Client client;
 
   ReaderStatsService({http.Client? client})
     : client = client ?? ApiClient.instance;
-
-  Future<ReaderStatsModel> getReaderStats(String userId) async {
-    // ... existing global stats code ...
-    try {
-      final token = await TokenStorage.getToken();
-      final headers = <String, String>{'Content-Type': 'application/json'};
-      if (token != null) headers['Authorization'] = 'Bearer $token';
-
-      final uri = Uri.parse('${ApiRoutes.analytics}/reader/$userId');
-      final response = await client.get(uri, headers: headers);
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final dynamic data = responseData['data'] ?? responseData;
-        return ReaderStatsModel.fromJson(data);
-      }
-      return _getMockStats();
-    } catch (e) {
-      return _getMockStats();
-    }
-  }
-
-  Future<BookReaderStatsModel?> getBookReaderStats(String livreId) async {
-    try {
-      final token = await TokenStorage.getToken();
-      final headers = <String, String>{'Content-Type': 'application/json'};
-      if (token != null) headers['Authorization'] = 'Bearer $token';
-
-      final uri = Uri.parse('${ApiRoutes.analytics}/reader/$livreId');
-      final response = await client.get(uri, headers: headers);
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final dynamic data = responseData['data'] ?? responseData;
-        return BookReaderStatsModel.fromJson(data);
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
 
   /// Déclare [minutes] minutes de lecture sur un livre.
   ///
@@ -92,10 +62,6 @@ class ReaderStatsService {
     } catch (e) {
       return false;
     }
-  }
-
-  ReaderStatsModel _getMockStats() {
-    return ReaderStatsModel(booksRead: 0, totalTime: '0m', goalsAchieved: 0);
   }
 
   /// Le bilan de lecture tenu par le serveur : total, journée, série.

@@ -6,7 +6,6 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import '../../../data/dataServices/reading_time_storage.dart';
 import '../../../data/dataServices/readerStatsService.dart';
-import '../../../../utils/token_storage.dart';
 import 'package:space_learn_flutter/core/services/rappels_lecture.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 
@@ -36,6 +35,16 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
   List<DailyReadingPoint> _weeklyPoints = [];
   List<ReadingSessionModel> _recentSessions = [];
   bool _isLoading = true;
+
+  /// Le bilan du serveur a répondu et a quelque chose à dire.
+  ///
+  /// Retenu, et non plus consommé sur place : le total, la journée et la série
+  /// venaient du serveur pendant que l'histogramme des sept jours et les
+  /// sessions récentes restaient locaux. Sur un appareil neuf, l'écran
+  /// annonçait « aujourd'hui 45 min » au-dessus d'une barre du jour à zéro —
+  /// la contradiction entre deux écrans était devenue une contradiction à
+  /// l'intérieur d'un seul.
+  bool _serveurRenseigne = false;
 
   // Preset options in minutes
   final List<int> _presetGoals = [15, 30, 45, 60, 90, 120, 180];
@@ -67,21 +76,41 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
         widget.userId,
       );
 
-      try {
-        final token = await TokenStorage.getToken();
-        if (token != null) {
-          await _statsService.getReaderStats(widget.userId);
-        }
-      } catch (_) {}
+      // Le bilan SERVEUR fait foi dès qu'il a quelque chose à dire — même
+      // règle que badges_page et l'accueil. Cet écran ne lisait QUE le
+      // compteur local : après une réinstallation ou sur un nouvel appareil,
+      // il affichait « 0 minute », série 0, pendant que l'accueil et les
+      // badges montraient les vraies valeurs — deux écrans, deux vérités.
+      // (L'ancien code appelait même `getReaderStats` et JETAIT le résultat.
+      // Cette méthode n'existe plus : elle frappait la route des statistiques
+      // par LIVRE avec un identifiant d'utilisateur et ne rendait, en dernier
+      // recours, que des zéros factices.)
+      //
+      // Le comptage local reste tenu en parallèle : il est le seul recours
+      // hors ligne, et le graphe des 7 jours comme les sessions récentes,
+      // qui n'existent pas dans le bilan, continuent d'en venir.
+      final bilan = await _statsService.lireBilan();
+      final serveurRenseigne = (bilan?['total'] ?? 0) > 0;
 
       if (mounted) {
         setState(() {
-          _totalMinutes = totalMin;
-          _todayMinutes = todayMin;
-          _streakDays = streak;
+          _serveurRenseigne = serveurRenseigne;
+          _totalMinutes = serveurRenseigne ? bilan!['total']! : totalMin;
+          _todayMinutes = serveurRenseigne ? bilan!['jour']! : todayMin;
+          _streakDays = serveurRenseigne ? (bilan?['serie'] ?? 0) : streak;
           _dailyGoalMinutes = goal;
           _creneaux = creneaux;
-          _weeklyPoints = points;
+          // La barre du jour dit la MÊME chose que l'anneau d'objectif.
+          //
+          // Elles se contredisaient : l'anneau lisait le serveur, la barre le
+          // compteur de cet appareil. Après une réinstallation, « Encore N min
+          // pour valider votre journée » surplombait une barre du jour vide.
+          // Les six autres jours restent locaux — le bilan ne porte pas encore
+          // le détail par journée, et l'écran le DIT plutôt que de le laisser
+          // croire (voir _buildWeeklyChartSection).
+          _weeklyPoints = serveurRenseigne
+              ? _accorderLeJourAuServeur(points, bilan!['jour'] ?? 0)
+              : points;
           _recentSessions = sessions;
           _isLoading = false;
         });
@@ -93,6 +122,31 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
         });
       }
     }
+  }
+
+  /// Remplace la barre d'aujourd'hui par le chiffre du serveur.
+  ///
+  /// Les journées passées ne sont pas dans le bilan (le serveur les calcule
+  /// dans `lecture/service.go` sans les renvoyer) : elles restent celles de
+  /// l'appareil. Mais la journée en cours, elle, est affichée deux fois sur le
+  /// même écran, et deux chiffres différents pour la même journée sont pires
+  /// qu'un chiffre incomplet.
+  List<DailyReadingPoint> _accorderLeJourAuServeur(
+    List<DailyReadingPoint> points,
+    int minutesDuJour,
+  ) {
+    return points
+        .map(
+          (p) => p.isToday
+              ? DailyReadingPoint(
+                  dayLabel: p.dayLabel,
+                  date: p.date,
+                  minutes: minutesDuJour,
+                  isToday: true,
+                )
+              : p,
+        )
+        .toList();
   }
 
   Future<void> _updateDailyGoal(int targetMin) async {
@@ -580,6 +634,22 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
               color: AppColors.textSecondary,
             ),
           ),
+          // Dire d'où vient ce détail plutôt que de le faire passer pour le
+          // compte entier. Le bilan du serveur ne porte que le total, la
+          // journée et la série ; le découpage par jour est mesuré ici. Sans
+          // cette phrase, un lecteur qui vient de réinstaller voit six barres
+          // vides sous un total de plusieurs heures et conclut à une perte.
+          if (_serveurRenseigne) ...[
+            const SizedBox(height: 4),
+            Text(
+              "Détail mesuré sur cet appareil — votre temps total, lui, suit "
+              "votre compte.",
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                color: AppColors.textHint,
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           SizedBox(
             height: 120,
@@ -1133,7 +1203,25 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
     );
   }
 
+  /// Le maximum que le compte accepte.
+  ///
+  /// C'est la borne du serveur (lecture/controller.go : au-delà de vingt
+  /// créneaux, la liste entière est refusée par un 400). La refuser ICI plutôt
+  /// que de laisser partir la requête change tout : un refus de contenu ne se
+  /// rejoue pas, donc le vingt-et-unième créneau serait resté local, puis
+  /// aurait disparu au prochain passage sur cet écran — sans un mot.
+  static const int _maxCreneaux = 20;
+
   Future<void> _ajouterCreneau() async {
+    if (_creneaux.length >= _maxCreneaux) {
+      AppNotifications.showSnackBar(
+        context,
+        message:
+            "Vingt créneaux au maximum — supprimez-en un pour en ajouter un autre",
+        isError: true,
+      );
+      return;
+    }
     final choisi = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 20, minute: 30),
@@ -1157,10 +1245,30 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
 
   /// Enregistre ET reprogramme : les deux sont indissociables. Un créneau
   /// enregistré sans être programmé est exactement le défaut qu'on corrige.
+  ///
+  /// Le bandeau vert ne s'affiche que si le COMPTE a suivi.
+  ///
+  /// Il s'affichait dans tous les cas : `enregistrer` ne rendait rien et ne
+  /// savait rien du sort de son envoi au serveur, qui était avalé en silence.
+  /// Un lecteur sans réseau lisait « Rappels programmés — 1 créneau » alors
+  /// que le compte n'en savait rien, et deux jours plus tard, en wifi, l'écran
+  /// lui revenait vide, ses notifications annulées. On dit maintenant ce qui
+  /// s'est réellement passé : les créneaux sont bien posés sur CET appareil —
+  /// ils sonneront — mais le compte, lui, attend le retour du réseau. Ni vert
+  /// ni rouge : rien n'est perdu, rien n'est fini.
   Future<void> _enregistrerCreneaux(List<CreneauLecture> liste) async {
     setState(() => _creneaux = liste);
-    await RappelsLecture.enregistrer(liste);
+    final porteAuCompte = await RappelsLecture.enregistrer(liste);
     if (!mounted) return;
+    if (!porteAuCompte) {
+      AppNotifications.showSnackBar(
+        context,
+        message: liste.isEmpty
+            ? "Rappels désactivés sur cet appareil — le compte sera mis à jour dès le retour du réseau"
+            : "Rappels programmés sur cet appareil — le compte sera mis à jour dès le retour du réseau",
+      );
+      return;
+    }
     AppNotifications.showSnackBar(
       context,
       message: liste.isEmpty
@@ -1209,13 +1317,21 @@ class _TempsLecturePageState extends State<TempsLecturePage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Aucune session enregistrée pour l'instant",
+                      // Une liste vide au-dessus d'un total de plusieurs
+                      // heures se lit comme une perte. Le détail des séances
+                      // est tenu sur l'appareil : après une réinstallation il
+                      // repart de zéro, sans que le temps du compte bouge.
+                      _serveurRenseigne
+                          ? "Aucune session enregistrée sur cet appareil"
+                          : "Aucune session enregistrée pour l'instant",
                       style: AppTextStyles.bodyFaded16,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Ouvrez un livre dans votre bibliothèque pour lancer votre première session !",
+                      _serveurRenseigne
+                          ? "Le détail des séances est conservé sur le téléphone où vous lisez ; votre temps total, lui, suit votre compte."
+                          : "Ouvrez un livre dans votre bibliothèque pour lancer votre première session !",
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         color: AppColors.textHint,

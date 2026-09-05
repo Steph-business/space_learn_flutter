@@ -1,5 +1,29 @@
 import 'discussionModel.dart';
 
+/// Le texte d'un champ, ou rien.
+///
+/// Même forme que dans `conversation_model` et `reversement_model` : une
+/// chaîne vide vaut une absence, le serveur renvoyant parfois `""` là où l'on
+/// attendait `null`. Passer par `toString()` protège aussi du cas où un
+/// identifiant arriverait en nombre : l'affectation directe à un `String`
+/// levait alors, et c'est tout le fil qui disparaissait pour un seul message.
+String? _texte(dynamic valeur) {
+  if (valeur == null) return null;
+  final t = valeur.toString().trim();
+  return t.isEmpty ? null : t;
+}
+
+/// Une date, ou rien.
+///
+/// `tryParse` et non `parse` : la lecture d'une date illisible ne doit plus
+/// lever. Ce qu'on en fait ensuite se décide dans [Message.fromJson], et non
+/// ici.
+DateTime? _date(dynamic valeur) {
+  final t = _texte(valeur);
+  if (t == null) return null;
+  return DateTime.tryParse(t);
+}
+
 class Message {
   final String id;
   final String discussionId;
@@ -119,26 +143,57 @@ class Message {
     retireParUnTiers: retireParUnTiers,
   );
 
+  /// Lit un message, sans faire tomber les autres avec lui.
+  ///
+  /// Avant, `id`, `discussion_id`, `utilisateur_id` et `cree_le` étaient lus
+  /// sans repli, et `DateTime.parse` est stricte : un seul élément mal formé
+  /// dans la réponse faisait échouer la conversion de TOUTE la liste, et le
+  /// forum entier s'affichait en panne pour un message abîmé. Aucun
+  /// déclencheur connu — le serveur envoie ces quatre champs depuis toujours —
+  /// c'est une assurance, pas une réparation.
+  ///
+  /// Tolérer une donnée imparfaite n'est pas inventer du contenu : un message
+  /// sans identifiant ni date n'est pas un message abîmé, c'est une ligne
+  /// creuse qui s'afficherait comme un vrai propos. Sans identifiant on ne
+  /// pourrait ni le retirer ni le réécrire ; sans date il n'a pas de place
+  /// dans le fil. Ces deux-là sont donc refusés ici, explicitement, pour que
+  /// la boucle de lecture les SAUTE — les autres messages, eux, s'affichent.
   factory Message.fromJson(Map<String, dynamic> json) {
+    final id = _texte(json['id']);
+    final creeLe = _date(json['cree_le']);
+    if (id == null || creeLe == null) {
+      throw const FormatException(
+        'Message sans identifiant ou sans date lisible',
+      );
+    }
+
+    final brutDiscussion = json['Discussion'];
+
     return Message(
-      id: json['id'],
-      discussionId: json['discussion_id'],
-      utilisateurId: json['utilisateur_id'],
+      id: id,
+      // Le reste se contente d'un repli : il manquerait l'un de ces champs que
+      // le message resterait lisible à l'écran, et un message lisible vaut
+      // mieux qu'un fil en panne.
+      discussionId: _texte(json['discussion_id']) ?? '',
+      utilisateurId: _texte(json['utilisateur_id']) ?? '',
       // Un message retiré revient avec un contenu vide : c'est voulu, le texte
       // est réellement effacé de la base. `?? ''` évite le plantage sur null.
-      contenu: json['contenu'] ?? '',
-      creeLe: DateTime.parse(json['cree_le']),
-      nomUtilisateur: json['nom_utilisateur'],
-      photoProfil: json['photo_profil'],
-      rangUtilisateur: json['rang_utilisateur'] ?? json['RangUtilisateur'],
+      contenu: _texte(json['contenu']) ?? '',
+      creeLe: creeLe,
+      nomUtilisateur: _texte(json['nom_utilisateur']),
+      photoProfil: _texte(json['photo_profil']),
+      rangUtilisateur:
+          _texte(json['rang_utilisateur']) ?? _texte(json['RangUtilisateur']),
       peutSupprimer: json['peut_supprimer'] == true,
       estAuteurDuLivre: json['est_auteur_du_livre'] == true,
       peutModifier: json['peut_modifier'] == true,
       modifie: json['modifie'] == true,
       supprime: json['supprime'] == true,
       retireParUnTiers: json['retire_par_un_tiers'] == true,
-      discussion: json['Discussion'] != null
-          ? Discussion.fromJson(json['Discussion'])
+      // `is Map` et non `!= null` : un salon transporté sous une autre forme
+      // que la sienne coûte le salon joint, jamais le message.
+      discussion: brutDiscussion is Map
+          ? Discussion.fromJson(Map<String, dynamic>.from(brutDiscussion))
           : null,
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
@@ -41,18 +43,59 @@ class _RecherchePageState extends State<RecherchePage> {
   /// résultat trouvé pour "X" » alors que le serveur n'avait rien dit.
   String? _erreur;
 
-  void _onSearch(String value) async {
-    if (value.trim().isEmpty) {
+  /// Frappe au clavier : on attend une pause avant d'interroger le serveur.
+  ///
+  /// Sans cela, « harry » déclenchait cinq requêtes, dont quatre périmées
+  /// avant d'arriver — même règle que la boutique et l'annuaire des auteurs.
+  Timer? _attenteSaisie;
+
+  /// Jeton de la requête courante : la réponse de « har » peut arriver APRÈS
+  /// celle de « harry » et s'affichait alors sous le titre « résultats pour
+  /// harry ». Une réponse dont le jeton est dépassé se jette.
+  int _jetonRecherche = 0;
+
+  @override
+  void dispose() {
+    _attenteSaisie?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearch(String value) {
+    _attenteSaisie?.cancel();
+
+    // Le serveur ignore une recherche de moins de deux caractères (le `q`
+    // n'est même pas envoyé) : interroger avec une lettre rendrait la
+    // première page ENTIÈRE du catalogue en la faisant passer pour des
+    // résultats. On attend donc d'avoir de quoi chercher.
+    if (value.trim().length < 2) {
+      _jetonRecherche++; // invalide toute réponse encore en vol
       setState(() {
         _searchResults = [];
-        _query = "";
+        _query = value.trim();
+        _erreur = null;
+        _isLoading = false;
       });
       return;
     }
 
     setState(() {
-      _isLoading = true;
       _query = value;
+      // Dès la frappe, et non au départ de la requête : sinon, pendant
+      // l'anti-rebond, l'écran affirmerait « Aucun résultat » pour un terme
+      // qui n'a pas encore été cherché.
+      _isLoading = true;
+      _erreur = null;
+    });
+    _attenteSaisie = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) _rechercher(value);
+    });
+  }
+
+  Future<void> _rechercher(String value) async {
+    final jeton = ++_jetonRecherche;
+    setState(() {
+      _isLoading = true;
       _erreur = null;
     });
 
@@ -73,6 +116,11 @@ class _RecherchePageState extends State<RecherchePage> {
       ];
 
       final results = await Future.wait(futures);
+
+      // Une réponse dépassée n'écrit plus rien : une requête plus récente est
+      // partie, c'est elle qui pilote _isLoading et les résultats.
+      if (!mounted || jeton != _jetonRecherche) return;
+
       final allBooks = results[0] as List<BookModel>;
       final library = results[1] as List<LibraryModel>;
       final currentUser = results[2] as UserModel?;
@@ -104,50 +152,44 @@ class _RecherchePageState extends State<RecherchePage> {
         return book;
       }).toList();
 
-      if (mounted) {
-        setState(() {
-          _ownedBookIds = {
-            ...library.map((e) => e.livreId),
-            if (currentUser != null)
-              ...allBooks
-                  .where(
-                    (b) =>
-                        (b.auteurId.isNotEmpty &&
-                            b.auteurId == currentUser.id) ||
-                        (b.authorName.isNotEmpty &&
-                            b.authorName.trim().toLowerCase() ==
-                                currentUser.nomComplet.trim().toLowerCase()),
-                  )
-                  .map((b) => b.id),
-          };
-        });
-      }
-
-      // Le filtre en memoire qui se trouvait ici portait sur le titre, le nom
-      // de l'auteur et l'identifiant de l'auteur. Les deux premiers sont
-      // desormais appliques par le serveur ; la recherche par identifiant
-      // d'auteur, elle, disparait — un lecteur ne tape pas un UUID.
-      final filtered = enrichedBooks.where((book) {
-        final titleMatch = book.titre.toLowerCase().contains(
-          value.toLowerCase(),
-        );
-        final authorMatch =
-            book.authorName.toLowerCase().contains(value.toLowerCase()) ||
-            book.auteurId.toLowerCase().contains(value.toLowerCase());
-        return titleMatch || authorMatch;
-      }).toList();
-
       setState(() {
-        _searchResults = filtered;
+        _ownedBookIds = {
+          ...library.map((e) => e.livreId),
+          if (currentUser != null)
+            // Sur l'identifiant SEULEMENT : comparer les noms marquait
+            // « possédé » tous les livres d'un homonyme du lecteur.
+            //
+            // L'auteur imbriqué compte aussi : `BookModel.fromJson` laisse
+            // `auteurId` vide quand la charge du serveur porte l'objet
+            // « auteur » sans champ `auteur_id`. Sur ces résultats-là, un
+            // auteur voyait son PROPRE livre proposé à l'achat — le même test
+            // qu'`_estAcquis` de l'accueil et que `_checkOwnershipStatus` de
+            // la fiche évite cette contradiction d'un écran à l'autre.
+            ...allBooks
+                .where(
+                  (b) =>
+                      (b.auteurId.isNotEmpty && b.auteurId == currentUser.id) ||
+                      (b.auteur != null && b.auteur!.id == currentUser.id),
+                )
+                .map((b) => b.id),
+        };
+        // Les résultats du serveur, tels quels. Le re-filtre local qui se
+        // trouvait ici comparait avec la valeur BRUTE : « dupont » suivi de
+        // l'espace qu'ajoutent les claviers mobiles donnait
+        // `"jean dupont".contains("dupont ")` = false — tous les résultats
+        // que le serveur avait trouvés étaient jetés. Le serveur filtre déjà
+        // titre OU nom d'auteur avec le terme trimé ; re-filtrer ne pouvait
+        // que retrancher.
+        _searchResults = enrichedBooks;
+        _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || jeton != _jetonRecherche) return;
       setState(() {
         _searchResults = [];
         _erreur = messageLisible(e, repli: "La recherche n'a pas abouti.");
+        _isLoading = false;
       });
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -181,7 +223,10 @@ class _RecherchePageState extends State<RecherchePage> {
                 style: GoogleFonts.poppins(color: AppColors.textSecondary),
               ),
             )
-          : _query.isEmpty
+          // Moins de deux caractères : la recherche n'est pas encore partie
+          // (contrat serveur) — on invite à continuer, on n'affirme pas
+          // « aucun résultat ».
+          : _query.trim().length < 2
           ? _buildEmptyState(
               "Saisissez quelque chose pour commencer la recherche",
             )
@@ -242,7 +287,9 @@ class _RecherchePageState extends State<RecherchePage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => _onSearch(_query),
+              // Directement, sans repasser par l'anti-rebond : la personne
+              // vient d'appuyer, il n'y a pas de frappe à attendre.
+              onPressed: () => _rechercher(_query),
               child: const Text("Réessayer"),
             ),
           ],

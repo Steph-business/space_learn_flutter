@@ -170,14 +170,22 @@ class PublicationCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
+                      // « N lectures » avec un œil, alimenté par
+                      // `telechargements` — un champ que le modèle remplissait
+                      // en réalité avec le nombre d'AVIS, et que le serveur
+                      // n'envoie pas dans les listes. L'auteur lisait donc un
+                      // compte de lecteurs qui n'en était pas un. On affiche
+                      // ce qu'on sait vraiment : les avis reçus.
                       Icon(
-                        Iconsax.eye,
+                        Icons.rate_review_outlined,
                         size: 13,
                         color: AppColors.textPrimary.withValues(alpha: 0.3),
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        "${book.telechargements} lectures",
+                        book.nombreAvis == 1
+                            ? "1 avis"
+                            : "${book.nombreAvis} avis",
                         style: GoogleFonts.poppins(
                           color: AppColors.textPrimary.withValues(alpha: 0.4),
                           fontSize: 11,

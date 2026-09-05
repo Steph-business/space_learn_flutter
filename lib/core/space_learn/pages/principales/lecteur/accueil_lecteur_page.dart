@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
@@ -141,31 +143,101 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   List<BookModel> _searchResults = [];
   bool _isSearching = false;
 
+  /// La recherche de l'accueil interroge le serveur, comme la boutique.
+  ///
+  /// L'ancien filtre local ne fouillait que `_allBooks` — une seule page de
+  /// 100 livres. Dès que le catalogue dépassait cette page, un ouvrage de la
+  /// page 2 était « introuvable » ici alors que la boutique le trouvait :
+  /// deux barres de recherche, deux vérités.
+  Timer? _attenteRecherche;
+
+  /// Jeton : la réponse d'une frappe ancienne ne doit pas écraser celle de la
+  /// frappe courante.
+  int _jetonRecherche = 0;
+  bool _rechercheEnCours = false;
+  String? _erreurRecherche;
+
+  /// Pannes par section, posées par les `catchError` de [_loadData].
+  ///
+  /// Sans elles, un repli silencieux sur une liste vide était indistinguable
+  /// d'un vide réel — et l'écran comblait ce vide avec des auteurs, forums et
+  /// citations INVENTÉS (« Marie Dubois », « Science-fiction & Futurs — 12
+  /// messages »...) que le lecteur prenait pour la communauté réelle.
+  bool _livresEnPanne = false;
+  bool _forumsEnPanne = false;
+  bool _avisEnPanne = false;
+
+  /// La citation du jour vit à côté des avis dans la même section : si SEUL
+  /// son appel échoue, le drapeau des avis reste baissé et la section
+  /// afficherait « aucune citation » pour une panne. Elle a donc le sien.
+  bool _citationEnPanne = false;
+
   void _onSearch(String value) {
+    _attenteRecherche?.cancel();
     setState(() {
       _searchQuery = value;
       _isSearching = value.isNotEmpty;
     });
 
-    if (value.isEmpty) {
+    // Le serveur ignore une recherche de moins de deux caractères : lancer la
+    // requête quand même rendrait la première page entière du catalogue en la
+    // faisant passer pour des résultats.
+    if (value.trim().length < 2) {
+      _jetonRecherche++; // invalide toute réponse encore en vol
       setState(() {
         _searchResults = [];
+        _erreurRecherche = null;
+        _rechercheEnCours = false;
       });
       return;
     }
 
-    // Direct local search for speed
-    final filtered = _allBooks.where((book) {
-      final titleMatch = book.titre.toLowerCase().contains(value.toLowerCase());
-      final authorMatch = book.authorName.toLowerCase().contains(
-        value.toLowerCase(),
-      );
-      return titleMatch || authorMatch;
-    }).toList();
-
+    // Anti-rebond : « quantique » ne doit pas déclencher neuf requêtes.
+    // L'indicateur part dès la frappe : sinon, pendant l'attente, l'écran
+    // affirmerait « Aucun résultat » pour un terme pas encore cherché.
     setState(() {
-      _searchResults = filtered;
+      _rechercheEnCours = true;
+      _erreurRecherche = null;
     });
+    _attenteRecherche = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) _rechercherSurLeServeur(value);
+    });
+  }
+
+  Future<void> _rechercherSurLeServeur(String value) async {
+    final jeton = ++_jetonRecherche;
+    setState(() {
+      _rechercheEnCours = true;
+      _erreurRecherche = null;
+    });
+
+    try {
+      final token = await TokenStorage.getToken();
+      final resultats = await _bookService.getBooksPage(
+        authToken: token,
+        recherche: value,
+      );
+
+      // Réponse dépassée par une frappe plus récente : on la jette, sinon les
+      // résultats de « har » s'affichent sous le titre « harry ».
+      if (!mounted || jeton != _jetonRecherche) return;
+      setState(() {
+        _searchResults = resultats;
+        _rechercheEnCours = false;
+      });
+    } catch (e) {
+      if (!mounted || jeton != _jetonRecherche) return;
+      setState(() {
+        // Une panne n'est pas « aucun résultat » : l'état d'erreur l'affiche
+        // comme telle, avec de quoi réessayer.
+        _searchResults = [];
+        _erreurRecherche = messageLisible(
+          e,
+          repli: "La recherche n'a pas abouti.",
+        );
+        _rechercheEnCours = false;
+      });
+    }
   }
 
   @override
@@ -191,6 +263,7 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
 
   @override
   void dispose() {
+    _attenteRecherche?.cancel();
     // Le service est unique et survit à cet écran : ne pas se désabonner
     // laisserait une fermeture appeler `setState` sur un widget démonté.
     _audio.removeListener(_surEcoute);
@@ -339,6 +412,12 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       // Sans cette remise à zéro, un incident réseau survenant après une
       // session expirée garderait le bouton « Se reconnecter ».
       _sessionExpiree = false;
+      // Chaque rechargement repart d'un état sain : une panne passée ne doit
+      // pas continuer à s'afficher après un chargement qui a abouti.
+      _livresEnPanne = false;
+      _forumsEnPanne = false;
+      _avisEnPanne = false;
+      _citationEnPanne = false;
     });
 
     try {
@@ -369,27 +448,38 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             user?.id ?? widget.profileId,
           );
 
+      // `getReaderStats` ouvrait cette liste ; il n'y est plus.
+      //
+      // Il appelait `GET /api/analytics/reader/:livre_id` — la route des
+      // statistiques D'UN LIVRE — avec `widget.profileId`, un identifiant
+      // d'UTILISATEUR. La requête ne trouvait donc jamais rien et le service
+      // rendait des statistiques factices, toutes à zéro, que cet écran
+      // consommait comme une vraie réponse. Les deux chiffres qu'on en tirait
+      // (`booksRead`, `totalTime`) viennent désormais l'un et l'autre de
+      // `lireBilan()`, lu quelques lignes plus bas, avec repli sur le comptage
+      // local de l'appareil.
       final results = await Future.wait([
-        _statsService.getReaderStats(widget.profileId).catchError((e) {
-          return ReaderStatsModel(
-            booksRead: 0,
-            totalTime: '0m',
-            goalsAchieved: 0,
-          );
-        }),
         // L'accueil presente une selection, pas le catalogue : une page
         // suffit. Charger davantage serait telecharger des livres que
         // personne ne verra.
+        //
+        // Le repli sur [] reste — une section en panne ne doit pas emporter
+        // tout l'accueil — mais il se NOTE : c'est ce drapeau qui permet aux
+        // sections d'afficher une panne plutot qu'un vide (ou pire, du
+        // contenu invente).
         _bookService.getBooksPage(authToken: token).catchError((e) {
+          _livresEnPanne = true;
           return <BookModel>[];
         }),
         _lectureService.getAllReviews(token).catchError((e) {
+          _avisEnPanne = true;
           return <ReviewModel>[];
         }),
         _categorieService.getCategories().catchError((e) {
           return <Categorie>[];
         }),
         _discussionService.getGlobalDiscussions().catchError((e) {
+          _forumsEnPanne = true;
           return <Discussion>[];
         }),
         _recommendationService.getRecommendations(token).catchError((e) {
@@ -406,7 +496,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         _badgeService.getGoals().catchError((e) {
           return <GoalModel>[];
         }),
+        // Le service ne rend plus `null` que lorsque le serveur n'a
+        // réellement pas de citation : un échec se note, comme pour les
+        // livres et les forums.
         _citationService.getDailyCitation(token).catchError((e) {
+          _citationEnPanne = true;
           return null;
         }),
         _progressService.getAllProgressions(token).catchError((e) {
@@ -444,31 +538,31 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
             .loadNotifications(token)
             .catchError((e) {});
         setState(() {
-          // 1. Get stats from API
-          ReaderStatsModel apiStats = results[0] as ReaderStatsModel;
-
-          final allBooks = (results[1] as List).cast<BookModel>();
-          final reviews = (results[2] as List).cast<ReviewModel>();
-          final categories = (results[3] as List).cast<Categorie>();
-          final discussions = (results[4] as List).cast<Discussion>();
-          final recs = (results[5] as List).cast<RecommendationModel>();
-          final library = (results.length > 6 && results[6] is List)
-              ? (results[6] as List).cast<LibraryModel>()
+          // Les rangs sont décalés d'un cran depuis le retrait de
+          // `getReaderStats`, qui occupait le rang 0 : ils suivent l'ordre du
+          // `Future.wait` ci-dessus, et rien d'autre.
+          final allBooks = (results[0] as List).cast<BookModel>();
+          final reviews = (results[1] as List).cast<ReviewModel>();
+          final categories = (results[2] as List).cast<Categorie>();
+          final discussions = (results[3] as List).cast<Discussion>();
+          final recs = (results[4] as List).cast<RecommendationModel>();
+          final library = (results.length > 5 && results[5] is List)
+              ? (results[5] as List).cast<LibraryModel>()
               : <LibraryModel>[];
-          final followings = (results.length > 7 && results[7] is List)
-              ? (results[7] as List).cast<RelationModel>()
+          final followings = (results.length > 6 && results[6] is List)
+              ? (results[6] as List).cast<RelationModel>()
               : <RelationModel>[];
-          final backendGoals = (results.length > 8 && results[8] is List)
-              ? (results[8] as List).cast<GoalModel>()
+          final backendGoals = (results.length > 7 && results[7] is List)
+              ? (results[7] as List).cast<GoalModel>()
               : <GoalModel>[];
-          final citation = results.length > 9
-              ? results[9] as CitationModel?
+          final citation = results.length > 8
+              ? results[8] as CitationModel?
               : null;
-          final allProgress = (results.length > 10 && results[10] is List)
-              ? (results[10] as List).cast<ReadingActivityModel>()
+          final allProgress = (results.length > 9 && results[9] is List)
+              ? (results[9] as List).cast<ReadingActivityModel>()
               : <ReadingActivityModel>[];
-          final backendBadges = (results.length > 11 && results[11] is List)
-              ? (results[11] as List).cast<BadgeModel>()
+          final backendBadges = (results.length > 10 && results[10] is List)
+              ? (results[10] as List).cast<BadgeModel>()
               : <BadgeModel>[];
 
           _recentActivities = reviews;
@@ -532,7 +626,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           // `apiStats` venait de `/api/analytics/reader/:livre_id`, une route
           // qui rend les statistiques D'UN LIVRE : l'application y envoyait un
           // identifiant d'utilisateur, ne recevait jamais de champ `books_read`
-          // et retombait donc toujours sur le comptage local.
+          // et retombait donc toujours sur le comptage local. Cet appel est
+          // maintenant retiré de la liste ci-dessus, faute de route juste.
           //
           // `bilan['lus']` compte les livres terminés ET possédés. Sans la
           // jointure sur la bibliothèque, ce compte montait à 6 pour un lecteur
@@ -549,17 +644,17 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               ? (bilan['lus'] ?? finishedReading)
               : finishedReading;
 
-          // Format reading time
-          String formattedTime = ReadingTimeStorage.formatMinutes(
+          // Le temps de l'APPAREIL, repli quand le compte n'a rien à dire.
+          //
+          // Un second repli suivait, sur `apiStats.totalTime`, gardé par trois
+          // comparaisons à des chaînes en dur — '0h', '0m' et surtout '34h',
+          // une durée de démonstration qu'il fallait écarter à la main. Il ne
+          // servait à rien : `apiStats` venait de la route par livre décrite
+          // ci-dessus et n'a jamais rapporté de durée. Le vrai temps du compte
+          // est lu par `lireBilan()` et l'emporte juste en dessous.
+          final String formattedTime = ReadingTimeStorage.formatMinutes(
             readingMinutes,
           );
-          if (readingMinutes == 0 &&
-              apiStats.totalTime.isNotEmpty &&
-              apiStats.totalTime != '0h' &&
-              apiStats.totalTime != '0m' &&
-              apiStats.totalTime != '34h') {
-            formattedTime = apiStats.totalTime;
-          }
 
           // Compute smart & backend goals
           final smartGoals = ReadingTimeStorage.computeSmartGoals(
@@ -714,16 +809,15 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               .map((r) => enrichBook(r.livre!))
               .toList();
 
+          // Sur les IDENTIFIANTS seulement : comparer les noms marquait
+          // « possédé » tous les livres d'un auteur homonyme du lecteur — un
+          // « Jean Dupont » lecteur voyait les livres d'un « Jean Dupont »
+          // auteur comme déjà acquis, sans bouton d'achat.
           final authorOwnBookIds = _allBooks
               .where(
                 (b) =>
                     (b.auteurId.isNotEmpty && b.auteurId == _currentUserId) ||
-                    (b.auteur != null && b.auteur!.id == _currentUserId) ||
-                    (b.authorName.isNotEmpty &&
-                        (b.authorName.trim().toLowerCase() ==
-                                _displayName.trim().toLowerCase() ||
-                            b.authorName.trim().toLowerCase() ==
-                                widget.userName.trim().toLowerCase())),
+                    (b.auteur != null && b.auteur!.id == _currentUserId),
               )
               .map((b) => b.id);
 
@@ -1336,13 +1430,65 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     );
   }
 
+  /// Une section en panne se dit comme telle — jamais comme un vide, et
+  /// jamais avec du contenu inventé pour « faire plein ».
+  Widget _sectionEnPanne(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: AppColors.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.poppins(
+                color: AppColors.textSecondary,
+                fontSize: 12.5,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: _loadData,
+            child: Text(
+              "Réessayer",
+              style: GoogleFonts.poppins(
+                color: AppColors.accentInk,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Un vide réel, dit honnêtement.
+  Widget _sectionVide(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        message,
+        style: GoogleFonts.poppins(
+          color: AppColors.textSecondary,
+          fontSize: 12.5,
+        ),
+      ),
+    );
+  }
+
   Widget _buildAuthorsList() {
-    final hardcodedAuthors = [
-      {"name": "Marie Dubois", "img": null},
-      {"name": "Thomas Leroy", "img": null},
-      {"name": "Amina Said", "img": null},
-      {"name": "Lucas Martin", "img": null},
-    ];
+    // Les quatre auteurs de démonstration (« Marie Dubois », « Thomas
+    // Leroy »...) qui comblaient ce vide sont partis : un nom inventé sous un
+    // bouton « + Suivre » n'est pas un état d'attente, c'est un mensonge que
+    // le lecteur prenait pour la communauté réelle. Une panne s'affiche comme
+    // une panne, un vide comme un vide.
+    if (_featuredAuthors.isEmpty) {
+      return _livresEnPanne
+          ? _sectionEnPanne("Impossible de charger les auteurs.")
+          : _sectionVide("Aucun auteur à découvrir pour le moment.");
+    }
 
     return SizedBox(
       height: 135, // Adjust for fitting content comfortably
@@ -1350,33 +1496,23 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         physics: const ClampingScrollPhysics(),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _featuredAuthors.isNotEmpty
-            ? _featuredAuthors.length
-            : hardcodedAuthors.length,
+        itemCount: _featuredAuthors.length,
         itemBuilder: (context, index) {
-          final authorName = _featuredAuthors.isNotEmpty
-              ? _featuredAuthors[index].nomComplet
-              : hardcodedAuthors[index]["name"]!;
+          final author = _featuredAuthors[index];
+          final authorName = author.nomComplet;
+          final estSuivi = _followingIds.contains(author.id);
 
           return GestureDetector(
             onTap: () {
-              if (_featuredAuthors.isNotEmpty) {
-                final author = _featuredAuthors[index];
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AuthorProfilePage(
-                      author: author,
-                      initialIsFollowing: _followingIds.contains(author.id),
-                    ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AuthorProfilePage(
+                    author: author,
+                    initialIsFollowing: estSuivi,
                   ),
-                );
-              } else {
-                AppNotifications.showSnackBar(
-                  context,
-                  message: 'Profil de $authorName en cours de développement',
-                );
-              }
+                ),
+              );
             },
             child: Padding(
               padding: const EdgeInsets.only(right: 20),
@@ -1410,19 +1546,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   SizedBox(height: 8),
                   GestureDetector(
                     onTap: () {
-                      if (_featuredAuthors.isNotEmpty) {
-                        final authorId = _featuredAuthors[index].id;
-                        if (_followingIds.contains(authorId)) {
-                          _showAlreadyFollowingDialog(authorName);
-                        } else {
-                          _followAuthor(authorId, authorName);
-                        }
+                      if (estSuivi) {
+                        _showAlreadyFollowingDialog(authorName);
                       } else {
-                        AppNotifications.showSnackBar(
-                          context,
-                          message:
-                              'Fonctionnalité indisponible pour les auteurs de démonstration',
-                        );
+                        _followAuthor(author.id, authorName);
                       }
                     },
                     child: Container(
@@ -1431,41 +1558,20 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            _followingIds.contains(
-                              _featuredAuthors.isNotEmpty
-                                  ? _featuredAuthors[index].id
-                                  : "",
-                            )
+                        color: estSuivi
                             ? AppColors.textHint
                             : AppColors.secondary, // Blue pill
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusCard,
                         ),
-                        border:
-                            _followingIds.contains(
-                              _featuredAuthors.isNotEmpty
-                                  ? _featuredAuthors[index].id
-                                  : "",
-                            )
+                        border: estSuivi
                             ? Border.all(color: AppColors.textHint)
                             : null,
                       ),
                       child: Text(
-                        _followingIds.contains(
-                              _featuredAuthors.isNotEmpty
-                                  ? _featuredAuthors[index].id
-                                  : "",
-                            )
-                            ? "Suivi"
-                            : "+ Suivre",
+                        estSuivi ? "Suivi" : "+ Suivre",
                         style: GoogleFonts.poppins(
-                          color:
-                              _followingIds.contains(
-                                _featuredAuthors.isNotEmpty
-                                    ? _featuredAuthors[index].id
-                                    : "",
-                              )
+                          color: estSuivi
                               ? AppColors.textSecondary
                               : Colors.white,
                           fontSize: 11,
@@ -1487,7 +1593,20 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     if (_followingIds.contains(authorId)) return;
     try {
       final token = await TokenStorage.getToken();
-      if (token == null) return;
+      // Sans jeton, l'appui sur « Suivre » ne produisait RIEN : pas de
+      // requête, pas de message, pas de changement de bouton. Une session
+      // finie se dit, sinon la personne réappuie en croyant avoir mal visé.
+      if (token == null) {
+        if (!mounted) return;
+        AppNotifications.showSnackBar(
+          context,
+          message:
+              "Votre session a expiré. Reconnectez-vous pour suivre "
+              "cet auteur.",
+          isError: true,
+        );
+        return;
+      }
 
       // Anti-self following
       if (authorId == _currentUserId) {
@@ -1561,51 +1680,33 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   }
 
   Widget _buildClubsList() {
-    final List<Map<String, dynamic>> hardcodedClubs = [
-      {
-        "title": "Science-fiction & Futurs",
-        "members": "12 messages",
-        "icon": Icons.public,
-        "color": AppColors.scaffoldBackground,
-        "button": true,
-      },
-      {
-        "title": "Polar & Frissons",
-        "members": "8 messages",
-        "icon": Icons.search,
-        "color": AppColors.redLight,
-        "button": false,
-      },
-      {
-        "title": "Romance Historique",
-        "members": "21 messages",
-        "icon": Icons.favorite,
-        "color": AppColors.pink,
-        "button": false,
-      },
-    ];
+    // Les trois forums de démonstration (« Science-fiction & Futurs — 12
+    // messages »...) qui comblaient ce vide sont partis : des compteurs
+    // inventés sous un bouton « Rejoindre » faisaient passer une panne pour
+    // une communauté active.
+    if (_discussions.isEmpty) {
+      return _forumsEnPanne
+          ? _sectionEnPanne("Impossible de charger les forums.")
+          : _sectionVide("Aucune discussion pour le moment.");
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        children: _discussions.isNotEmpty
-            ? _discussions.take(3).map((d) {
-                final club = {
-                  "title": d.titre.isNotEmpty
-                      ? d.titre
-                      : "Discussion #${d.id.substring(0, 4)}",
-                  "members": (d.messagesCount ?? 0) > 0
-                      ? "${d.messagesCount} message${d.messagesCount! > 1 ? 's' : ''}"
-                      : "${d.messages.length} message${d.messages.length > 1 ? 's' : ''}",
-                  "icon": Icons.public,
-                  "color": AppColors.scaffoldBackground,
-                  "button": true,
-                };
-                return _buildClubItem(club, discussion: d);
-              }).toList()
-            : hardcodedClubs.take(3).map((club) {
-                return _buildClubItem(club);
-              }).toList(),
+        children: _discussions.take(3).map((d) {
+          final club = {
+            "title": d.titre.isNotEmpty
+                ? d.titre
+                : "Discussion #${d.id.substring(0, 4)}",
+            "members": (d.messagesCount ?? 0) > 0
+                ? "${d.messagesCount} message${d.messagesCount! > 1 ? 's' : ''}"
+                : "${d.messages.length} message${d.messages.length > 1 ? 's' : ''}",
+            "icon": Icons.public,
+            "color": AppColors.scaffoldBackground,
+            "button": true,
+          };
+          return _buildClubItem(club, discussion: d);
+        }).toList(),
       ),
     );
   }
@@ -1751,25 +1852,17 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
       quotes.addAll(reviewQuotes);
     }
 
+    // Plus de citations de démonstration attribuées à « Chloé B. » ou
+    // « Marc D. » : des membres inventés notant des livres qu'ils n'ont pas
+    // lus faisaient passer une panne (ou un simple vide) pour de l'activité
+    // réelle.
     if (quotes.isEmpty) {
-      quotes = [
-        {
-          "quote":
-              "“Longtemps, je me suis couché de bonne heure.”\n— Marcel Proust, À la recherche du temps perdu",
-          "author": "Chloé B.",
-          "gradient": [AppColors.slateLight, AppColors.slate],
-          "book": null,
-          "note": 5,
-        },
-        {
-          "quote":
-              "“Il est grand temps de rallumer les étoiles.”\n— Guillaume Apollinaire",
-          "author": "Marc D.",
-          "gradient": [AppColors.orange, AppColors.orangeDark],
-          "book": null,
-          "note": 4,
-        },
-      ];
+      // La section se nourrit de DEUX appels : la citation du jour et les
+      // avis. Il suffit que l'un d'eux ait échoué pour que le vide affiché ne
+      // soit pas un vrai vide.
+      return (_avisEnPanne || _citationEnPanne)
+          ? _sectionEnPanne("Impossible de charger les citations.")
+          : _sectionVide("Aucune citation pour le moment.");
     }
 
     return SizedBox(
@@ -2076,6 +2169,58 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   }
 
   Widget _buildSearchResults() {
+    if (_rechercheEnCours) {
+      return Center(
+        child: Text(
+          "Recherche en cours...",
+          style: GoogleFonts.poppins(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    // Une panne n'est pas « aucun résultat » : elle se dit, et se rejoue.
+    if (_erreurRecherche != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: AppColors.error,
+              ),
+              SizedBox(height: 16),
+              Text(
+                _erreurRecherche!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(color: AppColors.textPrimary),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                // Directement, sans repasser par l'anti-rebond : la personne
+                // vient d'appuyer, il n'y a pas de frappe à attendre.
+                onPressed: () => _rechercherSurLeServeur(_searchQuery),
+                child: const Text("Réessayer"),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // En dessous de deux caractères, la recherche n'est pas partie (contrat
+    // serveur) : on invite à continuer, on n'affirme pas « aucun résultat ».
+    if (_searchQuery.trim().length < 2) {
+      return Center(
+        child: Text(
+          "Saisissez au moins deux caractères.",
+          style: AppTextStyles.greyMedium14,
+        ),
+      );
+    }
+
     if (_searchResults.isEmpty) {
       return Center(
         child: Column(
@@ -2106,16 +2251,32 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
     );
   }
 
+  /// Le lecteur possède-t-il ce livre — ou en est-il l'auteur ?
+  ///
+  /// [_ownedBookIds] est figé par [_loadData] : il réunit la bibliothèque
+  /// (complète) et les livres de l'utilisateur trouvés dans `_allBooks`,
+  /// c'est-à-dire la PREMIÈRE page du catalogue. Depuis que la recherche
+  /// interroge le serveur, un résultat peut venir de n'importe quelle page :
+  /// un auteur cherchant son propre livre publié au-delà des cent premiers le
+  /// voyait proposé à l'achat, bouton d'achat compris. La possession par
+  /// paternité se reteste donc sur le livre lui-même, d'où qu'il vienne — sur
+  /// les IDENTIFIANTS seulement, comme aux lignes qui remplissent l'ensemble,
+  /// pour ne pas marquer « possédés » les livres d'un auteur homonyme.
+  bool _estAcquis(BookModel book) {
+    if (_ownedBookIds.contains(book.id)) return true;
+    if (_currentUserId == null) return false;
+    return (book.auteurId.isNotEmpty && book.auteurId == _currentUserId) ||
+        (book.auteur != null && book.auteur!.id == _currentUserId);
+  }
+
   Widget _buildSearchResultCard(BookModel book) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => BookDetailPage(
-              book: book,
-              isOwned: _ownedBookIds.contains(book.id),
-            ),
+            builder: (context) =>
+                BookDetailPage(book: book, isOwned: _estAcquis(book)),
           ),
         );
       },

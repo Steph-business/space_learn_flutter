@@ -77,6 +77,28 @@ class ApiClient extends http.BaseClient {
   /// exactement cela.
   static const Duration delaiRequete = Duration(seconds: 30);
 
+  /// Marqueur posé par un appelant dont la route répond 401 pour une raison
+  /// MÉTIER, et non de session.
+  ///
+  /// La couche transport ne peut pas deviner ce qu'un 401 veut dire : elle voit
+  /// un code, pas un corps. Elle s'appuyait donc sur le chemin — `/auth/` —, et
+  /// `POST /utilisateurs/:id/change-password` n'en fait pas partie alors qu'il
+  /// répond 401 pour dire « Ancien mot de passe incorrect ». Une simple faute
+  /// de frappe déclenchait ainsi un renouvellement PUIS un rejeu : trois
+  /// allers-retours au lieu d'un, le mot de passe actuel et le nouveau
+  /// retraversant le réseau et les journaux du proxy une seconde fois, deux
+  /// jetons du limiteur consommés au lieu d'un — ce limiteur est commun à la
+  /// connexion et aux OTP, et sous CGNAT le gaspillage retombe sur des voisins
+  /// —, et une rotation de la lignée de rafraîchissement pour rien.
+  ///
+  /// L'appelant, lui, lit le corps et sait faire la différence. Il pose cet
+  /// en-tête ; `send` le retire AVANT l'envoi — c'est une convention interne à
+  /// l'application, elle n'a rien à faire sur le réseau — et rend la réponse
+  /// telle quelle : ni renouvellement, ni rejeu. À charge pour l'appelant de
+  /// mener lui-même le renouvellement quand le corps dit une session finie, et
+  /// de relayer un refus par [constaterSessionFinie].
+  static const enTete401Metier = 'X-SL-401-Metier';
+
   /// Le renouvellement en cours, s'il y en a un.
   ///
   /// Un écran d'accueil lance une dizaine de requêtes d'un coup. Passé l'heure,
@@ -130,6 +152,11 @@ class ApiClient extends http.BaseClient {
     // non plus besoin qu'on leur pose un jeton.
     final estRouteAuth = request.url.path.contains('/auth/');
 
+    // Le retrait précède l'envoi, sinon le marqueur partirait sur le réseau.
+    // `BaseRequest.headers` compare ses clés sans tenir compte de la casse :
+    // cette écriture-ci suffit, quelle que soit celle de l'appelant.
+    final quatreCentUnMetier = request.headers.remove(enTete401Metier) != null;
+
     final posePar = request.headers.containsKey('Authorization');
     if (!estRouteAuth && !posePar) {
       await _poserLeJeton(request);
@@ -137,7 +164,12 @@ class ApiClient extends http.BaseClient {
 
     var reponse = await _envoyer(request);
 
-    if (reponse.statusCode != 401 || estRouteAuth) return reponse;
+    // `quatreCentUnMetier` rend la main pour la même raison que `estRouteAuth`,
+    // constatée autrement : sur ces routes-là, un 401 ne parle pas de session.
+    // Cf. [enTete401Metier].
+    if (reponse.statusCode != 401 || estRouteAuth || quatreCentUnMetier) {
+      return reponse;
+    }
 
     // ── DIAGNOSTIC : quelle requête déclenche le 401 ? ──
     debugPrint('\n╔══ DIAGNOSTIC SESSION ══════════════════════');
@@ -282,6 +314,21 @@ class ApiClient extends http.BaseClient {
   /// elle-même, et profite du même appel unique partagé.
   Future<Renouvellement> renouvelerSession() => _renouvelerLaSession();
 
+  /// Constate de l'extérieur qu'une session est finie : purge et retour à la
+  /// connexion, exactement comme si le 401 était passé par `send`.
+  ///
+  /// Pendant de [renouvelerSession], et nécessaire pour la même raison. Un
+  /// appelant qui pose [enTete401Metier] mène son renouvellement lui-même :
+  /// c'est donc lui, et non `send`, qui apprend le refus de `/auth/refresh`.
+  /// Sans ce relais, le marqueur supprimerait au passage la déconnexion que
+  /// `send` déclenchait jusqu'ici sur ce refus, et la personne resterait sur
+  /// son écran avec « Token invalide ou expiré » pour toute explication et une
+  /// session morte dans le coffre — jusqu'au prochain 401 d'un autre écran.
+  ///
+  /// La garde de non-réentrance est celle de `send` : deux constats
+  /// rapprochés ne déclenchent qu'une seule déconnexion.
+  void constaterSessionFinie() => _declencherDeconnexion();
+
   /// Échange le jeton de rafraîchissement contre un couple neuf.
   ///
   /// Un seul appel à la fois, partagé par toutes les requêtes qui attendent.
@@ -337,8 +384,22 @@ class ApiClient extends http.BaseClient {
         return Renouvellement.indisponible;
       }
 
-      await TokenStorage.saveToken(nouveau);
+      // Le RAFRAÎCHISSEMENT s'écrit en premier, et l'ordre porte tout.
+      //
+      // Le serveur fait tourner la lignée : dès qu'il a répondu, l'ancien
+      // jeton de rafraîchissement est révoqué, et le présenter à nouveau vaut
+      // rejeu — `FaireTourner` ferme alors TOUTE la famille. Écrire l'accès en
+      // premier laissait donc une fenêtre : l'application tuée entre les deux
+      // (mémoire réclamée par le système, plantage) gardait un accès neuf et
+      // un rafraîchissement déjà mort, et la session entière tombait au
+      // renouvellement suivant — sans que rien ne l'explique.
+      //
+      // Dans cet ordre-ci, la même interruption laisse un rafraîchissement
+      // valide et un accès périmé : le prochain 401 le renouvelle, et personne
+      // ne s'aperçoit de rien. `saveRefreshToken` ignore une valeur vide, donc
+      // un serveur qui ne renvoie pas le champ n'efface rien.
       await TokenStorage.saveRefreshToken(corps['refresh_token']?.toString());
+      await TokenStorage.saveToken(nouveau);
       debugPrint('║ ✅ Session renouvelée avec succès');
       debugPrint('╚════════════════════════════════════════════\n');
       return Renouvellement.reussi;

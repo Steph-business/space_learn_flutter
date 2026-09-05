@@ -57,6 +57,11 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
         _customTypeController.text = cat;
         _showCustomType = true;
       }
+      // La date du modèle est déjà en heure LOCALE (evenementModel la convertit
+      // à la lecture) : le formulaire réaffiche donc à l'auteur l'heure qu'il
+      // lit partout ailleurs dans l'application. Aucune conversion ici — une
+      // seconde par-dessus la première décalerait le rendez-vous à chaque
+      // ouverture du formulaire de modification.
       _selectedDate = widget.initialEvenement!.dateEvenement;
       if (widget.initialEvenement!.dateEvenement != null) {
         _selectedTime = TimeOfDay.fromDateTime(
@@ -513,7 +518,13 @@ class _CreerEvenementPageState extends State<CreerEvenementPage> {
       final token = await TokenStorage.getToken();
       if (token == null) throw Exception("Session expirée");
 
-      // Combine date and time
+      // L'heure choisie est celle de l'ORGANISATEUR, sur sa propre horloge.
+      //
+      // `DateTime(...)` construit donc volontairement une date locale : c'est
+      // bien « 18 h chez moi » que l'auteur vient de désigner. Le service la
+      // convertit ensuite en instant UTC avant l'envoi — voir
+      // `_instantPourLeServeur`. Un lecteur d'un autre fuseau verra l'heure
+      // correspondante chez lui, pas ce même 18 h déplacé.
       final eventDate = DateTime(
         _selectedDate!.year,
         _selectedDate!.month,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
@@ -12,13 +13,31 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/proximite_evenement.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/temps_relatif.dart';
 
+/// Un rappel n'a de sens que pour un rendez-vous encore devant nous.
+///
+/// C'est ce qui sépare un événement d'une annonce : une annonce se lit ou
+/// pas, un rendez-vous se manque. Proposer le geste sur une annonce n'aurait
+/// rien à rappeler ; le proposer sur un rendez-vous passé promettrait une
+/// notification qui ne partirait jamais.
+bool peutRappeler(Evenement evenement) =>
+    !evenement.passe && RappelEvenement.encorePossible(evenement.dateEvenement);
+
+/// Le lien de visio nettoyé — null quand il n'y a rien à ouvrir.
+///
+/// Le champ vient d'un formulaire : un espace collé par mégarde suffisait à
+/// faire apparaître le badge sans qu'aucun lien n'existe vraiment.
+String? lienVisioDe(Evenement evenement) {
+  final lien = evenement.lienVisio?.trim();
+  return (lien == null || lien.isEmpty) ? null : lien;
+}
+
 /// Une annonce ou un événement, tel qu'il apparaît dans une liste.
 ///
 /// La même carte était écrite deux fois, dans la page communauté du lecteur et
 /// dans celle de l'auteur, avec des divergences qui s'installaient à chaque
 /// retouche. Une troisième copie s'ajoutait avec la page listant tout : c'est
 /// le moment de n'en garder qu'une.
-class CarteEvenement extends StatefulWidget {
+class CarteEvenement extends StatelessWidget {
   const CarteEvenement({
     super.key,
     required this.evenement,
@@ -36,73 +55,10 @@ class CarteEvenement extends StatefulWidget {
   /// rien. Sans valeur, la ligne disparaît plutôt que de meubler.
   final String? signature;
 
-  @override
-  State<CarteEvenement> createState() => _CarteEvenementState();
-}
-
-class _CarteEvenementState extends State<CarteEvenement> {
-  /// Un rappel est-il posé pour ce rendez-vous ?
-  ///
-  /// L'état vit dans la carte plutôt que chez ses trois appelants : chacun
-  /// devrait sinon le charger, le suivre et le passer, et le jour où l'un
-  /// oublie, le bouton ment sur un seul écran.
-  bool _rappelPose = false;
-  bool _enCours = false;
-
-  Evenement get evenement => widget.evenement;
-  String? get signature => widget.signature;
-
-  @override
-  void initState() {
-    super.initState();
-    if (_peutRappeler) _lireLEtatDuRappel();
-  }
-
-  /// Un rappel n'a de sens que pour un rendez-vous encore devant nous.
-  ///
-  /// C'est ce qui sépare un événement d'une annonce : une annonce se lit ou
-  /// pas, un rendez-vous se manque. Proposer le geste sur une annonce n'aurait
-  /// rien à rappeler ; le proposer sur un rendez-vous passé promettrait une
-  /// notification qui ne partirait jamais.
-  bool get _peutRappeler =>
-      !evenement.passe &&
-      RappelEvenement.encorePossible(evenement.dateEvenement);
-
-  Future<void> _lireLEtatDuRappel() async {
-    final pose = await RappelEvenement.estPose(evenement.id);
-    if (mounted && pose != _rappelPose) setState(() => _rappelPose = pose);
-  }
-
-  Future<void> _basculerLeRappel() async {
-    if (_enCours) return;
-    setState(() => _enCours = true);
-
-    try {
-      if (_rappelPose) {
-        await RappelEvenement.retirer(evenement.id);
-        if (mounted) setState(() => _rappelPose = false);
-        return;
-      }
-
-      final pose = await RappelEvenement.poser(
-        evenementId: evenement.id,
-        titre: evenement.titre,
-        dateEvenement: evenement.dateEvenement!,
-      );
-      if (!mounted) return;
-      setState(() => _rappelPose = pose);
-
-      AppNotifications.showSnackBar(
-        context,
-        message: pose
-            ? "Nous vous préviendrons la veille."
-            : "Ce rendez-vous est trop proche pour être rappelé.",
-        isError: !pose,
-      );
-    } finally {
-      if (mounted) setState(() => _enCours = false);
-    }
-  }
+  // La carte n'a plus d'état propre : le rappel vit dans BoutonRappelEvenement
+  // et la visio dans BoutonRejoindreVisio, partagés avec la feuille
+  // (evenement_apercu). L'état « rappel posé » logé ici se recyclait d'un
+  // événement à l'autre — le pourquoi est documenté sur BoutonRappelEvenement.
 
   bool get _estAnnonce =>
       evenement.typePublication.toLowerCase().trim() == 'annonce';
@@ -117,56 +73,11 @@ class _CarteEvenementState extends State<CarteEvenement> {
     return evenement.typePublication.toUpperCase();
   }
 
-  /// Poser ou retirer le rappel.
-  ///
-  /// Un seul bouton pour les deux gestes, et son apparence dit lequel : cloche
-  /// creuse et texte discret quand rien n'est posé, cloche pleine et accent
-  /// quand le rappel existe. Sans ce contraste, on ne saurait pas si l'on
-  /// s'apprête à poser ou à retirer.
-  Widget _boutonRappel(Color accent) {
-    final couleur = _rappelPose ? accent : AppColors.textSecondary;
-
-    return InkWell(
-      onTap: _enCours ? null : _basculerLeRappel,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_enCours)
-              SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.6,
-                  color: couleur,
-                ),
-              )
-            else
-              Icon(
-                _rappelPose ? Iconsax.notification5 : Iconsax.notification,
-                size: 13,
-                color: couleur,
-              ),
-            const SizedBox(width: 4),
-            Text(
-              _rappelPose ? "Rappel posé" : "Me le rappeler",
-              style: GoogleFonts.poppins(
-                color: couleur,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
+
+    final lienVisio = lienVisioDe(evenement);
 
     // AppColors.success est la couleur de confirmation. L'employer en décor lui
     // retire son sens partout ailleurs : quand un vrai succès s'affiche, il ne
@@ -175,7 +86,7 @@ class _CarteEvenementState extends State<CarteEvenement> {
     final icone = _estAnnonce ? Iconsax.notification : Iconsax.calendar;
 
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: onTap,
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -245,10 +156,9 @@ class _CarteEvenementState extends State<CarteEvenement> {
                 ],
                 // Badge visio : indique d'un coup d'œil que la rencontre est en
                 // ligne. Inutile une fois la rencontre passée : le lien ne mène
-                // plus nulle part.
-                if (!evenement.passe &&
-                    evenement.lienVisio != null &&
-                    evenement.lienVisio!.isNotEmpty) ...[
+                // plus nulle part. Le lien lui-même s'ouvre par le bouton
+                // « Rejoindre la visio », en bas de carte.
+                if (!evenement.passe && lienVisio != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
@@ -335,6 +245,14 @@ class _CarteEvenementState extends State<CarteEvenement> {
                           //
                           // La date exacte reste : elle seule permet de noter le
                           // rendez-vous quelque part.
+                          //
+                          // Les deux travaillent sur l'heure LOCALE du lecteur,
+                          // parce que le modèle a déjà converti l'instant reçu
+                          // (evenementModel) : rien n'est reconverti ici. Le
+                          // `DateTime.utc` qu'on trouve dans
+                          // `proximiteEvenement` n'est pas un passage en UTC
+                          // mais un compteur de jours civils — il numérote la
+                          // journée locale, il ne la déplace pas.
                           Flexible(
                             child: Text.rich(
                               TextSpan(
@@ -474,8 +392,8 @@ class _CarteEvenementState extends State<CarteEvenement> {
                     // « Me le rappeler » passe AVANT « Lire » : c'est l'action
                     // propre au rendez-vous, celle qu'on ne peut pas remettre
                     // à plus tard sans risquer de l'oublier.
-                    if (_peutRappeler) ...[
-                      _boutonRappel(accent),
+                    if (peutRappeler(evenement)) ...[
+                      BoutonRappelEvenement(evenement: evenement),
                       const SizedBox(width: 10),
                     ],
                     Text(
@@ -490,6 +408,355 @@ class _CarteEvenementState extends State<CarteEvenement> {
                   ],
                 );
               },
+            ),
+            // L'événement passé ne montre pas le bouton : un lien mort n'est
+            // pas une action, seul le badge du haut disparaît avec lui.
+            if (!evenement.passe && lienVisio != null) ...[
+              const SizedBox(height: 10),
+              BoutonRejoindreVisio(evenement: evenement),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Poser ou retirer le rappel d'un rendez-vous.
+///
+/// Un seul bouton pour les deux gestes, et son apparence dit lequel : cloche
+/// creuse et texte discret quand rien n'est posé, cloche pleine et accent
+/// quand le rappel existe. Sans ce contraste, on ne saurait pas si l'on
+/// s'apprête à poser ou à retirer.
+///
+/// Widget autonome, et non méthode de la carte : la feuille
+/// (evenement_apercu) — seul écran atteint depuis une notification
+/// « Nouvel événement » — doit offrir le même geste sans le réécrire.
+class BoutonRappelEvenement extends StatefulWidget {
+  const BoutonRappelEvenement({
+    super.key,
+    required this.evenement,
+    this.dansUneFeuille = false,
+  });
+
+  final Evenement evenement;
+
+  /// Le bouton est-il rendu à l'intérieur d'une feuille modale ?
+  ///
+  /// La confirmation passait par AppNotifications.showSnackBar, donc par
+  /// ScaffoldMessenger : la bannière se peint tout en bas de l'ÉCRAN, sous la
+  /// feuille d'événement, qui en occupe les deux tiers. Le lecteur venu d'une
+  /// notification tapait « Me le rappeler », ne voyait qu'un changement
+  /// d'icône, et sur refus — « ce rendez-vous est trop proche » — ne voyait
+  /// rien du tout. Dans une feuille, le message se rend donc EN LIGNE, sous le
+  /// bouton, là où le doigt vient de se poser.
+  final bool dansUneFeuille;
+
+  @override
+  State<BoutonRappelEvenement> createState() => _BoutonRappelEvenementState();
+}
+
+class _BoutonRappelEvenementState extends State<BoutonRappelEvenement> {
+  /// Un rappel est-il posé pour ce rendez-vous ?
+  ///
+  /// L'état vit ici plutôt que chez les appelants : chacun devrait sinon le
+  /// charger, le suivre et le passer, et le jour où l'un oublie, le bouton
+  /// ment sur un seul écran.
+  bool _rappelPose = false;
+  bool _enCours = false;
+
+  /// Le retour du dernier geste, quand il ne peut pas passer par une bannière.
+  /// Voir [BoutonRappelEvenement.dansUneFeuille].
+  String? _message;
+  bool _messageEstUnRefus = false;
+
+  Evenement get evenement => widget.evenement;
+
+  @override
+  void initState() {
+    super.initState();
+    _lireLEtatDuRappel();
+  }
+
+  /// L'état suit l'ÉVÉNEMENT, pas la position dans la liste.
+  ///
+  /// `_rappelPose` n'était lu qu'à initState, et les listes qui affichent les
+  /// cartes ne posent aucune Key : quand elles changent — filtre « Tout » →
+  /// « Événements », rafraîchissement qui réordonne — Flutter réutilise le
+  /// State par position, et l'événement B s'affichait avec le « Rappel posé »
+  /// de l'événement A. Le lecteur croyait qu'on le préviendrait la veille et
+  /// personne ne le prévenait ; ou il « retirait » un rappel affiché qui
+  /// n'existait pas.
+  @override
+  void didUpdateWidget(BoutonRappelEvenement ancien) {
+    super.didUpdateWidget(ancien);
+    if (ancien.evenement.id != widget.evenement.id) {
+      _rappelPose = false;
+      // Le message aussi appartient à l'événement d'avant : le garder ferait
+      // lire « Nous vous préviendrons la veille » sous un autre rendez-vous.
+      _message = null;
+      _lireLEtatDuRappel();
+    }
+  }
+
+  Future<void> _lireLEtatDuRappel() async {
+    final id = evenement.id;
+    final pose = await RappelEvenement.estPose(id);
+    // La réponse d'un ANCIEN événement peut arriver après le recyclage : elle
+    // n'a pas le droit d'écraser l'état du nouveau.
+    if (!mounted || id != widget.evenement.id) return;
+    if (pose != _rappelPose) setState(() => _rappelPose = pose);
+  }
+
+  Future<void> _basculerLeRappel() async {
+    if (_enCours) return;
+    setState(() {
+      _enCours = true;
+      _message = null;
+    });
+
+    // L'événement d'AVANT l'attente.
+    //
+    // `zonedSchedule` n'est pas instantané, et les listes qui affichent ces
+    // boutons ne posent aucune Key : si elles se réordonnent pendant cette
+    // attente, Flutter recycle le State sur un AUTRE événement. Le seul test
+    // `mounted` laissait alors écrire le résultat de l'ancien sur le nouveau —
+    // « Nous vous préviendrons la veille » à côté d'une carte sans rappel.
+    // Le State n'a le droit d'écrire que si c'est toujours le même rendez-vous.
+    final id = evenement.id;
+
+    try {
+      if (_rappelPose) {
+        await RappelEvenement.retirer(id);
+        if (!mounted) return;
+        if (id != widget.evenement.id) return;
+        setState(() => _rappelPose = false);
+        return;
+      }
+
+      final pose = await RappelEvenement.poser(
+        evenementId: id,
+        titre: evenement.titre,
+        dateEvenement: evenement.dateEvenement!,
+      );
+      if (!mounted) return;
+      if (id != widget.evenement.id) return;
+      setState(() => _rappelPose = pose);
+
+      final message = pose
+          ? "Nous vous préviendrons la veille."
+          : "Ce rendez-vous est trop proche pour être rappelé.";
+
+      if (widget.dansUneFeuille) {
+        // Sous une feuille modale, une bannière ScaffoldMessenger se peint
+        // hors de vue : on répond à l'endroit du geste.
+        setState(() {
+          _message = message;
+          _messageEstUnRefus = !pose;
+        });
+      } else {
+        AppNotifications.showSnackBar(
+          context,
+          message: message,
+          isError: !pose,
+        );
+      }
+    } finally {
+      // Sans condition d'identité, celle-ci : `_enCours` décrit une opération
+      // de CE State, pas de cet événement. Le laisser à `true` après un
+      // recyclage bloquerait le bouton du rendez-vous suivant sur son
+      // indicateur de progression, sans plus rien pour le débloquer.
+      if (mounted) setState(() => _enCours = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    AppColors.suivreLeTheme(context);
+    // Ce bouton a quitté la carte pour devenir un widget autonome : il lit
+    // désormais la palette pour son propre compte, il doit donc s'abonner au
+    // thème lui-même. Sans cet appel, il gardait les couleurs du mode clair
+    // après une bascule en mode sombre — la carte, elle, s'était repeinte.
+
+    // Un rendez-vous passé, ou trop proche, n'a rien à rappeler : le bouton
+    // s'efface plutôt que de promettre une notification qui ne partira pas.
+    if (!peutRappeler(evenement)) return const SizedBox.shrink();
+
+    final couleur = _rappelPose ? AppColors.accentInk : AppColors.textSecondary;
+
+    final bouton = InkWell(
+      onTap: _enCours ? null : _basculerLeRappel,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_enCours)
+              SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.6,
+                  color: couleur,
+                ),
+              )
+            else
+              Icon(
+                _rappelPose ? Iconsax.notification5 : Iconsax.notification,
+                size: 13,
+                color: couleur,
+              ),
+            const SizedBox(width: 4),
+            Text(
+              _rappelPose ? "Rappel posé" : "Me le rappeler",
+              style: GoogleFonts.poppins(
+                color: couleur,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final message = _message;
+    if (!widget.dansUneFeuille || message == null) return bouton;
+
+    // Le retour du geste, à l'endroit du geste. Un refus doit se voir : sans
+    // lui, taper « Me le rappeler » sur un rendez-vous trop proche ne
+    // produisait rien du tout — ni rappel, ni explication.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        bouton,
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              _messageEstUnRefus ? Iconsax.info_circle : Iconsax.tick_circle,
+              size: 12,
+              color: _messageEstUnRefus
+                  ? AppColors.error
+                  : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                message,
+                style: GoogleFonts.poppins(
+                  color: _messageEstUnRefus
+                      ? AppColors.error
+                      : AppColors.textSecondary,
+                  fontSize: 11,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// « Rejoindre la visio » : le badge annonce, ce bouton agit.
+///
+/// Le lien saisi par l'auteur n'était rendu nulle part — la carte n'en
+/// montrait que le badge « Visio », un pictogramme et un mot, et personne ne
+/// pouvait le suivre, pas même l'auteur. Même langage visuel que le badge
+/// (vert succès, icône vidéo), mais pleine largeur et tapable.
+///
+/// Partagé entre la carte et la feuille (evenement_apercu), qui n'offrait
+/// aucun moyen de rejoindre la rencontre.
+class BoutonRejoindreVisio extends StatefulWidget {
+  const BoutonRejoindreVisio({super.key, required this.evenement});
+
+  final Evenement evenement;
+
+  @override
+  State<BoutonRejoindreVisio> createState() => _BoutonRejoindreVisioState();
+}
+
+class _BoutonRejoindreVisioState extends State<BoutonRejoindreVisio> {
+  /// Ouvrir la visio dans l'application qui la possède.
+  ///
+  /// Le lien est saisi à la main : un auteur colle souvent
+  /// « meet.google.com/xyz » nu, sans schéma, et un tel Uri est un chemin
+  /// relatif que rien ne sait ouvrir — d'où le préfixe https:// quand le
+  /// schéma manque. Le mode externe confie ensuite l'URL à l'application qui
+  /// la possède (Meet, Zoom…), qui rejoint la salle directement, là où un
+  /// navigateur embarqué redemanderait de se connecter.
+  Future<void> _rejoindreLaVisio() async {
+    final lien = lienVisioDe(widget.evenement);
+    if (lien == null) return;
+
+    var uri = Uri.tryParse(lien);
+    if (uri != null && !uri.hasScheme) {
+      uri = Uri.tryParse('https://$lien');
+    }
+
+    var ouvert = false;
+    if (uri != null && uri.host.isNotEmpty) {
+      try {
+        ouvert = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        // launchUrl jette quand aucune application ne répond : même issue
+        // qu'un lien illisible, même message.
+        ouvert = false;
+      }
+    }
+
+    // Plutôt qu'un tap qui ne fait rien : dire au lecteur que le lien est en
+    // cause, pas son geste.
+    if (!ouvert && mounted) {
+      AppNotifications.showSnackBar(
+        context,
+        message: "Ce lien de visio est invalide",
+        isError: true,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Même raison que le bouton de rappel : extrait de la carte, ce widget
+    // lit la palette seul et doit donc suivre le thème seul.
+    AppColors.suivreLeTheme(context);
+
+    // Un lien mort n'est pas une action : l'événement passé, ou sans lien,
+    // n'affiche rien.
+    if (widget.evenement.passe || lienVisioDe(widget.evenement) == null) {
+      return const SizedBox.shrink();
+    }
+
+    return InkWell(
+      onTap: _rejoindreLaVisio,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Iconsax.video, size: 14, color: AppColors.success),
+            const SizedBox(width: 6),
+            Text(
+              "Rejoindre la visio",
+              style: GoogleFonts.poppins(
+                color: AppColors.success,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),

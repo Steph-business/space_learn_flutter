@@ -42,7 +42,13 @@ class ApiRoutes {
 
   // User routes
   static const String getUser = "$baseUrl/utilisateurs/me";
-  static const String updateUser = "$baseUrl/utilisateurs/update";
+  //
+  // `updateUser = "$baseUrl/utilisateurs/update"` est retirée : c'était un
+  // piège. Le serveur d'authentification n'expose pas `/utilisateurs/update` ;
+  // il expose `PUT /utilisateurs/:id`. Cette constante serait donc tombée sur
+  // cette route-là avec `id = "update"` — un « Identifiant invalide », comme
+  // pour l'ancienne constante de changement de mot de passe juste en dessous.
+  // Aucun appelant ne s'en servait ; mieux vaut qu'elle ne tente personne.
   static const String selectProfile = "$baseUrl/utilisateurs/me/profil";
 
   /// Changement de mot de passe : POST, et l'identifiant du compte dans le
@@ -84,15 +90,19 @@ class ApiRoutes {
   static const String favorites = "$baseUrlsGin/api/favorites";
   static const String removeFavorite = "$baseUrlsGin/api/favorites/:livre_id";
 
-  // Book Statistics routes
-  static const String bookStats = "$baseUrlsGin/api/book-stats";
-  static const String bookStatsByBook = "$baseUrlsGin/api/book-stats/:livre_id";
+  // Statistiques par livre — réservées côté serveur à l'AUTEUR du livre
+  // (`modules/statistiques/routes.go` : chaque handler vérifie l'appartenance).
+  //
+  // Quatre constantes ont été retirées d'ici avec les services morts qui les
+  // portaient : `bookStats`, `bookStatsByBook`, `detailedStats` et
+  // `detailedStatsByBook`. Aucun écran ne les atteignait, et `BookStatsService`
+  // savait ÉCRIRE vues, revenus et note moyenne — des chiffres que le serveur
+  // calcule lui-même. Les laisser en place, c'était offrir à un raccordement
+  // pressé un chemin par lequel le client aurait inventé ces montants.
+  //
+  // Les deux constantes de mise à jour restent : les routes existent bel et
+  // bien sur le serveur, et rien dans ce ménage ne les remet en cause.
   static const String updateBookStats = "$baseUrlsGin/api/book-stats/:id";
-
-  // Detailed Statistics routes
-  static const String detailedStats = "$baseUrlsGin/api/detailed-stats";
-  static const String detailedStatsByBook =
-      "$baseUrlsGin/api/detailed-stats/:livre_id";
   static const String updateDetailedStats =
       "$baseUrlsGin/api/detailed-stats/:livre_id";
 

@@ -77,10 +77,24 @@ class _AbonnesPageState extends State<AbonnesPage> {
               ),
             )
           : _error != null
+          // La panne se distingue déjà du vide — c'est le bouton qui
+          // manquait : un texte seul laissait l'auteur sans autre issue que
+          // de fermer et rouvrir la page.
           ? Center(
-              child: Text(
-                _error!,
-                style: TextStyle(color: AppColors.textSecondary),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _loadFollowers,
+                    child: const Text("Réessayer"),
+                  ),
+                ],
               ),
             )
           : _followers.isEmpty

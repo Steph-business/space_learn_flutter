@@ -9,8 +9,8 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
-import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/bienvenue.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/favoriteService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
@@ -72,6 +72,14 @@ class _SettingsPageState extends State<SettingsPage> {
   /// quelque chose : sans ce garde-fou, on tape deux fois.
   bool _basculeEnCours = false;
 
+  /// Même garde-fou pour la suppression du compte.
+  ///
+  /// Posé par setState, et non en douce : il éteint aussi l'entrée de la liste
+  /// (« Suppression en cours… » au lieu d'un appui sans effet) le temps que le
+  /// serveur réponde. Un champ ordinaire, que rien ne relisait à l'écran, ne
+  /// faisait qu'avaler le second appui en silence.
+  bool _suppressionEnCours = false;
+
   @override
   void initState() {
     super.initState();
@@ -129,6 +137,27 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Stack(
+      children: [
+        _construireLesReglages(context, isDark),
+        // Le drapeau _basculeEnCours ne se voyait nulle part : la confirmation
+        // se referme avant l'appel (showPremiumDialog ferme puis exécute
+        // onConfirm), et l'écran restait affiché et inerte le temps de la
+        // requête. Le voile le dit, et absorbe les appuis.
+        if (_basculeEnCours)
+          Positioned.fill(
+            child: AbsorbPointer(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.35),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _construireLesReglages(BuildContext context, bool isDark) {
     return BaseSettingsLayout(
       title: "Paramètres",
       primaryAccentColor: AppColors.primary,
@@ -270,8 +299,25 @@ class _SettingsPageState extends State<SettingsPage> {
         SettingItemTile(
           icon: Icons.delete_forever_outlined,
           title: "Supprimer mon compte",
-          subtitle: "Demander la suppression irr\u00e9versible de mon compte",
+          // Le libellé dit le contrat réel du serveur : désactivation
+          // immédiate, purge définitive après un délai de grâce de 30 jours —
+          // pas une suppression « irréversible » sur-le-champ.
+          //
+          // (Les accents s'écrivent en clair, comme dans tout le fichier : ce
+          // bloc était le seul rédigé en échappements Unicode bruts —
+          // illisible à la relecture, trace d'une réécriture interrompue.)
+          subtitle: "Désactivation immédiate, suppression après 30 jours",
           onTap: () {
+            // Un appui pendant que la demande est en vol ne tombe plus dans le
+            // vide : le dialogue ne se rouvre pas, mais on dit pourquoi. Le
+            // garde-fou anti-double-appui rendait la main sans un mot.
+            if (_suppressionEnCours) {
+              AppNotifications.showSnackBar(
+                context,
+                message: "Suppression en cours, veuillez patienter…",
+              );
+              return;
+            }
             _showDeleteAccountDialog(context);
           },
         ),
@@ -330,136 +376,273 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showDeleteAccountDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: true,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-            border: Border.all(
-              color: AppColors.textPrimary.withValues(alpha: 0.08),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Warning icon
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.error.withValues(alpha: 0.12),
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.3),
-                    width: 1.5,
-                  ),
+      // Le dialogue RESTE ouvert pendant l'appel, et ne se ferme plus d'un
+      // appui à côté : c'est lui qui porte l'attente.
+      //
+      // Il se fermait auparavant avant même que la requête ne parte, et plus
+      // rien ne bougeait à l'écran jusqu'à la réponse du serveur. Sur un
+      // réseau lent, la personne rouvrait le dialogue et ré-appuyait : le
+      // garde-fou anti-double-appui lui rendait alors la main sans le moindre
+      // message — ni dialogue, ni snackbar. Pour un geste irréversible,
+      // l'absence totale de retour est le pire des états. Même patron que
+      // showLogoutDialog (base_settings_layout.dart) : bouton en attente,
+      // actions désactivées.
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        bool enCours = false;
+        return StatefulBuilder(
+          builder: (contexteDuDialogue, setDialogState) {
+            return PopScope(
+              // Le bouton retour du système n'escamote pas l'attente non plus.
+              canPop: !enCours,
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
                 ),
-                child: const Icon(
-                  Icons.warning_amber_rounded,
-                  size: 28,
-                  color: AppColors.error,
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Title
-              Text(
-                "Supprimer mon compte",
-                style: GoogleFonts.poppins(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              // Message
-              Text(
-                "Cette action est irréversible. Votre profil, vos préférences et l'accès à votre bibliothèque seront définitivement supprimés.",
-                style: GoogleFonts.poppins(
-                  color: AppColors.textPrimary.withValues(alpha: 0.7),
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              // Actions
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textHint,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusInner,
-                            ),
-                          ),
-                        ),
-                        child: Text(
-                          "Annuler",
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusPill,
+                    ),
+                    border: Border.all(
+                      color: AppColors.textPrimary.withValues(alpha: 0.08),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          await SessionService.terminer();
-                          if (context.mounted) {
-                            AppNotifications.showPremiumDialog(
-                              context,
-                              title: "Demande transmise",
-                              message:
-                                  "Votre demande de suppression de compte a bien été transmise.",
-                              confirmText: "Fermer",
-                              isSuccess: true,
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusInner,
-                            ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Warning icon
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.error.withValues(alpha: 0.12),
+                          border: Border.all(
+                            color: AppColors.error.withValues(alpha: 0.3),
+                            width: 1.5,
                           ),
                         ),
-                        child: Text(
-                          "Supprimer",
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 28,
+                          color: AppColors.error,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 20),
+                      // Title
+                      Text(
+                        "Supprimer mon compte",
+                        style: GoogleFonts.poppins(
+                          color: AppColors.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      // Message
+                      //
+                      // La phrase ne promet QUE ce que le serveur fait.
+                      // DeleteAccount (space_learn_auth, controllers/user.go)
+                      // ne touche que trois champs : statut « supprime », nom
+                      // affiché remplacé, date de suppression — et
+                      // PeutOuvrirSession referme la porte aussitôt. L'e-mail,
+                      // le pseudo, le téléphone, la biographie et la photo
+                      // restent en base pendant le délai de grâce : parler
+                      // d'« anonymisation » de toutes les données personnelles
+                      // était un second mensonge, plus petit que le premier
+                      // (« suppression irréversible immédiate ») mais un
+                      // mensonge quand même.
+                      Text(
+                        "Votre compte sera immédiatement désactivé : vous ne pourrez plus vous y connecter et votre nom cessera d'être affiché. Vos données sont conservées pendant un délai de grâce de 30 jours, puis supprimées définitivement.",
+                        style: GoogleFonts.poppins(
+                          color: AppColors.textPrimary.withValues(alpha: 0.7),
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      // Actions
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: TextButton(
+                                onPressed: enCours
+                                    ? null
+                                    : () => Navigator.pop(dialogContext),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.textHint,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppDimensions.radiusInner,
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  "Annuler",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: enCours
+                                    ? null
+                                    : () async {
+                                        setDialogState(() => enCours = true);
+                                        if (mounted) {
+                                          setState(
+                                            () => _suppressionEnCours = true,
+                                          );
+                                        }
+                                        await _executerLaSuppression(
+                                          dialogContext,
+                                        );
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.error,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppDimensions.radiusInner,
+                                    ),
+                                  ),
+                                ),
+                                child: enCours
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                    : Text(
+                                        "Supprimer",
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
+  }
+
+  /// Enchaîne l'appel au serveur, la fermeture du dialogue d'attente et
+  /// l'annonce du résultat.
+  ///
+  /// Isolée du `builder` pour que le `await` ne vive pas au milieu de l'arbre
+  /// de widgets : le dialogue se ferme ici, dans tous les cas, avant que quoi
+  /// que ce soit ne s'affiche.
+  Future<void> _executerLaSuppression(BuildContext dialogContext) async {
+    String? messageDuServeur;
+    Object? echec;
+    try {
+      messageDuServeur = await _demanderLaSuppression();
+    } catch (e) {
+      echec = e;
+    }
+
+    if (dialogContext.mounted) {
+      Navigator.of(dialogContext).pop();
+    }
+    if (!mounted) return;
+    setState(() => _suppressionEnCours = false);
+
+    if (echec != null) {
+      // Échec = rien n'a changé, ni sur le serveur ni en local. On affiche la
+      // raison du serveur au lieu d'annoncer un succès qui n'a pas eu lieu.
+      AppNotifications.showSnackBar(
+        context,
+        message: messageLisible(
+          echec,
+          repli: "La suppression du compte n'a pas abouti. Réessayez.",
+        ),
+        isError: true,
+      );
+      return;
+    }
+
+    await AppNotifications.showPremiumDialog(
+      context,
+      title: "Compte désactivé",
+      // Le message du serveur, tel quel.
+      message: messageDuServeur!,
+      confirmText: "Fermer",
+      isSuccess: true,
+    );
+
+    // La session n'existe plus : rester sur les réglages n'aurait aucun sens.
+    // Retour au point de départ de l'application — et par le retour du
+    // dialogue plutôt que par onConfirm, car showPremiumDialog se ferme aussi
+    // d'un appui à côté (barrierDismissible) : on serait alors resté sur les
+    // réglages d'un compte qui n'existe plus, jusqu'au premier 401.
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const BienvenuePage()),
+      (route) => false,
+    );
+  }
+
+  /// Demande la suppression au serveur, et n'annonce QUE ce qu'il a confirmé.
+  ///
+  /// Ce gestionnaire n'appelait que SessionService.terminer() — un nettoyage
+  /// purement LOCAL — puis affichait « votre demande a bien été transmise » :
+  /// aucune requête ne partait, le compte restait pleinement actif en base
+  /// avec toutes ses données, et il suffisait de se reconnecter pour le
+  /// retrouver intact. La route existe (DELETE /utilisateurs/:id) : c'est
+  /// elle qui fait foi, et le nettoyage local ne vient qu'APRÈS son accord.
+  ///
+  /// Rend le message du serveur, ou lève. Aucun affichage ici : c'est
+  /// _executerLaSuppression qui décide de ce que voit la personne.
+  Future<String> _demanderLaSuppression() async {
+    final message = await AuthService().deleteAccount();
+
+    // Le compte est désactivé côté serveur : on révoque la session sur le
+    // serveur puis on efface toute trace locale — logout() fait les deux.
+    //
+    // Un ennui ICI ne remet pas en cause ce que le serveur a déjà fait : le
+    // signaler comme un échec de suppression ferait croire que le compte est
+    // intact. On le journalise, et on annonce ce qui s'est réellement produit.
+    try {
+      await AuthService().logout();
+    } catch (e) {
+      debugPrint('Suppression du compte : fin de session imparfaite — $e');
+    }
+
+    return message;
   }
 
   Widget _buildStatsCard(bool isDark) {
@@ -675,6 +858,15 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _switchToAuthorMode(BuildContext context) {
+    // Rouvrir la confirmation pendant que la première est en vol n'aurait
+    // aucun sens : on le dit au lieu de ne rien faire.
+    if (_basculeEnCours) {
+      AppNotifications.showSnackBar(
+        context,
+        message: "Bascule en cours, veuillez patienter…",
+      );
+      return;
+    }
     AppNotifications.showPremiumDialog(
       context,
       title: "Mode Auteur",
@@ -709,6 +901,10 @@ class _SettingsPageState extends State<SettingsPage> {
       final tokenUser = await AuthService().updateProfileForUser("Auteur");
 
       await ProfileStorage.saveSelectedProfileRole("auteur");
+      // Le nouveau profil remplace l'ancien dans le stockage : sans cela, un
+      // démarrage hors ligne relisait l'identifiant du profil précédent avec
+      // le rôle tout juste enregistré — un attelage incohérent.
+      await ProfileStorage.saveSelectedProfile(tokenUser.user.profilId);
       if (!context.mounted) return;
 
       Navigator.pushAndRemoveUntil(

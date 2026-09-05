@@ -74,9 +74,21 @@ class BookModel {
   final int? _telechargements;
   final int? _nombreMessages;
 
+  /// Nombre d'AVIS déposés sur le livre, sous son vrai nom.
+  ///
+  /// Le serveur (ListWithStats) n'envoie que `nombre_avis` dans les listes —
+  /// jamais de compteur de lectures. Le modèle versait pourtant ce nombre
+  /// dans [telechargements] : un auteur lu 500 fois mais noté 2 fois voyait
+  /// « 2 lectures » partout, et « Populaires » triait sur le compte d'avis.
+  /// Les deux grandeurs sont désormais séparées : [telechargements] ne se
+  /// remplit que d'un vrai compteur de téléchargements, et reste à zéro quand
+  /// le serveur n'en donne pas.
+  final int? _nombreAvis;
+
   double get noteMoyenne => _noteMoyenne ?? 0.0;
   int get telechargements => _telechargements ?? 0;
   int get nombreMessages => _nombreMessages ?? 0;
+  int get nombreAvis => _nombreAvis ?? 0;
 
   // Relations
   final Categorie? categorie; // Categorie
@@ -114,9 +126,11 @@ class BookModel {
     double? noteMoyenne,
     int? telechargements,
     int? nombreMessages,
+    int? nombreAvis,
   }) : _noteMoyenne = noteMoyenne ?? 0.0,
        _telechargements = telechargements ?? 0,
-       _nombreMessages = nombreMessages ?? 0;
+       _nombreMessages = nombreMessages ?? 0,
+       _nombreAvis = nombreAvis ?? 0;
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
     // Handle author extraction
@@ -248,23 +262,23 @@ class BookModel {
         if (val is num) return val.toDouble();
         return double.tryParse(val.toString()) ?? 0.0;
       })(),
-      telechargements: (() {
+      // `nombre_avis` ne remplit PLUS `telechargements` : c'était la source
+      // du « 2 lectures » affiché à un auteur noté 2 fois et lu 500 fois.
+      // Sans compteur de téléchargements dans la réponse, la valeur reste 0.
+      telechargements: _entier(
+        json['telechargements'] ?? json['downloads'],
+      ),
+      nombreAvis: (() {
         final val =
             json['nombre_avis'] ??
             json['NombreAvis'] ??
             json['reviews_count'] ??
             json['review_count'] ??
             json['activites_count'] ??
-            json['telechargements'] ??
-            json['downloads'] ??
             0;
-        int count = 0;
-        if (val is num) {
-          count = val.toInt();
-        } else {
-          count = int.tryParse(val.toString()) ?? 0;
-        }
-
+        final count = _entier(val);
+        // Les avis joints font foi quand le compteur manque : `Activites`
+        // EST la liste des avis, la compter n'invente rien.
         if (count == 0 && json['Activites'] is List) {
           return (json['Activites'] as List).length;
         }
@@ -331,16 +345,29 @@ class BookModel {
   /// Même forme que [ReversementModel.dateAAfficher].
   DateTime? get dateAAfficher => publieLe ?? creeLe;
 
+  /// Copie du livre, TOUS champs conservés.
+  ///
+  /// [argumentairePartage] et [fichierIndisponible] manquaient à cette liste :
+  /// ils reprenaient leur valeur par défaut ('' et false) à chaque copie. Or
+  /// la boutique, l'accueil, la bibliothèque et la recherche reconstruisent
+  /// leurs livres par copyWith — le texte de partage rédigé par l'auteur
+  /// disparaissait donc du livre partagé depuis ces écrans, et surtout le
+  /// drapeau « manuscrit enregistré mais illisible côté serveur » était
+  /// effacé : la liseuse retombait sur « Aucun fichier disponible » au lieu
+  /// de « momentanément indisponible », c'est-à-dire exactement la confusion
+  /// que ce drapeau existe pour lever.
   BookModel copyWith({
     String? id,
     String? auteurId,
     String? titre,
     String? description,
+    String? argumentairePartage,
     String? imageCouverture,
     String? fichierUrl,
     String? extraitUrl,
     int? nbPagesExtrait,
     bool? aUnFichier,
+    bool? fichierIndisponible,
     String? format,
     int? prix,
     int? stock,
@@ -353,6 +380,7 @@ class BookModel {
     double? noteMoyenne,
     int? telechargements,
     int? nombreMessages,
+    int? nombreAvis,
     Categorie? categorie,
     List<ReviewModel>? activites,
     List<ReadingActivityModel>? progressions,
@@ -364,11 +392,13 @@ class BookModel {
       auteurId: auteurId ?? this.auteurId,
       titre: titre ?? this.titre,
       description: description ?? this.description,
+      argumentairePartage: argumentairePartage ?? this.argumentairePartage,
       imageCouverture: imageCouverture ?? this.imageCouverture,
       fichierUrl: fichierUrl ?? this.fichierUrl,
       extraitUrl: extraitUrl ?? this.extraitUrl,
       nbPagesExtrait: nbPagesExtrait ?? this.nbPagesExtrait,
       aUnFichier: aUnFichier ?? this.aUnFichier,
+      fichierIndisponible: fichierIndisponible ?? this.fichierIndisponible,
       format: format ?? this.format,
       prix: prix ?? this.prix,
       stock: stock ?? this.stock,
@@ -381,6 +411,7 @@ class BookModel {
       noteMoyenne: noteMoyenne ?? this.noteMoyenne,
       telechargements: telechargements ?? this.telechargements,
       nombreMessages: nombreMessages ?? this.nombreMessages,
+      nombreAvis: nombreAvis ?? this.nombreAvis,
       categorie: categorie ?? this.categorie,
       activites: activites ?? this.activites,
       progressions: progressions ?? this.progressions,
@@ -420,6 +451,9 @@ class BookModel {
       'publie_le': publieLe?.toIso8601String(),
       'note_moyenne': noteMoyenne,
       'telechargements': telechargements,
+      // Sous son vrai nom, pour que le nombre d'avis survive à un passage
+      // par toJson() → fromJson() sans se reverser dans `telechargements`.
+      'nombre_avis': nombreAvis,
       'nombre_messages': nombreMessages,
       'Categorie': categorie?.toJson(),
       'Activites': activites?.map((i) => i.toJson()).toList(),

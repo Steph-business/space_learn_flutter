@@ -8,7 +8,10 @@ import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/communaute/nouvelle_annonce_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/communaute/creer_evenement_page.dart';
@@ -47,14 +50,55 @@ class _TeamsPageState extends State<TeamsPage> {
   String _prenom = '';
   int _nombreAbonnes = 0;
 
+  /// Le compte d'abonnés a-t-il réellement pu être chargé ?
+  ///
+  /// Sans ce drapeau, un timeout sur getFollowers laissait _nombreAbonnes à
+  /// zéro, et la page affichait « Personne ne vous suit encore » — un zéro
+  /// inventé — à un auteur suivi par des dizaines de lecteurs. Une panne
+  /// n'est pas un vide : quand on ne sait pas, on ne l'affirme pas.
+  bool _abonnesConnus = false;
+
   /// Ce qui se passe dans le salon officiel.
   ///
   /// La carte annonçait « Avis, FAQ, et annonces globales » — une description
   /// du lieu, jamais de son activité. Rien ne disait s'il s'y passait quoi que
   /// ce soit, donc rien n'invitait à l'ouvrir.
   int _discussionsSalon = 0;
+
+  /// Le comptage des discussions du salon a-t-il abouti ?
+  ///
+  /// Sans ce drapeau, un échec de `getGlobalDiscussions` laissait
+  /// `_discussionsSalon` à zéro et la carte affirmait « Aucune discussion pour
+  /// l'instant — ouvrez-en une » alors que le serveur n'avait pas pu être
+  /// interrogé. Même défaut, même remède que le compte d'abonnés juste
+  /// au-dessus : une panne n'est pas un vide.
+  bool _salonEnPanne = false;
+
+  /// Le chargement des publications a-t-il échoué ?
+  ///
+  /// C'était le plus grossier des trois : sur panne, `_evenements` restait
+  /// vide, la page titrait « Vos publications (0) » et affichait « Aucune
+  /// annonce ou événement pour le moment » à un auteur qui en a publié dix.
+  /// Un zéro inventé, avec la mise en page d'un fait établi. La page sœur du
+  /// lecteur ferme déjà ce trou de la même façon
+  /// (lecteur/communaute_page.dart : _panneEvenements).
+  bool _evenementsEnPanne = false;
+
+  /// La panne vient-elle d'une session finie plutôt que d'un incident passager ?
+  ///
+  /// Les deux n'appellent pas le même geste : l'une se répare en réessayant,
+  /// l'autre jamais.
+  bool _sessionExpiree = false;
+
   bool _isLoading = true;
   bool _filterActiveOnly = true;
+
+  /// L'onglet des forums a-t-il déjà été posé ?
+  ///
+  /// Voir le commentaire dans [_loadData] : le défaut ne vaut qu'au premier
+  /// chargement, jamais par-dessus un choix de l'auteur.
+  bool _ongletChoisi = false;
+
   String? _error;
 
   @override
@@ -68,11 +112,16 @@ class _TeamsPageState extends State<TeamsPage> {
       setState(() {
         _isLoading = true;
         _error = null;
+        _sessionExpiree = false;
       });
 
       final token = await TokenStorage.getToken();
+      // Le coffre à jetons se lit de façon asynchrone : sans cette garde, les
+      // setState qui suivent pouvaient tomber sur un écran déjà quitté.
+      if (!mounted) return;
       if (token == null) {
         setState(() {
+          _sessionExpiree = true;
           _error = "Session expirée. Veuillez vous reconnecter.";
           _isLoading = false;
         });
@@ -80,9 +129,10 @@ class _TeamsPageState extends State<TeamsPage> {
       }
 
       final user = await _authService.getUser(token);
+      if (!mounted) return;
       if (user == null) {
         setState(() {
-          _error = "Utilisateur non trouvé.";
+          _error = "Votre compte n'a pas pu être chargé.";
           _isLoading = false;
         });
         return;
@@ -103,19 +153,30 @@ class _TeamsPageState extends State<TeamsPage> {
           .toList();
 
       // Le nombre d'abonnes ne doit pas empecher la page de s'afficher :
-      // c'est un ornement, pas une donnee vitale.
-      int abonnes = 0;
+      // c'est un ornement, pas une donnee vitale. Mais `null` et non zero
+      // quand la requete echoue : un echec reseau est indistinguable d'une
+      // audience nulle si on les code pareil, et la phrase d'audience
+      // annoncait alors « Personne ne vous suit encore ».
+      int? abonnes;
       try {
         abonnes = (await _relationService.getFollowers(user.id)).length;
-      } catch (_) {}
+      } catch (_) {
+        abonnes = null;
+      }
 
       int discussionsSalon = 0;
+      bool salonEnPanne = false;
       try {
         discussionsSalon =
             (await _discussionService.getGlobalDiscussions()).length;
-      } catch (_) {}
+      } catch (_) {
+        // On retient la panne au lieu de la taire : la carte du salon doit
+        // dire qu'elle ne sait pas, et surtout ne pas affirmer un zéro.
+        salonEnPanne = true;
+      }
 
       List<Evenement> evts = [];
+      bool evenementsEnPanne = false;
       try {
         final rawEvts = await _evenementService.getEvenementsByAuthor(
           user.id,
@@ -137,33 +198,81 @@ class _TeamsPageState extends State<TeamsPage> {
                     ? e.nomAuteur
                     : user.nomComplet,
                 creeLe: e.creeLe,
+                // Recopiés, parce qu'ils étaient PERDUS.
+                //
+                // Cette copie n'existe que pour compléter le nom de l'auteur,
+                // mais elle rebâtit l'objet champ par champ : les deux oubliés
+                // retombaient donc sur leur valeur par défaut. `passe: false`
+                // effaçait la mention « Terminé » et repeignait en couleur
+                // d'accent la date d'un rendez-vous déjà écoulé ; `lienVisio:
+                // null` faisait disparaître le badge « Visio » et le bouton
+                // « Rejoindre » — l'auteur était le seul à ne pas voir le lien
+                // qu'il venait lui-même de saisir.
+                lienVisio: e.lienVisio,
+                passe: e.passe,
               ),
             )
             .toList();
-      } catch (e) {}
+      } catch (e) {
+        // Idem : l'écran doit montrer la panne là où les publications
+        // auraient dû être, pas un « (0) » ni un état vide encourageant.
+        evenementsEnPanne = true;
+      }
 
       if (mounted) {
         setState(() {
           _books = books;
           _evenements = evts;
+          _evenementsEnPanne = evenementsEnPanne;
           _prenom = user.nomComplet.trim().split(' ').first;
-          _nombreAbonnes = abonnes;
+          _nombreAbonnes = abonnes ?? 0;
+          _abonnesConnus = abonnes != null;
           _discussionsSalon = discussionsSalon;
+          _salonEnPanne = salonEnPanne;
           // L'onglet par defaut suit ce qu'il y a a montrer : avec zero
           // discussion active, « Discussions actives » s'ouvrait vide alors
           // que « Toutes mes œuvres » en contenait quatre.
-          _filterActiveOnly = books.any((b) => b.nombreMessages > 0);
+          //
+          // Une seule fois, au premier chargement. Ce calcul était refait à
+          // chaque appel : l'auteur qui basculait sur « Toutes mes œuvres »
+          // puis tirait pour rafraîchir — ou revenait d'une nouvelle annonce,
+          // qui relance _loadData — était ramené de force sur l'autre onglet.
+          // Un choix explicite ne se défait pas tout seul.
+          if (!_ongletChoisi) {
+            _filterActiveOnly = books.any((b) => b.nombreMessages > 0);
+            _ongletChoisi = true;
+          }
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = "Erreur lors du chargement des données.";
+          // La cause, telle que le serveur l'a dite. « Erreur lors du
+          // chargement des données. » cachait aussi bien une session finie
+          // qu'un réseau coupé, et l'auteur ne pouvait qu'appuyer à nouveau.
+          _sessionExpiree = estSessionExpiree(e);
+          _error = messageLisible(
+            e,
+            repli: "Votre communauté n'a pas pu être chargée.",
+          );
           _isLoading = false;
         });
       }
     }
+  }
+
+  /// Termine la session et ramène à l'écran de connexion.
+  ///
+  /// Le nettoyage passe par [SessionService] : effacer le seul jeton laisserait
+  /// sur l'appareil la bibliothèque téléchargée et le profil choisi.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
   }
 
   /// Ce que l'auteur a réellement devant lui, en une phrase.
@@ -173,6 +282,17 @@ class _TeamsPageState extends State<TeamsPage> {
   /// suivre que d'afficher « 0 abonné ».
   String _phraseAudience() {
     final oeuvres = _books.length;
+    final oeuvresTexte = oeuvres <= 1 ? "$oeuvres œuvre" : "$oeuvres œuvres";
+
+    // Compte indisponible : on parle de ce que l'on SAIT — les œuvres — sans
+    // rien affirmer de l'audience. « Personne ne vous suit encore » sur une
+    // simple panne était un mensonge, avec un conseil condescendant en prime.
+    if (!_abonnesConnus) {
+      return oeuvres == 0
+          ? "Publiez une première œuvre : vos lecteurs pourront alors vous suivre et échanger ici."
+          : "$oeuvresTexte publiée${oeuvres > 1 ? 's' : ''} · nombre d'abonnés indisponible pour l'instant";
+    }
+
     if (_nombreAbonnes == 0) {
       return oeuvres == 0
           ? "Publiez une première œuvre : vos lecteurs pourront alors vous suivre et échanger ici."
@@ -181,7 +301,6 @@ class _TeamsPageState extends State<TeamsPage> {
     final abonnes = _nombreAbonnes == 1
         ? "1 lecteur vous suit"
         : "$_nombreAbonnes lecteurs vous suivent";
-    final oeuvresTexte = oeuvres <= 1 ? "$oeuvres œuvre" : "$oeuvres œuvres";
     return "$abonnes · $oeuvresTexte publiée${oeuvres > 1 ? 's' : ''}";
   }
 
@@ -207,9 +326,16 @@ class _TeamsPageState extends State<TeamsPage> {
                           style: TextStyle(color: AppColors.error),
                         ),
                         SizedBox(height: 10),
+                        // Un bouton qui peut aboutir, ou pas celui-là : sur
+                        // une session finie, « Réessayer » relance les mêmes
+                        // requêtes avec le même jeton mort, indéfiniment.
                         ElevatedButton(
-                          onPressed: _loadData,
-                          child: Text("Réessayer"),
+                          onPressed: _sessionExpiree
+                              ? _seReconnecter
+                              : _loadData,
+                          child: Text(
+                            _sessionExpiree ? "Se reconnecter" : "Réessayer",
+                          ),
                         ),
                       ],
                     ),
@@ -274,7 +400,11 @@ class _TeamsPageState extends State<TeamsPage> {
                                               const NouvelleAnnoncePage(),
                                         ),
                                       );
-                                      if (result == true) _loadData();
+                                      // _loadData appelle setState : après
+                                      // l'attente, l'écran a pu être quitté.
+                                      if (result == true && mounted) {
+                                        _loadData();
+                                      }
                                     },
                                   ),
                                 ),
@@ -297,7 +427,11 @@ class _TeamsPageState extends State<TeamsPage> {
                                               const CreerEvenementPage(),
                                         ),
                                       );
-                                      if (result == true) _loadData();
+                                      // Même raison qu'au-dessus : pas de
+                                      // setState sur un écran déjà quitté.
+                                      if (result == true && mounted) {
+                                        _loadData();
+                                      }
                                     },
                                   ),
                                 ),
@@ -306,62 +440,73 @@ class _TeamsPageState extends State<TeamsPage> {
                           ),
 
                           // Section Événements & Annonces
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              left: 20.0,
-                              top: 30.0,
-                              bottom: 15.0,
-                            ),
-                            child: Text(
-                              "Vos publications (${_evenements.length})",
-                              style: GoogleFonts.poppins(
-                                color: AppColors.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          if (_evenements.isNotEmpty)
-                            _buildEvenementsSection()
-                          else
+                          //
+                          // Le compte et l'état vide ne s'écrivent que si le
+                          // serveur a répondu. Sur panne, ce bloc titrait
+                          // « Vos publications (0) » puis « Aucune annonce ou
+                          // événement pour le moment » à un auteur qui en a
+                          // publié dix — un zéro inventé, avec la mise en page
+                          // d'un fait établi.
+                          if (_evenementsEnPanne)
+                            _panneEvenements()
+                          else ...[
                             Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20.0,
+                              padding: const EdgeInsets.only(
+                                left: 20.0,
+                                top: 30.0,
+                                bottom: 15.0,
                               ),
-                              child: Container(
-                                height: 120,
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: AppColors.cardBackground,
-                                  borderRadius: BorderRadius.circular(
-                                    AppDimensions.radiusCard,
-                                  ),
-                                  border: Border.all(
-                                    color: AppColors.textPrimary.withOpacity(
-                                      0.05,
-                                    ),
-                                  ),
+                              child: Text(
+                                "Vos publications (${_evenements.length})",
+                                style: GoogleFonts.poppins(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Iconsax.notification_status,
-                                      color: AppColors.textHint,
-                                      size: 32,
+                              ),
+                            ),
+                            if (_evenements.isNotEmpty)
+                              _buildEvenementsSection()
+                            else
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20.0,
+                                ),
+                                child: Container(
+                                  height: 120,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.cardBackground,
+                                    borderRadius: BorderRadius.circular(
+                                      AppDimensions.radiusCard,
                                     ),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      "Aucune annonce ou événement pour le moment.",
-                                      style: GoogleFonts.poppins(
-                                        color: AppColors.textHint,
-                                        fontSize: 13,
+                                    border: Border.all(
+                                      color: AppColors.textPrimary.withOpacity(
+                                        0.05,
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Iconsax.notification_status,
+                                        color: AppColors.textHint,
+                                        size: 32,
+                                      ),
+                                      SizedBox(height: 10),
+                                      Text(
+                                        "Aucune annonce ou événement pour le moment.",
+                                        style: GoogleFonts.poppins(
+                                          color: AppColors.textHint,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+                          ],
 
                           // Forums par Livre
                           Builder(
@@ -521,6 +666,78 @@ class _TeamsPageState extends State<TeamsPage> {
     );
   }
 
+  /// La portion « publications » en panne : on le dit, et on peut réessayer.
+  ///
+  /// À la place exacte de la section qui n'a pas pu se remplir — pas un titre
+  /// à « (0) » suivi d'un état vide, qui se lirait comme « vous n'avez rien
+  /// publié ». Le titre y reste, sans compte : on sait de quoi on parle, on ne
+  /// sait pas combien. Même geste que la page sœur du lecteur.
+  Widget _panneEvenements() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Vos publications",
+            style: GoogleFonts.poppins(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 15),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+              border: Border.all(
+                color: AppColors.error.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Iconsax.warning_2,
+                  color: AppColors.textSecondary,
+                  size: 28,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  "Vos annonces et événements n'ont pas pu être chargés. "
+                  "Vérifiez votre connexion.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: _loadData,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.accentInk,
+                    side: BorderSide(color: AppColors.border),
+                  ),
+                  child: Text(
+                    "Réessayer",
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildGlobalSalonCard() {
     return GestureDetector(
       onTap: () {
@@ -576,8 +793,14 @@ class _TeamsPageState extends State<TeamsPage> {
                     ),
                   ),
                   SizedBox(height: 4),
+                  // « Aucune discussion » ne s'écrit que si le serveur l'a
+                  // dit. Sur panne du comptage, la carte l'annonçait tout de
+                  // même, avec l'invitation qui va avec — un auteur pouvait
+                  // ouvrir un doublon d'un sujet déjà en cours.
                   Text(
-                    _discussionsSalon == 0
+                    _salonEnPanne
+                        ? "Activité du salon indisponible"
+                        : _discussionsSalon == 0
                         ? "Aucune discussion pour l'instant — ouvrez-en une"
                         : _discussionsSalon == 1
                         ? "1 discussion en cours"
@@ -603,9 +826,15 @@ class _TeamsPageState extends State<TeamsPage> {
     // La carte annoncait « N messages » avec N = telechargements x 2, et un
     // verdict « Tres actif » / « Peu actif » tire du meme compteur de
     // telechargements. Aucun des deux ne parlait du salon : un auteur pouvait
-    // lire « 120 messages » sur un club ou personne n'avait jamais ecrit. Le
-    // nombre de lecteurs, lui, est reel.
-    final lecteurs = book.telechargements;
+    // lire « 120 messages » sur un club ou personne n'avait jamais ecrit.
+    //
+    // Le compteur de secours choisi alors — « N lecteurs » tiré de
+    // `telechargements` — n'en était pas un non plus : ce champ était rempli
+    // par le modèle avec le nombre d'AVIS, et le serveur ne l'envoie pas dans
+    // les listes. Il vaut désormais 0 pour tout le monde, ce qui aurait
+    // affiché « Aucun lecteur pour l'instant » sous chaque livre. On compte
+    // donc ce que le serveur donne réellement : les avis reçus.
+    final avis = book.nombreAvis;
 
     return GestureDetector(
       onTap: () {
@@ -688,11 +917,11 @@ class _TeamsPageState extends State<TeamsPage> {
                       ),
                       SizedBox(width: 4),
                       Text(
-                        lecteurs == 0
-                            ? "Aucun lecteur pour l'instant"
-                            : lecteurs == 1
-                            ? "1 lecteur"
-                            : "$lecteurs lecteurs",
+                        avis == 0
+                            ? "Aucun avis pour l'instant"
+                            : avis == 1
+                            ? "1 avis"
+                            : "$avis avis",
                         style: GoogleFonts.poppins(
                           color: AppColors.textSecondary,
                           fontSize: 12,
@@ -817,6 +1046,15 @@ class _TeamsPageState extends State<TeamsPage> {
                 bottom: i == apercu.length - 1 ? 0 : AppDimensions.spaceMd,
               ),
               child: CarteEvenement(
+                // La Key suit l'ÉVÉNEMENT, pas son rang dans la liste.
+                //
+                // Sans elle, Flutter apparie les cartes par position : après
+                // un _loadData qui réordonne les publications, le State du
+                // bouton « Me le rappeler » restait en place et se retrouvait
+                // rattaché à un AUTRE rendez-vous — « Rappel posé » s'affichait
+                // là où aucun rappel n'existait. Le didUpdateWidget du bouton
+                // n'est qu'un filet ; la réparation est ici.
+                key: ValueKey(apercu[i].id),
                 evenement: apercu[i],
                 onTap: () => _ouvrirPublication(context, apercu[i]),
               ),

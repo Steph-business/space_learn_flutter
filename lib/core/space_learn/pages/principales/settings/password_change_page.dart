@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/forgot_password.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/utils/profile_storage.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 class PasswordChangePage extends StatefulWidget {
   const PasswordChangePage({super.key});
@@ -255,22 +259,74 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
         newPassword: newPass,
       );
 
-      if (!mounted) return;
-
       if (success) {
-        AppNotifications.showPremiumDialog(
-          context,
-          title: "Mot de passe modifié",
-          message:
-              "Votre mot de passe a été mis à jour avec succès dans la base de données. Vous pourrez vous connecter avec ce nouveau mot de passe.",
-          confirmText: "D'accord",
-          isSuccess: true,
-          onConfirm: () {
-            if (mounted) {
-              Navigator.of(context).pop();
-            }
-          },
-        );
+        // Le serveur révoque TOUTES les lignées de rafraîchissement, y
+        // compris celle de CET appareil (RevoquerToutesLesSessions, sans
+        // exclusion de la session courante). Annoncer un plein succès et
+        // laisser continuer programmait donc une éjection « votre session a
+        // expiré » dans l'heure, au milieu de n'importe quel écran. On se
+        // reconnecte tout de suite avec le nouveau mot de passe — l'écran
+        // l'a en main — pour repartir sur une lignée propre.
+        final reconnecte = await _seReconnecter(newPass);
+
+        // La purge locale se fait AVANT le test mounted : même si l'écran a
+        // été quitté pendant l'attente, une session dont la lignée est
+        // révoquée ne doit pas rester dans le coffre.
+        if (!reconnecte) {
+          await SessionService.terminer();
+        }
+
+        if (!mounted) return;
+
+        if (reconnecte) {
+          AppNotifications.showPremiumDialog(
+            context,
+            title: "Mot de passe modifié",
+            message:
+                "Votre mot de passe a été mis à jour. Par sécurité, vos autres appareils ont été déconnectés ; celui-ci reste connecté.",
+            confirmText: "D'accord",
+            isSuccess: true,
+            onConfirm: () {
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+          );
+        } else {
+          // La reconnexion silencieuse a échoué : mieux vaut une déconnexion
+          // PROPRE et expliquée maintenant qu'une coupure inexpliquée, mise
+          // sur le dos d'une « session expirée », dans l'heure qui vient.
+          await AppNotifications.showPremiumDialog(
+            context,
+            title: "Mot de passe modifié",
+            message:
+                "Votre mot de passe a été mis à jour et, par sécurité, toutes vos sessions ont été fermées. Reconnectez-vous avec votre nouveau mot de passe.",
+            confirmText: "Se reconnecter",
+            isSuccess: true,
+          );
+
+          // Le retour à l'écran de connexion ne dépend PLUS du bouton.
+          //
+          // Le dialogue s'ouvre avec barrierDismissible : un appui à côté le
+          // fermait sans exécuter onConfirm, et l'on restait sur les réglages
+          // d'une application qui n'avait plus ni jeton ni profil — jusqu'au
+          // premier 401 et son « votre session a expiré », c'est-à-dire
+          // exactement la coupure inexpliquée que ce correctif devait
+          // supprimer, avancée d'une heure.
+          if (!mounted) return;
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false,
+          );
+        }
+      } else {
+        // Même famille de défaut que dans otp.dart : un `if` sans `else` sur
+        // une réponse « réussie mais fausse ». `changePassword` ne rend jamais
+        // false aujourd'hui — elle lève — mais si cela changeait, l'écran
+        // arrêterait son chargeur sans un mot : ni succès, ni erreur, alors
+        // que le mot de passe aurait peut-être changé. On lève, le catch
+        // affiche.
+        throw Exception("Réponse inattendue du serveur.");
       }
     } catch (e) {
       if (mounted) {
@@ -287,6 +343,51 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  /// Reconnexion silencieuse après le changement de mot de passe.
+  ///
+  /// L'adresse vient du SERVEUR d'abord : la révocation ne porte que sur les
+  /// lignées de rafraîchissement, le jeton d'accès en main reste valable le
+  /// temps de cet appel. L'ordre inverse était dangereux — `saved_email_key`
+  /// est une clé D'APPAREIL, pas de compte : sur un téléphone partagé elle
+  /// pouvait porter l'adresse de quelqu'un d'autre, et le nouveau mot de passe
+  /// partait alors sous cette adresse-là (tentative échouée sur le compte d'un
+  /// tiers, décomptée par la limite de /auth/login), pendant que la personne
+  /// était éjectée juste après un changement pourtant réussi.
+  ///
+  /// La clé mémorisée ne sert donc plus que de repli quand le serveur n'a pas
+  /// répondu — et elle est désormais écrite par les deux chemins de connexion
+  /// puis effacée par SessionService.terminer, ce qui la garde à jour.
+  ///
+  /// `login()` enregistre les nouveaux jetons : la session repart sur une
+  /// lignée de rafraîchissement propre, non révoquée.
+  Future<bool> _seReconnecter(String nouveauMotDePasse) async {
+    try {
+      String? email;
+      try {
+        final token = await TokenStorage.getToken();
+        if (token != null && token.isNotEmpty) {
+          email = (await _authService.getUser(token))?.email;
+        }
+      } catch (e) {
+        // Serveur injoignable ou jeton refusé : on tentera le repli local.
+        debugPrint('Adresse du compte non résolue par le serveur : $e');
+      }
+      email ??= await ProfileStorage.getSavedEmail();
+
+      final adresse = email?.trim() ?? '';
+      if (adresse.isEmpty) return false;
+
+      await _authService.login(adresse, nouveauMotDePasse);
+      // La clé cesse de mentir : c'est bien ce compte-ci qui est connecté sur
+      // cet appareil.
+      await ProfileStorage.saveSavedEmail(adresse);
+      return true;
+    } catch (e) {
+      debugPrint('Reconnexion après changement de mot de passe : $e');
+      return false;
     }
   }
 }

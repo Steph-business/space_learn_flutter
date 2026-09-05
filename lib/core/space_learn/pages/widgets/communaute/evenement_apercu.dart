@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/carte_evenement.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/proximite_evenement.dart';
 
 /// Ouvre une annonce ou un événement en feuille, sans quitter la page.
@@ -183,6 +184,36 @@ class _FeuilleEvenement extends StatelessWidget {
                             ),
                           ),
                         ],
+                      ),
+                    ],
+                    // Les mêmes gestes que sur la carte, par les mêmes
+                    // widgets (carte_evenement) — une seule implémentation.
+                    //
+                    // Cette feuille est le SEUL écran atteint depuis la
+                    // notification « Nouvel événement de l'auteur »
+                    // (notificationService → afficherEvenement) : sans ces
+                    // boutons, un lecteur prévenu d'un live en visio arrivait
+                    // sur un écran d'où il ne pouvait ni rejoindre la
+                    // rencontre ni se faire rappeler — l'action principale de
+                    // l'événement était inaccessible depuis le chemin le plus
+                    // fréquent, alors que lien_visio voyage dans le modèle.
+                    if (!evenement.passe && lienVisioDe(evenement) != null) ...[
+                      const SizedBox(height: 16),
+                      BoutonRejoindreVisio(evenement: evenement),
+                    ],
+                    if (peutRappeler(evenement)) ...[
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        // `dansUneFeuille` : la confirmation se peignait par
+                        // ScaffoldMessenger, tout en bas de l'écran — donc
+                        // SOUS cette feuille, qui en occupe les deux tiers.
+                        // Le geste restait sans retour visible, et un refus
+                        // (« rendez-vous trop proche ») passait inaperçu.
+                        child: BoutonRappelEvenement(
+                          evenement: evenement,
+                          dansUneFeuille: true,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 18),

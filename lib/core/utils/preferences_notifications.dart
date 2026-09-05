@@ -12,6 +12,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Cette classe est le seul endroit qui traduit un type de notification en
 /// préférence, pour que l'écran de réglage et le moment de l'affichage ne
 /// puissent pas diverger.
+///
+/// RÉGLAGES D'APPAREIL, PAS DE COMPTE — décision prise, à ne pas défaire par
+/// mégarde. Ces trois clés n'ont volontairement AUCUN suffixe d'identifiant,
+/// contrairement à presque toutes les autres données locales du dépôt. Elles
+/// vivent avec le thème, la langue et la voix de synthèse : ce qu'on règle une
+/// fois pour ce téléphone.
+///
+/// Les rattacher au compte serait défendable — deux personnes qui se partagent
+/// un appareil ne veulent pas forcément le même silence. Mais le passage
+/// coûterait plus qu'il ne rapporterait : les clés sans suffixe déjà posées sur
+/// les appareils installés deviendraient illisibles, et `doitAfficher` retombe
+/// alors sur son défaut « accepté ». Autrement dit, au premier lancement suivant
+/// la mise à jour, quiconque avait tout coupé recommencerait à recevoir des
+/// notifications sans avoir rien demandé, et sans savoir pourquoi. Faire du
+/// bruit chez qui a demandé le silence est un tort plus grave que celui qu'on
+/// corrigerait.
+///
+/// Aucune purge dans `SessionService.terminer`, donc, pour la même raison : la
+/// déconnexion ne doit pas rallumer des alertes que l'utilisateur avait
+/// éteintes. Un réglage d'appareil ne quitte pas l'appareil.
+///
+/// Ce qui rendrait la décision réversible sans ce tort : lire l'ancienne clé
+/// sans suffixe comme valeur initiale de la clé suffixée, une seule fois, à la
+/// première lecture du compte.
 class PreferencesNotifications {
   PreferencesNotifications._();
 

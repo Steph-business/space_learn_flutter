@@ -8,6 +8,9 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookServi
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/authServices.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 
 class AuteurLivresRecents extends StatefulWidget {
   const AuteurLivresRecents({super.key});
@@ -22,6 +25,19 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
   List<BookModel> _books = [];
   bool _isLoading = true;
 
+  /// Ce qui a empêché la liste d'arriver.
+  ///
+  /// Le catch ne posait rien : il baissait l'indicateur, et la carte affichait
+  /// « Aucun livre publié récemment. » Depuis que `getBooksByAuthorId` lève au
+  /// lieu de rendre `[]`, ce chemin est vivant — un 500 ou un réseau coupé
+  /// annonçait donc à un auteur qui vend dix livres qu'il n'avait rien publié.
+  String? _erreur;
+
+  /// L'échec vient d'une session finie : « Réessayer » n'y peut rien, le jeton
+  /// restera mort à chaque tentative. Même distinction que livres_page.dart,
+  /// où mène le « Voir tout » de cette carte.
+  bool _sessionExpiree = false;
+
   @override
   void initState() {
     super.initState();
@@ -29,31 +45,78 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
   }
 
   Future<void> _loadBooks() async {
+    setState(() {
+      _isLoading = true;
+      _erreur = null;
+      _sessionExpiree = false;
+    });
+
     try {
       final token = await TokenStorage.getToken();
-      if (token != null) {
-        final user = await _authService.getUser(token);
-        if (user != null) {
-          final books = await _bookService.getBooksByAuthor(user.id);
-          if (mounted) {
-            setState(() {
-              books.sort(
-                // « Récent » veut dire récemment PARU, pas récemment
-                // ébauché : un brouillon vieux de six mois publié hier doit
-                // remonter en tête.
-                (a, b) => (b.dateAAfficher ?? DateTime(0)).compareTo(
-                  a.dateAAfficher ?? DateTime(0),
-                ),
-              );
-              _books = books.take(3).toList();
-              _isLoading = false;
-            });
-          }
-        }
+      // Sans jeton, la méthode sortait par le bout de ses `if` sans rien
+      // écrire : l'indicateur tournait pour toujours, et la session finie
+      // n'était dite nulle part.
+      if (token == null) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _sessionExpiree = true;
+          _erreur = "Votre session a expiré. Reconnectez-vous.";
+        });
+        return;
       }
+
+      final user = await _authService.getUser(token);
+      if (!mounted) return;
+      if (user == null) {
+        // Un jeton accepté mais sans profil derrière : le compte n'est plus
+        // joignable, c'est la même issue qu'une session finie.
+        setState(() {
+          _isLoading = false;
+          _sessionExpiree = true;
+          _erreur = "Votre session a expiré. Reconnectez-vous.";
+        });
+        return;
+      }
+
+      final books = await _bookService.getBooksByAuthor(user.id);
+      if (!mounted) return;
+      // « Récent » veut dire récemment PARU, pas récemment ébauché : un
+      // brouillon vieux de six mois publié hier doit remonter en tête.
+      books.sort(
+        (a, b) => (b.dateAAfficher ?? DateTime(0)).compareTo(
+          a.dateAAfficher ?? DateTime(0),
+        ),
+      );
+      setState(() {
+        _books = books.take(3).toList();
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() {
+        _sessionExpiree = estSessionExpiree(e);
+        _erreur = messageLisible(
+          e,
+          repli: "Vos livres n'ont pas pu être chargés.",
+        );
+        _isLoading = false;
+      });
     }
+  }
+
+  /// Fin de session complète, puis retour à l'écran de connexion.
+  ///
+  /// [SessionService.terminer] est le point de nettoyage UNIQUE : effacer le
+  /// seul jeton laisserait au compte suivant le cache et les préférences du
+  /// précédent.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
   }
 
   @override
@@ -61,6 +124,45 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
     AppColors.suivreLeTheme(context);
     if (_isLoading) {
       return Center(child: CircularProgressIndicator());
+    }
+
+    // La panne AVANT le vide : sinon un 500 se lit « vous n'avez rien
+    // publié », ce qui est faux et sans recours.
+    if (_erreur != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Column(
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 40,
+                color: AppColors.error,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _erreur!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Deux issues distinctes : relancer l'appel n'a de sens que si
+              // la session tient encore.
+              ElevatedButton(
+                onPressed: _sessionExpiree ? _seReconnecter : _loadBooks,
+                child: Text(
+                  _sessionExpiree ? "Se reconnecter" : "Réessayer",
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     if (_books.isEmpty) {
@@ -152,8 +254,23 @@ class _AuteurLivresRecentsState extends State<AuteurLivresRecents> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 4),
+                    // Deux mensonges tenaient sur cette ligne.
+                    //
+                    // `categorieId` est un identifiant : la carte affichait
+                    // donc un UUID à la place du nom de la catégorie, ou
+                    // « Fiction » par défaut pour un livre qui n'en était pas.
+                    // Et « N lectures » venait de `telechargements`, que le
+                    // modèle remplissait avec le nombre d'avis. On nomme la
+                    // catégorie quand le serveur l'a jointe, et on compte des
+                    // avis quand ce sont des avis.
                     Text(
-                      "${book.categorieId ?? 'Fiction'} • ${book.telechargements} lectures",
+                      [
+                        if (book.categorie?.nom.isNotEmpty == true)
+                          book.categorie!.nom,
+                        book.nombreAvis == 1
+                            ? "1 avis"
+                            : "${book.nombreAvis} avis",
+                      ].join(" • "),
                       style: AppTextStyles.bodyFaded12,
                     ),
                   ],

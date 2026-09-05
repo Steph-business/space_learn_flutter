@@ -6,7 +6,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/libraryService.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/library_model.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/forum_discussion_page.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/evenementModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
@@ -44,6 +47,30 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
   bool _isLoading = true;
   String? _error;
 
+  /// Le chargement des publications a-t-il échoué ?
+  ///
+  /// Sur panne, `_evenements` restait simplement vide : les sections
+  /// « Rendez-vous » et « Actualités » ne se dessinaient pas, sans un mot ni
+  /// bouton réessayer — un lecteur pouvait manquer une dédicace ou un live
+  /// annoncés, la page affichant « rien à signaler » alors qu'elle n'avait
+  /// pas pu interroger le serveur. Une panne n'est pas un vide.
+  bool _evenementsEnPanne = false;
+
+  /// L'activité du salon a-t-elle pu être comptée ?
+  ///
+  /// L'échec de `getGlobalDiscussions` était avalé sans un mot : `_cafeMsgCount`
+  /// restait à zéro et la ligne « N messages » de la carte disparaissait
+  /// simplement. Moins bruyant que le zéro affirmé des publications, mais de
+  /// la même famille — la carte se lisait comme un salon désert alors que le
+  /// serveur n'avait pas pu être interrogé. Quand on ne sait pas, on le dit.
+  bool _salonEnPanne = false;
+
+  /// La panne vient-elle d'une session finie plutôt que d'un incident passager ?
+  ///
+  /// Les deux n'appellent pas le même geste : l'une se répare en réessayant,
+  /// l'autre jamais. Même distinction que l'accueil du lecteur.
+  bool _sessionExpiree = false;
+
   @override
   void initState() {
     super.initState();
@@ -55,11 +82,16 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
       setState(() {
         _isLoading = true;
         _error = null;
+        _sessionExpiree = false;
       });
 
       final token = await TokenStorage.getToken();
+      // Le coffre à jetons est lu de façon asynchrone : sans cette garde, le
+      // setState qui suit pouvait tomber sur un écran déjà quitté.
+      if (!mounted) return;
       if (token == null) {
         setState(() {
+          _sessionExpiree = true;
           _error = "Session expirée. Veuillez vous reconnecter.";
           _isLoading = false;
         });
@@ -111,12 +143,18 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
       final allLibraryItems = [...libraryItems, ...authorItems];
 
       List<Evenement> evts = [];
+      bool evenementsEnPanne = false;
       try {
         evts = await _evenementService.getGlobalEvenements(token);
         evts = await _enrichirEvenementsAvecAuteurs(evts, allLibraryItems);
-      } catch (e) {}
+      } catch (e) {
+        // On retient la panne au lieu de la taire : l'écran doit la montrer
+        // là où les sections auraient dû être, pas afficher un faux calme.
+        evenementsEnPanne = true;
+      }
 
       int totalCafeMsgs = 0;
+      bool salonEnPanne = false;
       try {
         final globalDiscussions = await _discussionService
             .getGlobalDiscussions();
@@ -126,7 +164,12 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
               : d.messages.length;
           totalCafeMsgs += count;
         }
-      } catch (e) {}
+      } catch (e) {
+        // On retient la panne au lieu de la taire : la carte doit dire qu'elle
+        // ne sait pas, plutôt que d'escamoter sa ligne d'activité comme si le
+        // salon était vide.
+        salonEnPanne = true;
+      }
 
       // Filtrer les entrées sans livre valide
       final validItems = allLibraryItems
@@ -137,19 +180,41 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         setState(() {
           _library = validItems;
           _evenements = evts;
+          _evenementsEnPanne = evenementsEnPanne;
           _prenom = prenom;
           _cafeMsgCount = totalCafeMsgs;
+          _salonEnPanne = salonEnPanne;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = "Erreur lors du chargement des données.";
+          // La cause, telle que le serveur l'a dite. « Erreur lors du
+          // chargement des données. » cachait aussi bien une session finie
+          // qu'un réseau coupé, et le lecteur ne pouvait qu'appuyer à nouveau.
+          _sessionExpiree = estSessionExpiree(e);
+          _error = messageLisible(
+            e,
+            repli: "Vos espaces d'échange n'ont pas pu être chargés.",
+          );
           _isLoading = false;
         });
       }
     }
+  }
+
+  /// Termine la session et ramène à l'écran de connexion.
+  ///
+  /// Le nettoyage passe par [SessionService] : effacer le seul jeton laisserait
+  /// sur l'appareil la bibliothèque téléchargée et le profil choisi.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
   }
 
   /// Une ligne qui dit au lecteur ou il en est.
@@ -166,6 +231,11 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
     final texteLivres = livres == 1
         ? "1 club de lecture"
         : "$livres clubs de lecture";
+    // Publications indisponibles : on ne compte que ce qu'on sait. La phrase
+    // annonçait sereinement « le café des lecteurs vous attend » comme si le
+    // serveur avait répondu qu'il n'y avait rien, alors qu'on n'avait pas pu
+    // l'interroger.
+    if (_evenementsEnPanne) return texteLivres;
     if (_evenements.isEmpty) {
       return "$texteLivres · le café des lecteurs vous attend";
     }
@@ -213,13 +283,22 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                           style: TextStyle(color: AppColors.error),
                         ),
                         SizedBox(height: 10),
+                        // Un bouton qui peut aboutir, ou pas celui-là.
+                        //
+                        // « Réessayer » s'affichait sous toutes les erreurs,
+                        // session finie comprise. Or un jeton mort le reste :
+                        // appuyer relançait les mêmes requêtes, qui
+                        // échouaient de la même façon. Le seul geste utile
+                        // est alors de se reconnecter.
                         ElevatedButton(
-                          onPressed: _loadData,
+                          onPressed: _sessionExpiree
+                              ? _seReconnecter
+                              : _loadData,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryLight,
                           ),
                           child: Text(
-                            "Réessayer",
+                            _sessionExpiree ? "Se reconnecter" : "Réessayer",
                             style: TextStyle(color: AppColors.onAccent),
                           ),
                         ),
@@ -280,8 +359,12 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                           // complète propose un filtre « Tout · Annonces ·
                           // Événements » depuis toujours. Seul l'aperçu de
                           // l'accueil l'ignorait.
-                          ..._sectionAgenda(),
-                          ..._sectionActualites(),
+                          if (_evenementsEnPanne)
+                            _panneEvenements()
+                          else ...[
+                            ..._sectionAgenda(),
+                            ..._sectionActualites(),
+                          ],
 
                           // Forums par Livre
                           Padding(
@@ -339,6 +422,56 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
     );
   }
 
+  /// La portion « publications » en panne : on le dit, et on peut réessayer.
+  ///
+  /// À la place exacte des sections qui n'ont pas pu se remplir — pas un
+  /// simple vide qui se lirait comme « vos auteurs n'ont rien annoncé ».
+  Widget _panneEvenements() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          children: [
+            Icon(Iconsax.warning_2, color: AppColors.textSecondary, size: 28),
+            const SizedBox(height: 10),
+            Text(
+              "Les annonces et rendez-vous de vos auteurs n'ont pas pu "
+              "être chargés. Vérifiez votre connexion.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _loadData,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.accentInk,
+                side: BorderSide(color: AppColors.border),
+              ),
+              child: Text(
+                "Réessayer",
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGlobalSalonCard() {
     return GestureDetector(
       onTap: () {
@@ -390,7 +523,31 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                     "Recommandations, coup de cœurs et discussions générales",
                     style: AppTextStyles.grey12,
                   ),
-                  if (_cafeMsgCount > 0) ...[
+                  // L'activité du salon : ce qu'on sait, et sinon qu'on ne
+                  // sait pas. La ligne disparaissait purement et simplement
+                  // quand le comptage échouait — la carte se lisait alors
+                  // comme un salon sans un seul message.
+                  if (_salonEnPanne) ...[
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.warning_2,
+                          size: 10,
+                          color: AppColors.textSecondary,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          "Activité indisponible",
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textSecondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else if (_cafeMsgCount > 0) ...[
                     SizedBox(height: 4),
                     Row(
                       children: [
@@ -423,20 +580,36 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
 
   Widget _buildBookForumCard(LibraryModel libraryItem) {
     final book = libraryItem.livre!;
-    final activityScore = book.nombreMessages > 20
-        ? "Très actif"
-        : book.nombreMessages > 0
-        ? "Actif"
-        : "Nouveau";
+
+    // On n'affiche un compte que si le serveur en a envoyé un.
+    //
+    // La carte annonçait « N messages » et un verdict « Nouveau / Actif / Très
+    // actif » tirés tous deux de `nombreMessages`. Or la bibliothèque est
+    // servie par un simple `Preload("Livre")` (bibliotheque/repository.go),
+    // tandis que `nombre_messages` porte `gorm:"-"` et n'est calculé que par
+    // la jointure de `ListWithStats`. Le champ est donc ABSENT de cette
+    // réponse — pas à zéro — et le modèle le lit 0. Chaque club acheté
+    // affichait ainsi « 0 messages · Nouveau », y compris ceux où des
+    // dizaines de lecteurs échangent depuis des mois.
+    //
+    // Une donnée absente n'est pas une donnée nulle. La ligne d'activité ne
+    // s'écrit donc que lorsqu'un compte existe vraiment — c'est le cas des
+    // œuvres de l'auteur lui-même, chargées par `getBooksByAuthorId` qui
+    // passe par `ListWithStats` — et à défaut on montre ce que la réponse
+    // porte réellement : le nom de l'auteur. Même raisonnement que la carte
+    // jumelle de la page auteur, qui a renoncé pour la même raison à son
+    // compteur emprunté.
     final msgCount = book.nombreMessages;
+    final auteur = _nomAuteur(libraryItem);
+
+    // Les deux verdicts restants ne se prononcent que sur un compte connu et
+    // non nul : « Nouveau » n'y a plus sa place, il ne disait rien d'autre
+    // que « le serveur ne nous a rien dit ».
+    final activityScore = msgCount > 20 ? "Très actif" : "Actif";
     // greenAccent et grey n'appartiennent a aucune palette de l'application :
     // le premier jurait avec l'orange de la marque, le second ne suivait pas
     // le theme et restait clair en mode sombre.
-    final color = book.nombreMessages > 20
-        ? AppColors.success
-        : book.nombreMessages > 0
-        ? AppColors.accentInk
-        : AppColors.textHint;
+    final color = msgCount > 20 ? AppColors.success : AppColors.accentInk;
 
     return GestureDetector(
       onTap: () {
@@ -505,39 +678,66 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Iconsax.message,
-                        size: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      SizedBox(width: 4),
-                      Text("$msgCount messages", style: AppTextStyles.grey12),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
+                  if (msgCount > 0) ...[
+                    SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.message,
+                          size: 14,
+                          color: AppColors.textSecondary,
                         ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
+                        SizedBox(width: 4),
+                        Text(
+                          // « 1 messages » se lisait sur tout club à message
+                          // unique.
+                          msgCount == 1 ? "1 message" : "$msgCount messages",
+                          style: AppTextStyles.grey12,
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusSmall,
+                            ),
+                          ),
+                          child: Text(
+                            activityScore,
+                            style: GoogleFonts.poppins(
+                              color: color,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        child: Text(
-                          activityScore,
-                          style: GoogleFonts.poppins(
-                            color: color,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                      ],
+                    ),
+                  ] else if (auteur != null) ...[
+                    SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.user,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            "par $auteur",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.grey12,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -545,6 +745,22 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
         ),
       ),
     );
+  }
+
+  /// Le nom de l'auteur, quand le serveur le connaît vraiment.
+  ///
+  /// Deux sources, dans cet ordre : le champ de jointure de la bibliothèque
+  /// (`nom_auteur`, posé par `remplirNomsAuteurs`), puis celui du livre.
+  /// `authorName` répond « Auteur inconnu » quand il ne sait pas : ce n'est
+  /// pas un nom, c'est un aveu — on le traite comme une absence plutôt que de
+  /// l'écrire sous la couverture.
+  String? _nomAuteur(LibraryModel item) {
+    final deLaJointure = item.auteurNom?.trim() ?? '';
+    final nom = deLaJointure.isNotEmpty
+        ? deLaJointure
+        : (item.livre?.authorName ?? '');
+    if (nom.isEmpty || nom == 'Auteur inconnu') return null;
+    return nom;
   }
 
   /// Annonces et evenements des auteurs suivis.
@@ -622,6 +838,18 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                   bottom: i == apercu.length - 1 ? 0 : 12,
                 ),
                 child: CarteEvenement(
+                  // La Key suit l'ÉVÉNEMENT, pas son rang dans la liste.
+                  //
+                  // Sans elle, Flutter apparie les cartes par position : au
+                  // rafraîchissement, quand un rendez-vous bascule de
+                  // « Rendez-vous » vers « Actualités » ou change d'ordre, le
+                  // State du bouton « Me le rappeler » restait en place et se
+                  // retrouvait rattaché à un AUTRE rendez-vous — il affichait
+                  // « Rappel posé » là où aucun rappel n'existait, et le
+                  // lecteur croyait qu'on le préviendrait la veille. Le
+                  // didUpdateWidget du bouton n'est qu'un filet ; la
+                  // réparation est ici.
+                  key: ValueKey(apercu[i].id),
                   evenement: apercu[i],
                   onTap: () => afficherEvenement(context, apercu[i]),
                 ),
@@ -721,6 +949,16 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
             auteurId: evt.auteurId,
             nomAuteur: nom,
             creeLe: evt.creeLe,
+            // Cette recopie n'existe que pour poser le nom de l'auteur, mais
+            // elle rebâtit l'objet champ par champ : les deux champs oubliés
+            // retombaient sur leur défaut. « passe: false » remontait un
+            // rendez-vous terminé dans la section « À venir » et lui retirait
+            // sa mention « Terminé » ; « lienVisio: null » effaçait le badge
+            // « Visio » et le bouton « Rejoindre ». La page de l'auteur avait
+            // déjà reçu ce correctif — c'était la même panne, restée d'un
+            // seul côté.
+            passe: evt.passe,
+            lienVisio: evt.lienVisio,
           ),
         );
       } else {

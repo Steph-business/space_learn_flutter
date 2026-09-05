@@ -7,6 +7,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart'
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 /// Écran d'attente entre un lien de recommandation et la fiche du livre.
@@ -30,9 +31,22 @@ class _BookLoaderPageState extends State<BookLoaderPage> {
 
   String? _erreur;
 
+  /// L'échec est une PANNE (réseau, serveur muet), pas un livre disparu.
+  ///
+  /// La distinction commande l'écran : une panne se réessaie, un 404 non.
+  bool _estUnePanne = false;
+
   @override
   void initState() {
     super.initState();
+    _charger();
+  }
+
+  void _reessayer() {
+    setState(() {
+      _erreur = null;
+      _estUnePanne = false;
+    });
     _charger();
   }
 
@@ -69,7 +83,26 @@ class _BookLoaderPageState extends State<BookLoaderPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _erreur = "Ce livre n'est plus disponible.");
+      // Toute panne était annoncée « Ce livre n'est plus disponible » — une
+      // affirmation fausse sur le canal qui amène les nouveaux lecteurs. Seul
+      // le 404 du serveur (« Livre not found », ou repli « introuvable ») dit
+      // que l'ouvrage a disparu ; le reste — réseau coupé, serveur muet — est
+      // une panne qui ne dit rien du livre, et qui se réessaie.
+      final texte = e.toString().toLowerCase();
+      final introuvable =
+          texte.contains('not found') || texte.contains('introuvable');
+      setState(() {
+        if (introuvable) {
+          _erreur = "Ce livre n'est plus disponible.";
+          _estUnePanne = false;
+        } else {
+          _erreur = messageLisible(
+            e,
+            repli: "Le livre n'a pas pu être chargé.",
+          );
+          _estUnePanne = true;
+        }
+      });
     }
   }
 
@@ -95,7 +128,11 @@ class _BookLoaderPageState extends State<BookLoaderPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.menu_book_outlined,
+                      // Deux échecs, deux icônes : une panne se dit avec le
+                      // réseau, un retrait du catalogue avec le livre.
+                      _estUnePanne
+                          ? Icons.wifi_off_rounded
+                          : Icons.menu_book_outlined,
                       size: 48,
                       color: AppColors.textSecondary,
                     ),
@@ -109,6 +146,38 @@ class _BookLoaderPageState extends State<BookLoaderPage> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    // Une panne n'est pas définitive : on offre la relance,
+                    // ce qu'un « livre disparu » n'aurait pas de sens à faire.
+                    if (_estUnePanne) ...[
+                      const SizedBox(height: AppDimensions.spaceLg),
+                      OutlinedButton.icon(
+                        onPressed: _reessayer,
+                        icon: Icon(
+                          Icons.refresh,
+                          size: 18,
+                          color: AppColors.textPrimary,
+                        ),
+                        label: Text(
+                          "Réessayer",
+                          style: GoogleFonts.poppins(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: AppColors.textPrimary.withValues(
+                              alpha: 0.2,
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:space_learn_flutter/core/services/rappels_lecture.dart';
+import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 /// Se faire rappeler un rendez-vous.
 ///
@@ -28,7 +29,24 @@ class RappelEvenement {
   /// chevauchement qui fait disparaître des notifications sans explication.
   static const int _baseId = 700000;
 
+  /// Préfixe des clés de stockage. Jamais utilisé seul : voir [_cleDuCompte].
   static const String _cle = 'rappels_evenements';
+
+  /// La clé de CE compte.
+  ///
+  /// Elle était fixe, donc commune à tout le téléphone. La personne suivante à
+  /// s'y connecter voyait « Rappel posé » sur des rendez-vous qu'elle n'avait
+  /// jamais notés, pouvait « retirer » un rappel qui n'était pas le sien, et
+  /// recevait à 18 h la veille les notifications programmées par le compte
+  /// précédent. Ce qui est LOCAL et PAR COMPTE porte l'identifiant du compte
+  /// dans sa clé — même règle que le cache des badges.
+  ///
+  /// Compte inconnu : le suffixe est vide. La liste est alors celle d'un
+  /// « personne », que [purgerEtAnnuler] emporte comme les autres.
+  static Future<String> _cleDuCompte() async {
+    final compte = await TokenStorage.getUserId() ?? '';
+    return '${_cle}_$compte';
+  }
 
   /// La veille, en fin d'après-midi.
   ///
@@ -49,9 +67,44 @@ class RappelEvenement {
   static Future<Set<String>> poses() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return (prefs.getStringList(_cle) ?? const []).toSet();
+      return (prefs.getStringList(await _cleDuCompte()) ?? const []).toSet();
     } catch (_) {
       return {};
+    }
+  }
+
+  /// Oublie les rappels du téléphone ET annule ceux déjà programmés.
+  ///
+  /// Appelée par SessionService.terminer, le point de nettoyage unique.
+  /// Effacer la seule liste ne suffisait pas : les notifications sont déjà
+  /// déposées chez le système d'exploitation, et sonnaient chez le compte
+  /// suivant — « Demain : atelier d'écriture » pour un rendez-vous que la
+  /// personne devant l'écran n'a jamais noté, ni même vu.
+  ///
+  /// On balaye TOUTES les clés du préfixe, y compris l'ancienne clé sans
+  /// suffixe laissée par les versions précédentes : ses rappels-là sonnent
+  /// encore, et personne ne peut plus les retirer depuis l'application.
+  static Future<void> purgerEtAnnuler() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cles = prefs
+          .getKeys()
+          .where((k) => k == _cle || k.startsWith('${_cle}_'))
+          .toList();
+
+      for (final cle in cles) {
+        for (final id in prefs.getStringList(cle) ?? const <String>[]) {
+          try {
+            await _plugin.cancel(id: _idPour(id));
+          } catch (e) {
+            debugPrint('Rappel non annulé pour $id : $e');
+          }
+        }
+        await prefs.remove(cle);
+      }
+    } catch (e) {
+      // Une purge qui échoue ne doit pas empêcher la déconnexion de finir.
+      debugPrint("Rappels d'événements non purgés : $e");
     }
   }
 
@@ -63,12 +116,26 @@ class RappelEvenement {
   /// Un rendez-vous dont la veille est passée ne peut plus être rappelé : le
   /// proposer serait promettre une notification qui ne partirait jamais.
   static tz.TZDateTime? quandSonner(DateTime dateEvenement) {
-    final veille = dateEvenement.subtract(const Duration(days: 1));
+    // La veille de la date LOCALE de la personne qui sera prévenue.
+    //
+    // Un rendez-vous est un instant ; un rappel, lui, se cale sur un jour et
+    // une heure vécus — 18 h la veille, chez soi. La date arrive déjà en heure
+    // locale (evenementModel la convertit au bord), mais `toLocal()` reste ici
+    // en filet : un instant brut, resté en UTC, aurait donné SA veille à lui.
+    // Un rendez-vous du 10 à 1 h du matin en UTC+3, c'est le 9 à 22 h en UTC —
+    // le rappel serait tombé le 8 au soir, deux jours trop tôt. `toLocal()` ne
+    // change rien à une date déjà locale : l'appliquer n'ajoute aucun décalage.
+    final local = dateEvenement.toLocal();
+
+    // `day - 1` plutôt qu'un `subtract` de 24 h : les deux ne disent pas la
+    // même chose la nuit d'un changement d'heure, où la journée dure 23 ou
+    // 25 h et où retrancher une durée fixe change de jour civil. Le
+    // constructeur normalise le 0 en dernier jour du mois précédent.
     final quand = tz.TZDateTime(
       tz.local,
-      veille.year,
-      veille.month,
-      veille.day,
+      local.year,
+      local.month,
+      local.day - 1,
       _heureRappel,
     );
     return quand.isAfter(tz.TZDateTime.now(tz.local)) ? quand : null;
@@ -82,6 +149,10 @@ class RappelEvenement {
     } catch (_) {
       // Fuseaux pas encore préparés : on laisse le bouton, `poser` s'en
       // chargera. Refuser ici priverait du rappel au premier lancement.
+      //
+      // `isAfter` compare deux INSTANTS, pas deux heures murales : il reste
+      // juste que la date soit locale ou UTC, ce qui n'est pas le cas des
+      // comparaisons faites sur les champs (année, mois, jour) d'une date.
       return dateEvenement.isAfter(DateTime.now());
     }
   }
@@ -139,9 +210,10 @@ class RappelEvenement {
   static Future<void> _memoriser(String id, {required bool pose}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final liste = (prefs.getStringList(_cle) ?? const []).toSet();
+      final cle = await _cleDuCompte();
+      final liste = (prefs.getStringList(cle) ?? const []).toSet();
       pose ? liste.add(id) : liste.remove(id);
-      await prefs.setStringList(_cle, liste.toList());
+      await prefs.setStringList(cle, liste.toList());
     } catch (e) {
       // La notification est posée ; ne pas l'avoir notée fera seulement que le
       // bouton reparaîtra « à poser ». Mieux vaut ça qu'échouer l'opération.
