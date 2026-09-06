@@ -42,6 +42,34 @@ class Evenement {
     this.passe = false,
   });
 
+  /// Le même événement, avec un champ changé — et TOUS les autres conservés.
+  ///
+  /// La recopie champ par champ a déjà coûté deux champs : l'espace auteur
+  /// rebâtissait chaque publication à la main pour compléter `nomAuteur`, et
+  /// `lienVisio` comme `passe` retombaient sur leur valeur par défaut — le
+  /// badge « Visio », le bouton « Rejoindre » et la mention « Terminé »
+  /// disparaissaient pour le seul auteur. Le modèle grandira encore ; la
+  /// recopie vit donc ICI, en un seul endroit à tenir à jour, plutôt que chez
+  /// chaque appelant qui en modifie un champ.
+  ///
+  /// Un seul paramètre pour l'instant, comme `Message.copyWith` : on en
+  /// ajoutera un le jour où un appelant en aura besoin, pas avant — une option
+  /// que personne ne passe n'est jamais exercée.
+  Evenement copyWith({String? nomAuteur}) => Evenement(
+    id: id,
+    typePublication: typePublication,
+    categorie: categorie,
+    titre: titre,
+    contenu: contenu,
+    imageUrl: imageUrl,
+    dateEvenement: dateEvenement,
+    auteurId: auteurId,
+    nomAuteur: nomAuteur ?? this.nomAuteur,
+    creeLe: creeLe,
+    lienVisio: lienVisio,
+    passe: passe,
+  );
+
   factory Evenement.fromJson(Map<String, dynamic> json) {
     return Evenement(
       id: json['id'] ?? '',
@@ -70,6 +98,11 @@ class Evenement {
     return {
       'id': id,
       'type_publication': typePublication,
+      // La catégorie manquait, alors que `fromJson` la lit et que le service
+      // l'envoie sous ce nom : un aller-retour perdait « Séance de Dédicace »
+      // en silence. Un sérialiseur incomplet finit toujours par être réutilisé
+      // tel quel ; celui-ci est désormais tenu par un test.
+      'categorie': categorie,
       'titre': titre,
       'contenu': contenu,
       'image_url': imageUrl,

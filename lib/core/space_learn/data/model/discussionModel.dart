@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'book_model.dart';
 import 'messageModel.dart';
 
@@ -95,6 +97,33 @@ class Discussion {
     this.dernierMessageLe,
   });
 
+  /// Les messages embarqués, sans faire tomber le SALON avec l'un d'eux.
+  ///
+  /// `Message.fromJson` REFUSE explicitement un message sans identifiant ou
+  /// sans date lisible : ce n'est pas un message abîmé, c'est une ligne creuse
+  /// qui s'afficherait comme un vrai propos. Le fil rattrape déjà ce refus
+  /// (messageService.getMessagesByDiscussion, DmService.getMessages), mais pas
+  /// ce chemin-ci : un `map` propage l'échec du premier élément à toute la
+  /// liste, et comme discussionService enveloppe `Discussion.fromJson` dans sa
+  /// propre tolérance, un seul message creux ne coûtait pas le message — il
+  /// coûtait le SALON ENTIER, silencieusement, avec un simple debugPrint.
+  ///
+  /// Même geste que discussionService._salons : on saute l'élément, on garde
+  /// la liste, et la trace part au journal — la personne qui lit n'a rien à
+  /// faire de cette information, et un salon amputé d'un message reste utile.
+  static List<Message> _messagesLisibles(List<dynamic> bruts, String salonId) {
+    final messages = <Message>[];
+    for (final x in bruts) {
+      try {
+        messages.add(Message.fromJson(Map<String, dynamic>.from(x as Map)));
+      } catch (e) {
+        debugPrint('Message illisible ignoré dans la discussion $salonId : $e');
+        continue;
+      }
+    }
+    return messages;
+  }
+
   factory Discussion.fromJson(Map<String, dynamic> json) {
     int parseCount(dynamic data) {
       if (data == null) return 0;
@@ -152,11 +181,9 @@ class Discussion {
           : null,
       livre: json['Livre'] != null ? BookModel.fromJson(json['Livre']) : null,
       messages: (json['Messages'] is List)
-          ? List<Message>.from(json['Messages'].map((x) => Message.fromJson(x)))
+          ? _messagesLisibles(json['Messages'] as List, '${json['id']}')
           : (json['messages'] is List)
-          ? List<Message>.from(
-              (json['messages'] as List).map((x) => Message.fromJson(x)),
-            )
+          ? _messagesLisibles(json['messages'] as List, '${json['id']}')
           : [],
       messagesCount: calculatedCount,
       likesCount: calculatedLikes,

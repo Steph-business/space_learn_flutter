@@ -1298,7 +1298,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               width: _largeurCarte,
               child: LivreCard(
                 book: book,
-                isOwned: _ownedBookIds.contains(book.id),
+                // `_estAcquis` et non l'ensemble brut : celui-ci ne connaît
+                // la paternité que pour les livres de la PREMIÈRE page du
+                // catalogue.
+                isOwned: _estAcquis(book),
               ),
             ),
           );
@@ -1421,7 +1424,11 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
               width: _largeurCarte,
               child: LivreCard(
                 book: book,
-                isOwned: _ownedBookIds.contains(book.id),
+                // Les recommandations viennent du service de recommandation,
+                // donc de livres d'identifiants QUELCONQUES : un auteur à qui
+                // l'on recommande son propre ouvrage publié au-delà des cent
+                // premiers le voyait proposé à l'achat.
+                isOwned: _estAcquis(book),
               ),
             ),
           );
@@ -1865,6 +1872,36 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
           : _sectionVide("Aucune citation pour le moment.");
     }
 
+    // Une panne PARTIELLE se dit aussi.
+    //
+    // Le test des drapeaux vivait à l'intérieur du `if (quotes.isEmpty)`
+    // ci-dessus : dès que l'une des deux sources avait livré quelque chose, la
+    // branche de panne devenait inatteignable et la section se présentait
+    // comme complète alors qu'il lui manquait la moitié de son contenu — le
+    // drapeau distinct de la citation ne servait donc QUE dans le cas où les
+    // deux appels avaient échoué, celui que `_avisEnPanne` couvrait déjà.
+    final String? manque = (_citationEnPanne && _avisEnPanne)
+        ? "Une partie des citations n'a pas pu être chargée."
+        : _citationEnPanne
+        ? "La citation du jour n'a pas pu être chargée."
+        : _avisEnPanne
+        ? "Les avis des lecteurs n'ont pas pu être chargés."
+        : null;
+
+    if (manque != null) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [_sectionEnPanne(manque), _listeDesCitations(quotes)],
+      );
+    }
+
+    return _listeDesCitations(quotes);
+  }
+
+  /// Le défilement horizontal des citations, sorti de [_buildQuotesList] pour
+  /// pouvoir être coiffé d'une ligne de panne sans être dupliqué.
+  Widget _listeDesCitations(List<Map<String, dynamic>> quotes) {
     return SizedBox(
       height: 210,
       child: ListView.builder(
@@ -1882,9 +1919,10 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                   MaterialPageRoute(
                     builder: (context) => BookDetailPage(
                       book: q["book"] as BookModel,
-                      isOwned: _ownedBookIds.contains(
-                        (q["book"] as BookModel).id,
-                      ),
+                      // Le livre d'un avis peut venir de n'importe où dans le
+                      // catalogue : même règle qu'ailleurs, la paternité se
+                      // reteste sur le livre lui-même.
+                      isOwned: _estAcquis(q["book"] as BookModel),
                     ),
                   ),
                 );
@@ -2262,6 +2300,13 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
   /// paternité se reteste donc sur le livre lui-même, d'où qu'il vienne — sur
   /// les IDENTIFIANTS seulement, comme aux lignes qui remplissent l'ensemble,
   /// pour ne pas marquer « possédés » les livres d'un auteur homonyme.
+  ///
+  /// Le même raisonnement vaut pour TOUTES les cartes de cet écran, et non
+  /// pour la seule recherche : les nouveautés, les recommandations (bâties à
+  /// partir du service de recommandation, donc de livres d'identifiants
+  /// quelconques) et le livre attaché à un avis viennent eux aussi de
+  /// n'importe où dans le catalogue. Elles passent toutes par ici — aucune ne
+  /// consulte `_ownedBookIds` directement.
   bool _estAcquis(BookModel book) {
     if (_ownedBookIds.contains(book.id)) return true;
     if (_currentUserId == null) return false;

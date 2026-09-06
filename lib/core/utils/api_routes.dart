@@ -1,18 +1,37 @@
 /// api_routes.dart
+///
+/// SI L'APPLICATION NE JOINT AUCUN SERVEUR, C'EST ICI QUE ÇA SE JOUE.
+///
+/// L'adresse du serveur n'est plus écrite dans ce fichier. Ce dépôt est
+/// PUBLIC : une adresse figée dans les sources oblige à modifier — et à
+/// republier — du code le jour où l'on passe à un nom de domaine. Elle vit
+/// donc dans `dart_define.json`, ignoré par Git, fourni à la compilation :
+///
+///   flutter run   --dart-define-from-file=dart_define.json
+///   flutter build apk --release --dart-define-from-file=dart_define.json
+///
+/// Sans ce fichier, on retombe sur `localhost` : l'application cherche le
+/// serveur sur l'appareil lui-même et ne trouve rien. C'est voulu — un repli
+/// qui échoue tout de suite vaut mieux qu'un repli qui parle en douce à une
+/// machine de production. Le modèle à recopier est `dart_define.example.json`
+/// (il porte aussi l'identifiant client Google, lu ailleurs dans l'app ; les
+/// clés Supabase en ont disparu, l'application ne parle plus à Supabase).
 class ApiRoutes {
-  // Configurable dynamic host with fallback to local IP
+  /// Hôte du serveur. Voir l'en-tête du fichier : la vraie valeur arrive par
+  /// `--dart-define-from-file`, jamais par ce défaut.
   static const String host = String.fromEnvironment(
     'API_HOST',
-    defaultValue: '144.91.101.16',
+    defaultValue: 'localhost',
   );
   static const String hosts = host;
 
+  // Serveur d'authentification (Go, port 8083).
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://$host:8083',
   );
 
-  // Base URL for the combined Go server
+  // Serveur métier (Go/Gin, port 8084).
   static const String baseUrlsGin = String.fromEnvironment(
     'API_BASE_URL_GIN',
     defaultValue: 'http://$host:8084',
@@ -90,21 +109,26 @@ class ApiRoutes {
   static const String favorites = "$baseUrlsGin/api/favorites";
   static const String removeFavorite = "$baseUrlsGin/api/favorites/:livre_id";
 
-  // Statistiques par livre — réservées côté serveur à l'AUTEUR du livre
-  // (`modules/statistiques/routes.go` : chaque handler vérifie l'appartenance).
+  // AUCUNE ROUTE DE STATISTIQUES PAR LIVRE N'EST NOMMÉE ICI. C'est délibéré.
   //
-  // Quatre constantes ont été retirées d'ici avec les services morts qui les
-  // portaient : `bookStats`, `bookStatsByBook`, `detailedStats` et
-  // `detailedStatsByBook`. Aucun écran ne les atteignait, et `BookStatsService`
-  // savait ÉCRIRE vues, revenus et note moyenne — des chiffres que le serveur
-  // calcule lui-même. Les laisser en place, c'était offrir à un raccordement
-  // pressé un chemin par lequel le client aurait inventé ces montants.
+  // Six constantes ont été retirées avec les services morts qui les portaient :
+  // `bookStats`, `bookStatsByBook`, `detailedStats`, `detailedStatsByBook`,
+  // puis `updateBookStats` et `updateDetailedStats`. Aucun écran ne les lisait
+  // — un `grep` sur lib/ et test/ ne rendait plus que leur propre déclaration.
   //
-  // Les deux constantes de mise à jour restent : les routes existent bel et
-  // bien sur le serveur, et rien dans ce ménage ne les remet en cause.
-  static const String updateBookStats = "$baseUrlsGin/api/book-stats/:id";
-  static const String updateDetailedStats =
-      "$baseUrlsGin/api/detailed-stats/:livre_id";
+  // Ce ne sont pourtant pas les routes qui manquent : elles existent sur le
+  // serveur (`modules/statistiques/routes.go`, réservées à l'AUTEUR du livre).
+  // Ce sont les ÉCRITURES qui sont indésirables. `BookStatsService` savait
+  // écrire vues, revenus et note moyenne — des chiffres que le serveur calcule
+  // lui-même —, et `PUT /api/detailed-stats/:livre_id` est exactement la route
+  // dont l'écriture partielle remettait à zéro les six statistiques d'un livre,
+  // le défaut refermé dans `recordReadingTime`. Une constante toute prête, avec
+  // un nom qui commence par « update », c'est le chemin tracé d'avance vers un
+  // raccordement pressé qui rouvrirait ce trou-là.
+  //
+  // Si un écran a un jour besoin de LIRE ces statistiques, la constante se
+  // réécrit en deux lignes — mais on la nommera pour la lecture, pas pour
+  // l'écriture.
 
   // Reading settings routes
   static const String readingSettings =
@@ -158,8 +182,11 @@ class ApiRoutes {
       "$baseUrlsGin/api/notifications/read-all";
   static const String notificationById = "$baseUrlsGin/api/notifications/:id";
 
-  // Analytics route
-  static const String analytics = "$baseUrlsGin/api/analytics";
+  // `analytics` a été retirée : plus personne ne la lisait. Les deux écrans qui
+  // s'en servaient interrogeaient `GET /api/analytics/reader/:livre_id`, une
+  // route dont la réponse mélangeait les chiffres de tous les lecteurs (voir
+  // readerStatsService.dart et accueil_lecteur_page.dart) ; ils ont été
+  // débranchés, et la constante n'avait plus d'objet.
 
   // Gamification & Badges routes
   static const String gamificationBadges =
@@ -173,8 +200,11 @@ class ApiRoutes {
   static const String communityEvents = "$baseUrlsGin/api/community/events";
 
   // Author routes
-  static const String recentBooksByAuthor =
-      "$baseUrlsGin/api/authors/:authorId/books/recent";
+  //
+  // `recentBooksByAuthor` a été retirée avec la carte qui devait la servir :
+  // le widget « Livres récents » de l'accueil auteur n'était instancié par
+  // aucun écran, et le tableau de bord tient déjà cette liste par
+  // `booksByAuthor` (voir TopLivresSection).
 
   /// L'annuaire des auteurs, pagine.
   ///
@@ -243,6 +273,11 @@ class ApiRoutes {
     if (url == null || url.isEmpty) return null;
 
     // If it's a Supabase URL or Base64 data, keep it as is
+    //
+    // Ce test RESTE alors que l'application ne parle plus à Supabase : les
+    // photos et couvertures déjà enregistrées portent des adresses
+    // supabase.co, et elles doivent continuer de s'afficher. C'est une simple
+    // comparaison de chaîne, elle ne dépend d'aucun paquet.
     if (url.contains('supabase.co') || url.startsWith('data:image')) return url;
 
     final targetBaseUrl = useGin ? baseUrlsGin : baseUrl;

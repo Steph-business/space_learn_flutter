@@ -570,21 +570,15 @@ class NotificationService {
     }
   }
 
-  Future<void> markAllAsRead(String authToken) async {
-    final response = await client.put(
-      Uri.parse(ApiRoutes.markAllNotificationsAsRead),
-      headers: {'Authorization': 'Bearer $authToken'},
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        messageDeLaReponse(
-          response,
-          repli: "Vos notifications n'ont pas pu être marquées comme lues.",
-        ),
-      );
-    }
-  }
+  // L'appel de PUT /notifications/read-all a été RETIRÉ, et volontairement.
+  //
+  // Côté serveur, MarkAllAsRead ne filtre pas par rôle (space_learn_livres,
+  // modules/notification/repository.go) : il marque tout le compte. Nettoyer
+  // ses rappels en profil lecteur éteignait donc aussi les « vente » et les
+  // « avis » du profil auteur. L'application marque une par une, sur les
+  // seules lignes que le profil affiché montre (notificationPage). Rien
+  // n'appelait plus cette méthode ; la laisser, c'était laisser sous la main
+  // le raccourci qui reproduit le défaut.
 
   Future<void> deleteNotification(String id, String authToken) async {
     final url = ApiRoutes.notificationById.replaceFirst(':id', id);

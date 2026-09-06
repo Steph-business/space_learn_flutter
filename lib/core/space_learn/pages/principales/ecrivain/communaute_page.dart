@@ -182,35 +182,21 @@ class _TeamsPageState extends State<TeamsPage> {
           user.id,
           token,
         );
+        // `copyWith`, et non un `Evenement(...)` rebâti champ par champ.
+        //
+        // Cette copie n'existe que pour compléter le nom de l'auteur, mais
+        // l'énumération à la main avait déjà PERDU deux champs : `passe`
+        // retombait à `false` — la mention « Terminé » effacée, la date d'un
+        // rendez-vous écoulé repeinte en couleur d'accent — et `lienVisio` à
+        // `null` — badge « Visio » et bouton « Rejoindre » disparus, l'auteur
+        // seul à ne pas voir le lien qu'il venait de saisir. Le treizième
+        // champ du modèle aurait suivi le même chemin ; désormais la recopie
+        // vit dans le modèle, en un seul endroit.
         evts = rawEvts
             .map(
-              (e) => Evenement(
-                id: e.id,
-                typePublication: e.typePublication,
-                categorie: e.categorie,
-                titre: e.titre,
-                contenu: e.contenu,
-                imageUrl: e.imageUrl,
-                dateEvenement: e.dateEvenement,
-                auteurId: e.auteurId,
-                nomAuteur:
-                    (e.nomAuteur != null && e.nomAuteur!.trim().isNotEmpty)
-                    ? e.nomAuteur
-                    : user.nomComplet,
-                creeLe: e.creeLe,
-                // Recopiés, parce qu'ils étaient PERDUS.
-                //
-                // Cette copie n'existe que pour compléter le nom de l'auteur,
-                // mais elle rebâtit l'objet champ par champ : les deux oubliés
-                // retombaient donc sur leur valeur par défaut. `passe: false`
-                // effaçait la mention « Terminé » et repeignait en couleur
-                // d'accent la date d'un rendez-vous déjà écoulé ; `lienVisio:
-                // null` faisait disparaître le badge « Visio » et le bouton
-                // « Rejoindre » — l'auteur était le seul à ne pas voir le lien
-                // qu'il venait lui-même de saisir.
-                lienVisio: e.lienVisio,
-                passe: e.passe,
-              ),
+              (e) => (e.nomAuteur != null && e.nomAuteur!.trim().isNotEmpty)
+                  ? e
+                  : e.copyWith(nomAuteur: user.nomComplet),
             )
             .toList();
       } catch (e) {

@@ -107,6 +107,20 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   String? _brouillonEnAttenteId;
   String? _brouillonEnAttenteTitre;
 
+  /// Ce que la fiche relue dit des fichiers DÉJÀ déposés sur ce brouillon.
+  ///
+  /// Sans eux, « Reprendre » redemandait manuscrit ET couverture, même quand
+  /// l'essai précédent avait échoué APRÈS un téléversement réussi. L'auteur
+  /// renvoyait donc les mêmes fichiers, et le serveur, qui écrit un nouveau
+  /// chemin à chaque dépôt puis remplace l'URL, abandonnait les précédents
+  /// dans le stockage — facturés, sans référence, invisibles.
+  ///
+  /// Ils ne valent QUE pendant la reprise : « Publier plutôt un nouveau
+  /// livre » doit les rendre, sinon la fiche neuve se croirait pourvue de
+  /// fichiers qu'elle n'a pas.
+  bool _brouillonEnAttenteAUnFichier = false;
+  String? _brouillonEnAttenteCouverture;
+
   /// Pourquoi l'identifiant du compte manque, dit avec les mots du problème.
   ///
   /// La publication répondait « Utilisateur non connecté » dès que
@@ -242,7 +256,25 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     }
   }
 
-  /// Relit la trace au démarrage de l'écran.
+  /// Relit la trace au démarrage de l'écran, ET VÉRIFIE QU'ELLE VAUT ENCORE.
+  ///
+  /// La trace n'est effacée qu'ici et après une publication faite depuis CET
+  /// écran. Or un brouillon se publie aussi depuis sa fiche (« Mes livres »),
+  /// depuis le site, ou depuis un autre appareil ; il se supprime de même. La
+  /// trace survivait à tout cela, et le bandeau proposait alors de « reprendre »
+  /// un livre DÉJÀ EN VENTE — dont `_publishBook` aurait réécrit titre,
+  /// description, prix, catégorie, format et stock avec la nouvelle saisie,
+  /// après avoir promis « Aucun nouveau livre ne sera créé ».
+  ///
+  /// D'où la relecture de la fiche. Trois issues :
+  ///  - le livre existe et il est bien en brouillon : on propose ;
+  ///  - le serveur répond, mais le livre a disparu ou n'est plus un brouillon :
+  ///    on efface la trace, sans un mot — il n'y a rien à raconter ;
+  ///  - le serveur ne répond pas : on GARDE la trace et on se tait pour cette
+  ///    fois. Un bandeau qu'on n'a pas pu vérifier peut détruire un livre en
+  ///    vente ; ne pas l'afficher fait au pire un second brouillon, qui se
+  ///    supprime. Entre les deux, on choisit la panne réparable — et de toute
+  ///    façon, un serveur injoignable ne laissera rien publier non plus.
   Future<void> _relireBrouillonEnAttente() async {
     try {
       final cle = await _cleBrouillonDuCompte();
@@ -266,23 +298,101 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
         return;
       }
 
+      // Le jeton est indispensable : un brouillon ne se consulte à l'unité que
+      // par son auteur, et la route répond 404 à qui n'en présente pas.
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) return;
+
+      final BookModel fiche;
+      try {
+        fiche = await _bookService.getBookById(id, authToken: token);
+      } catch (e) {
+        // Livre absent, session finie, réseau coupé : on ne sait pas trancher
+        // depuis ici, et on ne DEVINE pas — la trace reste, le bandeau non.
+        debugPrint('Brouillon en attente non vérifié : $e');
+        return;
+      }
+
+      // Le ménage se fait AVANT la garde de montage : effacer une trace périmée
+      // ne touche pas à l'écran, et l'auteur qui ferme la page pendant la
+      // vérification ne doit pas retrouver le bandeau au prochain passage.
+      if (fiche.statut.trim().toLowerCase() != 'brouillon') {
+        // Publié, retiré ou archivé entre-temps : le reprendre écraserait une
+        // fiche que l'auteur n'a pas ouverte. La trace n'a plus lieu d'être.
+        await _oublierBrouillon(id);
+        return;
+      }
+
       if (!mounted) return;
       setState(() {
         _brouillonEnAttenteId = id;
-        _brouillonEnAttenteTitre = (memo['titre'] as String?)?.trim();
+        // Le titre du SERVEUR, pas celui de la trace : elle a pu être écrite il
+        // y a trois semaines, et le livre renommé depuis « Mes livres ».
+        _brouillonEnAttenteTitre = fiche.titre.trim().isNotEmpty
+            ? fiche.titre.trim()
+            : (memo['titre'] as String?)?.trim();
+        _brouillonEnAttenteAUnFichier = fiche.aUnFichier;
+        _brouillonEnAttenteCouverture =
+            (fiche.imageCouverture?.isNotEmpty ?? false)
+            ? fiche.imageCouverture!.split('/').last
+            : null;
       });
     } catch (e) {
       debugPrint('Brouillon en attente illisible : $e');
     }
   }
 
+  /// Adopte le brouillon en attente : la publication le complétera au lieu de
+  /// créer un second livre.
+  ///
+  /// Les fichiers déjà déposés sur cette fiche comptent comme en place — c'est
+  /// ce qui évite de tout renvoyer, et d'abandonner les objets précédents dans
+  /// le stockage. On ne recouvre jamais un fichier que l'auteur VIENT de
+  /// choisir : sa sélection prime sur ce que dit la fiche.
+  void _reprendreLeBrouillon(String id) {
+    setState(() {
+      _livreCreeId = id;
+      if (_selectedFilePath == null && _selectedFileBytes == null) {
+        _manuscritDejaEnPlace = _brouillonEnAttenteAUnFichier;
+      }
+      if (_selectedCoverPath == null && _selectedCoverBytes == null) {
+        _selectedCoverName ??= _brouillonEnAttenteCouverture;
+      }
+    });
+  }
+
+  /// Renonce à la reprise : la publication créera bien un livre neuf.
+  ///
+  /// Ce qui venait de la fiche reprise repart avec elle. Sans cela, le
+  /// formulaire garderait « manuscrit déjà en place » et un nom de couverture
+  /// empruntés à un AUTRE livre : `_verifierEtapeOeuvre` laisserait passer, et
+  /// le livre neuf serait créé sans le moindre fichier.
+  void _abandonnerLaReprise() {
+    setState(() {
+      _livreCreeId = null;
+      if (_selectedFilePath == null && _selectedFileBytes == null) {
+        _manuscritDejaEnPlace = false;
+      }
+      if (_selectedCoverPath == null &&
+          _selectedCoverBytes == null &&
+          _selectedCoverName == _brouillonEnAttenteCouverture) {
+        _selectedCoverName = null;
+      }
+    });
+  }
+
   /// Efface la trace ET, si elle était adoptée, la reprise en cours.
   Future<void> _abandonnerLeBrouillonEnAttente() async {
     final id = _brouillonEnAttenteId;
+    // Passe par le même chemin que « Publier plutôt un nouveau livre » : les
+    // fichiers empruntés à la fiche reprise doivent lui être rendus, sinon le
+    // formulaire se croirait pourvu d'un manuscrit qu'il n'a pas.
+    if (id != null && _livreCreeId == id) _abandonnerLaReprise();
     setState(() {
-      if (_livreCreeId == _brouillonEnAttenteId) _livreCreeId = null;
       _brouillonEnAttenteId = null;
       _brouillonEnAttenteTitre = null;
+      _brouillonEnAttenteAUnFichier = false;
+      _brouillonEnAttenteCouverture = null;
     });
     if (id != null) await _oublierBrouillon(id);
   }
@@ -923,9 +1033,10 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   /// serveur écrit maintenant des phrases utilisables — trop court, déjà
   /// publié sous un autre titre — et elles doivent arriver telles quelles.
   /// Cette fonction ne retirait que le préfixe, et laissait passer tout le
-  /// reste : une coupure réseau affichait « Failed host lookup: '144.91.101.16'
+  /// reste : une coupure réseau affichait « Failed host lookup: '203.0.113.10'
   /// (OS Error: No address associated with hostname) » à un auteur venu publier
-  /// un livre. L'adresse du serveur avec.
+  /// un livre. L'adresse du serveur avec — d'où l'adresse d'exemple ici :
+  /// même ce commentaire n'a pas à nommer la machine de production.
   ///
   /// messageLisible, dans core/utils/message_erreur.dart, fait déjà ce travail
   /// pour toute l'application : il distingue une panne de transport d'un refus
@@ -1061,9 +1172,11 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
   ///
   /// Le retour restait actif pendant l'envoi : un appui distrait emportait
   /// toute la saisie, et la fiche déjà créée finissait en brouillon fantôme.
-  /// On n'INTERDIT pas de partir — le téléversement n'a pas de délai
-  /// d'expiration, et un envoi bloqué enfermerait l'auteur dans l'écran — on
-  /// dit ce que partir coûte.
+  /// On n'INTERDIT pas de partir, et ce n'est plus faute de borne : l'envoi en
+  /// a une désormais (`UploadService._budget` — une minute, plus douze
+  /// secondes par mégaoctet). Mais cette borne monte jusqu'à QUINZE MINUTES
+  /// pour un gros manuscrit, et personne ne peut être retenu de force dans un
+  /// écran pendant ce temps-là. On dit donc ce que partir coûte.
   Future<bool> _confirmerAbandonEnCours() async {
     final dejaCree = _livreCreeId != null;
     final reponse = await showDialog<bool>(
@@ -1220,6 +1333,21 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
     final repris = _livreCreeId == id;
     final teinte = repris ? AppColors.secondaryVariant : AppColors.warning;
 
+    // Ce que la fiche reprise porte DÉJÀ, dit à l'auteur.
+    //
+    // Sans cette phrase, il resélectionne ses fichiers par acquit de
+    // conscience — et chaque envoi supplémentaire laisse le précédent dans le
+    // stockage, sans référence et sans personne pour l'effacer.
+    final dejaEnPlace = <String>[
+      if (_brouillonEnAttenteAUnFichier) "son manuscrit",
+      if (_brouillonEnAttenteCouverture != null) "sa couverture",
+    ];
+    final rappelFichiers = (!repris || dejaEnPlace.isEmpty)
+        ? ""
+        : " ${dejaEnPlace.join(" et ")} "
+              "${dejaEnPlace.length > 1 ? "sont déjà en place" : "est déjà en place"} : "
+              "n'en choisissez de nouveaux que pour les remplacer.";
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(14),
@@ -1243,8 +1371,13 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               Expanded(
                 child: Text(
                   repris
-                      ? "Vous complétez le brouillon « $titre ». Aucun "
-                            "nouveau livre ne sera créé."
+                      // On dit ce que « reprendre » fait VRAIMENT : la saisie
+                      // de cet écran part écraser la fiche du brouillon. « Aucun
+                      // nouveau livre ne sera créé » seul laissait croire à un
+                      // simple complément.
+                      ? "Vous complétez le brouillon « $titre » : ce que vous "
+                            "saisissez ici remplacera sa fiche. Aucun nouveau "
+                            "livre ne sera créé.$rappelFichiers"
                       : "Un précédent essai de publication n'est pas allé au "
                             "bout : « $titre » vous attend en brouillon. "
                             "Reprenez-le ici, sans quoi publier maintenant "
@@ -1268,9 +1401,9 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
               TextButton(
                 onPressed: _isUploading
                     ? null
-                    : () => setState(
-                        () => _livreCreeId = repris ? null : id,
-                      ),
+                    : () => repris
+                          ? _abandonnerLaReprise()
+                          : _reprendreLeBrouillon(id),
                 style: TextButton.styleFrom(foregroundColor: teinte),
                 child: Text(
                   repris ? "Publier plutôt un nouveau livre" : "Reprendre",
@@ -1683,8 +1816,20 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
       return false;
     }
 
+    // Un brouillon REPRIS a déjà ses fichiers sur le serveur.
+    //
+    // Le contrôle ne regardait que la sélection en cours : après « Reprendre »,
+    // `widget.book` reste nul, et l'auteur devait redéposer manuscrit et
+    // couverture même quand l'essai précédent avait échoué APRÈS un
+    // téléversement réussi. Or le serveur écrit un nouveau chemin à chaque
+    // dépôt puis remplace l'URL : les objets précédents restaient dans le seau,
+    // facturés, sans référence, et rien n'arrêtait l'accumulation d'un essai à
+    // l'autre. `_manuscritDejaEnPlace` et `_selectedCoverName` portent ce que la
+    // fiche relue a déjà (voir _reprendreLeBrouillon) — et « Publier plutôt un
+    // nouveau livre » les reprend, pour qu'un livre neuf reste bien exigeant.
     if (widget.book == null &&
-        (_selectedFileName == null || _selectedCoverName == null)) {
+        ((_selectedFileName == null && !_manuscritDejaEnPlace) ||
+            _selectedCoverName == null)) {
       AppNotifications.showSnackBar(
         context,
         message: "Veuillez sélectionner le fichier et l'image de couverture.",

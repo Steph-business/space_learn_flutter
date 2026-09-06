@@ -36,6 +36,18 @@ class SessionService {
   /// partiel : la seconde inscription écrase la première, puis la première à
   /// mourir désinscrit la purge de la seconde, qui survit alors à la
   /// déconnexion avec les données du compte précédent.
+  ///
+  /// CONTRAINTE QUE CETTE CLÉ IMPOSE, et qui n'existait pas avec une chaîne
+  /// constante : la map retient une référence FORTE à l'inscrit (la clé) et
+  /// une seconde par le tear-off, qui capture ce même objet. Tout appelant de
+  /// [enregistrerPurge] DOIT donc appeler `oublierPurge(this, purge)` dans son
+  /// `dispose`. Avec la clé constante, la map ne contenait qu'une entrée et
+  /// chaque nouvelle inscription libérait la précédente ; ici, un inscrit
+  /// jamais détruit — test de widget qui pompe un provider sans le détruire,
+  /// rechargement à chaud partiel, inscrit créé ailleurs qu'à la racine —
+  /// reste retenu pour la durée du processus, et sa purge est rejouée à chaque
+  /// fin de session. NotificationProvider tient cet engagement
+  /// (notification_provider.dart, `dispose`).
   static final Map<Object, void Function()> _purgesMemoire = {};
 
   static void enregistrerPurge(Object cle, void Function() purge) {
@@ -70,14 +82,20 @@ class SessionService {
     // compte les minutes écoutées, donc tant que le jeton et le profil sont
     // encore là ; effacer d'abord les aurait tentées sans identité.
     //
-    // RÉSERVE, à ne pas croire garantie : `arreter()` lance ce report sans
-    // l'attendre (`unawaited` dans LectureAudioLivre._porterLeTemps), et le
-    // report relit l'identifiant du compte APRÈS coup. Il court donc contre le
-    // `clearToken` ci-dessous et perd, le plus souvent, les dernières minutes
-    // de la séance. Le correctif tient dans lecture_audio_livre.dart (rendre
-    // _porterLeTemps attendable, ou lui passer `_uidSeance` au lieu de relire
-    // le stockage) ; tant qu'il n'est pas fait, ce commentaire dit ce que le
-    // code fait, pas ce qu'on voudrait qu'il fasse.
+    // LE REPORT EST ATTENDU, et l'écriture est nominative. `arreter()` fait
+    // `await _arreterLeBattement()`, qui attend `_porterLeTemps()` en bornant
+    // l'attente à `_delaiDuReportFinal` (5 s) — un serveur muet ne fige donc
+    // pas la déconnexion, et les minutes restent sur l'appareil pour la
+    // prochaine ouverture. L'identifiant de la séance descend en paramètre
+    // jusqu'à l'écriture (`_porterAuCompteDeLaSeance(uidAttendu:)` puis
+    // `MinutesEnAttente.porter(uid:)`) : même si le délai expire pendant que
+    // les étapes ci-dessous effacent le jeton, le report ne peut plus écrire
+    // sous une identité vide ni conclure à tort au changement de compte.
+    //
+    // L'ordre reste donc nécessaire, mais pour une autre raison que celle
+    // qu'on lisait ici : c'est le LIVRE qu'il faut encore connaître au moment
+    // du report, pas le jeton — la fin de séance n'est plus en course avec le
+    // `clearToken` ci-dessous.
     try {
       await LectureAudioLivre.instance.arreter();
     } catch (e) {
@@ -148,9 +166,10 @@ class SessionService {
       // L'historique de lecture — LUI SEUL, et c'est le point à ne pas défaire.
       //
       // « reading_sessions_<compte> » garde les TITRES des livres lus et
-      // l'heure de chaque séance : des cinq clés de ReadingTimeStorage, c'est
-      // la seule NOMINATIVE, donc la seule qu'une personne peut avoir des
-      // raisons de ne pas laisser derrière elle sur un téléphone. Elle part.
+      // l'heure de chaque séance : des SEPT préfixes déclarés par
+      // ReadingTimeStorage, c'est le seul NOMINATIF, donc le seul qu'une
+      // personne peut avoir des raisons de ne pas laisser derrière elle sur un
+      // téléphone. Il part.
       //
       // Les COMPTEURS restent : temps cumulé, minutes du jour, secondes par
       // livre, objectif quotidien. Deux raisons, pesées ensemble.
@@ -168,6 +187,19 @@ class SessionService {
       // Même esprit que le solde de MinutesEnAttente, laissé lui aussi sur
       // l'appareil : ce qui appartient au compte et ne dit rien à personne
       // d'autre attend son retour plutôt que de disparaître.
+      //
+      // RESTENT DEUX PRÉFIXES, et ils sont ici pour que l'inventaire soit
+      // complet : « reading_reminder_time_<compte> » et
+      // « reading_reminder_enabled_<compte> ». Ils sont déclarés et servis par
+      // quatre accesseurs de ReadingTimeStorage QUE PLUS RIEN N'APPELLE (grep
+      // sur tout le dépôt : aucun appel à getDailyReminderTime,
+      // setDailyReminderTime, getDailyReminderEnabled ni
+      // setDailyReminderEnabled). Les rappels de lecture réellement affichés
+      // et programmés vivent dans RappelsLecture — l'étape ci-dessus les
+      // emporte, notifications système comprises. Rien n'écrit donc ces deux
+      // clés aujourd'hui, et il n'y a rien à y purger : ajouter une étape pour
+      // elles serait du code que rien n'atteint. Si un écran vient à s'en
+      // servir, c'est ici que leur sort doit être tranché.
       ('historique de lecture', ReadingTimeStorage.purgerSessions),
     ]) {
       try {

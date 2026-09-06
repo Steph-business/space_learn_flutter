@@ -85,14 +85,31 @@ class RappelEvenement {
   /// suffixe laissée par les versions précédentes : ses rappels-là sonnent
   /// encore, et personne ne peut plus les retirer depuis l'application.
   static Future<void> purgerEtAnnuler() async {
+    final SharedPreferences prefs;
+    final List<String> cles;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final cles = prefs
+      prefs = await SharedPreferences.getInstance();
+      cles = prefs
           .getKeys()
           .where((k) => k == _cle || k.startsWith('${_cle}_'))
           .toList();
+    } catch (e) {
+      // Une purge qui échoue ne doit pas empêcher la déconnexion de finir.
+      debugPrint("Rappels d'événements non purgés : $e");
+      return;
+    }
 
-      for (final cle in cles) {
+    // CHAQUE CLÉ EST INDÉPENDANTE, comme chaque étape de SessionService.
+    //
+    // Le `try` enveloppait la boucle ENTIÈRE : une seule clé illisible —
+    // `getStringList` lève quand la valeur stockée n'est pas une liste de
+    // chaînes, ce qu'une version antérieure a pu écrire — arrêtait la purge
+    // net. Les clés suivantes n'étaient alors ni annulées ni supprimées, et
+    // c'est précisément le cas que cette méthode existe pour empêcher : des
+    // notifications DÉJÀ déposées chez le système sonnant chez le compte
+    // suivant, sans que personne puisse plus les retirer.
+    for (final cle in cles) {
+      try {
         for (final id in prefs.getStringList(cle) ?? const <String>[]) {
           try {
             await _plugin.cancel(id: _idPour(id));
@@ -101,10 +118,10 @@ class RappelEvenement {
           }
         }
         await prefs.remove(cle);
+      } catch (e) {
+        debugPrint("Rappels non purgés pour $cle : $e");
+        continue;
       }
-    } catch (e) {
-      // Une purge qui échoue ne doit pas empêcher la déconnexion de finir.
-      debugPrint("Rappels d'événements non purgés : $e");
     }
   }
 

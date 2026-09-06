@@ -17,13 +17,19 @@ enum TypeFichier {
   manuscrit('file'),
 
   /// Extrait librement consultable.
-  extrait('extract');
+  extrait('extract'),
+
+  /// Photo de profil.
+  ///
+  /// Seul type qui ne se rattache à aucun livre : il part sans `book_id`, et
+  /// le serveur nomme l'objet d'après le compte lu dans le jeton.
+  avatar('avatar');
 
   final String valeur;
   const TypeFichier(this.valeur);
 }
 
-/// Téléversement des fichiers d'un livre.
+/// Téléversement des fichiers d'un livre, et de la photo de profil.
 ///
 /// Tout passe par le backend, jamais directement par Supabase. L'application
 /// envoyait auparavant les fichiers avec la clé publique `anon` et forçait le
@@ -53,12 +59,105 @@ class UploadService {
     String? nomFichier,
     void Function(double progression)? onProgress,
   }) async {
+    final corps = await _poster(
+      authToken: authToken,
+      type: type,
+      champs: {'book_id': livreId, 'type': type.valeur},
+      cheminFichier: cheminFichier,
+      octets: octets,
+      nomFichier: nomFichier,
+      onProgress: onProgress,
+    );
+
+    final chemin = corps['path']?.toString();
+    if (chemin == null || chemin.isEmpty) {
+      throw Exception("Le serveur n'a pas retourné de chemin de fichier");
+    }
+    return chemin;
+  }
+
+  /// Envoie une photo de profil et retourne son adresse publique.
+  ///
+  /// Les trois écrans de réglages déposaient l'image eux-mêmes dans le seau
+  /// « avatars » de Supabase. Pour cela l'application embarquait une clé de
+  /// service — celle qui passe outre toutes les règles d'accès de la base — et
+  /// un APK se décompile en une commande. La photo emprunte désormais la même
+  /// route que les fichiers d'un livre : le serveur détient seul la clé.
+  ///
+  /// Aucun identifiant de compte n'accompagne l'envoi. Le serveur nomme
+  /// l'objet d'après le compte lu dans le jeton : c'est ce qui garantit qu'une
+  /// personne ne peut remplacer que sa propre photo, sans qu'aucun contrôle de
+  /// propriété supplémentaire soit nécessaire.
+  static Future<String> envoyerAvatar({
+    required String authToken,
+    String? cheminFichier,
+    Uint8List? octets,
+    String? nomFichier,
+    void Function(double progression)? onProgress,
+  }) async {
+    final corps = await _poster(
+      authToken: authToken,
+      type: TypeFichier.avatar,
+      // Pas de `book_id` : une photo de profil n'appartient à aucun livre.
+      champs: {'type': TypeFichier.avatar.valeur},
+      cheminFichier: cheminFichier,
+      octets: octets,
+      nomFichier: nomFichier,
+      onProgress: onProgress,
+    );
+
+    // Une couverture rend un chemin relatif, que le serveur signe ensuite à la
+    // demande ; une photo de profil rend directement une adresse publique,
+    // parce qu'elle s'affiche partout — listes, commentaires, fiche auteur —
+    // sans qu'on puisse signer chaque affichage.
+    final url = corps['url']?.toString();
+    if (url == null || url.isEmpty) {
+      throw Exception("Le serveur n'a pas retourné l'adresse de la photo");
+    }
+    return url;
+  }
+
+  /// Le transport, commun à tous les types de fichiers.
+  ///
+  /// Extrait de [envoyer] pour que la photo de profil hérite sans copie du
+  /// délai proportionné au poids, du suivi de progression, de l'interception
+  /// des 401 et de la traduction des erreurs. Seuls les champs envoyés et la
+  /// clé lue dans la réponse distinguent les deux usages.
+  static Future<Map<String, dynamic>> _poster({
+    required String authToken,
+    required TypeFichier type,
+    required Map<String, String> champs,
+    String? cheminFichier,
+    Uint8List? octets,
+    String? nomFichier,
+    void Function(double progression)? onProgress,
+  }) async {
     assert(
       cheminFichier != null || octets != null,
       'Fournir un chemin de fichier ou des octets',
     );
 
     final donnees = octets ?? await File(cheminFichier!).readAsBytes();
+
+    // LE POIDS SE CONTRÔLE AVANT DE PARTIR, pour la photo de profil.
+    //
+    // Les trois écrans qui la choisissent bornent la définition de l'image
+    // (`maxWidth`/`maxHeight` sur pickImage) : `imageQuality` seul ne fait que
+    // réencoder, la photo garde sa définition d'origine et dépasse les 2 Mo du
+    // serveur dès un capteur ordinaire. Ce contrôle-ci est la seconde ligne :
+    // il rattrape ce qui passe malgré tout — une capture d'écran en PNG, une
+    // plateforme où le sélecteur ignore ces bornes, un futur appelant qui les
+    // oublierait — et il le rattrape SANS avoir consommé le forfait de la
+    // personne pour un envoi que le serveur refusera en 413.
+    //
+    // Seule la photo est bornée ici. Les plafonds du manuscrit (100 Mo) et de
+    // la couverture (10 Mo) sont larges et se règlent par variables
+    // d'environnement : les recopier ici risquerait un refus que le serveur,
+    // lui, n'aurait pas prononcé.
+    if (type == TypeFichier.avatar && donnees.length > _plafondAvatar) {
+      throw Exception(_tropLourdePourUnAvatar(donnees.length));
+    }
+
     final nom =
         nomFichier ??
         (cheminFichier != null
@@ -67,8 +166,7 @@ class UploadService {
 
     final requete = http.MultipartRequest('POST', Uri.parse(_urlUpload))
       ..headers['Authorization'] = 'Bearer $authToken'
-      ..fields['book_id'] = livreId
-      ..fields['type'] = type.valeur
+      ..fields.addAll(champs)
       ..files.add(http.MultipartFile.fromBytes('file', donnees, filename: nom));
 
     // MultipartRequest n'expose pas de progression : on enveloppe son flux
@@ -129,15 +227,10 @@ class UploadService {
     }
 
     if (reponse.statusCode != 200) {
-      throw Exception(_message(reponse));
+      throw Exception(_message(reponse, type));
     }
 
-    final corps = jsonDecode(reponse.body) as Map<String, dynamic>;
-    final chemin = corps['path']?.toString();
-    if (chemin == null || chemin.isEmpty) {
-      throw Exception("Le serveur n'a pas retourné de chemin de fichier");
-    }
-    return chemin;
+    return jsonDecode(reponse.body) as Map<String, dynamic>;
   }
 
   /// Ce que lit l'auteur quand l'envoi n'aboutit pas dans le temps imparti.
@@ -152,6 +245,34 @@ class UploadService {
   static const String _messageExpiration =
       "L'envoi a été interrompu : votre connexion est trop lente ou instable. "
       "Réessayez.";
+
+  /// Le poids que le serveur admet pour une photo de profil.
+  ///
+  /// Miroir de `tailleMaxAvatar` côté Go (2 Mo, réglable par
+  /// `AVATAR_TAILLE_MAX_MO`). C'est le plus bas des trois plafonds, et le seul
+  /// qu'une photo prise au téléphone dépasse couramment.
+  ///
+  /// SI CE PLAFOND EST RELEVÉ SUR LE SERVEUR, cette constante doit suivre :
+  /// sinon l'application refuserait ici des photos que le serveur accepterait,
+  /// et le refus serait incompréhensible puisqu'il ne viendrait de personne.
+  static const int _plafondAvatar = 2 * 1024 * 1024;
+
+  /// Le refus dit avec le poids réel et la limite, comme le fait le serveur.
+  ///
+  /// « Image trop volumineuse » n'apprend rien : la personne ne sait ni de
+  /// combien elle dépasse, ni ce qu'elle doit faire. Le texte traverse
+  /// `messageLisible` intact — ni accolade, ni jargon, ni nom de classe.
+  static String _tropLourdePourUnAvatar(int octets) {
+    final mo = (octets / (1024 * 1024)).toStringAsFixed(1).replaceAll('.', ',');
+    final limite = _plafondAvatar ~/ (1024 * 1024);
+    return "Cette photo pèse $mo Mo ; la limite est de $limite Mo. "
+        "Choisissez une image moins lourde.";
+  }
+
+  /// Ce que lit qui change sa photo sur un serveur pas encore redéployé.
+  static const String _photoIndisponible =
+      "L'envoi de la photo n'est pas disponible sur ce serveur. "
+      "Il doit être mis à jour.";
 
   /// Le temps qu'un envoi a le droit de prendre, selon le poids du fichier.
   ///
@@ -204,19 +325,62 @@ class UploadService {
     }
   }
 
-  static String _message(http.Response reponse) {
+  static String _message(http.Response reponse, TypeFichier type) {
+    // Les replis parlent du livre : ils n'ont aucun sens pour une photo de
+    // profil, qui n'a ni auteur à vérifier ni livre à trouver.
+    final estAvatar = type == TypeFichier.avatar;
+
+    String? duServeur;
     try {
       final corps = jsonDecode(reponse.body) as Map<String, dynamic>;
       final message = corps['error'] ?? corps['message'];
-      if (message is String && message.isNotEmpty) return message;
+      if (message is String && message.isNotEmpty) duServeur = message;
     } catch (_) {}
+
+    // LE SERVEUR PAS ENCORE REDÉPLOYÉ NE RÉPOND PAS 404.
+    //
+    // La route /upload existe depuis toujours : un serveur d'avant la photo de
+    // profil la sert, mais il ne connaît pas le type « avatar ». Il refuse donc
+    // en 400, et son message — « book_id requis », ou « type invalide » — est
+    // prioritaire ci-dessous : la personne venue changer sa photo lisait
+    // « Book_id requis. », et le repli du 404, lui, ne s'affichait jamais.
+    //
+    // Le test porte sur la SIGNATURE de ce refus, pas sur le seul code 400 :
+    // le serveur à jour répond aussi 400 pour dire « la photo doit être une
+    // image JPEG, PNG, WebP ou GIF », et cette phrase-là est utile — l'avaler
+    // avec le reste remplacerait un bon message par un mauvais.
+    if (estAvatar &&
+        reponse.statusCode == 400 &&
+        _refusDUnServeurAncien(duServeur)) {
+      return _photoIndisponible;
+    }
+
+    if (duServeur != null) return duServeur;
 
     return switch (reponse.statusCode) {
       401 => 'Session expirée, reconnectez-vous',
+      403 when estAvatar => "Vous n'avez pas accès à cette fonction",
       403 => "Vous n'êtes pas l'auteur de ce livre",
+      404 when estAvatar => _photoIndisponible,
       404 => 'Livre introuvable',
+      413 when estAvatar => 'Image trop volumineuse',
       413 => 'Fichier trop volumineux',
+      _ when estAvatar =>
+        "Échec de l'envoi de la photo (${reponse.statusCode})",
       _ => "Échec de l'envoi du fichier (${reponse.statusCode})",
     };
+  }
+
+  /// Ce refus vient-il d'un serveur qui ignore la photo de profil ?
+  ///
+  /// Deux phrases le trahissent, et elles sont les seules : « book_id requis »
+  /// — l'ancien gestionnaire réclamait le livre avant même de lire le type —
+  /// et « type invalide », si sa validation du type précédait la nôtre. Aucune
+  /// des deux ne peut sortir du serveur à jour pour un avatar : il saute
+  /// entièrement la partie « livre » et accepte ce type.
+  static bool _refusDUnServeurAncien(String? messageDuServeur) {
+    if (messageDuServeur == null) return false;
+    final m = messageDuServeur.toLowerCase();
+    return m.contains('book_id') || m.contains('type invalide');
   }
 }

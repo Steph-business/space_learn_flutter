@@ -1,10 +1,16 @@
 {
-  "_commentaire": "Modele de configuration de build. Copier en dart_define.json (ignore par Git) et renseigner les valeurs, puis builder avec : flutter run --dart-define-from-file=dart_define.json",
+  "_1_A_LIRE": "GABARIT — NE PAS RENSEIGNER CE FICHIER, IL EST SUIVI PAR GIT ET LE DEPOT EST PUBLIC.",
+  "_2_COPIER": "Recopiez-le en dart_define.json (ignore par Git), mettez-y les vraies valeurs, et ne le poussez jamais.",
+  "_3_BUILDER": "flutter run --dart-define-from-file=dart_define.json     |     flutter build apk --release --dart-define-from-file=dart_define.json",
+  "_4_SANS_CE_FICHIER": "API_HOST retombe sur localhost (voir lib/core/utils/api_routes.dart) : l'application ne joindra aucun serveur. Ce n'est pas une panne, c'est l'absence de configuration.",
 
-  "API_HOST": "192.168.1.10",
-  "API_BASE_URL": "http://192.168.1.10:8083",
-  "API_BASE_URL_GIN": "http://192.168.1.10:8084",
+  "_5_ADRESSES": "203.0.113.10 est une adresse d'exemple (RFC 5737), elle n'existe pas. Remplacez-la par le domaine ou l'IP de votre serveur — ex. api.example.com en production, ou l'IP de votre machine sur le reseau local pour tester depuis un telephone.",
+  "API_HOST": "203.0.113.10",
+  "API_BASE_URL": "http://203.0.113.10:8083",
+  "API_BASE_URL_GIN": "http://203.0.113.10:8084",
 
-  "SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
-  "SUPABASE_ANON_KEY": ""
+  "_6_PLUS_DE_SUPABASE": "SUPABASE_URL et SUPABASE_ANON_KEY ont disparu : l'application ne parle plus a Supabase. La photo de profil, seul usage qui restait, passe maintenant par la route /upload du serveur des livres, comme les couvertures. Si votre dart_define.json les contient encore, retirez-les : plus rien ne les lit.",
+
+  "_7_GOOGLE": "Identifiant client OAuth de type Web, lu par lib/core/services/google_auth_service.dart. Laisse vide, le bouton « Continuer avec Google » se cache de lui-meme.",
+  "GOOGLE_SERVER_CLIENT_ID": ""
 }

@@ -145,8 +145,21 @@ class ReadingProgressService {
     required int totalPages,
     required String authToken,
   }) {
-    // Le numéro est pris MAINTENANT, sans `await` avant lui : c'est ce qui
-    // fait de l'ordre des appels un ordre observable.
+    // Le numéro est pris MAINTENANT, dans la partie synchrone de la méthode :
+    // l'ordre garanti est donc celui des appels À CETTE MÉTHODE, et rien de
+    // plus. Ce n'est PAS l'ordre des intentions de l'appelant.
+    //
+    // Le contrat porte donc sur les appelants, et il est à respecter : entre le
+    // moment où l'on décide d'écrire une position et l'appel ci-dessous, il ne
+    // doit rien y avoir d'attendu. Les deux écrivains d'aujourd'hui lisent leur
+    // jeton avant d'appeler — `reading_page._saveProgress` un `getToken`,
+    // `lecture_audio_livre._enregistrerLAvancee` un `getUserId` PUIS un
+    // `getToken` —, et ces lectures ne passent même pas par le même canal
+    // (coffre chiffré d'un côté, SharedPreferences de l'autre). Deux décisions
+    // prises dans l'ordre peuvent donc, en théorie, arriver ici dans l'autre.
+    // Le cas visé — le tic de deux secondes puis la sortie du livre — reste
+    // ordonné en pratique parce qu'il vient du même écran et du même chemin ;
+    // mais un appelant asymétrique ajouté plus tard ne serait PAS couvert.
     final int numero = (_dernierNumero[livreId] ?? 0) + 1;
     _dernierNumero[livreId] = numero;
 

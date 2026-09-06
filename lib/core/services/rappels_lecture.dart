@@ -178,6 +178,22 @@ class RappelsLecture {
     _fuseauPret = true;
   }
 
+  /// Un créneau que le serveur peut accepter — mêmes règles que `CreneauValide`
+  /// côté Go : au moins un jour retenu, une heure sur le cadran.
+  ///
+  /// Un créneau sans jour ne programme RIEN sur cet appareil non plus (la
+  /// boucle de [reprogrammer] ne tourne pas), mais il fait refuser tout l'envoi
+  /// par un 400 — et ce refus emportait avec lui les créneaux valides de la
+  /// même liste. Une entrée écrite par une version antérieure, ou un JSON sans
+  /// champ `jours`, suffisait à condamner la synchronisation du compte.
+  static bool _envoyable(CreneauLecture c) {
+    if (c.jours.isEmpty) return false;
+    if (c.jours.any((j) => j < 1 || j > 7)) return false;
+    if (c.heure < 0 || c.heure > 23) return false;
+    if (c.minute < 0 || c.minute > 59) return false;
+    return true;
+  }
+
   static Future<List<CreneauLecture>> lire() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -192,6 +208,10 @@ class RappelsLecture {
             }
           })
           .whereType<CreneauLecture>()
+          // Rien n'est perdu de ce que le lecteur a saisi : l'écran interdit
+          // de décocher le dernier jour d'un créneau (temps_lecture_page), ces
+          // entrées ne peuvent donc venir que d'un stockage abîmé.
+          .where(_envoyable)
           .toList();
     } catch (_) {
       return const [];
@@ -382,12 +402,21 @@ class RappelsLecture {
       }
 
       // Un refus de CONTENU (400 : créneau invalide, plus de vingt créneaux)
-      // ne se rejoue pas : renvoyer la même liste donnerait éternellement le
-      // même 400, et le drapeau gèlerait la synchronisation pour toujours.
-      // Tout le reste — 5xx, jeton expiré, passerelle — est temporaire.
-      if (reponse.statusCode != 400) {
-        await _marquerAttente(true);
-      }
+      // EFFACE le drapeau, il ne se contente pas de ne pas le poser.
+      //
+      // Ne pas le poser ne suffisait pas : le seul chemin qui rencontre un 400
+      // avec un drapeau DÉJÀ en place est précisément le rejeu de
+      // [synchroniser], qui repart de la liste locale. Le drapeau restait donc
+      // là, `synchroniser` rendait les créneaux locaux sans jamais relire le
+      // serveur, et la séquence se répétait à chaque ouverture de l'écran et à
+      // chaque connexion — le gel permanent que cette garde annonce éviter.
+      // Renvoyer la même liste donnerait éternellement le même 400 : autant
+      // cesser d'attendre un envoi qui ne partira pas, et laisser le serveur
+      // redevenir la source.
+      //
+      // Tout le reste — 5xx, jeton expiré, passerelle — est temporaire et se
+      // rejoue.
+      await _marquerAttente(reponse.statusCode != 400);
       return false;
     } catch (_) {
       // Réseau coupé ou serveur injoignable. Les créneaux sont déjà

@@ -1,7 +1,9 @@
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/accueil/revenus.dart';
@@ -84,6 +86,29 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
       if (token == null) {
         throw Exception("Votre session a expiré. Reconnectez-vous.");
       }
+
+      // L'ESPACE AUTEUR N'AMORÇAIT JAMAIS LES NOTIFICATIONS.
+      //
+      // `loadNotifications` n'était appelée que par l'accueil du LECTEUR
+      // (accueil_lecteur_page.dart). Un auteur qui se connecte et reste dans
+      // son espace laissait donc NotificationProvider vide : la pastille de
+      // NavBarAll — qui lit `getUnreadCountByRole('auteur')` — restait éteinte
+      // même avec des ventes et des avis en attente, et le flux temps réel ne
+      // partait pas non plus, puisque le SSE ne démarre QUE depuis ce
+      // chargement (`_startStreaming`). Toute la règle de classement par rôle
+      // recopiée du serveur n'avait, de ce côté, aucune source à classer.
+      //
+      // Lancé ici, avant le reste : ni les livres ni les statistiques ne
+      // doivent dépendre des notifications, ni l'inverse. L'échec est avalé —
+      // le provider le garde dans `derniereErreurChargement`, que l'écran des
+      // notifications affiche ; le tableau de bord, lui, n'a rien à en dire.
+      if (mounted) {
+        context
+            .read<NotificationProvider>()
+            .loadNotifications(token)
+            .catchError((_) {});
+      }
+
       final user = await _authService.getUser(token);
       if (user == null) {
         throw Exception("Votre compte n'a pas pu être chargé.");

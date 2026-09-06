@@ -257,4 +257,65 @@ void main() {
       expect(serveur.minutesLivre, isEmpty);
     });
   });
+
+  /// Le compte est NOMMÉ par l'appelant, il n'est plus redécouvert à
+  /// l'écriture.
+  ///
+  /// Ces deux règles sont celles qui protègent contre un crédit sur le mauvais
+  /// compte, et le compilateur ne pouvait rien en dire : `uid` est optionnel,
+  /// tous les appels d'avant continuaient de compiler. Les treize cas
+  /// ci-dessus passaient sans jamais le renseigner.
+  group('Le compte nommé par l\'appelant', () {
+    /// Le report final d'une séance part pendant que la session s'efface : au
+    /// moment où `porter` pose le solde, `TokenStorage` peut déjà être vide.
+    /// Sans `uid`, ces minutes étaient JETÉES faute de compte à créditer.
+    test(
+      'un solde s\'écrit même sans jeton, sous les clés du compte nommé',
+      () async {
+        // Plus aucun compte dans le stockage : la déconnexion est passée.
+        SharedPreferences.setMockInitialValues({});
+
+        await MinutesEnAttente.porter(
+          livreId: 'livre-a',
+          secondes: 120,
+          uid: 'compte-A',
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getInt('lecture_minutes_lecteur_compte-A'),
+          2,
+          reason: 'les minutes doivent attendre sous le compte qui les a lues',
+        );
+        expect(prefs.getInt('lecture_minutes_livre_compte-A_livre-a'), 2);
+
+        // Rien ne part : les requêtes se signent avec un jeton qui n'existe
+        // plus. Le solde attend la prochaine ouverture d'un livre par ce compte.
+        expect(serveur.minutesLecteur, isEmpty);
+        expect(serveur.minutesLivre, isEmpty);
+      },
+    );
+
+    /// L'autre moitié de la garde : ce qui est écrit sous A ne part pas avec
+    /// le jeton de B. Les deux requêtes de [ReaderStatsService] partent avec le
+    /// jeton du stockage — pousser le solde de A créditerait B.
+    test('le solde de A ne part pas avec le jeton de B', () async {
+      SharedPreferences.setMockInitialValues({
+        // Quelqu'un d'autre s'est connecté entre-temps sur cet appareil.
+        'user_id': 'compte-B',
+        'lecture_minutes_lecteur_compte-A': 5,
+        'lecture_minutes_livre_compte-A_livre-a': 5,
+      });
+
+      await MinutesEnAttente.vider(uid: 'compte-A');
+
+      expect(serveur.minutesLecteur, isEmpty);
+      expect(serveur.minutesLivre, isEmpty);
+
+      // Un solde qu'on n'envoie pas n'est pas un solde perdu.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('lecture_minutes_lecteur_compte-A'), 5);
+      expect(prefs.getInt('lecture_minutes_livre_compte-A_livre-a'), 5);
+    });
+  });
 }

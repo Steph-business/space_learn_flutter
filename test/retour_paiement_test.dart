@@ -28,14 +28,19 @@ bool estUrlDeRetour(String url) {
       minuscules.contains('spacelearn');
 }
 
+/// L'hôte des URL d'exemple ci-dessous est une adresse réservée à la
+/// documentation (RFC 5737), pas celle de la production : la règle testée ne
+/// regarde que le CHEMIN et les mots de l'URL, jamais la machine. Un test qui
+/// nommerait le serveur réel deviendrait faux le jour du nom de domaine, et
+/// figerait cette adresse dans un dépôt public pour rien.
 void main() {
   group('Les URL réellement configurées sont reconnues', () {
     test('le retour de succès en français', () {
-      expect(estUrlDeRetour('http://144.91.101.16/paiement/succes'), isTrue);
+      expect(estUrlDeRetour('http://203.0.113.10/paiement/succes'), isTrue);
     });
 
     test('le retour d\'échec en français', () {
-      expect(estUrlDeRetour('http://144.91.101.16/paiement/echec'), isTrue);
+      expect(estUrlDeRetour('http://203.0.113.10/paiement/echec'), isTrue);
     });
 
     /// Le jour où le site sera servi en HTTPS sur un domaine, l'URL changera
@@ -78,7 +83,7 @@ void main() {
             url.contains('cancel') ||
             url.contains('spacelearn'));
 
-    expect(ancienneRegle('http://144.91.101.16/paiement/succes'), isFalse);
-    expect(ancienneRegle('http://144.91.101.16/paiement/echec'), isFalse);
+    expect(ancienneRegle('http://203.0.113.10/paiement/succes'), isFalse);
+    expect(ancienneRegle('http://203.0.113.10/paiement/echec'), isFalse);
   });
 }

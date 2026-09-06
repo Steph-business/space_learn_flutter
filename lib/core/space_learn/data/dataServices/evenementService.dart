@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
@@ -26,6 +27,34 @@ class EvenementService {
 
   EvenementService({http.Client? client})
     : client = client ?? ApiClient.instance;
+
+  /// Les publications lisibles, sans que l'une d'elles emporte les autres.
+  ///
+  /// `list.map((json) => Evenement.fromJson(json))` propage l'échec du PREMIER
+  /// élément à toute la lecture : un seul événement mal formé faisait lever la
+  /// requête entière, et les deux pages Communauté — qui n'ont, elles, qu'un
+  /// `catch` — affichaient « Vos annonces et événements n'ont pas pu être
+  /// chargés ». Une panne réseau annoncée pour une donnée abîmée, sur les deux
+  /// écrans dont on vient justement de soigner les états de panne.
+  ///
+  /// Même geste que discussionService._salons et que la lecture des messages :
+  /// on saute l'élément illisible, on garde la liste, et la trace part au
+  /// journal — la personne qui lit n'a rien à faire de cette information, et
+  /// une liste amputée d'une publication reste utile.
+  List<Evenement> _publications(List<dynamic> liste, String provenance) {
+    final publications = <Evenement>[];
+    for (final element in liste) {
+      try {
+        publications.add(
+          Evenement.fromJson(Map<String, dynamic>.from(element as Map)),
+        );
+      } catch (e) {
+        debugPrint('Publication illisible ignorée ($provenance) : $e');
+        continue;
+      }
+    }
+    return publications;
+  }
 
   Future<Evenement> createEvenement({
     required String typePublication,
@@ -84,7 +113,7 @@ class EvenementService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       final List<dynamic> list = responseData['data'] ?? [];
-      return list.map((json) => Evenement.fromJson(json)).toList();
+      return _publications(list, 'flux global');
     } else {
       throw Exception(
         messageDeLaReponse(
@@ -111,7 +140,7 @@ class EvenementService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       final List<dynamic> list = responseData['data'] ?? [];
-      return list.map((json) => Evenement.fromJson(json)).toList();
+      return _publications(list, 'auteur $auteurId');
     } else {
       throw Exception(
         messageDeLaReponse(

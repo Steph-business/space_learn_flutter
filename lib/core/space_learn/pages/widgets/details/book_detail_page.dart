@@ -262,7 +262,25 @@ class _BookDetailPageState extends State<BookDetailPage> {
         });
         await _checkOwnershipStatus();
       }
-    } catch (e) {}
+    } catch (e) {
+      // Une PANNE n'est pas « ce livre n'est pas à vous ».
+      //
+      // `getBookById` est le SEUL appel qui rende `fichier_url` et le drapeau
+      // « fichier indisponible » (livre/service.go, GetOne) ; c'est aussi lui
+      // que le retour de la webview relance juste après un débit. En avalant
+      // l'échec, la fiche gardait l'objet reçu AVANT l'achat, n'atteignait
+      // jamais `_checkOwnershipStatus` — placé après l'await qui venait de
+      // lever — et continuait d'afficher « Acheter » à qui venait de payer,
+      // sans un bandeau ni un message. On lève donc le doute que la barre du
+      // bas sait déjà montrer, avec « Réessayer », ou « Se reconnecter » quand
+      // c'est la session qui est finie.
+      if (!mounted) return;
+      setState(() {
+        _isLoadingOwnership = false;
+        _verificationPossessionImpossible = true;
+        _sessionExpiree = estSessionExpiree(e);
+      });
+    }
   }
 
   Future<void> _checkOwnershipStatus() async {
@@ -341,13 +359,19 @@ class _BookDetailPageState extends State<BookDetailPage> {
   }
 
   /// Relance la vérification de possession après une panne.
+  ///
+  /// Elle repasse par [_loadFullBookDetails], et pas seulement par la
+  /// vérification de bibliothèque : le doute peut venir des DEUX appels, et
+  /// celui-ci est le seul à rapporter l'adresse du fichier. Ne réessayer que la
+  /// possession aurait pu rendre « Lire » sur un objet reçu sans manuscrit —
+  /// c'est-à-dire ouvrir la liseuse sur un extrait, ou sur rien.
   Future<void> _reessayerVerificationPossession() async {
     setState(() {
       _isLoadingOwnership = true;
       _verificationPossessionImpossible = false;
       _sessionExpiree = false;
     });
-    await _checkOwnershipStatus();
+    await _loadFullBookDetails();
   }
 
   Future<void> _loadReadingProgress() async {
@@ -364,7 +388,18 @@ class _BookDetailPageState extends State<BookDetailPage> {
           });
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // Silence DÉLIBÉRÉ, et le seul de cet écran.
+      //
+      // Contrairement à `getBookById` — qui, lui, décide de la possession et de
+      // l'adresse du manuscrit, et dont l'échec lève désormais un bandeau —, la
+      // progression n'est qu'un raccourci : sans elle la fiche propose « Lire »
+      // au lieu de « Reprendre », et la liseuse relit de toute façon la
+      // position au serveur en s'ouvrant (reading_page, `_loadProgress`). Rien
+      // n'est perdu ni affirmé à tort ; annoncer cette panne au chargement de
+      // chaque fiche coûterait plus qu'elle ne vaut.
+      debugPrint('Progression de lecture non chargée : $e');
+    }
   }
 
   Future<void> _loadChapitres() async {
@@ -844,10 +879,14 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
   Future<void> _supprimerLivre(BuildContext context, BookModel book) async {
     // L'ancienne garde bloquait la suppression « si le livre a des acheteurs »
-    // en testant `book.telechargements > 0`. Or ce champ est rempli depuis
-    // `nombre_avis` (book_model.dart) : le serveur n'envoie AUCUN compte de
-    // ventes. Un livre acheté trente fois mais jamais noté passait la garde,
-    // et ses acheteurs perdaient l'accès — le serveur supprime sans contrôle.
+    // en testant `book.telechargements > 0`. Or ce champ ÉTAIT alors rempli
+    // depuis `nombre_avis` ; les deux grandeurs ont depuis été séparées
+    // (book_model.dart, où `telechargements` ne se lit plus que depuis
+    // `telechargements`/`downloads`) et le constat vaut toujours : le serveur
+    // n'envoie AUCUN compte de ventes dans les listes, ce champ y vaut 0 pour
+    // tout le monde. Un livre acheté trente fois mais jamais noté passait la
+    // garde, et ses acheteurs perdaient l'accès — le serveur supprime sans
+    // contrôle.
     // Le nombre d'acheteurs n'existant pas côté client, on ne prétend plus le
     // connaître : avertissement honnête + recopie du titre pour confirmer.
     final saisieTitre = TextEditingController();
@@ -2508,7 +2547,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
       // son premier paiement attendait l'opérateur, le lecteur pouvait rouvrir
       // une transaction et être débité deux fois pour un seul livre. Le site
       // web porte le même correctif (paiement.ts / transactionEnCours) ; ici,
-      // faute de trace locale, on demande au serveur la liste des paiements.
+      // la garde dispose des DEUX traces — la mémoire locale écrite plus bas,
+      // juste avant d'envoyer payer, et la liste du serveur.
       final poursuivre = await _verifierPaiementDejaOuvert(
         paymentService,
         book,
@@ -2518,17 +2558,41 @@ class _BookDetailPageState extends State<BookDetailPage> {
       if (!poursuivre) return;
       if (!mounted) return;
 
-      final result = await paymentService.initiateCinetpayPayment(
-        livreId: book.id,
-        montant: amount,
-        authToken: token,
-        customerName: user.nomComplet.isNotEmpty
-            ? user.nomComplet
-            : "Lecteur SpaceLearn",
-        customerEmail: user.email.isNotEmpty
-            ? user.email
-            : "client@spacelearn.com",
-      );
+      final CinetpayInitResult result;
+      try {
+        result = await paymentService.initiateCinetpayPayment(
+          livreId: book.id,
+          montant: amount,
+          authToken: token,
+          customerName: user.nomComplet.isNotEmpty
+              ? user.nomComplet
+              : "Lecteur SpaceLearn",
+          customerEmail: user.email.isNotEmpty
+              ? user.email
+              : "client@spacelearn.com",
+        );
+      } on LivreDevenuGratuitException catch (e) {
+        // Le livre est devenu GRATUIT entre l'affichage de la fiche et l'appui.
+        //
+        // Le serveur ignore le montant que nous envoyons, relit le prix en base
+        // et, s'il est nul, ACCORDE l'ouvrage sans ouvrir de paiement (voir
+        // paymentService.dart). Le lecteur possède donc le livre : le lui
+        // annoncer comme un échec — « Le paiement n'a pas pu être lancé.
+        // Réessayez dans un instant. » — l'invitait à recommencer un achat
+        // déjà obtenu. On le dit comme un succès et la fiche bascule sur
+        // « Lire », cache du livre complet vidé d'abord : l'objet affiché avait
+        // été reçu en non-possesseur, avec l'adresse signée de l'EXTRAIT.
+        if (!mounted) return;
+        AppNotifications.showSnackBar(
+          context,
+          message: e.message,
+          isSuccess: true,
+        );
+        await BookCacheService().clearBookCache(book.id, '', extrait: false);
+        if (!mounted) return;
+        await _loadFullBookDetails();
+        return;
+      }
 
       // Le montant OFFICIEL : celui que le serveur a relu en base au moment
       // d'ouvrir la transaction, pas le prix affiché par la fiche. Entre le
@@ -2607,11 +2671,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
   /// lecteur a choisi d'attendre la confirmation plutôt que de repayer.
   ///
   /// La règle elle-même n'est plus écrite ici : elle vit dans
-  /// [PaymentService.examinerTransactionOuverte], partagée avec les deux autres
-  /// écrans qui lancent un paiement. Chacun en portait sa version, et elles
-  /// s'étaient mises à se contredire — notamment sur ce qu'il faut faire quand
-  /// le statut de la transaction précédente est invérifiable. Cet écran ne
-  /// décide plus que de ce qu'il MONTRE.
+  /// [PaymentService.examinerTransactionOuverte], partagée avec l'autre écran
+  /// qui lance un paiement, la fin d'extrait de la liseuse (un troisième,
+  /// l'écran de paiement, a depuis été supprimé). Chacun en portait sa version,
+  /// et elles s'étaient mises à se contredire — notamment sur ce qu'il faut
+  /// faire quand le statut de la transaction précédente est invérifiable. Cet
+  /// écran ne décide plus que de ce qu'il MONTRE.
   Future<bool> _verifierPaiementDejaOuvert(
     PaymentService paymentService,
     BookModel book,
@@ -2632,7 +2697,21 @@ class _BookDetailPageState extends State<BookDetailPage> {
             "Votre paiement précédent a été confirmé : ce livre est déjà dans votre bibliothèque.",
         isSuccess: true,
       );
-      await _checkOwnershipStatus();
+      // Le livre vient d'être accordé : la fiche se RECHARGE, elle ne se
+      // contente pas de rallumer « Lire ».
+      //
+      // `_checkOwnershipStatus` seul faisait passer `_isOwned` à vrai sans
+      // toucher à `_fullBook`, reçu quand le lecteur ne possédait pas encore
+      // l'ouvrage : son `fichier_url` est l'adresse signée de l'EXTRAIT, que le
+      // serveur substitue au manuscrit pour un non-possesseur. Le bouton
+      // « Lire » ouvrait alors la liseuse en mode complet sur cet aperçu, qui
+      // s'écrivait dans le cache du livre entier — l'acheteur relisait ses dix
+      // pages, durablement. Même ménage que le retour de la webview, et même
+      // issue que la liseuse devant ce verdict (reading_page,
+      // `_ouvrirLOeuvreComplete`).
+      await BookCacheService().clearBookCache(book.id, '', extrait: false);
+      if (!mounted) return false;
+      await _loadFullBookDetails();
       return false;
     }
 
@@ -2647,14 +2726,52 @@ class _BookDetailPageState extends State<BookDetailPage> {
     // VerdictPaiement.laisserPasser — y compris sur une vérification en panne :
     // refuser un achat parce qu'on n'a pas pu lire la liste des paiements
     // fermerait la boutique, et le serveur reste seul à accorder le livre.
+    //
+    // Mais laisser passer SANS RIEN DIRE, c'est affirmer qu'aucun paiement
+    // n'est en cours alors qu'on n'a rien pu lire : la garde le sait
+    // (`verificationImpossible`) et sa documentation le dit — un laisserPasser
+    // est alors une tolérance, pas une preuve. Le lecteur revenu sans réseau de
+    // la page CinetPay a droit à cet avertissement avant de repayer.
+    if (garde.verificationImpossible) {
+      AppNotifications.showSnackBar(
+        context,
+        message:
+            "Nous n'avons pas pu vérifier vos paiements en cours. Si vous avez "
+            "déjà réglé ce livre, attendez quelques minutes avant de repayer.",
+        isError: true,
+      );
+    }
     return true;
   }
 
   /// Demande au lecteur quoi faire d'une transaction encore ouverte.
+  ///
+  /// Même question, mêmes éléments et même HIÉRARCHIE que la fin d'extrait de
+  /// la liseuse (reading_page). La règle avait été unifiée dans la garde, la
+  /// persuasion non : cet écran mettait « Payer à nouveau » en bouton accentué
+  /// et « Attendre » en gris, la liseuse l'inverse. Selon l'écran d'où il
+  /// partait, le même lecteur était poussé vers un second débit ou vers
+  /// l'attente — le défaut d'origine déplacé du `if` vers le `style`. L'action
+  /// mise en avant est désormais « Attendre » partout, parce que repayer est
+  /// l'acte irréversible.
   Future<bool?> _confirmerNouveauPaiement(GardePaiement enAttente) {
     final quand = enAttente.ouverteLe != null
         ? " ouverte le ${DateFormat('dd/MM/yyyy à HH:mm').format(enAttente.ouverteLe!.toLocal())}"
         : "";
+    // Le MONTANT déjà engagé, que la garde vient de relire en base : c'est la
+    // somme du second débit possible, et la question n'a pas de sens sans elle.
+    // Le prix affiché par la fiche n'est pas cité à sa place — il peut être
+    // périmé, l'auteur ayant pu le changer depuis.
+    final somme = enAttente.montant > 0
+        ? ", d'un montant de ${enAttente.montant.toStringAsFixed(0)} FCFA,"
+        : "";
+    // Les références des tentatives PRÉCÉDENTES, quand « Payer à nouveau » a
+    // déjà été choisi : elles n'apparaissent nulle part ailleurs, et ce sont
+    // elles qu'une réclamation devra citer.
+    final autres = enAttente.referencesPrecedentes.isEmpty
+        ? ""
+        : "\n\nTentatives précédentes : "
+              "${enAttente.referencesPrecedentes.join(', ')}";
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2671,32 +2788,39 @@ class _BookDetailPageState extends State<BookDetailPage> {
           ),
         ),
         content: Text(
-          'Une transaction pour ce livre$quand attend encore la confirmation '
-          'de l\'opérateur (référence ${enAttente.transactionId}).\n\n'
+          'Une transaction pour ce livre$quand$somme attend encore la '
+          'confirmation de l\'opérateur (référence ${enAttente.transactionId}).'
+          '\n\n'
           'Si vous avez déjà réglé, la confirmation peut prendre quelques '
           'minutes : payer à nouveau vous ferait débiter une seconde fois. '
-          'Ne relancez un paiement que si vous aviez abandonné le précédent.',
+          'Ne relancez un paiement que si vous aviez abandonné le précédent.'
+          '$autres',
           style: GoogleFonts.poppins(
             color: AppColors.textSecondary,
             fontSize: 13,
           ),
         ),
+        // L'action ACCENTUÉE est « Attendre », dans les deux écrans.
+        //
+        // Repayer est l'acte irréversible : c'est lui qui doit demander un
+        // geste délibéré, pas l'attente. Un appui hors du cadre rend null,
+        // traité comme « attendre » par l'appelant — même défaut sûr.
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'Attendre la confirmation',
+              'Payer à nouveau',
               style: GoogleFonts.poppins(color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () => Navigator.pop(ctx, false),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
               foregroundColor: AppColors.onAccent,
             ),
             child: Text(
-              'Payer à nouveau',
+              'Attendre la confirmation',
               style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
             ),
           ),

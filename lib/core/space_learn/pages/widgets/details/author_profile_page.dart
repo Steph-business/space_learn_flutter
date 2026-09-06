@@ -44,6 +44,15 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
   /// panne présentée comme un catalogue vide, sans moyen de réessayer.
   String? _erreurLivres;
 
+  /// Le nombre d'abonnés n'a pas pu être établi.
+  ///
+  /// Sans ce drapeau, `_followerCount` restait à sa valeur initiale — zéro au
+  /// premier chargement — et l'écran affichait « 0 Abonnés » sur une panne
+  /// réseau, pour un auteur qui en a quatre cents. C'est le chiffre faux que
+  /// le compteur voisin, dans la même Row, refuse déjà d'écrire pour les
+  /// livres : deux compteurs côte à côte, une seule règle.
+  bool _abonnesInconnus = false;
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +71,7 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
     setState(() {
       _isLoadingBooks = true;
       _erreurLivres = null;
+      _abonnesInconnus = false;
     });
 
     // Les deux méthodes ne lèvent jamais : ce `Future.wait` ne sert qu'à
@@ -92,17 +102,38 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
     try {
       final abonnes = await _relationService.getFollowers(widget.author.id);
       if (!mounted) return;
-      setState(() => _followerCount = abonnes.length);
+      setState(() {
+        _followerCount = abonnes.length;
+        _abonnesInconnus = false;
+      });
     } catch (_) {
-      // Le compteur d'abonnés est secondaire : son échec laisse la valeur
-      // déjà affichée en place plutôt que d'occuper tout l'écran, et surtout
-      // il n'empêche plus les livres de s'afficher.
+      // Le compteur d'abonnés est secondaire : son échec n'occupe pas tout
+      // l'écran et n'empêche pas les livres de s'afficher. Mais il ne se tait
+      // pas non plus : au premier chargement il n'y a AUCUNE valeur déjà
+      // affichée à conserver, et le zéro initial passerait pour un compte
+      // réel. Le compteur affiche « — » tant qu'il est inconnu.
+      if (!mounted) return;
+      setState(() => _abonnesInconnus = true);
     }
   }
 
   Future<void> _toggleFollow() async {
     final token = await TokenStorage.getToken();
-    if (token == null) return;
+    // Sans jeton, l'appui ne produisait RIEN : pas de requête, pas de message,
+    // et pas même le basculement optimiste — le bouton ne bougeait pas d'un
+    // pixel. Une session finie se dit comme telle, ici comme sur l'accueil
+    // d'où l'on arrive en tapant la carte de cet auteur.
+    if (token == null) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message:
+            "Votre session a expiré. Reconnectez-vous pour suivre "
+            "cet auteur.",
+        isError: true,
+      );
+      return;
+    }
 
     final originalFollowing = _isFollowing;
     final originalCount = _followerCount;
@@ -221,7 +252,12 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildStatWidget(_followerCount.toString(), "Abonnés"),
+              // Même règle que pour les livres, à droite : un compte qui n'a
+              // pas pu être chargé s'écrit « — », jamais « 0 ».
+              _buildStatWidget(
+                _abonnesInconnus ? "—" : _followerCount.toString(),
+                "Abonnés",
+              ),
               SizedBox(width: 40),
               // « 0 » sur une panne serait un chiffre faux : tant que la
               // liste n'a pas pu être chargée, le compte reste inconnu.

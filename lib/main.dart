@@ -15,7 +15,6 @@ import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/themes/app_theme.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/profil.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/bienvenue.dart';
@@ -77,17 +76,21 @@ Future<void> main() async {
 
   final limite = DateTime.now().add(_budgetDemarrage);
 
-  await _preparer('Supabase', limite, () async {
-    const supabaseUrl = String.fromEnvironment(
-      'SUPABASE_URL',
-      defaultValue: 'https://uqmydsydlkwxcfcdtsbu.supabase.co',
-    );
-    // La clé anon est publique par nature, mais elle n'a pas de valeur par
-    // défaut : elle doit être fournie au build via
-    // --dart-define=SUPABASE_ANON_KEY=... (ou --dart-define-from-file).
-    const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
-  });
+  // L'initialisation de Supabase a disparu d'ici, avec la lecture de
+  // SUPABASE_URL et SUPABASE_ANON_KEY.
+  //
+  // Le mobile ne parlait plus à Supabase que pour une chose : déposer la photo
+  // de profil dans le seau « avatars », depuis trois écrans. Cela lui coûtait
+  // d'embarquer une clé — et celle qui avait été rangée sous le nom
+  // « SUPABASE_ANON_KEY » était en réalité la clé service_role, qui passe outre
+  // toutes les règles d'accès de la base et se lit dans l'APK par un simple
+  // décompactage. La photo emprunte désormais la route /upload du serveur des
+  // livres, comme les couvertures : plus aucune clé Supabase dans
+  // l'application.
+  //
+  // Les adresses supabase.co déjà enregistrées restent lisibles : ce sont de
+  // simples URL publiques, aucun client n'est nécessaire pour les afficher
+  // (voir ApiRoutes.sanitizeImageUrl, qui les laisse passer telles quelles).
 
   // Session expirée (401 sur une route métier) : purger la session locale et
   // ramener l'utilisateur à l'écran de connexion, quelle que soit la page

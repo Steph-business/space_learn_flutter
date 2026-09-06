@@ -3,8 +3,7 @@ import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:convert';
+import 'package:space_learn_flutter/core/space_learn/data/dataServices/uploadService.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/theme_provider.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
@@ -25,6 +24,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/language_selection_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/publication_settings_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/sales_report_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/suppression_compte.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/terms_of_use_page.dart';
 
 /// Réglages de l'espace auteur.
@@ -215,6 +215,20 @@ class _SettingsPageAuteurState extends State<SettingsPageAuteur> {
             );
           },
         ),
+        // L'auteur n'avait AUCUN moyen de supprimer son compte.
+        //
+        // Cette section n'en portait que deux entrées, là où l'écran lecteur
+        // jumeau en porte trois : deux écrans qui tranchent en sens contraire
+        // le même droit. Et un compte dont le profil est « Auteur » est routé
+        // vers HomePageAuteur (main.dart) — il n'atteint jamais SettingsPage,
+        // donc jamais l'entrée du côté lecteur. Le parcours est partagé plutôt
+        // que recopié : settings/suppression_compte.dart.
+        SettingItemTile(
+          icon: Icons.delete_forever_outlined,
+          title: "Supprimer mon compte",
+          subtitle: "Désactivation immédiate : connexion et nom affiché",
+          onTap: () => afficherLaSuppressionDeCompte(context),
+        ),
 
         // Section Support
         SettingSectionHeader(
@@ -275,72 +289,89 @@ class _SettingsPageAuteurState extends State<SettingsPageAuteur> {
   Future<void> _pickProfilePhoto(BuildContext context) async {
     try {
       final picker = ImagePicker();
+      // Mêmes bornes que l'écran jumeau (settings_page.dart) : `imageQuality`
+      // ne fait que réencoder, seule la définition fait descendre le fichier
+      // sous le plafond de 2 Mo du serveur (`tailleMaxAvatar`). Sans elles, la
+      // photo de l'auteur partait en entier sur son réseau mobile pour se voir
+      // refuser en 413.
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
       );
       if (image == null) return;
+
+      // Le sélecteur ouvre une activité séparée : l'écran peut avoir été
+      // démonté pendant qu'elle tenait le premier plan. Toutes les autres
+      // utilisations du contexte dans cette méthode sont gardées ; celle-ci ne
+      // l'était pas.
+      if (!context.mounted) return;
 
       AppNotifications.showSnackBar(
         context,
         message: "Téléversement de l'image en cours...",
       );
 
-      String? photoUrl;
-      try {
-        final bytes = await image.readAsBytes();
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-        await Supabase.instance.client.storage
-            .from('avatars')
-            .uploadBinary(
-              fileName,
-              bytes,
-              fileOptions: const FileOptions(
-                contentType: 'image/jpeg',
-                upsert: true,
-              ),
-            );
-
-        photoUrl = Supabase.instance.client.storage
-            .from('avatars')
-            .getPublicUrl(fileName);
-      } catch (_) {
-        try {
-          final bytes = await image.readAsBytes();
-          final base64String = base64Encode(bytes);
-          final extension = image.path.split('.').last;
-          photoUrl = 'data:image/$extension;base64,$base64String';
-        } catch (_) {
-          AppNotifications.showSnackBar(
-            context,
-            message: "Erreur lors du traitement de l'image.",
-            isError: true,
-          );
-          return;
-        }
-      }
-
       final token = await TokenStorage.getToken();
-      if (token != null) {
-        final authService = AuthService();
-        final user = await authService.getUser(token);
-        if (user != null) {
-          await authService.updateProfileDetails(
-            userId: user.id,
-            profilePhoto: photoUrl,
-          );
-          AppNotifications.showSnackBar(
-            context,
-            message: "Photo de profil mise à jour !",
-            isSuccess: true,
-          );
-        }
+      if (!context.mounted) return;
+      if (token == null) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Votre session a expiré. Reconnectez-vous.",
+          isError: true,
+        );
+        return;
       }
-    } catch (e) {
+
+      // L'image part au serveur, qui la range et rend son adresse publique.
+      // Elle était auparavant déposée directement dans le stockage Supabase
+      // avec une clé de service embarquée dans l'APK : celle-ci ouvrait toute
+      // la base à qui décompressait le fichier.
+      //
+      // Aucun repli ne rattrape plus un échec d'envoi. L'écran encodait alors
+      // l'image en « data:image/...;base64,... » et enregistrait CELA comme
+      // photo : le champ n'accepte que 500 caractères côté serveur, une image
+      // encodée en fait des dizaines de milliers. L'enregistrement échouait ou
+      // tronquait pendant que la personne lisait « Photo de profil mise à
+      // jour ». Un envoi raté se dit, et l'ancienne photo reste.
+      final photoUrl = await UploadService.envoyerAvatar(
+        authToken: token,
+        octets: await image.readAsBytes(),
+        nomFichier: image.name.isNotEmpty ? image.name : 'avatar.jpg',
+      );
+
+      final authService = AuthService();
+      final user = await authService.getUser(token);
+      if (!context.mounted) return;
+      if (user == null) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Profil introuvable : la photo n'a pas été enregistrée.",
+          isError: true,
+        );
+        return;
+      }
+
+      await authService.updateProfileDetails(
+        userId: user.id,
+        profilePhoto: photoUrl,
+      );
+
+      if (!context.mounted) return;
       AppNotifications.showSnackBar(
         context,
-        message: "Erreur lors du choix de l'image.",
+        message: "Photo de profil mise à jour !",
+        isSuccess: true,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: messageLisible(
+          e,
+          repli: "La photo de profil n'a pas pu être changée.",
+        ),
         isError: true,
       );
     }
@@ -438,8 +469,12 @@ class _SettingsPageAuteurState extends State<SettingsPageAuteur> {
   }
 
   void _switchToReaderMode(BuildContext context) {
-    // Rouvrir la confirmation pendant que la première est en vol n'aurait
-    // aucun sens : on le dit au lieu de ne rien faire.
+    // Même statut que la bascule inverse (settings_page.dart) : le VRAI
+    // garde-fou est le voile de build(), posé dès la trame qui suit le
+    // `setState` d'_executeSwitchToReaderMode — l'entrée de liste ne reçoit
+    // plus aucun pointeur tant que le drapeau est vrai. Cette branche ne
+    // couvre que la trame intercalaire ; elle se garde, mais elle ne s'observe
+    // pas, et il ne faut pas la lire comme une amélioration éprouvée.
     if (_basculeEnCours) {
       AppNotifications.showSnackBar(
         context,

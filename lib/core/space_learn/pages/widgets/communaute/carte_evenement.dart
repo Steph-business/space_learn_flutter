@@ -480,13 +480,22 @@ class _BoutonRappelEvenementState extends State<BoutonRappelEvenement> {
 
   /// L'état suit l'ÉVÉNEMENT, pas la position dans la liste.
   ///
-  /// `_rappelPose` n'était lu qu'à initState, et les listes qui affichent les
-  /// cartes ne posent aucune Key : quand elles changent — filtre « Tout » →
-  /// « Événements », rafraîchissement qui réordonne — Flutter réutilise le
-  /// State par position, et l'événement B s'affichait avec le « Rappel posé »
-  /// de l'événement A. Le lecteur croyait qu'on le préviendrait la veille et
+  /// `_rappelPose` n'était lu qu'à initState, et les listes ne posaient alors
+  /// aucune Key : quand elles changeaient — filtre « Tout » → « Événements »,
+  /// rafraîchissement qui réordonne — Flutter réutilisait le State par
+  /// position, et l'événement B s'affichait avec le « Rappel posé » de
+  /// l'événement A. Le lecteur croyait qu'on le préviendrait la veille et
   /// personne ne le prévenait ; ou il « retirait » un rappel affiché qui
   /// n'existait pas.
+  ///
+  /// LA RÉPARATION EST AILLEURS, et elle est faite : les trois — et seules —
+  /// listes qui construisent une CarteEvenement posent aujourd'hui une
+  /// `ValueKey(evenement.id)` (evenements_page, communaute_page auteur et
+  /// lecteur). Ce didUpdateWidget reste pour deux raisons, et non par
+  /// superstition : il rattrape l'appelant futur qui oublierait la Key, et une
+  /// Key n'empêche pas la réponse asynchrone d'un événement PRÉCÉDENT
+  /// d'arriver après le changement — d'où aussi la garde d'identité de
+  /// [_lireLEtatDuRappel]. Ne pas les retirer en croyant les Key suffisantes.
   @override
   void didUpdateWidget(BoutonRappelEvenement ancien) {
     super.didUpdateWidget(ancien);
@@ -517,12 +526,14 @@ class _BoutonRappelEvenementState extends State<BoutonRappelEvenement> {
 
     // L'événement d'AVANT l'attente.
     //
-    // `zonedSchedule` n'est pas instantané, et les listes qui affichent ces
-    // boutons ne posent aucune Key : si elles se réordonnent pendant cette
-    // attente, Flutter recycle le State sur un AUTRE événement. Le seul test
-    // `mounted` laissait alors écrire le résultat de l'ancien sur le nouveau —
-    // « Nous vous préviendrons la veille » à côté d'une carte sans rappel.
-    // Le State n'a le droit d'écrire que si c'est toujours le même rendez-vous.
+    // `zonedSchedule` n'est pas instantané. Les trois listes qui affichent ces
+    // boutons posent désormais une `ValueKey(evenement.id)`, ce qui empêche le
+    // recyclage du State d'une carte sur une autre — mais une Key n'arrête pas
+    // une réponse déjà partie : si la liste se réordonne pendant l'attente, le
+    // résultat de l'ANCIEN événement revient dans un State qui affiche déjà le
+    // nouveau. Le seul test `mounted` laissait alors écrire « Nous vous
+    // préviendrons la veille » à côté d'une carte sans rappel. Le State n'a le
+    // droit d'écrire que si c'est toujours le même rendez-vous.
     final id = evenement.id;
 
     try {

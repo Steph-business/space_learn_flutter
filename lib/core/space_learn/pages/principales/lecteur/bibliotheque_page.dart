@@ -140,16 +140,10 @@ class _BibliothequePageState extends State<BibliothequePage> {
               item.livreId,
               authToken: token,
             );
-            enriched.add(
-              LibraryModel(
-                id: item.id,
-                utilisateurId: item.utilisateurId,
-                livreId: item.livreId,
-                acquisVia: item.acquisVia,
-                creeLe: item.creeLe,
-                livre: book,
-              ),
-            );
+            // Même règle qu'en bas de méthode : on remplace le livre, on ne
+            // reconstruit pas l'item — `auteurNom`, issu de la jointure, ne
+            // survivrait pas à une recopie champ par champ.
+            enriched.add(item.copyWith(livre: book));
             continue;
           } catch (e) {
             // fall through and add original item (without livre)
@@ -173,15 +167,15 @@ class _BibliothequePageState extends State<BibliothequePage> {
         if (item.livre != null) {
           final p = progressMap[item.livre!.id];
           if (p != null) {
-            // Use copyWith to preserve all book fields while updating progressions
-            return LibraryModel(
-              id: item.id,
-              utilisateurId: item.utilisateurId,
-              livreId: item.livreId,
-              acquisVia: item.acquisVia,
-              creeLe: item.creeLe,
-              livre: item.livre!.copyWith(progressions: [p]),
-            );
+            // Le copyWith porte sur l'item ENTIER, pas seulement sur le livre.
+            //
+            // Le commentaire promettait déjà « preserve all book fields »,
+            // mais le LibraryModel englobant était rebâti champ par champ —
+            // et `auteurNom`, qui vient de la jointure et n'existe qu'ici,
+            // était oublié : tout ouvrage commencé perdait silencieusement le
+            // nom de son auteur. L'accueil fait la même opération avec le même
+            // copyWith (accueil_lecteur_page, `updatedLibrary`).
+            return item.copyWith(livre: item.livre!.copyWith(progressions: [p]));
           }
         }
         return item;

@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:convert';
 
 import '../../../themes/app_colors.dart';
 import '../../data/dataServices/favoriteService.dart';
+import '../../data/dataServices/uploadService.dart';
 import '../../data/dataServices/profileService.dart';
 import '../../data/dataServices/authServices.dart';
 import '../../data/dataServices/libraryService.dart';
@@ -1053,83 +1052,76 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _pickProfilePhoto() async {
     try {
       final picker = ImagePicker();
+      // Mêmes bornes que les deux écrans de réglages : `imageQuality` ne
+      // change pas la définition, et le serveur plafonne l'avatar à 2 Mo
+      // (`tailleMaxAvatar`). Une photo de téléphone récent dépassait ce seuil
+      // et n'était refusée qu'après avoir traversé tout le réseau.
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
       );
       if (image == null) return;
+
+      // Le sélecteur est une activité séparée : cet écran peut avoir été
+      // démonté pendant qu'elle tenait le premier plan, et `setState` sur un
+      // State mort lève.
+      if (!mounted) return;
 
       setState(() {
         _isLoading = true;
       });
 
-      String? photoUrl;
-      try {
-        final bytes = await image.readAsBytes();
-        final fileName =
-            '${_user?.id ?? DateTime.now().millisecondsSinceEpoch}.jpg';
-
-        await Supabase.instance.client.storage
-            .from('avatars')
-            .uploadBinary(
-              fileName,
-              bytes,
-              fileOptions: const FileOptions(
-                contentType: 'image/jpeg',
-                upsert: true,
-              ),
-            );
-
-        photoUrl = Supabase.instance.client.storage
-            .from('avatars')
-            .getPublicUrl(fileName);
-      } catch (storageError) {
-        try {
-          final bytes = await image.readAsBytes();
-          final base64String = base64Encode(bytes);
-          final extension = image.path.split('.').last;
-          photoUrl = 'data:image/$extension;base64,$base64String';
-        } catch (_) {
-          AppNotifications.showSnackBar(
-            context,
-            message: "Erreur lors du traitement de l'image.",
-            isError: true,
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
+      final utilisateur = _user;
+      final token = await TokenStorage.getToken();
+      if (!mounted) return;
+      if (token == null || utilisateur == null) {
+        AppNotifications.showSnackBar(
+          context,
+          message: "Votre session a expiré. Reconnectez-vous.",
+          isError: true,
+        );
+        return;
       }
 
-      if (photoUrl != null) {
-        final token = await TokenStorage.getToken();
-        if (token != null) {
-          final authService = AuthService();
-          final updatedUser = await authService.updateProfileDetails(
-            userId: _user!.id,
-            profilePhoto: photoUrl,
-          );
-          if (updatedUser != null) {
-            AppNotifications.showSnackBar(
-              context,
-              message: "Photo de profil mise à jour !",
-              isSuccess: true,
-            );
-            await _loadUserProfile();
-          } else {
-            AppNotifications.showSnackBar(
-              context,
-              message: "Impossible de mettre à jour le profil sur le serveur.",
-              isError: true,
-            );
-          }
-        }
-      }
-    } catch (e) {
+      // L'image part au serveur, qui la range et rend son adresse publique.
+      // Elle était auparavant déposée directement dans le stockage Supabase
+      // avec une clé de service embarquée dans l'APK : celle-ci ouvrait toute
+      // la base à qui décompressait le fichier.
+      //
+      // Aucun repli ne rattrape plus un échec d'envoi. L'écran encodait alors
+      // l'image en « data:image/...;base64,... » et enregistrait CELA comme
+      // photo : le champ n'accepte que 500 caractères côté serveur, une image
+      // encodée en fait des dizaines de milliers. L'enregistrement échouait ou
+      // tronquait pendant que la personne lisait « Photo de profil mise à
+      // jour ». Un envoi raté se dit, et l'ancienne photo reste.
+      final photoUrl = await UploadService.envoyerAvatar(
+        authToken: token,
+        octets: await image.readAsBytes(),
+        nomFichier: image.name.isNotEmpty ? image.name : 'avatar.jpg',
+      );
+
+      await AuthService().updateProfileDetails(
+        userId: utilisateur.id,
+        profilePhoto: photoUrl,
+      );
+
+      if (!mounted) return;
       AppNotifications.showSnackBar(
         context,
-        message: "Une erreur est survenue.",
+        message: "Photo de profil mise à jour !",
+        isSuccess: true,
+      );
+      await _loadUserProfile();
+    } catch (e) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message: messageLisible(
+          e,
+          repli: "La photo de profil n'a pas pu être changée.",
+        ),
         isError: true,
       );
     } finally {

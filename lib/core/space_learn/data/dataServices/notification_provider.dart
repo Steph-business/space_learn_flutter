@@ -96,12 +96,26 @@ class NotificationProvider extends ChangeNotifier {
   /// l'utilisateur croyait n'avoir rien reçu alors que rien n'avait répondu.
   /// Nul dès qu'un chargement démarre, et de nouveau nul quand il réussit :
   /// l'écran qui le lit sait donc toujours si l'état affiché est une panne ou
-  /// une véritable absence de notifications, et peut proposer « Réessayer ».
+  /// une véritable absence de notifications. Le geste à offrir, lui, se lit
+  /// sur [sessionExpiree] : « Réessayer » ou « Se reconnecter » ne réparent
+  /// pas la même chose.
   String? _erreurChargement;
   String? get derniereErreurChargement => _erreurChargement;
 
   /// Même valeur sous un nom plus court, pour l'écran qui l'appelle ainsi.
   String? get erreurChargement => _erreurChargement;
+
+  /// Le dernier échec venait-il d'une session finie ?
+  ///
+  /// L'écran ne peut pas le déduire de [derniereErreurChargement] : ce texte
+  /// est déjà passé par `messageLisible`, qui rend « Votre session a expiré.
+  /// Reconnectez-vous. » — une phrase qu'`estSessionExpiree` ne reconnaît PAS
+  /// (elle cherche « session expirée », pas « session a expiré »). La cause se
+  /// lit donc sur l'exception BRUTE, ici, au moment où on l'a encore ; sans
+  /// quoi l'écran ne peut proposer que « Réessayer », c'est-à-dire un bouton
+  /// qui relance les mêmes requêtes avec le même jeton mort.
+  bool _sessionExpiree = false;
+  bool get sessionExpiree => _sessionExpiree;
 
   List<NotificationModel> get notifications =>
       List.unmodifiable(_notifications);
@@ -184,6 +198,7 @@ class NotificationProvider extends ChangeNotifier {
     _groupedNotifications = {};
     _compteCharge = null;
     _erreurChargement = null;
+    _sessionExpiree = false;
     _isLoading = false;
     notifyListeners();
   }
@@ -212,6 +227,7 @@ class NotificationProvider extends ChangeNotifier {
   }) async {
     _isLoading = true;
     _erreurChargement = null;
+    _sessionExpiree = false;
     notifyListeners();
     await _purgerSiCompteChange();
 
@@ -269,6 +285,9 @@ class NotificationProvider extends ChangeNotifier {
         e,
         repli: "Impossible de charger vos notifications.",
       );
+      // La cause se lit sur l'exception brute, avant qu'elle ne devienne une
+      // phrase : c'est elle qui décide du bouton offert à l'écran.
+      _sessionExpiree = estSessionExpiree(e);
       _isLoading = false;
       notifyListeners();
       rethrow;
@@ -304,6 +323,7 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> loadGroupedNotifications(String token) async {
     _isLoading = true;
     _erreurChargement = null;
+    _sessionExpiree = false;
     notifyListeners();
     await _purgerSiCompteChange();
 
@@ -365,6 +385,8 @@ class NotificationProvider extends ChangeNotifier {
         e,
         repli: "Impossible de charger vos notifications.",
       );
+      // Idem : la panne dit AUSSI de quel geste elle appelle la réparation.
+      _sessionExpiree = estSessionExpiree(e);
       _isLoading = false;
       notifyListeners();
     }
@@ -543,27 +565,21 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  /// Marque tout comme lu. Rend `false` quand le serveur a refusé.
-  ///
-  /// L'échec partait dans un `catch` VIDE : rien ne changeait à l'écran — ce
-  /// qui est juste, puisque le serveur n'a rien marqué — mais personne ne
-  /// pouvait le dire à l'utilisateur, qui voyait ses pastilles rester allumées
-  /// après avoir appuyé sur « tout marquer comme lu » sans la moindre
-  /// explication. Comme `markAsRead` et `supprimer` au-dessus : le verdict du
-  /// serveur remonte à l'appelant.
-  Future<bool> markAllAsRead(String token) async {
-    try {
-      await _service.markAllAsRead(token);
-      _notifications = _notifications.map(_marquee).toList();
-      _groupedNotifications = _groupedNotifications.map(
-        (role, liste) => MapEntry(role, liste.map(_marquee).toList()),
-      );
-      notifyListeners();
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
+  // PAS DE « markAllAsRead » ICI, ET C'EST VOULU.
+  //
+  // La route PUT /notifications/read-all marque TOUTES les notifications du
+  // compte, sans aucun filtre de rôle (space_learn_livres, modules/
+  // notification/repository.go). Une méthode « tout marquer comme lu » posée
+  // à ce niveau ressemble pourtant à un geste d'écran anodin : le premier
+  // appelant qui s'en serait servi depuis le profil lecteur aurait éteint,
+  // sans le voir, les « vente » et les « avis » du profil auteur — des
+  // notifications d'argent passées lues sans avoir jamais été montrées.
+  //
+  // notificationPage marque donc une par une, sur les seules lignes que le
+  // profil affiché montre (voir le commentaire de son menu « Tout marquer
+  // comme lu »). La méthode qui vivait ici n'avait aucun appelant, ni dans
+  // lib/ ni dans test/ : elle ne rendait qu'un verdict que personne ne lisait,
+  // et restait un chargeur posé sur la table.
 
   /// Retire une notification, ici et sur le serveur.
   ///

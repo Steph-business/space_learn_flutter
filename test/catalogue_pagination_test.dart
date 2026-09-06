@@ -170,6 +170,144 @@ void main() {
 
       await expectLater(service.getAllBooks(), throwsA(isA<Exception>()));
     });
+
+    /// Un 404 déclenchait une RELANCE sans le filtre, dont le résultat était
+    /// rendu à l'appelant comme si c'était sa liste filtrée. Le rapport de
+    /// ventes demande `getAllBooks(auteurId: …)` pour retrouver les titres de
+    /// SES livres : il recevait jusqu'à mille livres de toute la plateforme.
+    /// Rendre les livres d'autrui à la place des siens est pire qu'une erreur.
+    test('un 404 sur une liste filtrée ne rend pas le catalogue entier',
+        () async {
+      final appels = <Uri>[];
+      final service = BookService(
+        client: MockClient((requete) async {
+          appels.add(requete.url);
+          return http.Response('{"error":"Not Found"}', 404);
+        }),
+      );
+
+      await expectLater(
+        service.getAllBooks(auteurId: 'auteur-7'),
+        throwsA(isA<Exception>()),
+      );
+
+      // Un seul appel, et il portait bien le filtre : pas de seconde requête
+      // sans `auteur_id`.
+      expect(appels, hasLength(1));
+      expect(appels.single.queryParameters['auteur_id'], 'auteur-7');
+    });
+  });
+
+  /// La boutique — le seul écran à défilement infini — n'appelle NI
+  /// `getAllBooks` NI `getBooksPage` : elle appelle `getCataloguePage`, une
+  /// méthode distincte, avec son propre curseur, son propre parsing de `meta`
+  /// et son propre `throw`. Rien ne la couvrait, alors que c'est SA régression
+  /// (page vide et `aUneSuite=false` sur panne) qui posait « fin du catalogue »
+  /// après un hoquet réseau et affichait « Vous avez vu tous les livres ».
+  group('La page de catalogue rend ce que le serveur a dit', () {
+    test('un refus lève, il ne rend pas une page vide', () async {
+      final service = BookService(
+        client: MockClient(
+          (_) async => http.Response(
+            '{"error":"Le catalogue est momentanement indisponible."}',
+            500,
+          ),
+        ),
+      );
+
+      await expectLater(
+        service.getCataloguePage(),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'le message du serveur',
+            contains('momentanement indisponible'),
+          ),
+        ),
+      );
+    });
+
+    test('une panne reseau lève aussi', () async {
+      final service = BookService(
+        client: MockClient((_) async => throw const _PanneReseau()),
+      );
+
+      await expectLater(service.getCataloguePage(), throwsA(isA<Exception>()));
+    });
+
+    test('le curseur et la suite annonces sont relus tels quels', () async {
+      final service = BookService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'data': [
+                {'id': 'livre-0', 'titre': 'Livre 0'},
+              ],
+              'meta': {
+                'a_une_suite': true,
+                'curseur_suivant': 'eyJjIjoiMjAyNi0wOS0wNiJ9',
+                'total': 4213,
+              },
+            }),
+            200,
+          ),
+        ),
+      );
+
+      final page = await service.getCataloguePage();
+
+      expect(page.livres.single.id, 'livre-0');
+      expect(page.aUneSuite, isTrue);
+      expect(page.curseurSuivant, 'eyJjIjoiMjAyNi0wOS0wNiJ9');
+      // Le total exact, calculé par le serveur sur la première page : sans
+      // lui, la boutique affichait le nombre de livres déjà téléchargés à la
+      // place de la taille du catalogue.
+      expect(page.total, 4213);
+    });
+
+    /// Le serveur n'envoie `total` qu'avec la première page. Absent, il vaut
+    /// `null` — surtout pas zéro, qui se lirait « catalogue vide ».
+    test('une fin de catalogue n\'invente ni suite ni total', () async {
+      final service = BookService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'data': <Map<String, dynamic>>[],
+              'meta': {'a_une_suite': false},
+            }),
+            200,
+          ),
+        ),
+      );
+
+      final page = await service.getCataloguePage(apres: 'curseur-quelconque');
+
+      expect(page.livres, isEmpty);
+      expect(page.aUneSuite, isFalse);
+      expect(page.curseurSuivant, isNull);
+      expect(page.total, isNull);
+    });
+
+    test('le curseur repart au serveur tel qu\'il en est venu', () async {
+      final appels = <Uri>[];
+      final service = BookService(
+        client: MockClient((requete) async {
+          appels.add(requete.url);
+          return http.Response(
+            jsonEncode({'data': [], 'meta': {'a_une_suite': false}}),
+            200,
+          );
+        }),
+      );
+
+      // Un curseur opaque : le client ne l'interprète pas, il le rend.
+      const curseur = 'MjAyNi0wOS0wNlQxMjozNDo1Nnw3ZjNi';
+      await service.getCataloguePage(apres: curseur, recherche: 'quantique');
+
+      expect(appels.single.queryParameters['apres'], curseur);
+      // La recherche voyage sous `q`, comme sur l'autre chemin.
+      expect(appels.single.queryParameters['q'], 'quantique');
+    });
   });
 }
 

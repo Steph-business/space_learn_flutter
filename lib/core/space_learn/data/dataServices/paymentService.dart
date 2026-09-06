@@ -3,9 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/api_client.dart';
 import '../../../utils/api_routes.dart';
-import '../../../utils/token_storage.dart';
 import '../model/paymentModel.dart';
-import '../model/authorRevenueModel.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 /// Résultat du lancement d'un paiement CinetPay
@@ -83,9 +81,10 @@ class CinetpayStatusResult {
 
 /// Ce que la garde anti-double-débit conclut d'une transaction déjà ouverte.
 ///
-/// TROIS écrans lancent un paiement — la fiche du livre, la fin d'extrait de la
-/// liseuse et l'écran de paiement — et chacun portait sa propre version de
-/// cette décision. Elles avaient fini par se contredire : sur une vérification
+/// DEUX écrans lancent aujourd'hui un paiement — la fiche du livre et la fin
+/// d'extrait de la liseuse ; un troisième, l'écran de paiement, a depuis été
+/// supprimé. Chacun portait sa propre version de cette décision, et elles
+/// avaient fini par se contredire : sur une vérification
 /// en panne, deux laissaient passer l'achat et le troisième le refusait ; un
 /// paiement REFUSÉ par l'opérateur était encore annoncé « en cours, attendez la
 /// confirmation ». Le même lecteur, sur le même livre, pouvait acheter ou non
@@ -128,7 +127,19 @@ class GardePaiement {
 
   /// La vérification n'a PAS abouti (réseau, serveur, quota) : un
   /// [VerdictPaiement.laisserPasser] est alors une tolérance, pas une preuve.
+  ///
+  /// Les écrans DOIVENT le dire : laisser passer reste le bon arbitrage, mais
+  /// l'annoncer en silence revient à affirmer qu'aucun paiement n'est en cours
+  /// alors qu'on n'a rien pu lire.
   final bool verificationImpossible;
+
+  /// Les références des transactions PRÉCÉDEMMENT ouvertes pour ce livre, de la
+  /// plus récente à la plus ancienne, mémorisées sur cet appareil.
+  ///
+  /// Un lecteur qui a répondu « Payer à nouveau » a deux débits possibles et
+  /// autant de références à citer en réclamation : n'en montrer qu'une revient
+  /// à perdre celle du paiement qui a peut-être abouti.
+  final List<String> referencesPrecedentes;
 
   const GardePaiement({
     required this.verdict,
@@ -136,7 +147,29 @@ class GardePaiement {
     this.ouverteLe,
     this.montant = 0,
     this.verificationImpossible = false,
+    this.referencesPrecedentes = const [],
   });
+}
+
+/// Le serveur a ACCORDÉ le livre au lieu d'ouvrir un paiement.
+///
+/// Le montant envoyé par le client est volontairement ignoré : le serveur relit
+/// le prix en base à l'initiation (modules/paiement/controller.go,
+/// `ResolveLivreEtPrix`). Si l'auteur l'a mis à zéro entre le chargement de la
+/// fiche et l'appui sur « Acheter », le serveur n'appelle pas la passerelle, il
+/// ajoute le livre à la bibliothèque et répond 201 avec `livre` mais SANS
+/// `payment_url`. Ce n'est pas un lancement raté : c'est un succès, et il doit
+/// s'annoncer comme tel.
+class LivreDevenuGratuitException implements Exception {
+  final String message;
+
+  const LivreDevenuGratuitException([
+    this.message =
+        "Ce livre est devenu gratuit : il a été ajouté à votre bibliothèque.",
+  ]);
+
+  @override
+  String toString() => message;
 }
 
 class PaymentService {
@@ -233,6 +266,20 @@ class PaymentService {
           data['paiement'] as Map<String, dynamic>,
         );
         final paymentUrl = data['payment_url'] as String? ?? '';
+
+        // Le livre est devenu GRATUIT entre l'affichage et l'appui.
+        //
+        // Le serveur répond alors 201 avec `livre` et sans `payment_url` : il a
+        // déjà accordé l'ouvrage (controller.go, branche `prix <= 0`). Confondu
+        // avec une réponse tronquée, ce succès s'affichait « Le paiement n'a
+        // pas pu être lancé. Réessayez dans un instant. » sur un livre que le
+        // lecteur venait d'obtenir — et l'invitait à recommencer. Le test passe
+        // AVANT celui de la référence, qu'un paiement gratuit peut ne pas
+        // porter.
+        if (paymentUrl.isEmpty && data.containsKey('livre')) {
+          throw const LivreDevenuGratuitException();
+        }
+
         if (paiement.transactionId.isEmpty || paymentUrl.isEmpty) {
           throw Exception(
             "Le paiement n'a pas pu être lancé. Réessayez dans un instant.",
@@ -244,9 +291,20 @@ class PaymentService {
         "Le paiement n'a pas pu être lancé. Réessayez dans un instant.",
       );
     } else {
-      final decoded = jsonDecode(response.body);
-      final msg = decoded['error'] ?? decoded['message'] ?? response.body;
-      throw Exception('Erreur CinetPay : $msg');
+      // Le refus vient le plus souvent du SERVEUR, pas de la passerelle : 409
+      // « Vous possédez déjà ce livre » ou « Ce livre n'est plus en vente »,
+      // 404 sur un livre retiré (controller.go, ResolveLivreEtPrix). Les
+      // préfixer « Erreur CinetPay : » accusait un tiers qui n'avait jamais été
+      // appelé. Et le `jsonDecode` nu levait une FormatException sur un corps
+      // non-JSON — page HTML de passerelle, 502 d'un reverse-proxy — à la place
+      // du message prévu. `messageDeLaReponse` traite les deux cas, comme
+      // partout ailleurs dans ce fichier.
+      throw Exception(
+        messageDeLaReponse(
+          response,
+          repli: "Le paiement n'a pas pu être lancé.",
+        ),
+      );
     }
   }
 
@@ -345,7 +403,7 @@ class PaymentService {
       return const GardePaiement(verdict: VerdictPaiement.laisserPasser);
     }
 
-    ({String transactionId, double montant})? locale;
+    ({String transactionId, double montant, List<String> precedentes})? locale;
     try {
       locale = await TransactionEnCoursStore.enCours(
         userId: userId,
@@ -405,6 +463,16 @@ class PaymentService {
       );
     }
 
+    // Les AUTRES références connues pour ce livre sur cet appareil : celles que
+    // « Payer à nouveau » a empilées, et la trace locale elle-même quand le
+    // serveur en cite une plus récente. Elles ne servent qu'au dialogue, seul
+    // endroit où le lecteur peut les noter avant de risquer un second débit.
+    final localeConnue = locale;
+    final autresReferences = <String>{
+      if (localeConnue != null) localeConnue.transactionId,
+      if (localeConnue != null) ...localeConnue.precedentes,
+    }..removeWhere((r) => r.isEmpty || r == reference);
+
     final CinetpayStatusResult statut;
     try {
       // Le serveur relit le statut chez la passerelle et, si le paiement a
@@ -456,6 +524,7 @@ class PaymentService {
       ouverteLe: derniere?.creeLe,
       montant:
           statut.montantServeur ?? derniere?.montant ?? locale?.montant ?? 0,
+      referencesPrecedentes: autresReferences.toList(),
     );
   }
 
@@ -484,39 +553,16 @@ class PaymentService {
     }
   }
 
-  /// Les revenus d'un auteur — route AUTHENTIFIÉE.
-  ///
-  /// L'appel partait sans en-tête Authorization : la route est passée derrière
-  /// AuthMiddleware et refuse en outre tout appelant autre que l'auteur
-  /// lui-même (modules/paiement/routes.go, GetAuthorRevenue). Elle rendait donc
-  /// 401 à tous les coups — un écran de revenus qui aurait avalé l'exception
-  /// aurait affiché « 0 FCFA » à un auteur payé. Le jeton se lit comme le fait
-  /// AuthorStatsService, et reste injectable pour les tests.
-  Future<AuthorRevenueModel> getAuthorRevenue(
-    String authorId, {
-    String? authToken,
-  }) async {
-    final token = authToken ?? await TokenStorage.getToken();
-    final url = ApiRoutes.authorRevenue.replaceFirst(':authorId', authorId);
-    final response = await client.get(
-      Uri.parse(url),
-      headers: {
-        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return AuthorRevenueModel.fromJson(responseData['data'] ?? responseData);
-    } else {
-      throw Exception(
-        messageDeLaReponse(
-          response,
-          repli: "Impossible de charger vos revenus.",
-        ),
-      );
-    }
-  }
+  // getAuthorRevenue a été retiré d'ici : c'était un DOUBLON mort.
+  //
+  // La même route était servie par deux méthodes homonymes, et une seule était
+  // branchée : `AuthorStatsService.getAuthorRevenue`, appelée par
+  // statistiques_livre_page (qui construit elle-même son AuthorRevenueModel).
+  // Celle-ci n'avait aucun appelant, ni dans lib/ ni dans test/ — corriger son
+  // en-tête Authorization ne pouvait donc rien réparer, et laisser deux
+  // méthodes de même nom dont une seule vit fait croire à une correction là où
+  // il n'y en a pas. Le jeton est envoyé par la méthode réellement appelée
+  // (authorStatsService.dart, `_get`).
 
   // getMomoStatus a été retiré avec l'intégration MTN MoMo directe.
   //
@@ -528,11 +574,17 @@ class PaymentService {
 
 /// Mémoire locale de la transaction CinetPay ouverte pour un livre.
 ///
-/// Sans elle, revenir sur l'écran de paiement d'un livre dont le règlement
-/// était encore en cours ouvrait une SECONDE transaction : deux débits
-/// possibles pour un seul livre, et plus aucune référence de la première à
-/// citer en réclamation. C'est le correctif déjà appliqué au site web
-/// (Stepace_learn_web/src/lib/paiement.ts, memoriserTransaction).
+/// Sans elle, revenir sur un écran d'achat — la fiche du livre ou la fin
+/// d'extrait de la liseuse, les deux seuls d'où part aujourd'hui un paiement —
+/// alors que le règlement précédent était encore en cours ouvrait une SECONDE
+/// transaction : deux débits possibles pour un seul livre, et plus aucune
+/// référence de la première à citer en réclamation. C'est le correctif déjà
+/// appliqué au site web (Stepace_learn_web/src/lib/paiement.ts,
+/// memoriserTransaction).
+///
+/// La promesse « une référence à citer » tient jusque dans le seul cas où elle
+/// compte vraiment — le lecteur qui a répondu « Payer à nouveau » : l'entrée
+/// écrasée n'est pas jetée, elle descend dans `precedentes` (voir [memoriser]).
 ///
 /// La clé porte l'identifiant du COMPTE et celui du LIVRE : deux lecteurs sur
 /// le même téléphone ne voient jamais la transaction l'un de l'autre.
@@ -552,42 +604,90 @@ class TransactionEnCoursStore {
   }) async {
     if (userId.isEmpty || livreId.isEmpty || transactionId.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
+    final cle = _cle(userId, livreId);
+
+    // La référence PRÉCÉDENTE n'est plus jetée.
+    //
+    // C'est « Payer à nouveau » qui repasse ici, et l'écriture écrasait alors
+    // l'entrée : la référence du paiement possiblement débité disparaissait de
+    // l'appareil à la seconde exacte où deux transactions coexistent — soit
+    // l'inverse de ce que cette classe promet. Elle voyage désormais dans
+    // `precedentes`, sous la MÊME clé : la purge par préfixe de
+    // [TokenStorage.clearToken] la couvre sans avoir à changer.
+    final precedentes = <String>[];
+    final ancienne = _decoder(prefs.getString(cle));
+    if (ancienne != null && ancienne.transactionId != transactionId) {
+      precedentes.add(ancienne.transactionId);
+      precedentes.addAll(ancienne.precedentes);
+    }
+
     await prefs.setString(
-      _cle(userId, livreId),
+      cle,
       jsonEncode({
         'transaction_id': transactionId,
         'montant': montant,
         'ouverte_le': DateTime.now().millisecondsSinceEpoch,
+        // Deux au plus : au-delà, la liste cesse d'être lisible dans un
+        // dialogue et n'apprend plus rien à une réclamation.
+        'precedentes': precedentes.take(2).toList(),
       }),
     );
   }
 
   /// La transaction encore suivie pour ce livre, ou null.
-  static Future<({String transactionId, double montant})?> enCours({
-    required String userId,
-    required String livreId,
-  }) async {
+  ///
+  /// `precedentes` porte les références des transactions ouvertes AVANT elle
+  /// sur le même livre et encore récentes — celles qu'un double débit oblige à
+  /// citer.
+  static Future<
+    ({String transactionId, double montant, List<String> precedentes})?
+  >
+  enCours({required String userId, required String livreId}) async {
     if (userId.isEmpty || livreId.isEmpty) return null;
     final prefs = await SharedPreferences.getInstance();
-    final brut = prefs.getString(_cle(userId, livreId));
+    final entree = _decoder(prefs.getString(_cle(userId, livreId)));
+    if (entree == null) {
+      // Entrée absente, illisible ou périmée : on ne laisse pas traîner.
+      await prefs.remove(_cle(userId, livreId));
+      return null;
+    }
+    return (
+      transactionId: entree.transactionId,
+      montant: entree.montant,
+      precedentes: entree.precedentes,
+    );
+  }
+
+  /// Relit une entrée du magasin, ou null si elle est inutilisable.
+  ///
+  /// Null couvre les trois cas où l'appelant doit l'effacer : rien d'écrit,
+  /// contenu corrompu (une entrée illisible ne doit jamais empêcher un
+  /// paiement) et transaction trop ancienne — au-delà de [dureeMax], elle est
+  /// close chez CinetPay ou confirmée depuis longtemps.
+  static ({
+    String transactionId,
+    double montant,
+    List<String> precedentes,
+  })?
+  _decoder(String? brut) {
     if (brut == null) return null;
     try {
       final decode = jsonDecode(brut);
-      if (decode is! Map) throw const FormatException('entrée inattendue');
+      if (decode is! Map) return null;
       final transactionId = decode['transaction_id']?.toString() ?? '';
       final ouverteLe = (decode['ouverte_le'] as num?)?.toInt() ?? 0;
       final age = DateTime.now().millisecondsSinceEpoch - ouverteLe;
-      if (transactionId.isEmpty || age > dureeMax.inMilliseconds) {
-        await prefs.remove(_cle(userId, livreId));
-        return null;
-      }
+      if (transactionId.isEmpty || age > dureeMax.inMilliseconds) return null;
       return (
         transactionId: transactionId,
         montant: (decode['montant'] as num?)?.toDouble() ?? 0.0,
+        // Absente des entrées écrites par les versions précédentes : une liste
+        // vide, jamais une exception.
+        precedentes:
+            (decode['precedentes'] as List?)?.whereType<String>().toList() ??
+            const <String>[],
       );
     } catch (_) {
-      // Une entrée corrompue ne doit pas empêcher un paiement : on l'efface.
-      await prefs.remove(_cle(userId, livreId));
       return null;
     }
   }

@@ -122,9 +122,26 @@ Color couleurDuTypeDeNotification(String type) {
   return AppColors.primary;
 }
 
+/// LA LISTE DE L'ÉCRAN DES NOTIFICATIONS — plus l'aperçu d'aucun accueil.
+///
+/// Le nom, le dossier (`auteur/accueil/`) et le mot « Recent » datent d'une
+/// époque révolue : ce widget n'a plus qu'un seul appelant, notificationPage,
+/// qui lui passe TOUJOURS la liste déjà filtrée par profil et par onglet. Le
+/// tableau de bord auteur ne l'affiche plus. Qui cherche « pourquoi l'accueil
+/// auteur ne montre pas les notifications » ne trouvera rien ici : le
+/// chargement, lui, est amorcé par contenu_accueil_auteur.
+///
+/// D'où [customNotifications] REQUIS : le repli « sinon, les notifications du
+/// provider » n'était plus atteignable, et un repli mort finit par être cru.
+/// Le compilateur dit maintenant la vérité à la place du commentaire.
 class RecentNotificationsPage extends StatefulWidget {
-  final VoidCallback? onTapOpenNotifications;
-  final List<NotificationModel>? customNotifications;
+  /// Les notifications à afficher, déjà triées et filtrées par l'appelant.
+  ///
+  /// Cette page ne décide de rien : le classement par rôle, le filtre « non
+  /// lues » et l'ordre appartiennent à notificationPage, pour que la liste
+  /// affichée, la pastille du menu et « tout marquer comme lu » disent la
+  /// même chose.
+  final List<NotificationModel> customNotifications;
   final String? title;
 
   /// Ce qu'on affiche quand il n'y a rien.
@@ -145,8 +162,7 @@ class RecentNotificationsPage extends StatefulWidget {
 
   const RecentNotificationsPage({
     super.key,
-    this.onTapOpenNotifications,
-    this.customNotifications,
+    required this.customNotifications,
     this.title,
     this.messageVide,
     this.emptyIcon,
@@ -264,8 +280,7 @@ class _RecentNotificationsPageState extends State<RecentNotificationsPage> {
   Widget build(BuildContext context) {
     AppColors.suivreLeTheme(context);
     final notificationProvider = context.watch<NotificationProvider>();
-    final notifications =
-        widget.customNotifications ?? notificationProvider.notifications;
+    final notifications = widget.customNotifications;
     final loading = notificationProvider.isLoading;
 
     if (loading && notifications.isEmpty) {

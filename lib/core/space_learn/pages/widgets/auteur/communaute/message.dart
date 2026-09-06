@@ -175,10 +175,16 @@ class _MessagesState extends State<Messages> {
     // La reprise du chargement est conditionnée à une liste vide : un
     // rafraîchissement sur une liste déjà remplie continue de la montrer,
     // comme le veut la garde du `catch` plus bas.
+    //
+    // L'effacement de l'erreur suit la MÊME condition que sa pose : un
+    // rechargement que personne n'a demandé — le flux temps réel — n'a pas à
+    // toucher l'état affiché tant qu'une liste lisible est à l'écran.
     if (mounted) {
       setState(() {
-        _erreur = null;
-        _sessionExpiree = false;
+        if (!enArrierePlan || _conversations.isEmpty) {
+          _erreur = null;
+          _sessionExpiree = false;
+        }
         if (_conversations.isEmpty) _chargement = true;
       });
     }
@@ -188,8 +194,16 @@ class _MessagesState extends State<Messages> {
         if (!mounted) return;
         setState(() {
           _chargement = false;
-          _sessionExpiree = true;
-          _erreur = "Votre session a expiré. Reconnectez-vous.";
+          // Même garde que le `catch` plus bas, et que conversation_page :
+          // un rechargement déclenché par le flux — que personne n'a demandé —
+          // ne remplace pas une liste de conversations parfaitement lisible
+          // par l'écran « Session expirée ». Elle se dira à l'ouverture d'un
+          // fil ou à l'envoi, c'est-à-dire au moment où elle empêche vraiment
+          // quelque chose.
+          if (!enArrierePlan || _conversations.isEmpty) {
+            _sessionExpiree = true;
+            _erreur = "Votre session a expiré. Reconnectez-vous.";
+          }
         });
         return;
       }

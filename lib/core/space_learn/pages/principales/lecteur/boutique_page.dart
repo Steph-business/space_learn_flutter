@@ -55,6 +55,38 @@ class _MarketplacePageState extends State<MarketplacePage> {
   bool _isLoading = true;
   String? _error;
 
+  /// Les pannes des trois appels SECONDAIRES de [_loadBooks].
+  ///
+  /// Les quatre appels partaient dans un même `Future.wait`, qui rejette en
+  /// bloc, sous un seul `catch` qui pose [_error] : il suffisait que les avis
+  /// du lecteur — l'ornement « Votre note N/5 » — ou les catégories tombent
+  /// pour que la boutique ENTIÈRE, catalogue reçu compris, soit remplacée par
+  /// un écran d'erreur. Seul `getCataloguePage` peut désormais faire cela ;
+  /// les trois autres échouent chacun pour soi, et le DISENT au lieu de se
+  /// faire passer pour un vide.
+  bool _categoriesEnPanne = false;
+  bool _bibliothequeEnPanne = false;
+  bool _notesEnPanne = false;
+
+  /// L'une de ces pannes est une session finie, pas un incident réseau.
+  ///
+  /// La bibliothèque et les avis voyagent avec le jeton : un jeton périmé les
+  /// fait échouer toutes les deux. Leur proposer « Réessayer » serait
+  /// promettre un remède qui ne peut pas marcher — la requête repartirait
+  /// avec le même jeton. Une session expirée se dit comme telle et renvoie à
+  /// la connexion.
+  bool _sessionFinie = false;
+
+  /// Le compte EXACT des livres répondant au filtre courant, tel que le
+  /// serveur l'a calculé.
+  ///
+  /// Il n'arrive qu'avec la première page (`meta.total`, absent ensuite : le
+  /// recompter à chaque défilement coûterait une requête pour un nombre qui
+  /// ne bouge pas). L'écran affichait à sa place le nombre de livres DÉJÀ
+  /// TÉLÉCHARGÉS — 100 à l'ouverture d'un catalogue de 5 000, puis 200, puis
+  /// 300 — que le lecteur lisait comme la taille du catalogue.
+  int? _totalCatalogue;
+
   // State variables for category filtering
   String _selectedCategory = "Tout";
   String _searchQuery = "";
@@ -166,6 +198,14 @@ class _MarketplacePageState extends State<MarketplacePage> {
       _error = null;
       _curseur = null;
       _finDuCatalogue = false;
+      _categoriesEnPanne = false;
+      _bibliothequeEnPanne = false;
+      _notesEnPanne = false;
+      _sessionFinie = false;
+      // Le total appartient au filtre qui vient d'être quitté : le garder
+      // afficherait le compte des « Romans » au-dessus de la liste des
+      // « Essais ».
+      _totalCatalogue = null;
       // L'échec de pagination appartient à l'ancien parcours : le nouveau
       // repart sans lui, sinon le pied de liste garderait un « Réessayer »
       // qui ne concerne plus rien.
@@ -178,23 +218,49 @@ class _MarketplacePageState extends State<MarketplacePage> {
     try {
       final token = await TokenStorage.getToken();
 
+      // Les pannes secondaires se notent d'abord EN LOCAL, et ne passent dans
+      // l'état qu'avec le reste, sous le garde de génération plus bas. Écrites
+      // directement dans les champs, elles auraient allumé le bandeau du
+      // parcours EN COURS pour une réponse appartenant au filtre précédent :
+      // « les catégories n'ont pas pu être chargées » alors qu'elles sont là.
+      bool categoriesEnPanne = false;
+      bool bibliothequeEnPanne = false;
+      bool notesEnPanne = false;
+      bool sessionFinie = false;
+
       final resultats = await Future.wait([
+        // SEUL appel dont l'échec remplace l'écran : sans catalogue, il n'y a
+        // pas de boutique. Il n'a donc pas de `catchError` — le `catch` plus
+        // bas est pour lui.
         _bookService.getCataloguePage(
           statut: 'publie',
           authToken: token,
           categorieId: _categorieChoisie,
           recherche: _searchQuery,
         ),
-        _categorieService.getCategories(),
+        _categorieService.getCategories().catchError((e) {
+          categoriesEnPanne = true;
+          return <Categorie>[];
+        }),
         // La bibliotheque sert ici de test d'appartenance : elle dit quelles
         // cartes portent « Deja acquis ». Elle n'est pas paginee — elle
         // grandit avec ce qu'un lecteur possede, pas avec le catalogue — mais
         // c'est une liste complete de plus, a surveiller.
         token != null
-            ? _libraryService.getUserLibrary(token)
+            ? _libraryService.getUserLibrary(token).catchError((e) {
+                bibliothequeEnPanne = true;
+                // Ces deux appels-ci portent le jeton : eux seuls peuvent
+                // échouer parce que la session est finie.
+                if (estSessionExpiree(e)) sessionFinie = true;
+                return <LibraryModel>[];
+              })
             : Future.value(<LibraryModel>[]),
         token != null
-            ? _reviewService.getUserReviews(token)
+            ? _reviewService.getUserReviews(token).catchError((e) {
+                notesEnPanne = true;
+                if (estSessionExpiree(e)) sessionFinie = true;
+                return <ReviewModel>[];
+              })
             : Future.value(<ReviewModel>[]),
       ]);
 
@@ -208,6 +274,10 @@ class _MarketplacePageState extends State<MarketplacePage> {
       final avis = resultats[3] as List<ReviewModel>;
 
       setState(() {
+        _categoriesEnPanne = categoriesEnPanne;
+        _bibliothequeEnPanne = bibliothequeEnPanne;
+        _notesEnPanne = notesEnPanne;
+        _sessionFinie = sessionFinie;
         _categories = categories;
         _ownedBookIds = bibliotheque.map((e) => e.livreId).toSet();
         _notesDuLecteur = {
@@ -218,6 +288,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
         _books = premiere.livres;
         _curseur = premiere.curseurSuivant;
         _finDuCatalogue = !premiere.aUneSuite;
+        // Le serveur ne l'envoie qu'avec la première page, et il respecte les
+        // mêmes filtres que la liste.
+        _totalCatalogue = premiere.total;
         _isLoading = false;
       });
     } catch (e) {
@@ -327,11 +400,23 @@ class _MarketplacePageState extends State<MarketplacePage> {
           if (_searchQuery.isNotEmpty || _selectedCategory != "Tout") ...[
             const SizedBox(height: 14),
             TextButton(
-              onPressed: () => setState(() {
-                _searchQuery = '';
-                _searchController.clear();
-                _selectedCategory = "Tout";
-              }),
+              // Le filtre est appliqué par le SERVEUR : effacer la recherche
+              // et la catégorie dans l'état ne ramenait aucun livre. La liste
+              // restant vide, l'écran basculait sur « Aucun livre
+              // disponible. » — une panne de filtre présentée comme un
+              // catalogue vide, sans autre issue qu'un tirer-pour-rafraîchir.
+              // Le bouton recharge donc la première page, comme le fait un
+              // changement de catégorie.
+              onPressed: () {
+                // La frappe en attente appartient à la recherche qu'on efface.
+                _attenteSaisie?.cancel();
+                setState(() {
+                  _searchQuery = '';
+                  _searchController.clear();
+                  _selectedCategory = "Tout";
+                });
+                _loadBooks();
+              },
               child: Text(
                 "Voir tout le catalogue",
                 style: GoogleFonts.poppins(
@@ -352,6 +437,78 @@ class _MarketplacePageState extends State<MarketplacePage> {
     // Le filtre est applique par le serveur : changer de categorie repart de
     // la premiere page, sinon on filtrerait les seules pages deja chargees.
     _loadBooks();
+  }
+
+  /// Ce que le compteur sous le titre a le droit d'affirmer.
+  ///
+  /// Le total du serveur quand il est connu — c'est le seul nombre qui
+  /// réponde à « combien de livres ? ». Sinon on ne le devine pas : on dit
+  /// simplement combien sont AFFICHÉS, ce qui est vrai à chaque instant.
+  String _libelleCompte(int affiches) {
+    final total = _totalCatalogue;
+    if (total != null) return total == 1 ? "1 livre" : "$total livres";
+    return affiches == 1 ? "1 livre affiché" : "$affiches livres affichés";
+  }
+
+  /// Ce que la boutique n'a PAS pu charger, dit sans occuper l'écran.
+  ///
+  /// Une panne secondaire ne remplace plus la boutique, mais elle ne doit pas
+  /// pour autant disparaître : sans catégories, la barre de filtres se réduit
+  /// à « Tout » sans raison visible, et sans bibliothèque les cartes d'un
+  /// livre déjà acheté perdent leur « Déjà acquis » — le lecteur pourrait le
+  /// repayer.
+  Widget _bandeauSecondairesEnPanne() {
+    final manquants = <String>[
+      if (_categoriesEnPanne) "les catégories",
+      if (_bibliothequeEnPanne) "vos livres déjà acquis",
+      if (_notesEnPanne) "vos notes",
+    ];
+
+    // La liste n'est jamais vide : ce bandeau n'est construit que si l'un des
+    // trois drapeaux est levé, et `_sessionFinie` en suppose un.
+    //
+    // « les catégories, vos notes » se lit mal : le dernier élément se
+    // rattache par « et », comme on l'écrirait à la main.
+    final liste = manquants.length > 1
+        ? "${manquants.sublist(0, manquants.length - 1).join(", ")} "
+              "et ${manquants.last}"
+        : manquants.first;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 16, color: AppColors.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _sessionFinie
+                  ? "Votre session a expiré. Reconnectez-vous pour retrouver "
+                        "$liste."
+                  : "$liste n'ont pas pu être chargés.",
+              style: GoogleFonts.poppins(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          // Pas de « Réessayer » sur une session finie : la requête repartirait
+          // avec le même jeton périmé et échouerait à l'identique.
+          if (!_sessionFinie)
+            TextButton(
+              onPressed: _loadBooks,
+              child: Text(
+                "Réessayer",
+                style: GoogleFonts.poppins(
+                  color: AppColors.accentInk,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBody(BuildContext context) {
@@ -465,6 +622,10 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   selectedCategory: _selectedCategory,
                   onCategorySelected: _onCategorySelected,
                 ),
+                // Une panne secondaire se dit ici, sous les filtres qu'elle
+                // ampute, et n'emporte plus le reste de la boutique.
+                if (_categoriesEnPanne || _bibliothequeEnPanne || _notesEnPanne)
+                  _bandeauSecondairesEnPanne(),
                 SizedBox(height: 28),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -480,7 +641,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                       ),
                     ),
                     Text(
-                      "${filteredBooks.length} livres",
+                      _libelleCompte(filteredBooks.length),
                       style: GoogleFonts.poppins(
                         color: AppColors.textSecondary,
                         fontSize: 11,

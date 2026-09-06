@@ -176,7 +176,21 @@ class _AllAuthorsPageState extends State<AllAuthorsPage> {
 
   Future<void> _basculerAbonnement(int index) async {
     final token = await TokenStorage.getToken();
-    if (token == null) return;
+    // Troisième écran portant le même geste : sans jeton, l'appui était
+    // strictement muet — ni requête, ni message, ni bascule du bouton. Une
+    // session finie se dit et renvoie à la connexion, elle ne se traduit pas
+    // par un bouton qui ne répond pas.
+    if (token == null) {
+      if (!mounted) return;
+      AppNotifications.showSnackBar(
+        context,
+        message:
+            "Votre session a expiré. Reconnectez-vous pour suivre "
+            "cet auteur.",
+        isError: true,
+      );
+      return;
+    }
 
     final auteur = _auteurs[index];
     final suivait = auteur.estSuivi;

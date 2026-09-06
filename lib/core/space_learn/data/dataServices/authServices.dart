@@ -57,7 +57,27 @@ class AuthService {
   /// quelqu'un qui essaie justement de se connecter n'aurait aucun sens.
   final http.Client client;
 
-  AuthService({http.Client? client}) : client = client ?? ApiClient.instance;
+  /// Le client injecté, QUAND c'est bien l'intercepteur — nul sinon.
+  ///
+  /// `changePassword` a deux besoins que seul [ApiClient] sait servir : mener
+  /// le renouvellement lui-même (`renouvelerSession`) et relayer un refus de
+  /// `/auth/refresh` (`constaterSessionFinie`). Elle les appelait sur
+  /// `ApiClient.instance` en dur, par-dessus le client injecté — de sorte
+  /// qu'un test muni d'un MockClient touchait quand même le singleton réel,
+  /// donc le vrai réseau et la vraie déconnexion globale. Pire : l'en-tête
+  /// [ApiClient.enTete401Metier] est une convention INTERNE, retirée par
+  /// `ApiClient.send` avant l'envoi ; posée sur un client qui n'est pas
+  /// l'intercepteur, elle partirait sur le réseau — exactement ce que le
+  /// commentaire d'api_client.dart promet de ne jamais faire.
+  ///
+  /// Un seul champ tranche les trois : on ne pose l'en-tête et on ne demande
+  /// le renouvellement que s'il y a un intercepteur pour les honorer.
+  final ApiClient? _intercepteur;
+
+  AuthService({http.Client? client}) : this._(client ?? ApiClient.instance);
+
+  AuthService._(this.client)
+    : _intercepteur = client is ApiClient ? client : null;
 
   /// Ouvre la session sur cet appareil.
   ///
@@ -67,7 +87,13 @@ class AuthService {
   ///
   /// C'est aussi le pendant de SessionService.terminer : ce que la
   /// déconnexion efface, l'ouverture de session doit le remettre en place.
-  Future<void> _ouvrirSession(TokenUser tokenUser) async {
+  ///
+  /// [reprendreLesRappels] vaut false pour la validation d'inscription, qui
+  /// ouvre une session que l'écran referme aussitôt — voir l'appel plus bas.
+  Future<void> _ouvrirSession(
+    TokenUser tokenUser, {
+    bool reprendreLesRappels = true,
+  }) async {
     await TokenStorage.saveToken(tokenUser.token);
     await TokenStorage.saveRefreshToken(tokenUser.refreshToken);
     await TokenStorage.saveUserName(tokenUser.user.nomComplet);
@@ -84,6 +110,19 @@ class AuthService {
     // rappel tant qu'il n'ouvre pas l'écran « Temps de lecture ». Non
     // attendu : la connexion ne doit pas patienter sur une notification, et
     // un serveur muet ne doit pas la faire échouer.
+    //
+    // MAIS PAS QUAND LA SESSION EST OUVERTE POUR ÊTRE REFERMÉE. Sur le chemin
+    // de la validation d'inscription, otp.dart enchaîne une résolution de
+    // profils par le réseau puis SessionService.terminer(), qui exécute
+    // RappelsLecture.purgerEtAnnuler(). Les deux sont des allers-retours
+    // réseau, et rien n'ordonne l'un par rapport à l'autre : une
+    // synchronisation revenue APRÈS la purge réécrivait la liste des créneaux
+    // et reprogrammait chez le système des notifications hebdomadaires pour un
+    // compte qu'on vient délibérément de déconnecter — sous la clé
+    // « rappels_lecture_invite » si l'identifiant était déjà effacé. C'est
+    // exactement ce que l'étape « rappels de lecture » de terminer() ferme,
+    // réintroduit par la porte d'à côté.
+    if (!reprendreLesRappels) return;
     unawaited(
       RappelsLecture.synchroniser().catchError((Object e) {
         debugPrint('Rappels de lecture non reprogrammés : $e');
@@ -140,9 +179,17 @@ class AuthService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
       // ── DIAGNOSTIC ──
+      //
+      // AUCUN JETON N'EST IMPRIMÉ, ni en entier ni en partie. `debugPrint`
+      // n'est pas retiré des versions de production : il écrit dans logcat en
+      // release comme en debug, et un journal se relève avec un câble et adb,
+      // un rapport de bogue Android ou un outil de diagnostic constructeur.
+      // Le jeton de rafraîchissement vaut trente jours de session : le voir
+      // passer dans le journal à chaque connexion revenait à l'y déposer. La
+      // présence du jeton suffit au diagnostic (« le serveur l'a-t-il
+      // renvoyé ? ») ; sa valeur n'a jamais servi à personne.
       debugPrint('\n╔══ DIAGNOSTIC LOGIN ═══════════════════════');
       debugPrint('║ Token reçu : ${tokenUser.token.isNotEmpty}');
-      debugPrint('║ Refresh token reçu : "${tokenUser.refreshToken}"');
       debugPrint('║ Refresh vide ? ${tokenUser.refreshToken.isEmpty}');
       debugPrint('║ Clés JSON : ${jsonDecode(response.body).keys.toList()}');
       debugPrint('╚════════════════════════════════════════════\n');
@@ -300,7 +347,10 @@ class AuthService {
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
       final tokenUser = TokenUser.fromJson(jsonDecode(response.body));
-      await _ouvrirSession(tokenUser);
+      // La session ouverte ici est refermée quelques instants plus tard par
+      // otp.dart (SessionService.terminer) : reprogrammer des rappels serait
+      // courir contre cette purge. Cf. [_ouvrirSession].
+      await _ouvrirSession(tokenUser, reprendreLesRappels: false);
       return tokenUser;
     } else {
       String errorMessage = "Erreur de validation de l'inscription.";
@@ -474,16 +524,29 @@ class AuthService {
 
   /// Demande la suppression du compte au serveur — DELETE /utilisateurs/:id.
   ///
-  /// Le serveur (space_learn_auth, controllers/user.go DeleteAccount)
-  /// désactive le compte immédiatement, anonymise les données personnelles et
-  /// accorde un délai de grâce de 30 jours avant la purge définitive. Rien
-  /// n'est « supprimé » tant qu'il n'a pas répondu 200 : l'écran affichait
-  /// auparavant « demande transmise » après un simple nettoyage local, sans
-  /// qu'aucune requête ne parte — le compte restait pleinement actif en base.
+  /// CE QUE LE SERVEUR FAIT VRAIMENT (space_learn_auth, controllers/user.go
+  /// DeleteAccount) : un seul `Save(&user)` qui touche trois champs — statut
+  /// « supprime », nom affiché remplacé par « Utilisateur Anonymisé », date de
+  /// suppression. `PeutOuvrirSession` (models/user.go) referme alors la porte.
+  /// C'est tout. L'adresse e-mail, le pseudo, le téléphone, la biographie et
+  /// la photo RESTENT en base, et aucun travail périodique ne lit
+  /// `deleted_at` : la seule suppression réelle est HardDeleteUser
+  /// (admin_controller.go), déclenchée à la main par un Super Admin.
   ///
-  /// Rend le message du serveur, à afficher tel quel : c'est lui qui dit la
-  /// vérité du contrat (désactivation immédiate, purge après 30 jours).
-  Future<String> deleteAccount() async {
+  /// Rien n'est fait tant que le serveur n'a pas répondu 200 : l'écran
+  /// affichait auparavant « demande transmise » après un simple nettoyage
+  /// local, sans qu'aucune requête ne parte — le compte restait pleinement
+  /// actif en base.
+  ///
+  /// NE REND PLUS LE MESSAGE DU SERVEUR, et c'est délibéré. Sa phrase
+  /// (« Votre compte a été désactivé et vos données anonymisées. Elles seront
+  /// définitivement supprimées après un délai de 30 jours. ») promet une
+  /// anonymisation et une purge que le code ci-dessus ne fait pas : l'afficher
+  /// telle quelle déplaçait le mensonge du dialogue de confirmation — qu'on
+  /// venait de corriger — vers le dialogue de succès, cinq secondes plus tard.
+  /// Tant que le serveur n'est pas aligné, c'est l'écran qui dit ce qui s'est
+  /// réellement passé (voir `settings/suppression_compte.dart`).
+  Future<void> deleteAccount() async {
     final token = await TokenStorage.getToken();
     if (token == null || token.isEmpty) {
       throw Exception("Vous devez être connecté pour supprimer votre compte.");
@@ -505,12 +568,14 @@ class AuthService {
     );
 
     if (response.statusCode == 200) {
-      final corps = _corpsJson(response.body);
-      final message = corps?['message'];
-      return (message is String && message.trim().isNotEmpty)
-          ? message
-          : "Votre compte a été désactivé et vos données anonymisées. "
-                "Elles seront définitivement supprimées après un délai de 30 jours.";
+      // Le message du serveur ne va plus à l'écran ; il reste utile au
+      // diagnostic, le jour où controllers/user.go sera aligné sur ce qu'il
+      // fait — on verra alors ici que la phrase a changé.
+      final message = _corpsJson(response.body)?['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        debugPrint('Suppression du compte : réponse du serveur — $message');
+      }
+      return;
     }
 
     throw Exception(
@@ -559,12 +624,17 @@ class AuthService {
     // L'envoi est extrait parce qu'il peut avoir lieu deux fois — et parce que
     // le marqueur doit accompagner les DEUX envois : chacun peut se heurter au
     // refus métier.
+    //
+    // Le marqueur n'est posé QUE si le client est l'intercepteur : lui seul le
+    // retire avant l'envoi (cf. [_intercepteur]). Sur un autre client, il
+    // partirait sur le réseau sans rien garder en échange.
+    final intercepteur = _intercepteur;
     Future<http.Response> envoyer(String jeton) => client.post(
       url,
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer $jeton",
-        ApiClient.enTete401Metier: '1',
+        if (intercepteur != null) ApiClient.enTete401Metier: '1',
       },
       body: corps,
     );
@@ -580,8 +650,14 @@ class AuthService {
     // le même mot de passe faux, en clair, une seconde fois. Le second est bien
     // une session à renouveler. Seul le corps les sépare : c'est donc ici, et
     // pas dans la couche transport, que la décision se prend.
-    if (response.statusCode == 401 && !_ancienMotDePasseRefuse(response.body)) {
-      final verdict = await ApiClient.instance.renouvelerSession();
+    // Sans intercepteur (client injecté par un test), il n'y a ni
+    // renouvellement ni déconnexion à mener : le 401 remonte tel quel à
+    // l'appelant, avec le message du serveur. C'est le comportement honnête —
+    // et non un détour par le singleton, qui aurait touché le vrai réseau.
+    if (intercepteur != null &&
+        response.statusCode == 401 &&
+        !_ancienMotDePasseRefuse(response.body)) {
+      final verdict = await intercepteur.renouvelerSession();
 
       if (verdict == Renouvellement.reussi) {
         final neuf = await TokenStorage.getToken();
@@ -599,7 +675,7 @@ class AuthService {
         // serveur et une session morte. Une panne de réseau (`indisponible`),
         // elle, ne déconnecte personne : on laisse remonter le message du
         // serveur et l'écran propose de recommencer.
-        ApiClient.instance.constaterSessionFinie();
+        intercepteur.constaterSessionFinie();
         throw Exception(
           "Votre session a expiré. Reconnectez-vous, puis réessayez.",
         );

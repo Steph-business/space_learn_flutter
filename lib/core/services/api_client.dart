@@ -342,9 +342,19 @@ class ApiClient extends http.BaseClient {
     try {
       final refresh = await TokenStorage.getRefreshToken();
       // ── DIAGNOSTIC ──
+      //
+      // ON N'IMPRIME NI LE JETON, NI SON DÉBUT, NI LE CORPS DE LA RÉPONSE.
+      // `debugPrint` écrit dans logcat en release comme en debug : les vingt
+      // premiers caractères du jeton présenté et les deux cents premiers du
+      // corps de /auth/refresh — c'est-à-dire le jeton d'accès neuf et le
+      // début du rafraîchissement neuf — s'y déposaient à chaque
+      // renouvellement, y compris quand tout allait bien. Sa PRÉSENCE et le
+      // code de réponse disent tout ce qu'un diagnostic demande ; sa valeur
+      // ouvre trente jours de session à qui lit le journal.
       debugPrint('\n╔══ DIAGNOSTIC REFRESH ═════════════════════');
-      debugPrint('║ Refresh token présent : ${refresh != null && refresh.isNotEmpty}');
-      debugPrint('║ Refresh token (début) : ${refresh != null && refresh.length > 20 ? refresh.substring(0, 20) : refresh}...');
+      debugPrint(
+        '║ Refresh token présent : ${refresh != null && refresh.isNotEmpty}',
+      );
       // Rien à présenter : aucune requête ne ranimera cette session-là.
       if (refresh == null || refresh.isEmpty) {
         debugPrint('║ ⛔ PAS DE REFRESH TOKEN → refuse');
@@ -363,7 +373,6 @@ class ApiClient extends http.BaseClient {
           .timeout(const Duration(seconds: 20));
 
       debugPrint('║ Réponse refresh : ${reponse.statusCode}');
-      debugPrint('║ Corps refresh : ${reponse.body.length > 200 ? reponse.body.substring(0, 200) : reponse.body}');
 
       final verdict = verdictDuServeur(reponse.statusCode);
       if (verdict != Renouvellement.reussi) {

@@ -278,24 +278,52 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
 
         if (!mounted) return;
 
+        // Les trois champs sont vidés dès que le serveur a dit oui.
+        //
+        // L'ancien mot de passe n'en est plus un, et le nouveau n'a rien à
+        // faire en clair dans un champ qu'on peut dévoiler d'un appui sur
+        // l'œil. Ce n'est pas une saisie perdue : le geste a abouti, et
+        // l'écran s'en va. Le `catch` plus bas, lui, ne touche à rien — une
+        // tentative qui échoue doit pouvoir se corriger sans tout retaper.
+        _currentController.clear();
+        _newController.clear();
+        _confirmController.clear();
+
         if (reconnecte) {
-          AppNotifications.showPremiumDialog(
+          // Le retour aux réglages ne dépend PLUS du bouton, pour la même
+          // raison que la branche d'échec ci-dessous : showPremiumDialog
+          // s'ouvre avec barrierDismissible, et un appui à côté le fermait
+          // sans exécuter onConfirm. On restait alors sur l'écran de
+          // changement de mot de passe, bouton réarmé, prêt à renvoyer un
+          // couple devenu faux.
+          await AppNotifications.showPremiumDialog(
             context,
             title: "Mot de passe modifié",
             message:
                 "Votre mot de passe a été mis à jour. Par sécurité, vos autres appareils ont été déconnectés ; celui-ci reste connecté.",
             confirmText: "D'accord",
             isSuccess: true,
-            onConfirm: () {
-              if (mounted) {
-                Navigator.of(context).pop();
-              }
-            },
           );
+
+          if (!mounted) return;
+          Navigator.of(context).pop();
         } else {
           // La reconnexion silencieuse a échoué : mieux vaut une déconnexion
           // PROPRE et expliquée maintenant qu'une coupure inexpliquée, mise
           // sur le dos d'une « session expirée », dans l'heure qui vient.
+          //
+          // UN CAS ÉCHAPPE À CETTE PHRASE, et il faut le savoir en le lisant :
+          // si le jeton d'accès expire juste après le 200 du changement,
+          // l'appel de _seReconnecter à /utilisateurs/me part dans
+          // l'intercepteur, /auth/refresh refuse (la lignée vient d'être
+          // révoquée) et la déconnexion globale de main.dart remplace toute la
+          // pile par LoginPage avec « Votre session a expiré. Veuillez vous
+          // reconnecter. » — un message qui parle d'expiration au lieu du
+          // geste que la personne vient de faire. L'écran arrive alors ici
+          // démonté (`mounted` est faux) et ce dialogue ne s'affiche pas. La
+          // fenêtre est étroite, la destination reste la bonne, et fermer le
+          // dernier écart demanderait à l'intercepteur de porter un motif :
+          // c'est un correctif d'api_client.dart/main.dart, pas d'ici.
           await AppNotifications.showPremiumDialog(
             context,
             title: "Mot de passe modifié",
@@ -359,12 +387,27 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   ///
   /// La clé mémorisée ne sert donc plus que de repli quand le serveur n'a pas
   /// répondu — et elle est désormais écrite par les deux chemins de connexion
-  /// puis effacée par SessionService.terminer, ce qui la garde à jour.
+  /// puis effacée par SessionService.terminer, ce qui la garde à jour. Elle
+  /// est LUE en premier mais reste le second choix : c'est la réponse du
+  /// serveur qui l'emporte quand elle arrive (voir le corps de la méthode).
   ///
   /// `login()` enregistre les nouveaux jetons : la session repart sur une
   /// lignée de rafraîchissement propre, non révoquée.
   Future<bool> _seReconnecter(String nouveauMotDePasse) async {
     try {
+      // LE REPLI SE LIT D'ABORD, avant tout appel réseau — et c'est un point
+      // de correction, non un détail d'ordre.
+      //
+      // `getUser` interroge /utilisateurs/me, une route soumise à
+      // l'intercepteur. Si le jeton d'accès expire dans la seconde qui suit le
+      // 200 du changement de mot de passe, l'intercepteur renouvelle, se
+      // heurte au refus de /auth/refresh — la lignée vient d'être révoquée par
+      // le serveur — et déclenche la déconnexion globale, qui appelle
+      // SessionService.terminer et EFFACE `saved_email_key`. Lue après coup,
+      // l'adresse mémorisée avait alors déjà disparu, et la reconnexion
+      // silencieuse échouait faute d'adresse. Lue avant, elle est en main.
+      final repliLocal = await ProfileStorage.getSavedEmail();
+
       String? email;
       try {
         final token = await TokenStorage.getToken();
@@ -375,7 +418,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
         // Serveur injoignable ou jeton refusé : on tentera le repli local.
         debugPrint('Adresse du compte non résolue par le serveur : $e');
       }
-      email ??= await ProfileStorage.getSavedEmail();
+      email ??= repliLocal;
 
       final adresse = email?.trim() ?? '';
       if (adresse.isEmpty) return false;

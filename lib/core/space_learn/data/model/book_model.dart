@@ -347,15 +347,19 @@ class BookModel {
 
   /// Copie du livre, TOUS champs conservés.
   ///
-  /// [argumentairePartage] et [fichierIndisponible] manquaient à cette liste :
-  /// ils reprenaient leur valeur par défaut ('' et false) à chaque copie. Or
-  /// la boutique, l'accueil, la bibliothèque et la recherche reconstruisent
-  /// leurs livres par copyWith — le texte de partage rédigé par l'auteur
-  /// disparaissait donc du livre partagé depuis ces écrans, et surtout le
-  /// drapeau « manuscrit enregistré mais illisible côté serveur » était
-  /// effacé : la liseuse retombait sur « Aucun fichier disponible » au lieu
-  /// de « momentanément indisponible », c'est-à-dire exactement la confusion
-  /// que ce drapeau existe pour lever.
+  /// La règle, et rien de plus : tout champ ajouté au constructeur doit être
+  /// ajouté ici. Un oubli ne casse rien à la compilation — le champ reprend
+  /// simplement sa valeur par défaut à chaque copie, et se perd en silence
+  /// sur tous les écrans qui reconstruisent leurs livres (accueil,
+  /// bibliothèque, recherche).
+  ///
+  /// [argumentairePartage] et [fichierIndisponible] y manquaient et ont été
+  /// rétablis. Aucun symptôme connu ne leur est imputable pour autant : le
+  /// texte de partage est relu au serveur par PartageService, et le drapeau
+  /// « fichier indisponible » n'est posé que par la route de détail, jamais
+  /// par une liste — il valait donc déjà false avant la copie. Le seul
+  /// endroit où ce drapeau se perdait vraiment est la liseuse, qui rappelait
+  /// le serveur sans relire sa réponse ; c'est là qu'il a été corrigé.
   BookModel copyWith({
     String? id,
     String? auteurId,

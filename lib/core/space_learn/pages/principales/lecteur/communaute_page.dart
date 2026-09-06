@@ -364,6 +364,31 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                           else ...[
                             ..._sectionAgenda(),
                             ..._sectionActualites(),
+                            // Le renvoi vers la liste complète est posé ICI,
+                            // une seule fois, et non plus à l'intérieur d'une
+                            // section.
+                            //
+                            // Il y vivait sous la garde `identical(membres,
+                            // _actualites) || _actualites.isEmpty`. Or
+                            // `_actualites` est un GETTER qui reconstruit sa
+                            // liste à chaque lecture : `identical` comparait
+                            // donc l'argument à un objet fraîchement créé et
+                            // était TOUJOURS faux, y compris dans l'appel
+                            // qu'il était censé reconnaître. Dès qu'il
+                            // existait une actualité, aucune des deux sections
+                            // ne posait le bouton — « Rendez-vous » parce que
+                            // les actualités n'étaient pas vides, « Actualités »
+                            // parce que le test échouait — et le seul chemin
+                            // vers EvenementsPage disparaissait.
+                            //
+                            // Hors des sections, il couvre en prime le cas
+                            // qu'aucune n'affichait : un lecteur dont tous les
+                            // rendez-vous sont PASSÉS n'a ni agenda (`!passe`)
+                            // ni actualité (`date == null`), et n'avait donc
+                            // plus aucun moyen d'atteindre ses publications.
+                            // Le bouton s'efface de lui-même quand il n'y a
+                            // rien à montrer.
+                            _lienVersToutesLesPublications(),
                           ],
 
                           // Forums par Livre
@@ -558,7 +583,13 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                         ),
                         SizedBox(width: 4),
                         Text(
-                          "$_cafeMsgCount messages",
+                          // « 1 messages » se lisait sur le salon global,
+                          // c'est-à-dire aux tout premiers jours d'un
+                          // déploiement — précisément quand on le regarde. La
+                          // carte de club, plus bas, applique déjà la règle.
+                          _cafeMsgCount == 1
+                              ? "1 message"
+                              : "$_cafeMsgCount messages",
                           style: GoogleFonts.poppins(
                             color: AppColors.textSecondary,
                             fontSize: 10,
@@ -857,11 +888,6 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
           ],
         ),
       ),
-      // Un seul renvoi vers la liste complete, pose sous la derniere section :
-      // deux boutons « Voir tout » menant au meme ecran feraient croire a deux
-      // destinations.
-      if (identical(membres, _actualites) || _actualites.isEmpty)
-        _lienVersToutesLesPublications(),
     ];
   }
 

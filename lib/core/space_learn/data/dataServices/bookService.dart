@@ -132,6 +132,11 @@ class BookService {
         livres: data.map((json) => BookModel.fromJson(json)).toList(),
         curseurSuivant: meta is Map ? meta['curseur_suivant'] as String? : null,
         aUneSuite: meta is Map && meta['a_une_suite'] == true,
+        // Le serveur ne joint `total` qu'à la première page — le recompter à
+        // chaque défilement coûterait une requête pour un nombre qui ne bouge
+        // pas. Absent ensuite, donc `null` : surtout pas zéro, qui se lirait
+        // « catalogue vide ».
+        total: meta is Map ? (meta['total'] as num?)?.toInt() : null,
       );
     }
 
@@ -250,12 +255,18 @@ class BookService {
       return data.map((json) => BookModel.fromJson(json)).toList();
     }
 
-    // Un filtre inconnu du serveur : on retente sans lui plutôt que de
-    // rendre une liste vide sans explication.
-    if (response.statusCode == 404 && (auteurId != null || statut != null)) {
-      return _pageDeLivres(authToken: authToken, limit: limit, page: page);
-    }
-
+    // La relance « sans le filtre » est SUPPRIMÉE.
+    //
+    // Elle prétendait contourner un filtre inconnu du serveur, mais repartait
+    // sans `auteurId` NI `statut` NI `categorieId` NI `recherche`, et rendait
+    // le résultat à l'appelant comme si c'était sa liste filtrée. Le rapport
+    // de ventes demande `getAllBooks(auteurId: …, maximum: 1000)` pour
+    // retrouver les titres de SES livres : un 404 lui rendait jusqu'à mille
+    // livres de toute la plateforme, l'inverse exact de ce que son commentaire
+    // promet. Rendre les livres d'autrui à la place des siens est pire qu'une
+    // erreur. Et le cas ne se produit pas : `GET /api/livres` ne répond jamais
+    // 404 pour un filtre — un 404 y signifie que la route est absente, ce
+    // qu'aucune relance ne réparera.
     throw Exception(
       messageDeLaReponse(response, repli: 'Impossible de charger les livres.'),
     );
@@ -409,6 +420,7 @@ class PageCatalogue {
     required this.livres,
     required this.aUneSuite,
     this.curseurSuivant,
+    this.total,
   });
 
   final List<BookModel> livres;
@@ -419,4 +431,12 @@ class PageCatalogue {
 
   /// À renvoyer tel quel dans `apres`. Nul quand la liste est finie.
   final String? curseurSuivant;
+
+  /// Le compte EXACT des livres répondant aux mêmes filtres, quand le serveur
+  /// l'a joint — c'est-à-dire sur la première page seulement.
+  ///
+  /// `null` sur les pages suivantes : la clé y est absente, et un zéro se
+  /// lirait « catalogue vide ». Un écran qui n'a pas ce nombre ne l'invente
+  /// pas — il dit combien de livres il AFFICHE, ce qui est autre chose.
+  final int? total;
 }

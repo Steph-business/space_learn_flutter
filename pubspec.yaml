@@ -43,7 +43,10 @@ dependencies:
   font_awesome_flutter: ^10.7.0
   file_picker: ^10.3.8
   image_picker: ^1.2.1
-  supabase_flutter: ^2.8.1
+  # supabase_flutter retiré : le mobile ne s'en servait plus que pour déposer
+  # la photo de profil, ce qui l'obligeait à embarquer une clé Supabase dans
+  # l'APK. Cet envoi passe désormais par la route /upload du serveur des
+  # livres, comme les couvertures.
   syncfusion_flutter_pdfviewer: ^31.1.19
   syncfusion_flutter_pdf: ^31.1.19
   flutter_tts: ^4.1.0

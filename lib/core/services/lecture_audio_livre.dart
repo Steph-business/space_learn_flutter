@@ -321,10 +321,27 @@ class LectureAudioLivre extends ChangeNotifier {
     // déconnexion d'autant. Passé ce délai on cesse d'attendre, sans rien
     // perdre : les minutes sont déjà sur le disque et repartiront à la
     // prochaine ouverture d'un livre.
-    await _porterLeTemps()
+    //
+    // La remise à zéro de l'attente est faite AVANT d'attendre le report, et
+    // c'est un point de correction. Attendre d'abord ouvrait une course qui
+    // ARRÊTAIT le comptage : en fin de page, `TtsService._dire()` passe à
+    // `stopped` et notifie — ce qui nous appelle en détaché — PUIS appelle
+    // `onCompletion`, qui enchaîne page suivante → `speak` → `playing` →
+    // `_demarrerLeBattement()` et pose `_dernierBattement`. Cette chaîne-là est
+    // plus courte que notre report (plusieurs allers-retours de canal) : notre
+    // `_dernierBattement = null` retombait APRÈS et écrasait le battement tout
+    // juste réarmé. `_porterLeTemps` sortait alors sur `precedent == null` à
+    // chaque tic, et `_demarrerLeBattement` — gardé par `_battement?.isActive`
+    // — ne pouvait plus rien réarmer : toute la page suivante était perdue.
+    //
+    // La partie SYNCHRONE de `_porterLeTemps` a déjà lu `precedent` et posé
+    // `maintenant` au moment où l'appel nous rend la main : annuler l'attente
+    // tout de suite est donc sans effet sur le report en vol.
+    final report = _porterLeTemps();
+    _dernierBattement = null;
+    await report
         .catchError((Object e) => debugPrint('Report du temps écouté : $e'))
         .timeout(_delaiDuReportFinal, onTimeout: () {});
-    _dernierBattement = null;
   }
 
   Future<void> _porterLeTemps() async {

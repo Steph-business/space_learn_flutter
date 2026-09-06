@@ -8,6 +8,8 @@ import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/notification_provider.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/notificationModel.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import '../widgets/auteur/accueil/notification_recent.dart';
@@ -84,18 +86,40 @@ class _NotificationPageState extends State<NotificationPage>
     await context.read<NotificationProvider>().loadGroupedNotifications(token);
   }
 
-  /// « message_prive » s'adresse à la PERSONNE, pas à l'un de ses métiers.
+  /// Termine la session et ramène à l'écran de connexion.
   ///
-  /// Une conversation a deux bouts, quel que soit le métier de chacun : le
-  /// serveur le documente (notification/controller.go,
-  /// estNotificationPersonnelle) mais son groupement par rôle reste une
-  /// partition stricte, qui range ce type côté lecteur. Sans ce traitement,
-  /// un auteur qui navigue en profil auteur n'apprenait JAMAIS qu'on lui
-  /// avait écrit.
-  bool _estPersonnelle(NotificationModel n) =>
-      n.type.toLowerCase().trim() == 'message_prive';
+  /// Le nettoyage passe par [SessionService] : effacer le seul jeton laisserait
+  /// sur l'appareil la bibliothèque téléchargée et le profil choisi. C'est le
+  /// point de nettoyage unique qu'empruntent tous les autres chemins de
+  /// déconnexion — les deux pages Communauté et la liste des conversations le
+  /// font déjà exactement ainsi.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
+  }
 
   /// Les notifications du profil affiché : son seau, plus les personnelles.
+  ///
+  /// « message_prive » s'adresse à la PERSONNE, pas à l'un de ses métiers :
+  /// une conversation a deux bouts, quel que soit le métier de chacun. Le
+  /// serveur le documente (notification/controller.go,
+  /// estNotificationPersonnelle) mais son groupement par rôle reste une
+  /// partition stricte, qui range ce type côté lecteur — sans ce traitement,
+  /// un auteur qui navigue en profil auteur n'apprenait JAMAIS qu'on lui
+  /// avait écrit.
+  ///
+  /// La règle vient de `NotificationProvider.concerneLesDeuxProfils` et n'est
+  /// PLUS réécrite ici. Cette page en tenait une copie locale, qui divergeait
+  /// déjà : elle ne tolérait pas la variante accentuée « message_privé » que
+  /// la fonction accepte, si bien qu'une ligne accentuée était comptée par la
+  /// pastille (`getUnreadCountByRole`, qui passe par la fonction) sans jamais
+  /// remonter dans la liste du profil auteur — la pastille disait un, la liste
+  /// n'avait rien. Une seule définition, et un seul endroit à corriger le jour
+  /// où le serveur renomme ce type.
   ///
   /// Le calcul vit ici parce que trois gestes doivent dire la même chose :
   /// la liste affichée, la pastille du menu, et « tout marquer comme lu ».
@@ -121,7 +145,7 @@ class _NotificationPageState extends State<NotificationPage>
     // un seul tri pour les trois chemins.
     if (grouped.isEmpty) {
       return provider.notifications.where((n) {
-        if (_estPersonnelle(n)) return true;
+        if (NotificationProvider.concerneLesDeuxProfils(n.type)) return true;
         final roleDeLaLigne =
             n.role ?? NotificationProvider.roleDeLaNotification(n.type);
         return roleDeLaLigne == null || roleDeLaLigne == role;
@@ -137,7 +161,10 @@ class _NotificationPageState extends State<NotificationPage>
     for (final entree in grouped.entries) {
       if (entree.key == role) continue;
       for (final n in entree.value) {
-        if (_estPersonnelle(n) && !dejaLa.contains(n.id)) personnelles.add(n);
+        if (NotificationProvider.concerneLesDeuxProfils(n.type) &&
+            !dejaLa.contains(n.id)) {
+          personnelles.add(n);
+        }
       }
     }
     if (personnelles.isEmpty) return propres;
@@ -214,7 +241,16 @@ class _NotificationPageState extends State<NotificationPage>
                   if (value == 'mark_all') {
                     final notifProvider = context.read<NotificationProvider>();
                     final token = await TokenStorage.getToken();
-                    if (token != null) {
+                    // La chaîne VIDE est un jeton absent, pas un jeton.
+                    //
+                    // `_fetchGrouped` teste bien les deux (`token == null ||
+                    // token.isEmpty`) ; ici, un jeton vide laissait partir la
+                    // boucle : une requête par notification, toutes refusées
+                    // en 401, et la personne lisait « 12 notifications n'ont
+                    // pas pu être marquées comme lues » — un message qui
+                    // accuse le réseau — au lieu de la phrase de session
+                    // expirée déjà écrite dans la branche `else`.
+                    if (token != null && token.isNotEmpty) {
                       // Une à une, et non PUT /read-all : côté serveur,
                       // MarkAllAsRead marque TOUTES les notifications du
                       // compte, sans filtre de rôle (notification/
@@ -390,6 +426,21 @@ class _NotificationPageState extends State<NotificationPage>
         // ne peut pas connaître.
         final panne = _echecLocal ?? provider.derniereErreurChargement;
 
+        // Un bouton qui peut aboutir, ou pas celui-là.
+        //
+        // « Réessayer » relance la même requête avec le même jeton : sur une
+        // session finie il ne peut, par construction, jamais réussir, et cet
+        // écran est justement celui qui annonce le plus explicitement une
+        // reconnexion (« Votre session a expiré. Reconnectez-vous… »). Les
+        // deux pages Communauté et la liste des conversations tranchent déjà
+        // ainsi ; celle-ci les rejoint.
+        //
+        // `_echecLocal` n'est posé QUE pour un jeton absent : sa seule
+        // présence suffit. Pour la panne venue du provider, on lit son drapeau
+        // — et non le texte de `derniereErreurChargement`, déjà passé par
+        // `messageLisible`, qu'`estSessionExpiree` ne reconnaîtrait pas.
+        final sessionFinie = _echecLocal != null || provider.sessionExpiree;
+
         if (panne != null && rienDuTout) {
           return RefreshIndicator(
             onRefresh: _fetchGrouped,
@@ -419,14 +470,14 @@ class _NotificationPageState extends State<NotificationPage>
                 const SizedBox(height: 20),
                 Center(
                   child: TextButton.icon(
-                    onPressed: _fetchGrouped,
+                    onPressed: sessionFinie ? _seReconnecter : _fetchGrouped,
                     icon: Icon(
-                      Iconsax.refresh,
+                      sessionFinie ? Iconsax.lock : Iconsax.refresh,
                       size: 16,
                       color: AppColors.accentInk,
                     ),
                     label: Text(
-                      "Réessayer",
+                      sessionFinie ? "Se reconnecter" : "Réessayer",
                       style: GoogleFonts.poppins(
                         color: AppColors.accentInk,
                         fontWeight: FontWeight.w600,
@@ -486,9 +537,11 @@ class _NotificationPageState extends State<NotificationPage>
                             ),
                           ),
                           TextButton(
-                            onPressed: _fetchGrouped,
+                            onPressed: sessionFinie
+                                ? _seReconnecter
+                                : _fetchGrouped,
                             child: Text(
-                              "Réessayer",
+                              sessionFinie ? "Se reconnecter" : "Réessayer",
                               style: GoogleFonts.poppins(
                                 color: AppColors.accentInk,
                                 fontWeight: FontWeight.w600,
