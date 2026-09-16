@@ -125,6 +125,17 @@ class DiscussionService {
       final Map<String, dynamic> responseData = json.decode(response.body);
       final List<dynamic> list = responseData['data'] ?? [];
       return _salons(list, 'salons du livre $livreId');
+    } else if (response.statusCode == 403) {
+      // Refus de DROIT : le club d'un livre ne se lit qu'avec ce livre en
+      // bibliothèque, ou en en étant l'auteur (discussion.Service.
+      // PeutVoirLeClub). Voir [AccesRefuse] : le code HTTP est la seule chose
+      // qui distingue ce refus d'une panne, et il s'arrête ici.
+      throw AccesRefuse(
+        messageDeLaReponse(
+          response,
+          repli: "Ce club est réservé aux lecteurs de ce livre.",
+        ),
+      );
     } else {
       throw Exception(
         messageDeLaReponse(
@@ -162,6 +173,18 @@ class DiscussionService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
       return Discussion.fromJson(data['data'] ?? data);
+    } else if (response.statusCode == 403) {
+      // Cette route est celle qu'ouvre une notification « communauté », par le
+      // seul identifiant du salon : c'est donc ICI que le refus arrive en
+      // premier, avant même que l'écran du fil n'existe. Le distinguer permet
+      // à l'appelant de dire au lecteur pourquoi la salle annoncée ne s'ouvre
+      // pas, au lieu de le déposer ailleurs sans un mot.
+      throw AccesRefuse(
+        messageDeLaReponse(
+          response,
+          repli: "Ce salon est réservé aux lecteurs de ce livre.",
+        ),
+      );
     } else {
       throw Exception(
         messageDeLaReponse(response, repli: "Ce salon est introuvable."),

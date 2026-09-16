@@ -107,13 +107,20 @@ class NotificationProvider extends ChangeNotifier {
 
   /// Le dernier échec venait-il d'une session finie ?
   ///
-  /// L'écran ne peut pas le déduire de [derniereErreurChargement] : ce texte
-  /// est déjà passé par `messageLisible`, qui rend « Votre session a expiré.
-  /// Reconnectez-vous. » — une phrase qu'`estSessionExpiree` ne reconnaît PAS
-  /// (elle cherche « session expirée », pas « session a expiré »). La cause se
-  /// lit donc sur l'exception BRUTE, ici, au moment où on l'a encore ; sans
-  /// quoi l'écran ne peut proposer que « Réessayer », c'est-à-dire un bouton
-  /// qui relance les mêmes requêtes avec le même jeton mort.
+  /// La question se pose ICI, une fois, plutôt qu'à chaque écran : le geste à
+  /// offrir en dépend — « Se reconnecter » et non « Réessayer », qui relancerait
+  /// les mêmes requêtes avec le même jeton mort.
+  ///
+  /// Ce drapeau a longtemps porté une justification fausse : « l'écran ne peut
+  /// pas le déduire de [derniereErreurChargement], parce qu'`estSessionExpiree`
+  /// cherche “session expirée” et non “session a expiré” ». C'était vrai, et
+  /// c'était un DÉFAUT, pas une raison — les quatorze écrans qui interrogent
+  /// `estSessionExpiree` directement recevaient donc `false` sur une vraie
+  /// expiration. La fonction reconnaît désormais la phrase que l'application
+  /// produit elle-même (`phraseSessionExpiree`, core/utils/message_erreur.dart),
+  /// et le texte comme l'exception donnent la même réponse. Le drapeau reste
+  /// parce qu'il évite à l'écran de refaire l'analyse à chaque reconstruction,
+  /// pas parce que l'écran en serait incapable.
   bool _sessionExpiree = false;
   bool get sessionExpiree => _sessionExpiree;
 
@@ -285,8 +292,8 @@ class NotificationProvider extends ChangeNotifier {
         e,
         repli: "Impossible de charger vos notifications.",
       );
-      // La cause se lit sur l'exception brute, avant qu'elle ne devienne une
-      // phrase : c'est elle qui décide du bouton offert à l'écran.
+      // La cause décide du bouton offert à l'écran : « Se reconnecter » sur un
+      // jeton mort, « Réessayer » sur une panne.
       _sessionExpiree = estSessionExpiree(e);
       _isLoading = false;
       notifyListeners();

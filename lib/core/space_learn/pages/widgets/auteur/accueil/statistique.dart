@@ -2,6 +2,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/themes/app_text_styles.dart';
 import 'package:space_learn_flutter/core/themes/widgets/app_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
@@ -25,6 +26,15 @@ class _StatistiqueState extends State<Statistique> {
   String? _authorId;
   int _followersCount = 0;
 
+  /// Le nombre d'abonnés n'a pas pu être obtenu.
+  ///
+  /// Zéro et « on ne sait pas » ne sont pas la même chose, et cet écran les
+  /// codait pareil : le compteur part à zéro, et une panne le laissait à zéro.
+  /// L'auteur lisait donc « 0 » — sa carrière sans public — là où il n'y avait
+  /// qu'un réseau coupé. L'écran jumeau, `author_profile_page`, distingue déjà
+  /// les deux avec le même drapeau.
+  bool _abonnesInconnus = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,16 +53,35 @@ class _StatistiqueState extends State<Statistique> {
           _loadFollowers(user.id);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // Même règle qu'en dessous : un échec se dit au moins dans les journaux.
+      debugPrint("Identité de l'auteur indisponible : $e");
+    }
   }
 
   Future<void> _loadFollowers(String userId) async {
     try {
-      final followers = await _relationService.getFollowers(userId);
-      if (mounted) {
-        setState(() => _followersCount = followers.length);
-      }
-    } catch (e) {}
+      // Le total du serveur (`meta.total`), et non la longueur de la tranche :
+      // voir PageDeRelations. Le compteur est laissé tel quel quand le serveur
+      // ne rend pas le total — mieux vaut ne rien changer que d'écrire un
+      // chiffre qu'on ne tient de personne.
+      final abonnes = await _relationService.getFollowers(userId);
+      final total = abonnes.nombreConnu;
+      if (!mounted) return;
+      setState(() {
+        if (total != null) _followersCount = total;
+        // Le serveur a répondu sans donner le total : on ne sait toujours pas.
+        _abonnesInconnus = total == null;
+      });
+    } catch (e) {
+      // LE SILENCE COMPLET EST PARTI D'ICI. `catch (e) {}` n'affichait rien et
+      // ne journalisait rien : le compteur restait à zéro, et rien — ni à
+      // l'écran, ni dans les journaux — ne permettait de distinguer cet écran
+      // d'un auteur réellement sans audience.
+      debugPrint("Nombre d'abonnés indisponible : $e");
+      if (!mounted) return;
+      setState(() => _abonnesInconnus = true);
+    }
   }
 
   @override
@@ -73,7 +102,12 @@ class _StatistiqueState extends State<Statistique> {
         ? (widget.stats['net_revenue'] as num).toDouble()
         : brut;
 
-    final int readersCount = widget.stats['total_followers'] ?? _followersCount;
+    // « — » plutôt qu'un zéro qu'on ne tient de personne : voir
+    // [_abonnesInconnus]. Le chiffre des statistiques, quand le serveur le
+    // rend, reste prioritaire — il vient de la même source, mais il est déjà là.
+    final int? readersCount =
+        widget.stats['total_followers'] ??
+        (_abonnesInconnus ? null : _followersCount);
 
     return Column(
       children: [
@@ -110,7 +144,9 @@ class _StatistiqueState extends State<Statistique> {
                 },
                 child: _buildStatCard(
                   "LECTEURS",
-                  "$readersCount",
+                  // Un tiret quand on ne sait pas : « 0 » serait une
+                  // affirmation. Voir [_abonnesInconnus].
+                  readersCount == null ? "—" : "$readersCount",
                   "", // Removed fake growth
                   Icons.people_alt_rounded,
                 ),

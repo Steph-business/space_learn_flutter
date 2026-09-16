@@ -9,9 +9,51 @@ import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart'
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/services/api_client.dart';
+import 'package:space_learn_flutter/core/services/google_auth_service.dart';
 import 'package:space_learn_flutter/core/services/rappels_lecture.dart';
 import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+
+/// Ce que le serveur a répondu à une demande de fermeture de compte.
+///
+/// LA RÉPONSE PEUT PORTER UNE DETTE, et c'est le seul cas où l'écran doit
+/// afficher la phrase du serveur plutôt que la sienne. Quand la personne est
+/// encore créditrice, `DeleteAccount` (space_learn_auth, controllers/user.go)
+/// rend `reste_du` et `devise`, et son `message` ne promet AUCUNE date
+/// d'effacement : la purge est RETENUE tant que la somme n'est pas versée —
+/// l'effacer emporterait la seule destination de virement enregistrée. Rejouer
+/// « vos informations seront effacées dans trente jours » serait alors
+/// promettre ce que le serveur ne fera pas.
+class SuppressionDemandee {
+  const SuppressionDemandee({
+    required this.message,
+    required this.resteDu,
+    required this.devise,
+    required this.effacementRetenu,
+  });
+
+  /// La phrase du serveur, telle quelle. Vide s'il n'en a pas écrit.
+  final String message;
+
+  /// Ce qui reste dû à la personne. Zéro dans le cas ordinaire.
+  final double resteDu;
+
+  /// La devise de [resteDu] — « XOF » aujourd'hui.
+  final String devise;
+
+  /// Le serveur retient-il l'effacement ? Il le dit lui-même, et c'est la
+  /// seule source qui couvre les DEUX cas : une somme due, mais aussi un
+  /// portefeuille ILLISIBLE — où [resteDu] vaut zéro alors que la purge
+  /// retiendra le compte tous les jours. Se fier à [resteDu] seul faisait
+  /// donc promettre trente jours à qui ne les aurait jamais vus.
+  final bool effacementRetenu;
+
+  /// Y a-t-il quelque chose qui retient l'effacement ?
+  ///
+  /// Le repli sur [resteDu] sert un serveur qui ne rend pas encore le
+  /// drapeau : il couvre alors le seul cas qu'il savait dire.
+  bool get uneDetteRetientLEffacement => effacementRetenu || resteDu > 0;
+}
 
 /// Le compte existe, mais son adresse n'a jamais été validée.
 ///
@@ -28,11 +70,21 @@ class CompteNonVerifieException implements Exception {
     required this.email,
     required this.codeEnvoye,
     required this.message,
+    this.suppressionAnnulee = false,
   });
 
   final String email;
   final bool codeEnvoye;
   final String message;
+
+  /// La connexion vient de rouvrir un compte fermé, MAIS il lui manque encore
+  /// son code.
+  ///
+  /// Le serveur pose `suppression_annulee` sur ce 403 aussi (login.go) : un
+  /// compte fermé par son titulaire et jamais validé passe par là. Sans ce
+  /// champ, la seule personne à qui la réouverture n'est jamais annoncée
+  /// serait précisément celle qui a le plus de raisons d'en douter.
+  final bool suppressionAnnulee;
 
   @override
   String toString() => message;
@@ -214,8 +266,27 @@ class AuthService {
           email: (corps["email"] as String?) ?? email,
           codeEnvoye: corps["code_envoye"] != false,
           message: messageDeLaReponse(response, repli: "Compte non vérifié."),
+          suppressionAnnulee: corps["suppression_annulee"] == true,
         );
       }
+
+      // LES AUTRES 403 SONT DES REFUS DE DROIT, ET ILS SE DISENT COMME TELS.
+      //
+      // Compte fermé et délai écoulé, compte archivé par l'administration,
+      // compte inactif : trois refus que réessayer ne peut pas lever. Le
+      // serveur y écrit maintenant la cause, la date et L'ADRESSE du support —
+      // parce que ces refus-là sortent sur l'écran de CONNEXION, où la
+      // personne n'a ni session, ni réglages, ni « Aide & FAQ », donc aucun
+      // autre endroit où lire cette adresse.
+      //
+      // Le type le dit une fois pour toutes : l'écran ne peut pas deviner, en
+      // lisant la phrase, qu'elle nomme une porte fermée plutôt qu'une panne.
+      // Il en fait un dialogue qu'on ferme soi-même, et non un message furtif
+      // de quatre secondes — on ne recopie pas une adresse électronique dans
+      // ce délai-là.
+      throw AccesRefuse(
+        messageDeLaReponse(response, repli: "Connexion refusée."),
+      );
     }
 
     throw Exception(
@@ -245,6 +316,14 @@ class AuthService {
   ///
   /// [profil] n'a d'effet qu'à la toute première connexion, quand le compte
   /// est créé. On ne change pas le profil de quelqu'un parce qu'il revient.
+  ///
+  /// CETTE ROUTE ROUVRE MAINTENANT UN COMPTE FERMÉ, comme /auth/login : elle
+  /// rend `suppression_annulee` et le même `message` (space_learn_auth,
+  /// oauth_google.go — ConnexionGoogle appelle `AnnulerLaSuppression`).
+  /// C'est nouveau, et c'est ce qui manquait à la moitié des gens : un compte
+  /// né de Google porte un mot de passe aléatoire que personne ne connaît, si
+  /// bien que « reconnectez-vous avec votre mot de passe » leur promettait une
+  /// sortie fermée. [TokenUser] porte les deux champs, l'écran les affiche.
   Future<TokenUser> connexionGoogle(String idToken, {String? profil}) async {
     final response = await client.post(
       Uri.parse(ApiRoutes.google),
@@ -261,8 +340,44 @@ class AuthService {
       return tokenUser;
     }
 
+    // GOOGLE N'EST PAS BRANCHÉ SUR CE SERVEUR : ON LE DIT, ET ON CESSE DE
+    // L'OFFRIR.
+    //
+    // Le serveur répond 501 tant que les clés ne sont pas posées, avec sa
+    // propre phrase — « La connexion avec Google n'est pas disponible sur ce
+    // serveur. Créez un compte ou connectez-vous avec votre adresse e-mail et
+    // un mot de passe. » (space_learn_auth, controllers/oauth_google.go) — et
+    // un drapeau `google_indisponible` dans le corps. On affichait à la place
+    // une phrase à nous, qui ne disait pas quoi faire, et le bouton restait
+    // offert : la personne rappuyait sur une porte qui n'existe pas.
+    //
+    // Le drapeau éteint le bouton POUR LE RESTE DE LA SESSION
+    // (GoogleAuthService), et le refus est un refus de DROIT : `ErreurGoogle`
+    // le fait sortir en message furtif sans « Réessayer », comme les autres
+    // refus de ce parcours.
     if (response.statusCode == 501) {
-      throw Exception("La connexion Google n'est pas activée sur le serveur.");
+      if (_corpsJson(response.body)?['google_indisponible'] == true) {
+        GoogleAuthService.leServeurNeLaPasBranchee();
+      }
+      throw ErreurGoogle(
+        messageDeLaReponse(
+          response,
+          repli:
+              "La connexion avec Google n'est pas disponible sur ce serveur. "
+              "Créez un compte ou connectez-vous avec votre adresse e-mail et "
+              "un mot de passe.",
+        ),
+      );
+    }
+
+    // Mêmes refus de droit que /auth/login, et ils sortent au même endroit :
+    // ConnexionGoogle rend les mêmes phrases, adresse du support comprise
+    // (space_learn_auth, oauth_google.go). Le type les distingue d'une panne
+    // pour que l'écran ne propose pas de réessayer.
+    if (response.statusCode == 403) {
+      throw AccesRefuse(
+        messageDeLaReponse(response, repli: "Connexion refusée."),
+      );
     }
 
     String message = "La connexion Google a échoué.";
@@ -311,19 +426,61 @@ class AuthService {
   ///
   /// Elles lèvent maintenant, comme `login` et `register` : les écrans ont déjà
   /// le `catch` qui affiche `messageLisible`.
-  Future<bool> sendOtp(String email) async {
+  ///
+  /// ELLE REND LA PHRASE DU SERVEUR, ET PLUS UN BOOLÉEN. C'est la seule chose
+  /// vraie qu'on puisse dire ici : la réponse est volontairement identique que
+  /// le compte existe ou non, et elle est identique aussi quand la cadence
+  /// retient l'envoi — sans quoi deux phrases différentes suffiraient à trier
+  /// une liste d'adresses entre inscrits et inconnus. Elle vaut aujourd'hui
+  /// « Si un compte est associé à cet e-mail, un code de vérification a été
+  /// envoyé. Si vous ne le recevez pas, redemandez-en un dans une minute. »
+  /// (space_learn_auth, controllers/otp.go:209-210) — la seconde partie est
+  /// nouvelle : depuis que la cadence ne regarde plus si le code déjà envoyé
+  /// est encore VIVANT, il existe un cas où la personne n'a rien d'utilisable
+  /// en main et doit attendre la fin de la minute. Un écran qui recopierait
+  /// cette phrase en dur la laisserait attendre sans savoir quoi faire.
+  ///
+  /// Sur une panne de base, la route rend maintenant 503 « L'envoi du code est
+  /// momentanément impossible. Réessayez dans un instant. » là où elle rendait
+  /// 200 « un code a été envoyé » sans que rien ne parte (otp.go:144, :219).
+  /// L'exception porte cette phrase-là ; l'écran l'affiche et laisse la saisie.
+  Future<String> sendOtp(String email) async {
     final response = await client.post(
       Uri.parse(ApiRoutes.sendOtp),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"email": email}),
     );
-    if (response.statusCode == 200) return true;
+    if (response.statusCode == 200) {
+      return _phraseDEnvoi(
+        response,
+        repli:
+            "Si un compte est associé à cette adresse, un code de vérification "
+            "a été envoyé. Si vous ne le recevez pas, redemandez-en un dans "
+            "une minute.",
+      );
+    }
     throw Exception(
       messageDeLaReponse(response, repli: "L'envoi du code a échoué."),
     );
   }
 
-  /// Vérifier un code reçu par e-mail.
+  /// La phrase que le serveur a écrite pour un envoi de code, ou [repli].
+  ///
+  /// Le repli n'est pas une invention : c'est la recopie de la phrase du
+  /// serveur, pour le seul cas où elle n'arriverait pas — un serveur plus
+  /// ancien, un corps illisible. Elle dit la même chose, à savoir le
+  /// conditionnel et le délai d'une minute.
+  String _phraseDEnvoi(http.Response response, {required String repli}) {
+    final corps = _corpsJson(response.body);
+    final message = corps?["message"];
+    if (message is String && message.trim().isNotEmpty) return message.trim();
+    return repli;
+  }
+
+  /// Vérifier un code reçu par e-mail — `/auth/verify-otp`.
+  ///
+  /// Voir [_leverSurLesRoutesDeCode] pour le 503 de panne, seul refus de cette
+  /// route où réessayer puisse aboutir.
   Future<bool> verifyOtp(String email, String otp) async {
     final response = await client.post(
       Uri.parse(ApiRoutes.verifyOtp),
@@ -331,9 +488,40 @@ class AuthService {
       body: jsonEncode({"email": email, "otp": otp}),
     );
     if (response.statusCode == 200) return true;
-    throw Exception(
-      messageDeLaReponse(response, repli: "Ce code n'a pas pu être vérifié."),
-    );
+    _leverSurLesRoutesDeCode(response, "Ce code n'a pas pu être vérifié.");
+  }
+
+  /// L'échec d'une des TROIS ROUTES DE CODE, avec sa nature.
+  ///
+  /// `/auth/verify-otp`, `/auth/verification` et `/auth/reset-password`
+  /// répondent 503 quand la base n'a pas pu être lue (space_learn_auth,
+  /// controllers/otp.go, `reponsePanneCode`). C'est une PANNE, et elle ne
+  /// ressemble à aucun autre refus de ces routes : le serveur n'a RIEN écrit,
+  /// aucun essai n'a été compté contre la personne, son code est intact.
+  /// Auparavant le même hoquet sortait en « Code OTP invalide ou expiré » et
+  /// comptait un essai fautif — un refus fabriqué par une panne.
+  ///
+  /// L'écran ne peut pas deviner la différence en lisant la phrase : le type la
+  /// porte. Voir [PanneServeur], et `otp.dart` qui en fait le seul
+  /// « Réessayer » de ce parcours.
+  ///
+  /// SEUL LE 503, ET PLUS « TOUT 5xx ». La ligne testait `>= 500` sous un
+  /// commentaire qui disait « ils disent la même chose — le serveur n'a rien pu
+  /// faire ». C'était FAUX exactement sur `/auth/verification` : ce 500-là
+  /// tombait APRÈS que le serveur avait consommé le code ET validé le compte,
+  /// si bien que l'écran affichait « votre code n'a pas été utilisé, réessayez »
+  /// sur un code mort et un compte déjà valide — trois affirmations fausses
+  /// d'un coup. Le serveur a corrigé la cause en ouvrant la session AVANT toute
+  /// écriture irréversible, et ce qui reste sur ces routes est un VRAI 503
+  /// (verification.go:200-216, otp.go:425-437) : notre phrase y devient vraie
+  /// mot pour mot. Un 5xx qui n'est PAS 503 — passerelle, relais, 500 d'un
+  /// serveur plus ancien — redevient une erreur ordinaire : elle s'affiche sans
+  /// rien affirmer sur le sort du code. C'est l'état d'avant, et il ne mentait
+  /// pas. Le site tient la même règle (`estUnePanne`, src/lib/erreur.ts).
+  Never _leverSurLesRoutesDeCode(http.Response response, String repli) {
+    final message = messageDeLaReponse(response, repli: repli);
+    if (response.statusCode == 503) throw PanneServeur(message);
+    throw Exception(message);
   }
 
   /// ✅ Vérifier la validation d'inscription
@@ -352,24 +540,72 @@ class AuthService {
       // courir contre cette purge. Cf. [_ouvrirSession].
       await _ouvrirSession(tokenUser, reprendreLesRappels: false);
       return tokenUser;
-    } else {
-      String errorMessage = "Erreur de validation de l'inscription.";
-      try {
-        final errorData = jsonDecode(response.body);
-        errorMessage = errorData['error'] ?? errorMessage;
-      } catch (_) {}
-      throw Exception(errorMessage);
     }
+
+    // LE COMPTE EST DÉJÀ VALIDÉ : C'EST UNE SORTIE, PAS UN ÉCHEC DE PLUS.
+    //
+    // Le serveur pose `deja_verifie: true` sur ce 400 (space_learn_auth,
+    // controllers/verification.go:133-139 et :153-158), par ses DEUX portes :
+    // code encore vivant, et code réel mais mort. C'est la porte de sortie des
+    // gens que la version en production a enfermés — compte validé, code
+    // consommé, 500 rendu par-dessus. Sans ce type, la phrase du serveur
+    // arrivait à l'écran comme un refus quelconque et l'écran laissait la
+    // personne devant ses six cases, à ressaisir un code qui ne servira plus
+    // jamais. Voir [CompteDejaValide] : c'est un refus de DROIT — aucun
+    // « Réessayer » — dont l'écran fait une navigation vers la connexion.
+    if (response.statusCode == 400) {
+      final corps = _corpsJson(response.body);
+      if (corps != null && corps["deja_verifie"] == true) {
+        throw CompteDejaValide(
+          messageDeLaReponse(
+            response,
+            repli:
+                "Votre compte est déjà validé : connectez-vous pour continuer.",
+          ),
+        );
+      }
+    }
+
+    // Le corps était lu à la main — `errorData['error']` sans filtre, sans le
+    // cas du 401, et sans distinguer la panne du refus : une trace technique ou
+    // du HTML de passerelle arrivaient tels quels sur l'écran de saisie du
+    // code. `messageDeLaReponse` fait le tri, et
+    // [_leverSurLesRoutesDeCode] donne au 503 la nature qui lui vaut un
+    // « Réessayer ».
+    _leverSurLesRoutesDeCode(
+      response,
+      "La validation de l'inscription n'a pas abouti.",
+    );
   }
 
   /// Demander un code de réinitialisation.
-  Future<bool> forgotPassword(String email) async {
+  ///
+  /// Même contrat que [sendOtp], et pour les mêmes raisons : la phrase du
+  /// serveur est rendue telle quelle, parce qu'elle est la seule chose vraie
+  /// qu'on puisse dire sans révéler à un inconnu si cette adresse a un compte.
+  /// Elle vaut « Si un compte est associé à cet e-mail, un code de
+  /// réinitialisation a été envoyé. Si vous ne le recevez pas, redemandez-en un
+  /// dans une minute. » (space_learn_auth, controllers/otp.go:484-485).
+  ///
+  /// C'est ICI que la panne coûte le plus cher — la personne qui a perdu son
+  /// mot de passe n'a pas d'autre porte —, et c'est ici que le serveur rendait
+  /// 200 « un code a été envoyé » sur une base injoignable. Il rend maintenant
+  /// 503 avec sa phrase de panne (otp.go:507).
+  Future<String> forgotPassword(String email) async {
     final response = await client.post(
       Uri.parse(ApiRoutes.forgotPassword),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"email": email}),
     );
-    if (response.statusCode == 200) return true;
+    if (response.statusCode == 200) {
+      return _phraseDEnvoi(
+        response,
+        repli:
+            "Si un compte est associé à cette adresse, un code de "
+            "réinitialisation a été envoyé. Si vous ne le recevez pas, "
+            "redemandez-en un dans une minute.",
+      );
+    }
     throw Exception(
       messageDeLaReponse(response, repli: "L'envoi du code a échoué."),
     );
@@ -395,12 +631,9 @@ class AuthService {
       }),
     );
     if (response.statusCode == 200) return true;
-    throw Exception(
-      messageDeLaReponse(
-        response,
-        repli: "La réinitialisation n'a pas abouti.",
-      ),
-    );
+    // Troisième route de code : même 503 de panne, même traitement. Voir
+    // [_leverSurLesRoutesDeCode].
+    _leverSurLesRoutesDeCode(response, "La réinitialisation n'a pas abouti.");
   }
 
   /// ✅ Obtenir le profil utilisateur
@@ -525,28 +758,64 @@ class AuthService {
   /// Demande la suppression du compte au serveur — DELETE /utilisateurs/:id.
   ///
   /// CE QUE LE SERVEUR FAIT VRAIMENT (space_learn_auth, controllers/user.go
-  /// DeleteAccount) : un seul `Save(&user)` qui touche trois champs — statut
-  /// « supprime », nom affiché remplacé par « Utilisateur Anonymisé », date de
-  /// suppression. `PeutOuvrirSession` (models/user.go) referme alors la porte.
-  /// C'est tout. L'adresse e-mail, le pseudo, le téléphone, la biographie et
-  /// la photo RESTENT en base, et aucun travail périodique ne lit
-  /// `deleted_at` : la seule suppression réelle est HardDeleteUser
-  /// (admin_controller.go), déclenchée à la main par un Super Admin.
+  /// DeleteAccount) : il FERME le compte sur-le-champ — statut « supprime »,
+  /// nom affiché remplacé par « Utilisateur Anonymisé », date de suppression —
+  /// et révoque toutes les sessions ; `PeutOuvrirSession` (models/user.go)
+  /// referme la porte. Les autres informations restent en base le temps du
+  /// délai de grâce, puis `service.PurgerComptesSupprimes` — la tâche
+  /// périodique montée dans routes/routes.go — efface l'adresse, le pseudo,
+  /// le téléphone, la date de naissance, le sexe, la photo, la biographie, les
+  /// liens sociaux et le portefeuille.
+  ///
+  /// CE PARAGRAPHE A DÉJÀ MENTI UNE FOIS, et il faut savoir pourquoi. Il
+  /// décrivait un serveur qui ne faisait que les trois affectations, sans
+  /// aucune purge — c'était exact à l'époque, et c'est resté écrit ici après
+  /// que le serveur eut changé. Un commentaire qui décrit l'ancien serveur
+  /// fera reposer le défaut par le prochain lecteur : celui qui lit « aucun
+  /// travail périodique ne lit deleted_at » corrigera l'écran pour qu'il cesse
+  /// de promettre trente jours — alors que le serveur les tient.
   ///
   /// Rien n'est fait tant que le serveur n'a pas répondu 200 : l'écran
   /// affichait auparavant « demande transmise » après un simple nettoyage
   /// local, sans qu'aucune requête ne parte — le compte restait pleinement
   /// actif en base.
   ///
-  /// NE REND PLUS LE MESSAGE DU SERVEUR, et c'est délibéré. Sa phrase
-  /// (« Votre compte a été désactivé et vos données anonymisées. Elles seront
-  /// définitivement supprimées après un délai de 30 jours. ») promet une
-  /// anonymisation et une purge que le code ci-dessus ne fait pas : l'afficher
-  /// telle quelle déplaçait le mensonge du dialogue de confirmation — qu'on
-  /// venait de corriger — vers le dialogue de succès, cinq secondes plus tard.
-  /// Tant que le serveur n'est pas aligné, c'est l'écran qui dit ce qui s'est
-  /// réellement passé (voir `settings/suppression_compte.dart`).
-  Future<void> deleteAccount() async {
+  /// NE REND PAS LE MESSAGE DU SERVEUR, et c'est délibéré — mais la
+  /// justification n'est plus la même, et ce paragraphe l'a déjà eue fausse.
+  ///
+  /// LA PHRASE DU SERVEUR, AUJOURD'HUI, MOT POUR MOT (controllers/user.go,
+  /// DeleteAccount) : « Votre compte a été fermé et vos appareils déconnectés.
+  /// Votre nom n'est plus affiché. Vos données personnelles seront effacées le
+  /// JJ/MM/AAAA ; d'ici là, reconnectez-vous — par mot de passe ou avec
+  /// Google — pour annuler la suppression. Votre adresse e-mail reste réservée
+  /// jusqu'à cette date : elle ne peut pas servir à un nouveau compte avant. »
+  ///
+  /// Ce paragraphe la citait encore sous la forme « d'ici là, écrivez au
+  /// support pour annuler » : le serveur ne dit PLUS cela, et l'unique raison
+  /// invoquée pour ne pas l'afficher — « elle dit d'écrire au support sans
+  /// donner d'adresse » — avait donc cessé d'exister. La vraie raison, la
+  /// seule qui tienne, est que l'écran dit tout ce que dit cette phrase ET
+  /// l'adresse où écrire quand la reconnexion est refusée. Si un jour l'écran
+  /// cesse de le faire, c'est le message du serveur qu'il faut afficher, pas
+  /// une phrase à nous.
+  ///
+  /// LES DEUX DIALOGUES DISENT BIEN LES MÊMES FAITS, et c'est cette
+  /// vérification-là qui autorise le silence : fermeture immédiate, nom
+  /// retiré, effacement à trente jours, RECONNEXION (par mot de passe ou avec
+  /// Google) comme geste d'annulation, adresse réservée jusqu'à la purge, et
+  /// `adresseContact` en second recours. Voir
+  /// `settings/suppression_compte.dart`.
+  ///
+  /// SAUF DANS UN CAS, ET IL EST NEUF : quand la personne est encore
+  /// CRÉDITEUSE. Le serveur écrit alors une AUTRE phrase — elle nomme la somme
+  /// due, et surtout elle NE PROMET PLUS de date d'effacement, parce que la
+  /// purge est retenue tant que l'argent n'est pas versé (la purge effacerait
+  /// la seule destination de virement enregistrée). Le texte fixe des deux
+  /// dialogues, lui, continue de dire « effacées dans trente jours » : c'est
+  /// exactement le genre de promesse que le serveur ne tiendrait pas. Dans ce
+  /// cas-là, et dans celui-là seulement, [SuppressionDemandee.message] est
+  /// affiché TEL QUEL à la place. Voir `settings/suppression_compte.dart`.
+  Future<SuppressionDemandee> deleteAccount() async {
     final token = await TokenStorage.getToken();
     if (token == null || token.isEmpty) {
       throw Exception("Vous devez être connecté pour supprimer votre compte.");
@@ -568,14 +837,24 @@ class AuthService {
     );
 
     if (response.statusCode == 200) {
-      // Le message du serveur ne va plus à l'écran ; il reste utile au
-      // diagnostic, le jour où controllers/user.go sera aligné sur ce qu'il
-      // fait — on verra alors ici que la phrase a changé.
-      final message = _corpsJson(response.body)?['message'];
+      final corps = _corpsJson(response.body);
+      final message = corps?['message'];
+      // Le message du serveur reste utile au diagnostic même quand l'écran ne
+      // l'affiche pas : c'est ici qu'on verra, dans les journaux, le jour où sa
+      // phrase changera sans que les deux dialogues aient suivi.
       if (message is String && message.trim().isNotEmpty) {
         debugPrint('Suppression du compte : réponse du serveur — $message');
       }
-      return;
+      final brut = corps?['reste_du'];
+      final resteDu = brut is num
+          ? brut.toDouble()
+          : double.tryParse('$brut') ?? 0.0;
+      return SuppressionDemandee(
+        message: message is String ? message.trim() : '',
+        resteDu: resteDu,
+        devise: corps?['devise']?.toString() ?? 'XOF',
+        effacementRetenu: corps?['effacement_retenu'] == true,
+      );
     }
 
     throw Exception(

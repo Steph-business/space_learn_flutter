@@ -1,4 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  LE HTTP EN CLAIR EST AUTORISE ICI, ET C'EST AUJOURD'HUI UNE NECESSITE.
+
+  L'application vise les deux serveurs Go sur leurs ports directs, en http
+  (voir dart_define.json et lib/core/utils/api_routes.dart). Sans cette
+  autorisation, Android bloquerait toutes les requetes depuis Android 9 : plus
+  aucun ecran ne chargerait. La passer a "false" tant que le serveur repond en
+  http n'est donc pas un durcissement, c'est une panne totale.
+
+  CE QU'ELLE COUTE : elle vaut pour TOUTES les destinations, pas seulement la
+  notre. Jetons de session, mots de passe et OTP traversent le reseau lisibles
+  par qui ecoute le Wi-Fi, et rien n'empeche une redirection en clair vers un
+  autre hote.
+
+  LE JOUR OU LE DOMAINE ET LE CERTIFICAT SERONT EN PLACE — c'est-a-dire quand
+  dart_define.json portera "https://<domaine>" sans port — IL Y A TROIS GESTES,
+  ET ILS PARTENT DANS LE MEME APK.
+
+  1. CE FICHIER SE REDUIT A :
+
+      <base-config cleartextTrafficPermitted="false">
+          <trust-anchors><certificates src="system" /></trust-anchors>
+      </base-config>
+
+     et l'application refuse alors d'elle-meme toute retrogradation en clair.
+
+  2. android:usesCleartextTraffic="true" DISPARAIT DES DEUX MANIFESTES :
+     android/app/src/main/AndroidManifest.xml (juste au-dessus de la ligne
+     networkSecurityConfig) et android/app/src/profile/AndroidManifest.xml
+     (avec son tools:replace). Ces deux attributs sont DEJA sans effet —
+     minSdk = 24 (android/app/build.gradle.kts) et, des l'API 24, une
+     network-security-config declaree l'emporte — mais les laisser a cote
+     d'une config qui refuse le clair fait dire au manifeste le contraire
+     exact de la politique. Le prochain lecteur croira la porte ouverte, ou
+     pire, la rouvrira « pour etre coherent ».
+
+  3. dart_define.json porte la nouvelle adresse dans SES DEUX valeurs
+     (API_BASE_URL et API_BASE_URL_GIN), puis l'APK est RECONSTRUIT ET PUBLIE
+     AVANT l'annonce du passage en HTTPS : un APK deja installe continuera
+     d'appeler 8083/8084 en clair jusqu'a sa mise a jour.
+
+  Changer l'adresse sans fermer le clair laisse la porte ouverte ; fermer le
+  clair sans changer l'adresse coupe l'application.
+
+  ET CE N'EST PAS ASSEZ : les trois gestes ci-dessus sont ceux du depot mobile.
+  Ils ne ferment rien tant que le SERVEUR repond encore en clair sur ses ports
+  directs. La fermeture reelle se fait sur la machine — refuser 8083 et 8084 de
+  l'exterieur, faire ecouter le proxy sur 80/443 avec son certificat
+  (Stepace_learn_web/deploiement/space-learn.conf, space_learn_livres/deploy/
+  Caddyfile). Aucune ligne de ce depot ne peut s'y substituer.
+
+  L'ORDRE DES OPERATIONS N'EST PAS DECIDE ICI. La marche a suivre complete —
+  les six points du jour de la bascule, tous clients confondus — est ecrite une
+  seule fois, dans Stepace_learn_web/deploiement/space-learn.conf.example,
+  ETAPE 3. Son point 3 est celui-ci, et il porte la contrainte de calendrier :
+  on ne ferme les ports directs qu'APRES que la version https de l'APK est
+  installee, sinon fermer 8083/8084 met hors service toutes les applications en
+  circulation. Le mobile est aujourd'hui le seul client reellement expose en
+  clair — le site n'est pas encore servi sur le 80.
+
+  LE GESTE DE FERMETURE LUI-MEME A SON PROPRE CHAPITRE, ET IL EST AILLEURS :
+  ETAPE 4 du meme fichier (« FERMER LES PORTS 8083 ET 8084, ET SEULEMENT
+  ALORS »). Elle porte les commandes de pare-feu — `sudo ufw deny 8083/tcp`,
+  `sudo ufw deny 8084/tcp` — et la seule verification qui mesure quelque chose :
+  elle se fait DEPUIS UN AUTRE POSTE, parce que depuis le VPS la reponse vient
+  de la boucle locale et parait toujours saine. Ce renvoi est ecrit ici parce
+  que ce fichier nommait « refuser 8083 et 8084 de l'exterieur » sans dire ou
+  cette marche a suivre etait ecrite, et qu'un lecteur du depot mobile n'a
+  aucune raison d'aller chercher dans le depot du site.
+
+  RIEN DE CE QUI PRECEDE N'EST FAIT AUJOURD'HUI, ET LA LIGNE CI-DESSOUS RESTE
+  DONC A "true". Ce n'est pas un oubli : dart_define.json porte encore
+  http://<ip>:8083 et http://<ip>:8084, les deux serveurs Go ecoutent en clair
+  sur ces ports, et passer cette ligne a "false" avant eux ne durcit rien — cela
+  met l'application hors service, ecran par ecran, sans le moindre message.
+
+  L'adresse du serveur n'est PAS ecrite ici, volontairement : ce depot est
+  public et une <domain-config> figerait dans les sources ce que
+  dart_define.json garde hors de Git. C'est aussi pourquoi le clair ne peut pas
+  etre restreint au seul serveur de production — on ne peut pas le nommer.
+-->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
@@ -6,4 +87,3 @@
         </trust-anchors>
     </base-config>
 </network-security-config>
-

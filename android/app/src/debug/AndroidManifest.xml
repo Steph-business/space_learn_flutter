@@ -7,8 +7,15 @@
     <!--
       Superposition appliquée aux seuls builds de débogage.
 
-      Elle remplace la politique réseau stricte du manifeste principal par une
-      politique permissive, le temps du développement contre un backend local.
+      Elle remplace la politique réseau du manifeste principal par celle de
+      network_security_config_debug.xml, le temps du développement contre un
+      backend local. La différence n'est PAS « stricte contre permissive » —
+      celle de main ouvre déjà le clair pour toutes les destinations, tant que
+      les serveurs répondent en http : la différence est que celle de débogage
+      accepte en plus les certificats installés par l'utilisateur, donc un
+      proxy d'inspection. C'est ce point-là qui ne doit jamais partir en
+      production.
+
       `tools:replace` est indispensable : sans lui, la fusion des manifestes
       échoue sur l'attribut déclaré des deux côtés.
 

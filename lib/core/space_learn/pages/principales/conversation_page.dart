@@ -9,6 +9,8 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/dm_service.dart';
@@ -38,6 +40,42 @@ class _ConversationPageState extends State<ConversationPage> {
   List<MessagePrive> _messages = [];
   bool _chargement = true;
   String? _erreur;
+
+  /// L'échec est-il une session morte ?
+  ///
+  /// La cause était dite, le geste non : « Réessayer » s'affichait sous toutes
+  /// les erreurs, jeton mort compris — le seul bouton qui ne peut par
+  /// construction jamais aboutir. Une session expirée mène à la connexion.
+  bool _sessionExpiree = false;
+
+  /// Le fil est-il vide ET en échec ? Alors l'erreur prend tout l'écran.
+  ///
+  /// LA MÊME DISTINCTION QUE DANS LES SALONS, ET ELLE MANQUAIT ICI — c'est
+  /// `_rienAMontrer` de forum_messages_page.dart, mot pour mot. « La porte est
+  /// fermée » et « il n'y a rien à montrer » sont deux faits différents, et cet
+  /// écran les traitait comme un seul : `_erreur` seule décidait du plein
+  /// écran, si bien qu'un simple tirage vers le bas sur un fil LISIBLE — le
+  /// RefreshIndicator, donc un chargement de PREMIER PLAN — qui tombait sur un
+  /// jeton mort remplaçait toute la conversation par un écran d'erreur ET
+  /// emportait le compositeur avec le brouillon en cours.
+  ///
+  /// Ce qui est à l'écran n'est JAMAIS détruit : un fil lisible reste lisible,
+  /// il perd seulement de quoi RELANCER — rejouer une requête refusée ne peut
+  /// pas aboutir. Voir la note du compositeur, dans `build`.
+  bool get _rienAMontrer => _messages.isEmpty && _erreur != null;
+
+  /// Écrire peut-il encore aboutir ?
+  ///
+  /// C'EST CETTE QUESTION-LÀ QUI DOIT DÉCIDER DU COMPOSITEUR, ET NON
+  /// [_rienAMontrer]. Sur un fil vide, `_rienAMontrer` est vrai dès qu'une
+  /// erreur est notée — une simple panne de réseau comprise — et le
+  /// compositeur disparaissait alors, en contradiction directe avec la note
+  /// qui l'introduit sept lignes plus haut : « PANNE DE LECTURE — rien ne
+  /// change : écrire est une autre requête, et elle peut aboutir. »
+  ///
+  /// Seule une session morte rend l'envoi impossible : il lui faut un jeton.
+  /// Une lecture qui échoue n'apprend rien sur l'écriture.
+  bool get _ecrireNePeutPasAboutir => _rienAMontrer && _sessionExpiree;
 
   /// Un envoi à la fois.
   ///
@@ -188,24 +226,54 @@ class _ConversationPageState extends State<ConversationPage> {
         // neuf — pendant toute la durée de la requête. Même correctif que la
         // liste des conversations. Un fil réellement vide, lui, garde son
         // message : rien ne le remplace par une roue qui tourne.
-        if (_erreur != null) _chargement = true;
+        //
+        // `_rienAMontrer` ET NON `_erreur` : depuis que l'échec se note même
+        // sur un fil lisible (voir plus bas), `_erreur != null` ne veut plus
+        // dire « il n'y a rien à l'écran ». Testé tel quel, il remplaçait une
+        // conversation entière par une roue qui tourne au moindre rechargement
+        // qui suit une erreur passagère.
+        if (_rienAMontrer) _chargement = true;
         _erreur = null;
+        _sessionExpiree = false;
       });
     }
     try {
       final token = await TokenStorage.getToken();
       if (token == null) {
         if (!mounted) return;
+        // LA PORTE SE FERME TOUJOURS, L'AFFICHAGE N'EST JAMAIS DÉTRUIT.
+        //
+        // La garde qui vivait ici — `if (!enArrierePlan || _messages.isEmpty)`
+        // — posait `_erreur` ET `_sessionExpiree` dès qu'un chargement était de
+        // PREMIER PLAN, fil plein ou non : un tirage vers le bas sur une
+        // conversation lisible effaçait donc la conversation et le brouillon.
+        // Et sur un rechargement de fond, elle ne posait RIEN : le fil restait,
+        // le compositeur aussi, et l'envoi suivant butait sur le jeton absent.
+        // Les deux moitiés étaient fausses.
+        //
+        // Le drapeau décrit la PORTE et se pose sans condition ; c'est
+        // [_rienAMontrer] qui décide de l'AFFICHAGE. Même partage que
+        // `_signalerEchec` dans les salons de forum.
+        final filLisible = _messages.isNotEmpty;
         setState(() {
           _chargement = false;
-          // Même garde que le `catch` plus bas : un rechargement que personne
-          // n'a demandé ne remplace pas la conversation affichée par un écran
-          // d'erreur. La session finie se dira à l'envoi, qui est le moment
-          // où elle empêche vraiment quelque chose.
-          if (!enArrierePlan || _messages.isEmpty) {
-            _erreur = "Votre session a expiré. Reconnectez-vous.";
-          }
+          // La phrase vient de la constante partagée, pour qu'elle ne diverge
+          // pas de celle qu'`estSessionExpiree` reconnaît.
+          _erreur = phraseSessionExpiree;
+          _sessionExpiree = true;
         });
+        // Une porte qui se ferme se dit, MÊME sur un rechargement que personne
+        // n'a demandé : sans cela, la personne continuerait d'écrire dans un
+        // fil dont la session est morte sans en être avertie. Quand le fil est
+        // vide, l'écran d'erreur le dit déjà en grand — un second message
+        // furtif serait du bruit.
+        if (filLisible) {
+          AppNotifications.showSnackBar(
+            context,
+            message: phraseSessionExpiree,
+            isError: true,
+          );
+        }
         return;
       }
 
@@ -234,17 +302,27 @@ class _ConversationPageState extends State<ConversationPage> {
       if (etaitEnBas && messages.length > combienAvant) _descendreEnBas();
     } catch (e) {
       if (!mounted) return;
+      // Même partage qu'au jeton absent : la cause se note toujours, ce qui est
+      // lisible n'est jamais détruit. `_erreur` sur un fil plein ne prend pas
+      // l'écran — [_rienAMontrer] l'interdit — et il ne retire rien d'autre que
+      // le geste de relance, et seulement quand la session est morte.
+      final filLisible = _messages.isNotEmpty;
+      final sessionMorte = estSessionExpiree(e);
+      final message = messageLisible(
+        e,
+        repli: "Cette conversation n'a pas pu être chargée.",
+      );
       setState(() {
         _chargement = false;
-        // Un rechargement qui échoue ne doit pas effacer ce qui est déjà à
-        // l'écran : on ne signale l'erreur que si l'on n'a rien à montrer.
-        if (_messages.isEmpty) {
-          _erreur = messageLisible(
-            e,
-            repli: "Cette conversation n'a pas pu être chargée.",
-          );
-        }
+        _sessionExpiree = sessionMorte;
+        _erreur = message;
       });
+      // Une panne passagère se tait en arrière-plan : le fil est toujours là et
+      // la tentative suivante aboutira. Une session morte, elle, se dit dans
+      // tous les cas — voir plus haut.
+      if (filLisible && (!enArrierePlan || sessionMorte)) {
+        AppNotifications.showSnackBar(context, message: message, isError: true);
+      }
     }
   }
 
@@ -277,9 +355,12 @@ class _ConversationPageState extends State<ConversationPage> {
       final token = await TokenStorage.getToken();
       if (token == null) {
         if (!mounted) return;
+        // La phrase vient de la constante partagée, comme partout ailleurs :
+        // c'est elle qu'`estSessionExpiree` reconnaît, et une copie à la main
+        // avait déjà divergé une fois.
         AppNotifications.showSnackBar(
           context,
-          message: "Votre session a expiré. Reconnectez-vous.",
+          message: phraseSessionExpiree,
           isError: true,
         );
         return;
@@ -368,9 +449,58 @@ class _ConversationPageState extends State<ConversationPage> {
       body: Column(
         children: [
           Expanded(child: _corps()),
-          _barreDeSaisie(),
+          // LE COMPOSITEUR NE SE REND PAS SOUS L'ÉCRAN D'ERREUR — ET IL NE
+          // PART PAS AVEC LE BROUILLON.
+          //
+          // Il se rendait sans condition, sous l'écran d'erreur : le corps
+          // affichait « Votre session a expiré » et un bouton
+          // « Se reconnecter », et juste dessous on offrait d'écrire. L'envoi
+          // butait sur le jeton absent — un second refus pour un geste que
+          // l'écran venait de proposer.
+          //
+          // LE REMÈDE POSÉ ALORS — `if (!_sessionExpiree)` — TRANCHAIT À
+          // L'ENVERS DE L'AUTRE ÉCRAN DE MESSAGERIE, sur la même question et
+          // dans le même tour. Un jeton qui meurt pendant qu'on rédige faisait
+          // disparaître le champ, donc le texte, sans que personne ne l'ait
+          // demandé : c'est exactement la saisie perdue que
+          // forum_messages_page a refusée chez elle (« Une session morte, elle,
+          // ne retire RIEN : le texte reste dans le champ, et l'envoi suivant
+          // part sur l'intercepteur »).
+          //
+          // LA RÈGLE EST DÉSORMAIS LA MÊME DANS LES DEUX ÉCRANS, et elle tient
+          // en une phrase : on ne retire le compositeur que lorsqu'il n'y a
+          // plus rien à quoi l'attacher.
+          //
+          //   - RIEN À MONTRER — l'erreur occupe tout l'écran, avec son unique
+          //     geste : offrir d'écrire juste dessous serait la contradiction
+          //     que ce correctif existe pour fermer. Il n'y a d'ailleurs pas de
+          //     fil sous lequel écrire.
+          //   - FIL LISIBLE, SESSION MORTE — le champ RESTE avec ce qu'on y a
+          //     tapé. L'envoi part sur l'intercepteur (`ApiClient` : sur 401 il
+          //     renouvelle et rejoue, ou termine la session et ramène à la
+          //     connexion), et le message furtif posé par `_charger` a déjà dit
+          //     ce qui se passe. Le fil, lui, perd de quoi relancer — voir
+          //     `_corps`.
+          //   - PANNE DE LECTURE — rien ne change : écrire est une autre
+          //     requête, et elle peut aboutir.
+          //
+          // Le seul refus de DROIT qui retire un compositeur pour de bon est
+          // celui des salons (un livre qui quitte la bibliothèque) ; une
+          // conversation privée n'en a pas d'équivalent, et rien ici ne doit en
+          // inventer un.
+          if (!_ecrireNePeutPasAboutir) _barreDeSaisie(),
         ],
       ),
+    );
+  }
+
+  /// Fin de session complète, puis retour à l'écran de connexion.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
     );
   }
 
@@ -378,7 +508,9 @@ class _ConversationPageState extends State<ConversationPage> {
     if (_chargement) {
       return Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
-    if (_erreur != null) {
+    // `_rienAMontrer` ET NON `_erreur` : un échec ne détruit pas une
+    // conversation lisible. Voir [_rienAMontrer].
+    if (_rienAMontrer) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -396,9 +528,13 @@ class _ConversationPageState extends State<ConversationPage> {
                 ),
               ),
               const SizedBox(height: 16),
+              // Le bouton suit la cause : se reconnecter sur un jeton mort,
+              // réessayer sur une panne.
               ElevatedButton(
-                onPressed: _charger,
-                child: const Text("Réessayer"),
+                onPressed: _sessionExpiree ? _seReconnecter : _charger,
+                child: Text(
+                  _sessionExpiree ? "Se reconnecter" : "Réessayer",
+                ),
               ),
             ],
           ),
@@ -414,15 +550,27 @@ class _ConversationPageState extends State<ConversationPage> {
       );
     }
 
+    final fil = ListView.builder(
+      controller: _defilement,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: _messages.length,
+      itemBuilder: (context, i) => _bulle(_messages[i]),
+    );
+
+    // LE GESTE DE RAFRAÎCHISSEMENT DISPARAÎT QUAND IL NE PEUT PLUS ABOUTIR.
+    //
+    // Sur une session morte, chaque tirage relançait `_charger`, qui relit un
+    // jeton absent et repose la même erreur : une boucle sous le doigt. Le
+    // laisser en place « pour ne pas empêcher de réessayer » ne retirait pas la
+    // boucle, il la cachait — c'est le mot du salon de forum, qui a retiré le
+    // sien pour la même raison. Le fil reste lisible ; c'est seulement la
+    // relance qui part.
+    if (_sessionExpiree) return fil;
+
     return RefreshIndicator(
       onRefresh: _charger,
       color: AppColors.primary,
-      child: ListView.builder(
-        controller: _defilement,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: _messages.length,
-        itemBuilder: (context, i) => _bulle(_messages[i]),
-      ),
+      child: fil,
     );
   }
 

@@ -12,6 +12,7 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class AuthorProfilePage extends StatefulWidget {
   final UserModel author;
@@ -102,9 +103,14 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
     try {
       final abonnes = await _relationService.getFollowers(widget.author.id);
       if (!mounted) return;
+      // `meta.total` du serveur, jamais `.length` : la liste est une tranche
+      // bornée, le total ne l'est pas (voir PageDeRelations). Un serveur qui ne
+      // rend pas le total laisse le compteur « inconnu » — même traitement
+      // qu'une panne, pour la même raison qu'expliqué plus bas.
+      final total = abonnes.nombreConnu;
       setState(() {
-        _followerCount = abonnes.length;
-        _abonnesInconnus = false;
+        if (total != null) _followerCount = total;
+        _abonnesInconnus = total == null;
       });
     } catch (_) {
       // Le compteur d'abonnés est secondaire : son échec n'occupe pas tout
@@ -406,8 +412,8 @@ class _AuthorProfilePageState extends State<AuthorProfilePage> {
                         top: Radius.circular(12),
                       ),
                       child: book.imageCouverture != null
-                          ? Image.network(
-                              book.imageCouverture!,
+                          ? Image(
+                              image: imageReseau(book.imageCouverture!),
                               fit: BoxFit.cover,
                               width: double.infinity,
                             )

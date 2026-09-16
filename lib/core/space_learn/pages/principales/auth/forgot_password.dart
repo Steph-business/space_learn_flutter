@@ -48,19 +48,34 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     try {
       // Un échec lève désormais, avec le message du serveur : le `catch`
       // ci-dessous l'affiche tel quel plutôt qu'une phrase générique.
-      await _authService.forgotPassword(email);
+      final duServeur = await _authService.forgotPassword(email);
       if (mounted) {
         AppNotifications.showPremiumDialog(
           context,
           title: "Demande envoyée",
-          // Le serveur répond volontairement dans le vague (anti-énumération)
-          // : il rend 200 même quand aucun compte n'existe et qu'aucun
-          // courriel n'est parti. Affirmer « un code a été envoyé à X »
-          // transformait ce flou en certitude — une adresse mal tapée
-          // (gmial.com) laissait attendre un code qui ne pouvait pas
-          // arriver. On reprend sa formulation conditionnelle.
+          // LA PREMIÈRE PHRASE EST CELLE DU SERVEUR, MOT POUR MOT.
+          //
+          // Il répond volontairement dans le vague (anti-énumération) : il rend
+          // 200 même quand aucun compte n'existe et qu'aucun courriel n'est
+          // parti. Affirmer « un code a été envoyé à X » transformait ce flou
+          // en certitude — une adresse mal tapée (gmial.com) laissait attendre
+          // un code qui ne pouvait pas arriver.
+          //
+          // ELLE ÉTAIT RECOPIÉE EN DUR, ET ELLE A CHANGÉ. Le serveur y ajoute
+          // désormais « Si vous ne le recevez pas, redemandez-en un dans une
+          // minute. » (controllers/otp.go:484-485), parce qu'il existe un cas
+          // où la personne n'a rien d'utilisable en main : ses codes viennent
+          // d'être annulés par une inondation d'essais faux, et l'envoi suivant
+          // attend la fin de la minute. Une copie figée ici l'aurait laissée
+          // attendre sans savoir quoi faire.
+          //
+          // Les deux faits que le serveur ne peut PAS connaître restent dits
+          // après, et seulement ceux-là : l'adresse qu'elle vient de taper, et
+          // le dossier des indésirables.
           message:
-              "Si un compte est associé à l'adresse $email, un code de validation à 6 chiffres vient d'y être envoyé. Si rien n'arrive, vérifiez vos courriers indésirables et l'orthographe de l'adresse.",
+              "$duServeur\n\nAdresse saisie : $email. Si rien n'arrive, "
+              "vérifiez vos courriers indésirables et l'orthographe de "
+              "l'adresse.",
           confirmText: "Entrer le code",
           isSuccess: true,
           onConfirm: () {

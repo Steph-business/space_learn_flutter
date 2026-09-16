@@ -5,6 +5,8 @@
   "_4_SANS_CE_FICHIER": "API_HOST retombe sur localhost (voir lib/core/utils/api_routes.dart) : l'application ne joindra aucun serveur. Ce n'est pas une panne, c'est l'absence de configuration.",
 
   "_5_ADRESSES": "203.0.113.10 est une adresse d'exemple (RFC 5737), elle n'existe pas. Remplacez-la par le domaine ou l'IP de votre serveur — ex. api.example.com en production, ou l'IP de votre machine sur le reseau local pour tester depuis un telephone.",
+  "_5b_EN_PRODUCTION_PAS_DE_PORT": "Les valeurs ci-dessous visent les ports 8083 et 8084 EN DIRECT : c'est un reglage de bac a sable. En production, ecrivez la MEME origine sans port dans les deux — https://api.mondomaine.tld — et laissez le proxy router : il envoie deja /auth/* et /utilisateurs/* vers 8083, /api/* et /upload vers 8084 (voir Stepace_learn_web/deploiement/space-learn.conf et space_learn_livres/deploy/Caddyfile). Aucun code a changer, ce sont deux lignes ici.",
+  "_5c_POURQUOI_CA_COMPTE": "Un port direct court-circuite le proxy : le plafond de televersement, la limitation de debit et surtout le TLS deviennent facultatifs, et jetons, mots de passe et OTP circulent en clair. Piege de calendrier : un certificat pose sur le 443 ne rattrape PAS un APK deja installe, qui continuera d'appeler 8083/8084 en clair jusqu'a sa mise a jour. Reconstruire et publier l'APK AVANT d'annoncer le passage en HTTPS, jamais apres.",
   "API_HOST": "203.0.113.10",
   "API_BASE_URL": "http://203.0.113.10:8083",
   "API_BASE_URL_GIN": "http://203.0.113.10:8084",

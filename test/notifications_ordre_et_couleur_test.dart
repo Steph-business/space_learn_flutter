@@ -66,6 +66,49 @@ void main() {
     test('le libellé porte ses accents', () {
       expect(libelleTypeNotification('paiement_echoue'), 'PAIEMENT ÉCHOUÉ');
     });
+
+    test(
+      'un changement de destination de virement est une ALERTE, pas un avis',
+      () {
+        // `auteur_coordonnees` est le SEUL signal qu'a l'auteur si la
+        // destination de ses virements change sans qu'il l'ait voulu. Rien
+        // dans son nom ne contient « echoue » : il tombait dans le repli —
+        // cloche grise, couleur primaire —, l'aspect exact d'un « nouvel
+        // abonné ». Le site le peint en alerte depuis toujours.
+        expect(notificationEstUneAlerte('auteur_coordonnees'), isTrue);
+        expect(
+          couleurDuTypeDeNotification('auteur_coordonnees'),
+          AppColors.error,
+        );
+        // Et surtout pas le vert du portefeuille, qui dirait « tout va bien »
+        // sur l'avis qui prévient d'un éventuel détournement.
+        expect(
+          couleurDuTypeDeNotification('auteur_coordonnees'),
+          isNot(AppColors.success),
+        );
+        expect(
+          iconeDuTypeDeNotification('auteur_coordonnees'),
+          isNot(iconeDuTypeDeNotification('nouvel_abonne')),
+        );
+      },
+    );
+
+    test('le libellé dit que quelque chose a CHANGÉ', () {
+      // « COORDONNÉES DE PAIEMENT » ne disait pas le fait ; c'est pourtant
+      // tout ce que cet avis annonce. Même libellé que le site.
+      expect(
+        libelleTypeNotification('auteur_coordonnees'),
+        'NUMÉRO DE VIREMENT MODIFIÉ',
+      );
+    });
+
+    test('une alerte n’est pas un échec : les deux tests restent distincts', () {
+      // Rien n'a raté — un enregistrement a abouti. Confondre les deux ferait
+      // écrire « RETRAIT NON ABOUTI » là où il faut lire « vérifiez ».
+      expect(notificationEstUnEchec('auteur_coordonnees'), isFalse);
+      expect(notificationEstUneAlerte('auteur_retrait_echoue'), isFalse);
+      expect(notificationEstUneAlerte('paiement'), isFalse);
+    });
   });
 
   group('L’ordre de la liste', () {

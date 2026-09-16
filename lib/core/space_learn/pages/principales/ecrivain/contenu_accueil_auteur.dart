@@ -116,7 +116,10 @@ class _HomeContentAuteurState extends State<HomeContentAuteur> {
 
       final authorId = user.id;
       final books = await _bookService.getBooksByAuthorId(authorId);
-      final followers = await _relationService.getFollowers(authorId);
+      // Ici c'est bien la LISTE qui sert — « Vos derniers abonnés » montre des
+      // visages, il ne compte pas. Le total du serveur (`meta.total`) reste à
+      // portée si un compteur s'ajoute un jour : voir PageDeRelations.
+      final followers = (await _relationService.getFollowers(authorId)).relations;
 
       // Les statistiques à part : elles échouent seules, et leur échec ne doit
       // pas emporter les livres et les abonnés déjà obtenus. Enchaînées avec

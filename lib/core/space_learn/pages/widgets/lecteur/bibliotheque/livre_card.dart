@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class LivreCard extends StatelessWidget {
   final String titre;
@@ -71,8 +72,8 @@ class LivreCard extends StatelessWidget {
                         imageUrl != null &&
                             imageUrl!.isNotEmpty &&
                             !imageUrl!.contains('example.com')
-                        ? Image.network(
-                            imageUrl!,
+                        ? Image(
+                            image: imageReseau(imageUrl!),
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) =>
                                 _buildPlaceholder(),
@@ -338,7 +339,7 @@ class LivreGridCard extends StatelessWidget {
                   imageUrl != null &&
                           imageUrl!.isNotEmpty &&
                           !imageUrl!.contains('example.com')
-                      ? Image.network(imageUrl!, fit: BoxFit.cover)
+                      ? Image(image: imageReseau(imageUrl!), fit: BoxFit.cover)
                       : Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(

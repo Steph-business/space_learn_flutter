@@ -96,8 +96,14 @@ void main() {
   });
 
   group('Le message tiré d\'une réponse HTTP', () {
-    http.Response reponse(int code, [Object? corps]) =>
-        http.Response(corps == null ? '' : jsonEncode(corps), code);
+    /// L'en-tête de charset n'est pas décoratif : sans lui, `http.Response`
+    /// encode le corps en Latin-1 et le tiret cadratin des phrases du serveur
+    /// fait tomber la construction. Les serveurs, eux, répondent en UTF-8.
+    http.Response reponse(int code, [Object? corps]) => http.Response(
+      corps == null ? '' : jsonEncode(corps),
+      code,
+      headers: const {'content-type': 'application/json; charset=utf-8'},
+    );
 
     /// Le serveur écrit des phrases utilisables : les jeter pour un message
     /// générique prive l'auteur de la cause et du remède.
@@ -144,6 +150,89 @@ void main() {
       );
       expect(message, isNot(contains('pq:')));
     });
+
+    /// LES PHRASES RÉELLES DES DEUX SERVEURS, REJOUÉES TELLES QUELLES.
+    ///
+    /// Un plafond de deux cents caractères vivait dans `_estPresentable`. Il
+    /// jetait ces phrases-là — le mobile affichait alors « Cette opération
+    /// entre en conflit avec un enregistrement existant. » ou « Vous n'avez pas
+    /// accès à cette ressource. », pendant que le site, qui n'a aucun plafond,
+    /// affichait la cause, la date et l'adresse où écrire.
+    ///
+    /// Elles sont recopiées ici mot pour mot depuis le code des serveurs. Si
+    /// l'une d'elles cesse de passer, ce test rougit AVANT que quelqu'un ne
+    /// découvre l'écran muet.
+    test('les phrases longues des serveurs arrivent à l\'écran', () {
+      // space_learn_auth, controllers/register.go — 409 de réinscription.
+      const reinscription =
+          "Un compte existe déjà avec cette adresse. Connectez-vous, par mot de "
+          "passe ou avec Google : un code vous sera renvoyé si le compte n'est "
+          "pas validé, et la connexion annule une suppression récente.";
+      // space_learn_auth, controllers/login.go — 403 de compte fermé, daté.
+      const compteFerme =
+          "Ce compte a été fermé le 12/03/2026 et ne peut plus être rouvert "
+          "ici : le délai pour annuler est écoulé, ou l'administration l'a "
+          "exclu. Écrivez à contact@spacelearn.com.";
+      // space_learn_auth, controllers/login.go — 403 de compte non vérifié
+      // quand la cadence vient de retenir un envoi.
+      const codeDejaParti =
+          "Votre email n'est pas encore vérifié. Un code vous a déjà été "
+          "adressé il y a moins d'une minute : utilisez celui-là.";
+      // space_learn_auth, controllers/user.go — la réponse de DeleteAccount,
+      // la plus longue des trois serveurs (329 caractères).
+      const suppression =
+          "Votre compte a été fermé et vos appareils déconnectés. Votre nom "
+          "n'est plus affiché. Vos données personnelles seront effacées le "
+          "06/10/2026 ; d'ici là, reconnectez-vous — par mot de passe ou avec "
+          "Google — pour annuler la suppression. Votre adresse e-mail reste "
+          "réservée jusqu'à cette date : elle ne peut pas servir à un nouveau "
+          "compte avant.";
+      // space_learn_livres, modules/reversement/controller.go — 409 de carence.
+      const carence =
+          "Le numéro qui reçoit vos virements a été changé récemment. Par "
+          "sécurité, aucun retrait n'est possible avant le 07/09/2026 à 14h30. "
+          "Si ce changement ne vient pas de vous, rétablissez votre numéro et "
+          "changez votre mot de passe sans attendre.";
+
+      final cas = <int, String>{
+        409: reinscription,
+        403: compteFerme,
+        422: codeDejaParti,
+        400: suppression,
+        402: carence,
+      };
+
+      cas.forEach((code, phrase) {
+        expect(
+          messageDeLaReponse(reponse(code, {'error': phrase})),
+          phrase,
+          reason: 'phrase de $code jetée : ${phrase.length} caractères',
+        );
+      });
+
+      // Le serveur des livres porte ses messages sous `message`, pas `error`.
+      expect(messageDeLaReponse(reponse(409, {'message': carence})), carence);
+    });
+
+    /// Ce que le plafond protégeait vraiment, distingué par ce qu'il EST.
+    test('un déversement reste écarté, quelle que soit sa longueur', () {
+      final rebuts = <String>[
+        // Une trace de pile : un cadre par ligne.
+        'Erreur\n  à la ligne 12\n  à la ligne 34\n  à la ligne 56',
+        // Un jeton, une empreinte, une adresse encodée : un « mot » qui n'en
+        // est pas un.
+        'Jeton refusé eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9abcdefghijklmnop',
+        // Un texte qui n'a pas été écrit pour une boîte de dialogue.
+        'Le service a rencontré une difficulté. ' * 30,
+      ];
+      for (final rebut in rebuts) {
+        expect(
+          messageDeLaReponse(reponse(500, {'error': rebut})),
+          "Le service est momentanément indisponible. Réessayez dans un instant.",
+          reason: 'aurait laissé passer : $rebut',
+        );
+      }
+    });
   });
 
   group('Reconnaître une session expirée', () {
@@ -155,6 +244,34 @@ void main() {
         Exception('Session expirée, reconnectez-vous.'),
         Exception('Utilisateur non authentifié'),
         Exception('unauthorized'),
+      ];
+      for (final e in cas) {
+        expect(estSessionExpiree(e), isTrue, reason: '$e');
+      }
+    });
+
+    /// LA FORME QUE LES ÉCRANS REÇOIVENT VRAIMENT, et qui n'était pas reconnue.
+    ///
+    /// Sur un 401, `messageDeLaReponse` ne relaie plus le mot du serveur : il
+    /// rend `phraseSessionExpiree`, que le service enveloppe dans une
+    /// `Exception`. Les tests ci-dessus ne couvraient que des formes brutes du
+    /// serveur que plus aucun écran ne voit passer ; celle-ci, la seule qui
+    /// arrive réellement, rendait `false` — et les quatorze écrans qui règlent
+    /// leur bouton dessus offraient « Réessayer » sur un jeton mort.
+    test('la phrase que l\'application produit elle-même est reconnue', () {
+      final reponse401 = http.Response('{"error":"Token invalide"}', 401);
+      final phrase = messageDeLaReponse(reponse401);
+
+      expect(phrase, phraseSessionExpiree);
+      expect(estSessionExpiree(Exception(phrase)), isTrue);
+      expect(estSessionExpiree(phrase), isTrue);
+    });
+
+    test('les variantes écrites à la main dans les écrans sont reconnues', () {
+      final cas = [
+        Exception('Votre session a expiré. Reconnectez-vous, puis réessayez.'),
+        Exception('Votre session a expiré. Reconnectez-vous pour publier.'),
+        Exception('Session expirée. Veuillez vous reconnecter.'),
       ];
       for (final e in cas) {
         expect(estSessionExpiree(e), isTrue, reason: '$e');

@@ -32,6 +32,7 @@ import 'package:space_learn_flutter/core/services/lecture_audio_handler.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/services/lecture_audio_livre.dart';
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class ReadingPage extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -642,8 +643,8 @@ class _ReadingPageState extends State<ReadingPage> with WidgetsBindingObserver {
       debugPrint('Marque-pages non chargés : $e');
       if (!mounted) return;
       setState(
-        () => _erreurMarquePages =
-            "Vos marque-pages n'ont pas pu être chargés.",
+        () =>
+            _erreurMarquePages = "Vos marque-pages n'ont pas pu être chargés.",
       );
     }
   }
@@ -1452,7 +1453,8 @@ class _ReadingPageState extends State<ReadingPage> with WidgetsBindingObserver {
         // aucun message. Une session expirée se dit comme telle.
         AppNotifications.showSnackBar(
           context,
-          message: "Votre session a expiré. Reconnectez-vous pour poser un "
+          message:
+              "Votre session a expiré. Reconnectez-vous pour poser un "
               "marque-page.",
           isError: true,
         );
@@ -2391,8 +2393,8 @@ class _ReadingPageState extends State<ReadingPage> with WidgetsBindingObserver {
       ),
       clipBehavior: Clip.antiAlias,
       child: adresse != null
-          ? Image.network(
-              adresse,
+          ? Image(
+              image: imageReseau(adresse),
               fit: BoxFit.cover,
               // Une couverture qui ne se charge pas ne doit pas laisser un
               // rectangle casse : le carton a l'initiale prend le relais.
@@ -3267,66 +3269,68 @@ class _ReadingPageState extends State<ReadingPage> with WidgetsBindingObserver {
             }
 
             return DefaultTabController(
-            length: 3,
-            initialIndex: initialTab,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.7,
-              // Meme confusion : la feuille entiere etait peinte dans la couleur
-              // du texte. Elle prend la surface des cartes, comme toutes les
-              // autres feuilles de l'application.
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(AppDimensions.radiusPill),
+              length: 3,
+              initialIndex: initialTab,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.7,
+                // Meme confusion : la feuille entiere etait peinte dans la couleur
+                // du texte. Elle prend la surface des cartes, comme toutes les
+                // autres feuilles de l'application.
+                decoration: BoxDecoration(
+                  color: AppColors.cardBackground,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppDimensions.radiusPill),
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  SizedBox(height: 12),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.textSecondary.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusXs),
-                    ),
-                  ),
-                  TabBar(
-                    indicatorColor: AppColors.primaryLight,
-                    labelColor: AppColors.primaryLight,
-                    unselectedLabelColor: AppColors.textSecondary,
-                    labelStyle: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                    tabs: const [
-                      Tab(text: "Chapitres"),
-                      Tab(text: "Signets"),
-                      Tab(text: "Notes"),
-                    ],
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        // Tab 1: PDF Chapters
-                        _buildChaptersList(),
-                        // Tab 2: User Bookmarks
-                        _buildUserBookmarksList(
-                          onlyWithNotes: false,
-                          rafraichir: rafraichir,
+                child: Column(
+                  children: [
+                    SizedBox(height: 12),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.textSecondary.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusXs,
                         ),
-                        // Tab 3: User Notes
-                        _buildUserBookmarksList(
-                          onlyWithNotes: true,
-                          rafraichir: rafraichir,
-                        ),
+                      ),
+                    ),
+                    TabBar(
+                      indicatorColor: AppColors.primaryLight,
+                      labelColor: AppColors.primaryLight,
+                      unselectedLabelColor: AppColors.textSecondary,
+                      labelStyle: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                      tabs: const [
+                        Tab(text: "Chapitres"),
+                        Tab(text: "Signets"),
+                        Tab(text: "Notes"),
                       ],
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          // Tab 1: PDF Chapters
+                          _buildChaptersList(),
+                          // Tab 2: User Bookmarks
+                          _buildUserBookmarksList(
+                            onlyWithNotes: false,
+                            rafraichir: rafraichir,
+                          ),
+                          // Tab 3: User Notes
+                          _buildUserBookmarksList(
+                            onlyWithNotes: true,
+                            rafraichir: rafraichir,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
+            );
           },
         );
       },
@@ -3629,7 +3633,7 @@ class _ReadingPageState extends State<ReadingPage> with WidgetsBindingObserver {
               color: AppColors.scaffoldBackground,
               image: (imageUrl != null && imageUrl.isNotEmpty)
                   ? DecorationImage(
-                      image: NetworkImage(imageUrl),
+                      image: imageReseau(imageUrl),
                       fit: BoxFit.cover,
                       colorFilter: ColorFilter.mode(
                         Colors.black.withOpacity(0.6),

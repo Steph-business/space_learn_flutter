@@ -10,6 +10,9 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/boutique/livre_card.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -30,6 +33,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
   /// moment » — des favoris existants passaient pour absents, sans Réessayer.
   String? _error;
 
+  /// L'échec est-il une session morte ?
+  ///
+  /// La cause était bien affichée ; c'est le GESTE qui manquait. « Réessayer »
+  /// s'offrait sous toutes les erreurs, session finie comprise — le seul bouton
+  /// qui ne peut par construction jamais aboutir, puisque le jeton reste mort à
+  /// chaque tentative.
+  bool _sessionExpiree = false;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +51,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _sessionExpiree = false;
     });
     try {
       final token = await TokenStorage.getToken();
@@ -53,10 +65,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
         }
       } else {
         // Sans jeton, la liste n'a pas pu être demandée : ce n'est pas un
-        // vide, c'est une session finie.
+        // vide, c'est une session finie. La phrase vient de la constante
+        // partagée, pour qu'elle ne diverge pas de celle qu'`estSessionExpiree`
+        // reconnaît.
         if (mounted) {
           setState(() {
-            _error = "Votre session a expiré. Reconnectez-vous.";
+            _error = phraseSessionExpiree;
+            _sessionExpiree = true;
             _isLoading = false;
           });
         }
@@ -64,6 +79,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
+          _sessionExpiree = estSessionExpiree(e);
           _error = messageLisible(
             e,
             repli: "Impossible de charger vos favoris.",
@@ -72,6 +88,16 @@ class _FavoritesPageState extends State<FavoritesPage> {
         });
       }
     }
+  }
+
+  /// Fin de session complète, puis retour à l'écran de connexion.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
   }
 
   Future<void> _removeFavorite(String livreId) async {
@@ -86,7 +112,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         if (!mounted) return;
         AppNotifications.showSnackBar(
           context,
-          message: "Votre session a expiré. Reconnectez-vous.",
+          message: phraseSessionExpiree,
           isError: true,
         );
         return;
@@ -161,9 +187,15 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       style: GoogleFonts.poppins(color: AppColors.textPrimary),
                     ),
                     SizedBox(height: 20),
+                    // Le bouton suit la cause : se reconnecter sur un jeton
+                    // mort, réessayer sur une panne.
                     ElevatedButton(
-                      onPressed: _loadFavorites,
-                      child: const Text("Réessayer"),
+                      onPressed: _sessionExpiree
+                          ? _seReconnecter
+                          : _loadFavorites,
+                      child: Text(
+                        _sessionExpiree ? "Se reconnecter" : "Réessayer",
+                      ),
                     ),
                   ],
                 ),
@@ -227,8 +259,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
                             child:
                                 book.imageCouverture != null &&
                                     book.imageCouverture!.isNotEmpty
-                                ? Image.network(
-                                    book.imageCouverture!,
+                                ? Image(
+                                    image: imageReseau(book.imageCouverture!),
                                     width: 70,
                                     height: 100,
                                     fit: BoxFit.cover,

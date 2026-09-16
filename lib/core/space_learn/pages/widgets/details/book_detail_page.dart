@@ -31,6 +31,7 @@ import 'all_reviews_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/ajouter_livre_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/ecrivain/statistiques_livre_page.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class BookDetailPage extends StatefulWidget {
   final BookModel book;
@@ -200,6 +201,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
     if (moyenneServeur > 0) return moyenneServeur;
     // Faute de moyenne rendue, les avis reçus la donnent : ce sont les notes
     // elles-mêmes, les moyenner n'invente rien.
+    //
+    // MAIS C'EST UN REPLI, ET IL DOIT LE RESTER. `_reviews` n'est plus la
+    // liste entière : GET /api/reviews/book/:livre_id rend au plus les cent
+    // avis les plus récents (space_learn_livres, modules/avis). Moyenner cette
+    // tranche au lieu de lire `note_moyenne` donnerait, sur un livre très
+    // commenté, une note calculée sur ses seuls cent derniers avis. La valeur
+    // du serveur passe donc d'abord, toujours ; celle-ci ne sert qu'aux livres
+    // dont le serveur ne rend pas encore de moyenne — et ceux-là ont, par
+    // construction, peu d'avis.
     if (_reviews.isNotEmpty) {
       final somme = _reviews.fold<int>(0, (total, r) => total + r.note);
       return somme / _reviews.length;
@@ -1310,8 +1320,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               book.imageCouverture != null &&
                                   book.imageCouverture!.isNotEmpty &&
                                   !book.imageCouverture!.contains('example.com')
-                              ? Image.network(
-                                  book.imageCouverture!,
+                              ? Image(
+                                  image: imageReseau(book.imageCouverture!),
                                   fit: BoxFit.cover,
                                   height: 240,
                                   width: 168,
@@ -1360,6 +1370,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             Builder(
                               builder: (_) {
                                 final moyenne = _moyenneDesAvis;
+                                // `nombre_avis` du serveur d'abord : la liste
+                                // est une tranche d'au plus cent (voir
+                                // `_moyenneDesAvis`), et la compter afficherait
+                                // « 100 avis » sur un livre qui en a trois
+                                // cents. `_reviews.length` n'est qu'un repli
+                                // pour un serveur qui ne rend pas le compte.
                                 final nombre = book.nombreAvis > 0
                                     ? book.nombreAvis
                                     : _reviews.length;
@@ -2302,8 +2318,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     book.imageCouverture != null &&
                         book.imageCouverture!.isNotEmpty &&
                         !book.imageCouverture!.contains('example.com')
-                    ? Image.network(
-                        book.imageCouverture!,
+                    ? Image(
+                        image: imageReseau(book.imageCouverture!),
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
                             _buildPlaceholderCover(),
@@ -2935,7 +2951,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     (photoUrl != null &&
                         photoUrl.isNotEmpty &&
                         !photoUrl.contains('example.com'))
-                    ? NetworkImage(photoUrl)
+                    ? imageReseau(photoUrl)
                     : null,
                 child:
                     (photoUrl == null ||

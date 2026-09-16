@@ -23,6 +23,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class AjouterLivrePage extends StatefulWidget {
   final BookModel? book;
@@ -2249,10 +2250,13 @@ class _AjouterLivrePageState extends State<AjouterLivrePage> {
                   height: 60,
                   child: localPath != null
                       ? (kIsWeb
-                            ? Image.network(localPath, fit: BoxFit.cover)
+                            ? Image(
+                                image: imageReseau(localPath),
+                                fit: BoxFit.cover,
+                              )
                             : Image.file(File(localPath), fit: BoxFit.cover))
-                      : Image.network(
-                          currentUrl!,
+                      : Image(
+                          image: imageReseau(currentUrl!),
                           fit: BoxFit.cover,
                           errorBuilder: (ctx, error, stack) => Column(
                             mainAxisAlignment: MainAxisAlignment.center,

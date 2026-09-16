@@ -7,9 +7,19 @@
   de réseau local demain, 10.0.2.2 sous l'émulateur. Lister ces adresses une à
   une n'apporterait rien et arrêterait le travail à chaque changement de réseau.
 
-  Ce fichier n'entre PAS dans les builds de production : android/app/src/release
-  et android/app/src/main gardent la politique stricte, qui n'ouvre le clair que
-  pour le serveur du projet.
+  CE QUI EST PROPRE A CE FICHIER, et ne doit jamais partir en production : il
+  accepte en plus les certificats installés par l'utilisateur (voir plus bas),
+  c'est-à-dire qu'il autorise un proxy d'inspection à lire le trafic chiffré.
+  Il n'entre que dans les builds de débogage, où debug/AndroidManifest.xml y
+  bascule par tools:replace.
+
+  IL N'Y A PAS DE SOURCE-SET android/app/src/release : la politique de
+  production est android/app/src/main/res/xml/network_security_config.xml. Et
+  elle n'est PAS stricte aujourd'hui — elle ouvre elle aussi le clair, pour
+  toutes les destinations, parce que les serveurs répondent encore en http sur
+  leurs ports directs. Son en-tête dit à quelles conditions elle se fermera.
+  Une phrase disait ici le contraire ; qui cherchait où le clair est restreint
+  la croyait et cessait de chercher.
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true">

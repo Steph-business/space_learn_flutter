@@ -11,9 +11,12 @@ import 'package:space_learn_flutter/core/space_learn/data/model/discussionModel.
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/discussionService.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 import 'forum_messages_page.dart';
 import 'salon_noms.dart';
 import 'temps_relatif.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 /// Un salon de discussion.
 ///
@@ -55,6 +58,27 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
   /// simplement deserte. Dans les deux cas, rien a lire et rien a faire.
   String? _erreur;
 
+  /// L'echec est-il de ceux qu'insister ne repare pas ?
+  ///
+  /// Le serveur refuse en 403 la liste des sujets d'un club dont le livre n'est
+  /// ni possede ni ecrit par le lecteur. Rejouer la requete la fera refuser a
+  /// l'identique : proposer « Reessayer » sous une phrase qui dit la porte
+  /// fermee, c'est se contredire dans la meme colonne. Meme raisonnement pour
+  /// une session morte, ou le seul geste utile est de se reconnecter.
+  bool _refusDAcces = false;
+  bool _sessionExpiree = false;
+
+  /// La porte est-elle fermee — refus de droit, ou session morte ?
+  ///
+  /// Le bouton de l'ecran d'erreur le savait deja ; le bouton FLOTTANT, lui,
+  /// se rendait sans condition. Le lecteur lisait « ce club est reserve aux
+  /// lecteurs de ce livre » et gardait, en bas a droite, le « + » qui ouvre la
+  /// creation d'un sujet dans ce club : la requete serait partie pour se faire
+  /// refuser a son tour. Meme defaut, meme correction, qu'au fil des messages
+  /// (forum_messages_page.dart, `_porteFermee`) : ce qui est ferme doit l'etre
+  /// pour tous les gestes de l'ecran, pas seulement pour celui qu'on a regarde.
+  bool get _porteFermee => _refusDAcces || _sessionExpiree;
+
   /// L'onglet qui ne filtre rien.
   static const String _categorieTout = "Tout";
 
@@ -72,13 +96,20 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
   }
 
   Future<void> _loadDiscussions() async {
-    if (mounted) setState(() => _erreur = null);
+    if (mounted) {
+      setState(() {
+        _erreur = null;
+        _refusDAcces = false;
+        _sessionExpiree = false;
+      });
+    }
     try {
       final token = await TokenStorage.getToken();
       if (token == null) {
         if (mounted) {
           setState(() {
             _isLoading = false;
+            _sessionExpiree = true;
             _erreur =
                 "Votre session a expiré. Reconnectez-vous pour "
                 "retrouver les discussions.";
@@ -118,12 +149,43 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _erreur =
-              "Les discussions n'ont pas pu être chargées. "
-              "Vérifiez votre connexion.";
+          // Même raison qu'au fil des messages (forum_messages_page) : la liste
+          // des sujets d'un club ne se lit plus qu'avec le livre en
+          // bibliothèque, ou en étant son auteur. Le serveur refusait
+          // auparavant l'ÉCRITURE et laissait la lecture ouverte à tout compte
+          // connecté ; il refuse maintenant les deux, en 403, avec sa raison.
+          //
+          // Cette page n'est atteinte que depuis les deux pages Communauté, qui
+          // ne listent que des livres possédés ou écrits : le refus ne devrait
+          // pas s'y produire. « Ne devrait pas » n'est pas « ne peut pas » — un
+          // livre gratuit retiré de la bibliothèque pendant que la liste est
+          // encore à l'écran suffit —, et le jour où il se produit, accuser le
+          // réseau ferait chercher la panne là où elle n'est pas. Ni lui
+          // proposer « Réessayer » : voir [_refusDAcces].
+          _refusDAcces = e is AccesRefuse;
+          _sessionExpiree = estSessionExpiree(e);
+          _erreur = messageLisible(
+            e,
+            repli:
+                "Les discussions n'ont pas pu être chargées. "
+                "Vérifiez votre connexion.",
+          );
         });
       }
     }
+  }
+
+  /// Termine la session et ramene a l'ecran de connexion.
+  ///
+  /// Le nettoyage passe par [SessionService] : effacer le seul jeton laisserait
+  /// derriere lui le reste de la session.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
   }
 
   Future<void> _createNewDiscussion(String title, String categorie) async {
@@ -602,8 +664,10 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                               borderRadius: BorderRadius.circular(
                                 AppDimensions.radiusSmall,
                               ),
-                              child: Image.network(
-                                widget.book!.imageCouverture!,
+                              child: Image(
+                                image: imageReseau(
+                                  widget.book!.imageCouverture!,
+                                ),
                                 fit: BoxFit.cover,
                               ),
                             )
@@ -746,16 +810,29 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // Le geste proposé suit la cause, pas l'habitude : voir
+                    // [_refusDAcces]. Un club fermé ne se rouvre pas en
+                    // insistant, une session morte non plus.
                     ElevatedButton(
-                      onPressed: () {
-                        setState(() => _isLoading = true);
-                        _loadDiscussions();
-                      },
+                      onPressed: _refusDAcces
+                          ? () => Navigator.of(context).maybePop()
+                          : _sessionExpiree
+                          ? _seReconnecter
+                          : () {
+                              setState(() => _isLoading = true);
+                              _loadDiscussions();
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.onAccent,
                       ),
-                      child: const Text("Réessayer"),
+                      child: Text(
+                        _refusDAcces
+                            ? "Retour"
+                            : _sessionExpiree
+                            ? "Se reconnecter"
+                            : "Réessayer",
+                      ),
                     ),
                   ],
                 ),
@@ -882,19 +959,22 @@ class _ForumDiscussionPageState extends State<ForumDiscussionPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        // L'interpolation etait echappee — « \$ » dans une chaine simple — et
-        // tous les forums partageaient donc la meme etiquette. Deux forums
-        // empiles dans la navigation levaient un conflit de Hero.
-        heroTag: 'forum_discussion_fab_${widget.book?.id ?? "global"}',
-        onPressed: _showNewDiscussionDialog,
-        backgroundColor: AppColors.secondaryVariant,
-        elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
-        ),
-        child: Icon(Iconsax.add, color: AppColors.onAccent, size: 28),
-      ),
+      // Devant une porte fermee, aucun geste n'est offert : voir [_porteFermee].
+      floatingActionButton: _porteFermee
+          ? null
+          : FloatingActionButton(
+              // L'interpolation etait echappee — « \$ » dans une chaine simple
+              // — et tous les forums partageaient donc la meme etiquette. Deux
+              // forums empiles dans la navigation levaient un conflit de Hero.
+              heroTag: 'forum_discussion_fab_${widget.book?.id ?? "global"}',
+              onPressed: _showNewDiscussionDialog,
+              backgroundColor: AppColors.secondaryVariant,
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
+              ),
+              child: Icon(Iconsax.add, color: AppColors.onAccent, size: 28),
+            ),
     );
   }
 

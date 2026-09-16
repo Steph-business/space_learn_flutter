@@ -298,16 +298,23 @@ class _SettingsPageState extends State<SettingsPage> {
         SettingItemTile(
           icon: Icons.delete_forever_outlined,
           title: "Supprimer mon compte",
-          // Le libellé dit le contrat réel du serveur : la désactivation est
-          // immédiate, et c'est TOUT ce que `DeleteAccount` fait. Il a
-          // longtemps annoncé une « suppression après 30 jours » qu'aucun
-          // travail périodique n'exécute — voir la note en tête de
-          // settings/suppression_compte.dart.
+          // Le libellé dit le contrat réel du serveur, et il a dit tour à tour
+          // les deux contraires. Il a d'abord annoncé une « suppression après
+          // 30 jours » qu'aucun travail périodique n'exécutait ; on l'a réduit
+          // à la seule désactivation immédiate. La purge différée existe
+          // maintenant pour de bon — `service.PurgerComptesSupprimes`
+          // (space_learn_auth), montée en routes/routes.go — et le libellé
+          // redit les deux temps, comme le dialogue qu'il ouvre
+          // (settings/suppression_compte.dart).
           //
           // (Les accents s'écrivent en clair, comme dans tout le fichier : ce
           // bloc était le seul rédigé en échappements Unicode bruts —
           // illisible à la relecture, trace d'une réécriture interrompue.)
-          subtitle: "Désactivation immédiate : connexion et nom affiché",
+          // « Réversible » n'est pas un ornement : c'est le fait que les deux
+          // dialogues détaillent, et que le serveur applique — se reconnecter
+          // pendant le délai annule la suppression.
+          subtitle:
+              "Fermeture immédiate, effacement dans trente jours — réversible d'ici là",
           // Le parcours est PARTAGÉ avec les réglages auteur, qui n'avaient
           // pas cette entrée du tout (settings/suppression_compte.dart).
           onTap: () => afficherLaSuppressionDeCompte(context),

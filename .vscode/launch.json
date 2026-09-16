@@ -1,0 +1,37 @@
+{
+  // Le bouton « Run » passe le fichier de configuration.
+  //
+  // L'adresse des serveurs ne figure plus dans les sources — le dépôt est
+  // public. Elle vit dans dart_define.json, qui n'est PAS suivi par Git, et
+  // Flutter ne le lit que si on le lui passe. Un lancement sans ce drapeau
+  // retombe sur « localhost » et ne joint rien : c'est voulu, mais ça ne doit
+  // pas dépendre du fait qu'on y pense à chaque fois.
+  //
+  // Si dart_define.json n'existe pas encore, recopiez dart_define.example.json.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Space Learn (debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": ["--dart-define-from-file=dart_define.json"]
+    },
+    {
+      "name": "Space Learn (profile)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "program": "lib/main.dart",
+      "toolArgs": ["--dart-define-from-file=dart_define.json"]
+    },
+    {
+      "name": "Space Learn (release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "program": "lib/main.dart",
+      "toolArgs": ["--dart-define-from-file=dart_define.json"]
+    }
+  ]
+}

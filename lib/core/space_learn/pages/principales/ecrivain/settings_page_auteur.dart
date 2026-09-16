@@ -226,7 +226,15 @@ class _SettingsPageAuteurState extends State<SettingsPageAuteur> {
         SettingItemTile(
           icon: Icons.delete_forever_outlined,
           title: "Supprimer mon compte",
-          subtitle: "Désactivation immédiate : connexion et nom affiché",
+          // Même libellé que chez le lecteur, et pour la même raison : le
+          // serveur ferme tout de suite et efface au terme du délai de grâce.
+          // Deux écrans jumeaux ne doivent pas décrire le même geste
+          // autrement.
+          // « Réversible » n'est pas un ornement : c'est le fait que les deux
+          // dialogues détaillent, et que le serveur applique — se reconnecter
+          // pendant le délai annule la suppression.
+          subtitle:
+              "Fermeture immédiate, effacement dans trente jours — réversible d'ici là",
           onTap: () => afficherLaSuppressionDeCompte(context),
         ),
 

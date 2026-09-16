@@ -8,6 +8,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/carte_evenement.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/communaute/proximite_evenement.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 /// Ouvre une annonce ou un événement en feuille, sans quitter la page.
 ///
@@ -93,8 +94,8 @@ class _FeuilleEvenement extends StatelessWidget {
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusCard,
                         ),
-                        child: Image.network(
-                          evenement.imageUrl!,
+                        child: Image(
+                          image: imageReseau(evenement.imageUrl!),
                           height: 170,
                           width: double.infinity,
                           fit: BoxFit.cover,

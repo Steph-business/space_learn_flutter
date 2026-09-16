@@ -26,9 +26,12 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/bookServi
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/reading_page.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/dataServices/evenementService.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenement_apercu.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/payout_info_page.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/sales_report_page.dart';
 
 class NotificationService {
   final http.Client client;
@@ -200,6 +203,45 @@ class NotificationService {
       return quandOuverte(
         _ouvrirLeLivre(context, notif.referenceId, popToRoot),
       );
+    } else if (type == 'auteur_coordonnees') {
+      // L'ARGENT DE L'AUTEUR MÈNE À SON ARGENT, JAMAIS À SA BIBLIOTHÈQUE.
+      //
+      // « NUMÉRO DE VIREMENT MODIFIÉ » est le seul signal qu'a l'auteur d'un
+      // détournement de ses virements, et il arrive d'abord sur le téléphone :
+      // le serveur l'écrit dès que la destination change, avec le numéro masqué
+      // et la consigne « si ce changement ne vient pas de vous, rétablissez
+      // votre numéro et changez votre mot de passe sans attendre »
+      // (space_learn_livres, modules/reversement/service.go).
+      //
+      // Ce type ne contient ni « paiement », ni « vente », ni « achat », ni
+      // « livre », ni « chapitre » : il tombait dans le repli tout en bas, qui
+      // pousse `navigateToBibliotheque()` — la bibliothèque de LECTURE, pour un
+      // message qui parle de virements. L'auteur y cherchait la consigne qu'il
+      // venait de lire, au milieu de ses livres à lire. Le site a corrigé la
+      // sienne dans le même tour (`/auteur/parametres?tab=sales`,
+      // src/app/notifications/page.tsx) ; un serveur ne peut pas avoir deux
+      // vérités selon l'écran.
+      //
+      // La destination est LE NUMÉRO, pas le portefeuille : c'est là que le
+      // geste demandé — vérifier et rétablir — se fait. La carence y est
+      // affichée aussi, avec sa date.
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PayoutInfoPage()),
+      );
+      // Poussée à l'instant, sans réseau : le verdict est certain.
+      return true;
+    } else if (type == 'auteur_retrait' || type == 'auteur_retrait_echoue') {
+      // « Votre demande de retrait est enregistrée » et « nous renonçons, votre
+      // argent vous est revenu » se lisent sur l'écran des gains : c'est le
+      // seul qui montre le solde, la ligne du retrait, son statut et le motif
+      // que le serveur y a écrit (`derniere_erreur`). Même repli que
+      // ci-dessus, même correction, même destination que le site.
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SalesReportPage()),
+      );
+      return true;
     } else if (type.contains('paiement') ||
         type.contains('achat') ||
         type.contains('vente') ||
@@ -354,6 +396,16 @@ class NotificationService {
   ///
   /// Faute d'identifiant exploitable — vieille notification, reference
   /// manquante — on retombe sur le salon commun plutot que de ne rien faire.
+  ///
+  /// LE REPLI NE SE FAIT PLUS EN SILENCE. Le serveur refuse desormais en 403 la
+  /// lecture du club d'un livre qu'on n'a plus en bibliotheque
+  /// (discussion.Service.PeutVoirLeSalon), et c'est par ICI que ce refus arrive
+  /// en premier : un lecteur qui a retire de sa bibliotheque un livre gratuit
+  /// apres avoir participe a son club recoit encore les notifications de ce
+  /// club. Sans un mot, toucher la notification le deposait dans le Cafe des
+  /// Lecteurs — une autre salle, sans le moindre de ses messages, et sans
+  /// aucune raison donnee. Il lit maintenant pourquoi la salle annoncee ne
+  /// s'ouvre pas, avant d'etre depose la ou il y a quelque chose a lire.
   static Future<bool> _ouvrirLeSalon(
     BuildContext context,
     String? discussionId,
@@ -378,9 +430,16 @@ class NotificationService {
         ),
       );
       return true;
-    } catch (_) {
-      // La discussion a pu etre supprimee entre-temps.
+    } catch (e) {
+      // Deux causes, et il faut les dire : le salon a pu etre supprime (404),
+      // ou nous etre desormais ferme (403, voir l'en-tete). Le `catch (_)` qui
+      // etait ici ne regardait meme pas le motif.
       if (!context.mounted) return false;
+      AppNotifications.showSnackBar(
+        context,
+        message: messageLisible(e, repli: "Ce salon n'est plus accessible."),
+        isError: true,
+      );
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ForumDiscussionPage()),

@@ -6,6 +6,7 @@ import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 
 import '../../../../data/model/book_model.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 /// Une carte de la boutique.
 ///
@@ -262,8 +263,8 @@ class LivreCard extends StatelessWidget {
         url != null && url.isNotEmpty && !url.contains('example.com');
     if (!utilisable) return _placeholder();
 
-    return Image.network(
-      url,
+    return Image(
+      image: imageReseau(url),
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => _placeholder(),
       loadingBuilder: (context, enfant, avancement) {
@@ -524,8 +525,8 @@ class LivreListCard extends StatelessWidget {
         url != null && url.isNotEmpty && !url.contains('example.com');
     if (!utilisable) return _placeholder();
 
-    return Image.network(
-      url,
+    return Image(
+      image: imageReseau(url),
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => _placeholder(),
     );

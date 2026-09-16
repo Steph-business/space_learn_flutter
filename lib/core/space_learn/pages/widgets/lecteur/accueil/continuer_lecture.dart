@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../../themes/app_colors.dart';
 import '../../../../../themes/app_dimensions.dart';
 import '../../../../data/model/book_model.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 /// La reprise de lecture, en tête de l'accueil.
 ///
@@ -205,8 +206,8 @@ class ContinuerLecture extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppDimensions.radiusInner),
-      child: Image.network(
-        url,
+      child: Image(
+        image: imageReseau(url),
         width: largeur,
         height: hauteur,
         fit: BoxFit.cover,

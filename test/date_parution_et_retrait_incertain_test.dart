@@ -119,4 +119,50 @@ void main() {
           'quelque_chose_de_neuf');
     });
   });
+
+  /// LA CARENCE DE VINGT-QUATRE HEURES, LUE PAR LE MOBILE COMME PAR LE SITE.
+  ///
+  /// Le serveur arme une carence dès que la destination des virements change —
+  /// PREMIÈRE INSCRIPTION COMPRISE — et refuse ensuite tout retrait par un 409
+  /// daté. La date part dans la réponse du GET comme du PUT
+  /// (`numero_change_le`) précisément pour qu'un écran l'annonce. Le site la
+  /// lisait ; le mobile ne la parsait pas et annonçait au contraire
+  /// « vos prochaines ventes y seront versées » — un succès qui taisait le
+  /// blocage que le serveur venait de poser. L'auteur découvrait la carence en
+  /// demandant son argent.
+  group('Carence après un changement de numéro', () {
+    InfosPaiementModel infos({String? changeLe}) =>
+        InfosPaiementModel.fromJson({
+          'prefix': '225',
+          'telephone': '0700001234',
+          'par_defaut': false,
+          if (changeLe != null) 'numero_change_le': changeLe,
+        });
+
+    test('le champ du serveur est lu', () {
+      final quand = DateTime.now().toUtc().subtract(const Duration(hours: 1));
+      expect(infos(changeLe: quand.toIso8601String()).numeroChangeLe, isNotNull);
+    });
+
+    test('un changement récent donne une échéance à annoncer', () {
+      final quand = DateTime.now().toUtc().subtract(const Duration(hours: 2));
+      final fin = infos(changeLe: quand.toIso8601String()).finDeCarence;
+
+      expect(fin, isNotNull, reason: 'le serveur refuse encore les retraits');
+      expect(fin!.isAfter(DateTime.now()), isTrue);
+      // Vingt-deux heures restantes, à la seconde d'exécution près.
+      expect(fin.difference(DateTime.now()).inHours, inInclusiveRange(21, 22));
+    });
+
+    test('une carence passée ne s’annonce plus', () {
+      final quand = DateTime.now().toUtc().subtract(const Duration(hours: 25));
+      expect(infos(changeLe: quand.toIso8601String()).finDeCarence, isNull,
+          reason: "annoncer un blocage levé serait aussi faux que le taire");
+    });
+
+    test('sans changement, rien à annoncer', () {
+      expect(infos().numeroChangeLe, isNull);
+      expect(infos().finDeCarence, isNull);
+    });
+  });
 }

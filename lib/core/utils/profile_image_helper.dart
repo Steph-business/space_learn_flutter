@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class ProfileImageHelper {
   static ImageProvider? getProfileImageProvider(String? url) {
@@ -13,7 +14,7 @@ class ProfileImageHelper {
         return null;
       }
     }
-    return NetworkImage(url);
+    return imageReseau(url);
   }
 
   static Widget buildProfileImage(
@@ -45,8 +46,8 @@ class ProfileImageHelper {
       }
     }
 
-    return Image.network(
-      url,
+    return Image(
+      image: imageReseau(url),
       width: width,
       height: height,
       fit: fit,

@@ -104,6 +104,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       }
     } catch (e) {
       if (mounted) {
+        // LA SAISIE RESTE, ET C'EST ELLE LE « RÉESSAYER » DE CET ÉCRAN.
+        //
+        // `/auth/reset-password` répond désormais 503 sur une panne de lecture
+        // — « La vérification du code est momentanément impossible. Réessayez
+        // dans un instant. » (space_learn_auth, controllers/otp.go) : rien n'a
+        // été écrit, le code de la personne est intact, et recommencer peut
+        // aboutir. Le formulaire n'est pas vidé et le bouton reste actif : le
+        // geste est déjà là. Ne pas ajouter de `clear()` ici — ce serait faire
+        // ressaisir un mot de passe pour un hoquet du serveur.
         AppNotifications.showSnackBar(
           context,
           message: messageLisible(e, repli: "Réinitialisation impossible."),

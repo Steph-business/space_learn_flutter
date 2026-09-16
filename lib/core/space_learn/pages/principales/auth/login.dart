@@ -140,6 +140,39 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!mounted) return;
 
+    // LA RÉOUVERTURE SE DIT AVANT D'ENTRER, ET ELLE SE LIT.
+    //
+    // Les deux routes de connexion — /auth/login et /auth/google — annulent
+    // désormais la suppression d'un compte fermé par son titulaire dès que la
+    // preuve est faite (mot de passe vérifié, ou jeton Google attesté). Le
+    // serveur le dit dans `suppression_annulee` et écrit la phrase à montrer
+    // dans `message` ; le mobile ne lisait ni l'un ni l'autre. La personne
+    // entrait dans un compte nommé « Utilisateur Anonymisé » — c'est
+    // DeleteAccount qui remplace le nom affiché — sans savoir ni pourquoi, ni
+    // que son effacement venait d'être annulé, ni qu'elle devait ressaisir son
+    // nom dans son profil.
+    //
+    // UN DIALOGUE, PAS UN SNACKBAR : la ligne d'après remplace toute la pile
+    // de navigation, et un message furtif posé sur l'écran de connexion
+    // disparaîtrait avec lui. C'est le dernier instant où cette phrase peut
+    // être lue.
+    //
+    // La phrase vient du serveur, telle quelle : deux textes concurrents pour
+    // un même fait divergent au premier changement, et c'est exactement ce que
+    // cette campagne répare partout ailleurs.
+    if (tokenUser.suppressionAnnulee) {
+      await AppNotifications.showPremiumDialog(
+        context,
+        title: "Suppression annulée",
+        message: tokenUser.message.trim().isNotEmpty
+            ? tokenUser.message
+            : "La suppression de votre compte est annulée : vos données ne seront pas effacées. Votre nom affiché avait été remplacé à la fermeture, vous pouvez le ressaisir dans votre profil.",
+        confirmText: "Continuer",
+        isSuccess: true,
+      );
+      if (!mounted) return;
+    }
+
     if (widget.isFirstTimeRegistration && !tokenUser.user.isProfileComplete) {
       AppNotifications.showSnackBar(
         context,
@@ -225,15 +258,46 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       developer.log('Connexion Google : $e');
       if (mounted) {
-        AppNotifications.showSnackBar(
-          context,
-          message: messageLisible(e, repli: "Connexion Google impossible."),
-          isError: true,
-        );
+        _direLEchecDeConnexion(e, repli: "Connexion Google impossible.");
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Dit l'échec, et lui donne la forme que sa nature commande.
+  ///
+  /// UN REFUS DE DROIT N'EST PAS UNE PANNE, ET IL NE TIENT PAS DANS QUATRE
+  /// SECONDES. Le serveur refuse maintenant un compte fermé, archivé ou
+  /// inactif avec sa cause, sa date et L'ADRESSE du support — et ces refus-là
+  /// sortent ICI, sur l'écran de connexion, où la personne n'a ni session, ni
+  /// réglages, ni « Aide & FAQ » : c'est le seul endroit de l'application où
+  /// elle lira cette adresse. Un message furtif de quatre secondes qu'aucun
+  /// geste ne rappelle est une consigne impossible à suivre — on ne recopie
+  /// pas une adresse électronique dans ce délai.
+  ///
+  /// Le dialogue ne propose PAS de réessayer : réessayer un refus de droit ne
+  /// peut par construction jamais aboutir. Il ne propose que de fermer.
+  ///
+  /// Tout le reste — mot de passe faux, réseau coupé, serveur en panne — reste
+  /// un message furtif : c'est un état passager, et le geste évident est de
+  /// recommencer là où l'on est.
+  void _direLEchecDeConnexion(Object e, {required String repli}) {
+    if (!mounted) return;
+    final message = messageLisible(e, repli: repli);
+
+    if (e is AccesRefuse) {
+      AppNotifications.showPremiumDialog(
+        context,
+        title: "Connexion refusée",
+        message: message,
+        confirmText: "Fermer",
+        isError: true,
+      );
+      return;
+    }
+
+    AppNotifications.showSnackBar(context, message: message, isError: true);
   }
 
   Future<void> _login() async {
@@ -274,34 +338,70 @@ class _LoginPageState extends State<LoginPage> {
         // échoué, l'écran promettait un courriel qui n'était jamais parti, et
         // la personne attendait devant sa boîte.
         final codeEnvoye = !nonVerifie || e.codeEnvoye;
+
+        // LA PHRASE DU SERVEUR PASSE DEVANT LA NÔTRE, ET IL Y A DEUX CAS DE
+        // PLUS QU'AVANT. Le serveur n'émet plus qu'un courriel par compte et
+        // par minute (service.DelaiEntreDeuxCodes) : quand un code UTILISABLE
+        // est déjà parti, il répond « un code vous a déjà été adressé il y a
+        // moins d'une minute : utilisez celui-là ». Notre phrase en dur — « un
+        // nouveau code vous a été envoyé » — annonçait alors un courriel qui ne
+        // partirait pas, et la personne attendait devant sa boîte le code
+        // qu'elle avait déjà.
+        //
+        // LE QUATRIÈME CAS EST LE PLUS RÉCENT, ET IL DIT L'INVERSE : un envoi a
+        // bien eu lieu il y a moins d'une minute, mais les codes du compte
+        // viennent d'être annulés après trop d'essais — il n'en reste AUCUN
+        // d'utilisable, et le serveur écrit « Demandez-en un nouveau dans une
+        // minute. » avec `code_envoye = false` (controllers/login.go:268).
+        // Répéter « utilisez celui-là » enverrait recopier un code mort.
+        // Quatre cas côté serveur, une phrase par cas : on relaie.
+        final duServeur = nonVerifie ? e.message.trim() : '';
+        final explication = duServeur.isNotEmpty
+            ? duServeur
+            : codeEnvoye
+            ? "Votre adresse e-mail n'a pas encore été validée. Un nouveau code OTP de validation vous a été envoyé."
+            : "Votre adresse e-mail n'a pas encore été validée. Le code n'a pas pu être envoyé : demandez-en un nouveau depuis l'écran de vérification.";
+
+        // Un compte fermé par son titulaire ET jamais validé passe par ce 403 :
+        // la réouverture a bien eu lieu, il ne lui manque que son code. Sans
+        // cette ligne, la seule personne à qui la réouverture ne serait jamais
+        // annoncée est celle qui a le plus de raisons d'en douter.
+        final reouverture = nonVerifie && e.suppressionAnnulee
+            ? "\n\nLa suppression de votre compte est annulée : vos données ne seront pas effacées."
+            : "";
+
         AppNotifications.showPremiumDialog(
           context,
           title: "Vérification requise",
-          message: codeEnvoye
-              ? "Votre adresse e-mail n'a pas encore été validée. Un nouveau code OTP de validation vous a été envoyé."
-              : "Votre adresse e-mail n'a pas encore été validée. Le code n'a pas pu être envoyé : demandez-en un nouveau depuis l'écran de vérification.",
+          message: "$explication$reouverture",
           confirmText: "Vérifier maintenant",
           isSuccess: false,
           onConfirm: () {
             if (mounted) {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) =>
-                      OtpPage(email: email, isFromRegistration: true),
+                  // `code_envoye` VOYAGE JUSQU'À L'ÉCRAN DU CODE.
+                  //
+                  // Il était lu ici pour choisir une phrase, puis perdu :
+                  // l'écran suivant annonçait « Entrez le code envoyé à … » et
+                  // armait sa minute d'attente comme si un courriel venait de
+                  // partir. Le serveur rend maintenant un quatrième cas où il
+                  // vaut FAUX — les codes du compte viennent d'être annulés
+                  // après trop d'essais (controllers/login.go:268) — et rien
+                  // d'utilisable n'est alors dans la boîte de la personne. Voir
+                  // [OtpPage.codeDejaEnvoye].
+                  builder: (context) => OtpPage(
+                    email: email,
+                    isFromRegistration: true,
+                    codeDejaEnvoye: codeEnvoye,
+                  ),
                 ),
               );
             }
           },
         );
       } else {
-        AppNotifications.showSnackBar(
-          context,
-          message: messageLisible(
-            e,
-            repli: "Connexion impossible pour le moment.",
-          ),
-          isError: true,
-        );
+        _direLEchecDeConnexion(e, repli: "Connexion impossible pour le moment.");
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -518,24 +618,27 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
 
-                          SizedBox(height: 18),
-
-                          // "ou" separator
-                          Text(
-                            'ou',
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              color: AppColors.textPrimary.withOpacity(0.5),
-                            ),
-                          ),
-
-                          SizedBox(height: 18),
-
+                          // Le séparateur « ou » ENTRE dans la condition avec
+                          // le bouton qu'il annonce : seul, il promettait une
+                          // seconde façon d'entrer qui n'était nulle part.
+                          //
                           // Bouton Google, seulement si ce build est configuré
-                          // pour Google : afficher une promesse que
-                          // l'application ne peut pas tenir est pire que ne
-                          // rien proposer.
+                          // pour Google ET si le serveur l'accepte : afficher
+                          // une promesse que l'application ne peut pas tenir
+                          // est pire que ne rien proposer. Le serveur répond
+                          // 501 tant que ses clés ne sont pas posées, et
+                          // `GoogleAuthService` le retient pour la session —
+                          // voir `leServeurNeLaPasBranchee`.
                           if (GoogleAuthService.estDisponible) ...[
+                            SizedBox(height: 18),
+                            Text(
+                              'ou',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: AppColors.textPrimary.withOpacity(0.5),
+                              ),
+                            ),
+                            SizedBox(height: 18),
                             SizedBox(
                               width: double.infinity,
                               height: 52,

@@ -436,9 +436,9 @@ class _NotificationPageState extends State<NotificationPage>
         // ainsi ; celle-ci les rejoint.
         //
         // `_echecLocal` n'est posé QUE pour un jeton absent : sa seule
-        // présence suffit. Pour la panne venue du provider, on lit son drapeau
-        // — et non le texte de `derniereErreurChargement`, déjà passé par
-        // `messageLisible`, qu'`estSessionExpiree` ne reconnaîtrait pas.
+        // présence suffit. Pour la panne venue du provider, on lit son drapeau,
+        // posé sur l'exception au moment de l'échec — plus court, et surtout
+        // stable si la formulation du texte affiché change un jour.
         final sessionFinie = _echecLocal != null || provider.sessionExpiree;
 
         if (panne != null && rienDuTout) {

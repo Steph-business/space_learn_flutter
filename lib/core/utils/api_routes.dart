@@ -16,6 +16,43 @@
 /// machine de production. Le modèle à recopier est `dart_define.example.json`
 /// (il porte aussi l'identifiant client Google, lu ailleurs dans l'app ; les
 /// clés Supabase en ont disparu, l'application ne parle plus à Supabase).
+///
+/// ── LES DEUX PORTS DIRECTS, ET LE JOUR OÙ ILS DEVRONT DISPARAÎTRE ────────
+///
+/// L'adresse en service aujourd'hui vise les ports 8083 et 8084 en http. Ce
+/// n'est pas le chemin public prévu : les deux proxys du projet ne parlent
+/// qu'à la boucle locale (Stepace_learn_web/deploiement/space-learn.conf,
+/// space_learn_livres/deploy/Caddyfile → 127.0.0.1:8083 et :8084). Si
+/// l'application les joint quand même, c'est que le pare-feu laisse ces deux
+/// ports ouverts sur Internet — et alors tout ce que le proxy porte lui est
+/// facultatif : plafond de téléversement, limitation de débit, et surtout TLS.
+///
+/// LA BASCULE EST UN CHANGEMENT DE CONFIGURATION, PAS DE CODE. Chaque constante
+/// ci-dessous s'écrit « origine + chemin », et les deux proxys routent déjà
+/// TOUS les chemins que cette application appelle :
+///
+///   /auth/*, /utilisateurs/*        → 8083 (serveur d'authentification)
+///   /api/*                          → 8084 (serveur métier)
+///   /upload                         → 8084 (uploadService.dart — le seul
+///                                     chemin hors /api/, et il a son bloc
+///                                     dans les deux proxys : vérifié)
+///
+/// Il suffit donc d'écrire la même origine sans port dans les deux variables :
+///
+///   "API_BASE_URL":     "https://api.mondomaine.tld",
+///   "API_BASE_URL_GIN": "https://api.mondomaine.tld"
+///
+/// Les deux valeurs restent distinctes dans le code — elles désignent deux
+/// services, et rien ne dit qu'ils resteront toujours derrière la même porte.
+///
+/// L'ORDRE COMPTE. Un certificat posé sur le 443 ne rattrape pas un APK déjà
+/// installé : il continuera d'appeler 8083/8084 en clair jusqu'à ce que sa
+/// version soit remplacée. La reconstruction et la publication de l'APK
+/// viennent AVANT l'annonce du passage en HTTPS, sinon le site aura l'air
+/// corrigé pendant que la majorité du trafic sera restée en clair. `main.dart`
+/// (`_avertirSiTraficEnClair`) le rappelle au lancement en débogage, et
+/// `run.ps1` (action `release`) le redemande — en bloquant — juste avant de
+/// construire l'APK que l'on distribue.
 class ApiRoutes {
   /// Hôte du serveur. Voir l'en-tête du fichier : la vraie valeur arrive par
   /// `--dart-define-from-file`, jamais par ce défaut.

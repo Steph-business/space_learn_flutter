@@ -39,11 +39,31 @@ class GoogleAuthService {
 
   static bool _initialise = false;
 
+  /// Le SERVEUR a répondu qu'il n'a pas Google, dans cette session.
+  ///
+  /// Deux moitiés décidaient jusqu'ici de ce bouton, et une seule était lue :
+  /// l'application peut être compilée AVEC son identifiant client alors que le
+  /// serveur, lui, n'a pas ses clés — `/auth/google` répond alors 501, « La
+  /// connexion avec Google n'est pas disponible sur ce serveur… »
+  /// (space_learn_auth, controllers/oauth_google.go). Le bouton restait offert
+  /// et la personne rappuyait sur une porte qui n'existe pas.
+  ///
+  /// EN MÉMOIRE ET NON SUR DISQUE, délibérément : le serveur peut recevoir ses
+  /// clés entre deux lancements, et une valeur écrite sur l'appareil ferait
+  /// disparaître le bouton pour toujours. Une session suffit à ne pas répéter
+  /// le même refus.
+  static bool _leServeurNeLaPas = false;
+
+  /// Retenu quand `/auth/google` a répondu 501 avec `google_indisponible`.
+  static void leServeurNeLaPasBranchee() => _leServeurNeLaPas = true;
+
   /// Indique si la connexion Google peut être proposée.
   ///
   /// Sans identifiant client, le bouton n'a rien à faire à l'écran : il
-  /// promettrait une fonctionnalité que ce build ne peut pas rendre.
-  static bool get estDisponible => _serverClientId.isNotEmpty;
+  /// promettrait une fonctionnalité que ce build ne peut pas rendre. Et sans
+  /// serveur pour l'accepter non plus — voir [leServeurNeLaPasBranchee].
+  static bool get estDisponible =>
+      _serverClientId.isNotEmpty && !_leServeurNeLaPas;
 
   static Future<void> _initialiser() async {
     if (_initialise) return;

@@ -6,6 +6,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/bien
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/contact.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 
 /// Le parcours « Supprimer mon compte », PARTAGÉ par les deux écrans de
@@ -21,13 +22,47 @@ import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 /// deux écrans l'appellent.
 ///
 /// CE QUE CES TEXTES PROMETTENT EST CE QUE LE SERVEUR FAIT, ni plus ni moins.
-/// `DeleteAccount` (space_learn_auth, controllers/user.go) exécute un seul
-/// `Save(&user)` : statut « supprime », nom affiché remplacé, date de
-/// suppression — et `PeutOuvrirSession` referme la porte. L'e-mail, le pseudo,
-/// le téléphone, la biographie et la photo restent en base, et aucun travail
-/// périodique ne lit `deleted_at` : parler d'« anonymisation des données » ou
-/// d'une « suppression définitive après 30 jours » serait promettre au nom
-/// d'un serveur qui ne le fait pas.
+/// `DeleteAccount` (space_learn_auth, controllers/user.go) ferme le compte
+/// sur-le-champ — statut « supprime », nom affiché remplacé, date de
+/// suppression — et révoque toutes les sessions ; `PeutOuvrirSession`
+/// (models/user.go) referme la porte. Les autres informations restent en base
+/// le temps du délai de grâce, puis `service.PurgerComptesSupprimes` — la tâche
+/// périodique montée en routes/routes.go — efface l'adresse, le pseudo, le
+/// téléphone, la date de naissance, le sexe, la photo, la biographie, les liens
+/// sociaux et le portefeuille.
+///
+/// LE DÉLAI DE TRENTE JOURS N'EST PAS UN ORNEMENT : c'est lui qui rend
+/// l'annulation possible, l'adresse restant en base le temps qu'il court. C'est
+/// la seule clé dont le support dispose pour retrouver un compte fermé
+/// (space_learn_auth, scripts/chercher_compte.go et scripts/restaurer_compte.go).
+/// Le dire ici, c'est donc décrire un chemin qui existe — pas promettre au nom
+/// d'un serveur qui ne le ferait pas.
+///
+/// LE CHEMIN DU RETOUR EST LA RECONNEXION, PAS LE COURRIEL AU SUPPORT — et les
+/// deux textes de ce fichier ont dit le contraire pendant trois tours. Ils
+/// annonçaient « vous ne pourrez plus vous y connecter », puis renvoyaient vers
+/// $adresseContact comme unique sortie. Les deux moitiés sont fausses depuis
+/// que /auth/login appelle `service.AnnulerLaSuppression` (login.go) et que
+/// /auth/google en fait autant (oauth_google.go) : SE RECONNECTER, par mot de
+/// passe OU avec Google selon la façon dont on s'est inscrit, rouvre le compte
+/// pendant tout le délai.
+///
+/// C'ÉTAIT LE DÉGÂT LE PLUS CONCRET DE LA CAMPAGNE, et pas seulement une phrase
+/// inexacte : une personne à qui l'on écrit « vous ne pourrez plus vous y
+/// connecter » se reconnecte quand même — par habitude, depuis un second
+/// appareil, avec un mot de passe enregistré — et ANNULE SON PROPRE EFFACEMENT
+/// sans l'avoir voulu.
+///
+/// $adresseContact reste écrit, en SECOND, pour les deux seuls cas qu'une
+/// connexion ne rouvre pas : le délai écoulé, et l'archivage prononcé par
+/// l'administration par-dessus la fermeture. Ce sont exactement les deux cas
+/// que le 403 de login.go nomme.
+///
+/// LA RÉSERVATION DE L'ADRESSE est la seconde chose que le serveur annonce et
+/// que ces textes taisaient : l'e-mail et le pseudo restent dans leur index
+/// unique jusqu'à la purge, donc une réinscription se heurte à « Un compte
+/// existe déjà avec cette adresse ». On le dit à l'instant où la réservation
+/// commence.
 Future<void> afficherLaSuppressionDeCompte(BuildContext context) {
   return showDialog(
     context: context,
@@ -103,16 +138,43 @@ Future<void> afficherLaSuppressionDeCompte(BuildContext context) {
                     ),
                     const SizedBox(height: 12),
                     // La phrase ne promet QUE ce que le serveur fait — cf. la
-                    // note en tête de fichier. La version précédente ajoutait
-                    // « Vos données sont conservées pendant un délai de grâce
-                    // de 30 jours, puis supprimées définitivement » : la
-                    // conservation est vraie, la suppression n'existe nulle
-                    // part côté serveur. Mieux vaut dire à la personne que ces
-                    // informations restent, et par où passer pour les faire
-                    // effacer, que lui promettre une purge automatique qui
-                    // n'aura pas lieu.
+                    // note en tête de fichier. Elle a dit successivement les
+                    // deux contraires : d'abord une purge automatique que rien
+                    // n'exécutait, puis, quand le serveur s'est mis à tout
+                    // effacer sur-le-champ, que « vos autres informations
+                    // restent conservées ». La purge différée existe désormais
+                    // vraiment (service.PurgerComptesSupprimes), et le délai
+                    // qu'elle laisse est ce que la personne doit connaître :
+                    // c'est sa fenêtre pour revenir en arrière.
+                    // L'ADRESSE EST ÉCRITE ICI, pas seulement « le support ».
+                    // Ce texte est le dernier que la personne lise en étant
+                    // encore connectée : dire d'écrire sans dire où renvoyait
+                    // vers une entrée « Contacter le support » qui n'ouvre
+                    // qu'une FAQ, et qui disparaît de toute façon avec les
+                    // réglages une fois le compte fermé.
+                    //
+                    // ELLE EST ÉCRITE EN SECOND, ET C'EST TOUT LE CORRECTIF :
+                    // le premier chemin est la reconnexion — voir la note en
+                    // tête de fichier. « Vous ne pourrez plus vous y
+                    // connecter » disait le contraire de ce que le serveur
+                    // fait, et cette phrase-là faisait annuler des
+                    // suppressions par accident.
+                    //
+                    // LES TRENTE JOURS SONT CONDITIONNELS, ET L'ANNONCE
+                    // D'AVANT NE LE DISAIT PAS. La purge retient les comptes à
+                    // qui il reste de l'argent : effacer la destination de
+                    // virement d'un auteur encore créditeur ferait sortir sa
+                    // créance de tous les écrans à la fois
+                    // (space_learn_auth, service/purge_comptes.go,
+                    // `PurgeRetenuePour`). C'est une décision d'exploitation,
+                    // pas une panne, et elle vaut mieux que l'incident qu'elle
+                    // remplace — mais elle doit se dire AVANT le clic, pas
+                    // seulement après, où le serveur la nomme déjà (`reste_du`
+                    // sur la réponse du DELETE, lu plus bas). Le geste de
+                    // sortie est écrit avec elle : demander le versement
+                    // d'abord.
                     Text(
-                      "Votre compte sera immédiatement désactivé : vous ne pourrez plus vous y connecter et votre nom cessera d'être affiché. Vos autres informations (adresse e-mail, pseudo, téléphone, biographie) restent conservées ; pour en demander l'effacement définitif, contactez le support.",
+                      "Votre compte sera immédiatement fermé : vos appareils seront déconnectés et votre nom cessera d'être affiché. Vos autres informations seront effacées dans trente jours ; d'ici là, il suffit de vous reconnecter — par mot de passe ou avec Google — pour annuler la suppression. Si des gains vous restent dus, l'effacement attend leur versement : demandez votre retrait avant de fermer le compte. Si la connexion vous est refusée, écrivez à $adresseContact depuis l'adresse de ce compte.",
                       style: GoogleFonts.poppins(
                         color: AppColors.textPrimary.withValues(alpha: 0.7),
                         fontSize: 14,
@@ -219,8 +281,9 @@ Future<void> _executerLaSuppression({
   required BuildContext dialogue,
 }) async {
   Object? echec;
+  SuppressionDemandee? reponse;
   try {
-    await _demanderLaSuppression();
+    reponse = await _demanderLaSuppression();
   } catch (e) {
     echec = e;
   }
@@ -244,16 +307,52 @@ Future<void> _executerLaSuppression({
     return;
   }
 
-  // Le message d'après-coup dit exactement ce que le serveur vient de faire.
-  // Il ne relaie plus la phrase du serveur (« vos données anonymisées…
-  // définitivement supprimées après 30 jours ») : elle promettait, cinq
-  // secondes après un dialogue de confirmation qu'on avait corrigé, ce que
-  // `DeleteAccount` ne fait pas.
+  // Le message d'après-coup dit exactement ce que le serveur vient de faire, et
+  // redonne les deux renseignements dont la personne aura besoin ensuite : LE
+  // GESTE QUI ANNULE — se reconnecter, par mot de passe ou avec Google — et
+  // l'adresse à laquelle écrire quand ce geste lui est refusé. C'est le dernier
+  // écran qu'elle voit avant d'être déconnectée : la ligne du dessous la ramène
+  // à l'accueil, et plus rien dans l'application ne pourra le lui rappeler.
+  //
+  // L'ORDRE DES DEUX N'EST PAS INDIFFÉRENT. Ce texte annonçait le support comme
+  // seule sortie et la connexion comme impossible ; il disait donc l'inverse du
+  // serveur, qui rouvre le compte à la première reconnexion réussie.
+  //
+  // LA RÉSERVATION DE L'ADRESSE est dite ici et nulle part ailleurs dans
+  // l'application : c'est la seule occasion, la personne étant déconnectée juste
+  // après. Sans elle, elle découvrirait la chose en se heurtant au 409 de
+  // /auth/register.
+  //
+  // Trente jours est bien la durée appliquée : `service.DelaiDeGraceSuppression`
+  // (space_learn_auth) est la constante que la purge elle-même lit, et que
+  // DeleteAccount rend en `grace_period_days`.
+  // CE QUI RETIENT L'EFFACEMENT CHANGE CE QUE LE SERVEUR PROMET, DONC CE QUE
+  // L'ÉCRAN ANNONCE.
+  //
+  // `DeleteAccount` RETIENT l'effacement dans deux cas : quand la personne est
+  // encore créditrice — la purge emporterait la seule destination de virement
+  // enregistrée — et quand son portefeuille n'a pas pu être LU, où l'on ignore
+  // justement ce qu'on lui doit. Dans les deux, son message ne donne AUCUNE
+  // date, et c'est lui qui le dit par `effacement_retenu` : le second cas ne
+  // porte aucune somme, s'y fier ferait promettre trente jours. Rejouer notre
+  // phrase, qui annonce trente jours, serait promettre ce que le serveur ne
+  // fera pas. Dans ce cas-là, et dans celui-là seulement, on affiche la sienne
+  // telle quelle : elle nomme la somme et dit le geste — se reconnecter pour
+  // annuler la suppression et demander le versement. Voir
+  // [SuppressionDemandee], et la note en tête de `deleteAccount`.
+  final phraseDeLaDette =
+      reponse != null &&
+          reponse.uneDetteRetientLEffacement &&
+          reponse.message.isNotEmpty
+      ? reponse.message
+      : null;
+
   await AppNotifications.showPremiumDialog(
     ecran,
-    title: "Compte désactivé",
-    message:
-        "Votre compte a été désactivé : vous ne pouvez plus vous y connecter et votre nom n'est plus affiché.",
+    title: "Compte fermé",
+    message: phraseDeLaDette != null
+        ? "$phraseDeLaDette Si la connexion vous est refusée, écrivez à $adresseContact depuis l'adresse de ce compte."
+        : "Votre compte est fermé et votre nom n'est plus affiché. Vos autres informations seront effacées dans trente jours ; d'ici là, reconnectez-vous — par mot de passe ou avec Google — et la suppression sera annulée. Votre adresse e-mail reste réservée jusqu'à cette date et ne peut pas servir à un nouveau compte avant. Si la connexion vous est refusée, écrivez à $adresseContact depuis l'adresse de ce compte.",
     confirmText: "Fermer",
     isSuccess: true,
   );
@@ -281,8 +380,8 @@ Future<void> _executerLaSuppression({
 ///
 /// Lève si le serveur refuse. Aucun affichage ici : c'est
 /// [_executerLaSuppression] qui décide de ce que voit la personne.
-Future<void> _demanderLaSuppression() async {
-  await AuthService().deleteAccount();
+Future<SuppressionDemandee> _demanderLaSuppression() async {
+  final reponse = await AuthService().deleteAccount();
 
   // Le compte est désactivé côté serveur : on révoque la session sur le
   // serveur puis on efface toute trace locale — logout() fait les deux.
@@ -295,4 +394,6 @@ Future<void> _demanderLaSuppression() async {
   } catch (e) {
     debugPrint('Suppression du compte : fin de session imparfaite — $e');
   }
+
+  return reponse;
 }

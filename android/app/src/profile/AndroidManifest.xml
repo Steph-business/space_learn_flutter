@@ -6,7 +6,11 @@
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <!-- Même dérogation qu'en debug : le profilage se fait contre le backend local. -->
+    <!-- Même dérogation qu'en debug : le profilage se fait contre le backend
+         local. Sans effet réel — minSdk = 24, la network-security-config du
+         manifeste principal l'emporte — mais cet attribut part le jour du
+         HTTPS, en même temps que celui de src/main : voir la marche à suivre
+         en tête de main/res/xml/network_security_config.xml. -->
     <application
         android:usesCleartextTraffic="true"
         tools:replace="android:usesCleartextTraffic" />

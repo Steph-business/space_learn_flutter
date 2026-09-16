@@ -6,12 +6,20 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/review_model.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class AllReviewsPage extends StatelessWidget {
   final BookModel book;
   final List<ReviewModel> reviews;
 
   const AllReviewsPage({super.key, required this.book, required this.reviews});
+
+  /// Le serveur en compte-t-il plus que ce qu'on nous a passé ?
+  ///
+  /// `nombreAvis` vient du livre, pas de la liste : c'est le seul des deux
+  /// chiffres qui reste exact quand la liste est bornée.
+  bool get _ilEnManque =>
+      book.nombreAvis > reviews.length && reviews.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -43,8 +51,30 @@ class AllReviewsPage extends StatelessWidget {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(20),
-              itemCount: reviews.length,
+              // CETTE PAGE MONTRE UNE TRANCHE, ET ELLE DOIT LE DIRE.
+              //
+              // GET /api/reviews/book/:livre_id rend au plus cent avis, les
+              // plus récents (space_learn_livres, modules/avis : la liste est
+              // nominative — noms et photos — et se téléchargeait sans borne).
+              // S'intituler « Tous les avis » en en montrant cent sur trois
+              // cents serait un silence qui trompe. Le nombre exact, lui, vient
+              // du livre : `nombre_avis` est rendu par le serveur et ne dépend
+              // pas de la longueur de cette liste.
+              //
+              // Une ligne de plus quand il en manque, aucune sinon.
+              itemCount: reviews.length + (_ilEnManque ? 1 : 0),
               itemBuilder: (context, index) {
+                if (_ilEnManque && index == reviews.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 24),
+                    child: Text(
+                      "Les ${reviews.length} avis les plus récents, "
+                      "sur ${book.nombreAvis} au total.",
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.greyBody14,
+                    ),
+                  );
+                }
                 final r = reviews[index];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -89,7 +119,7 @@ class AllReviewsPage extends StatelessWidget {
                     (photoUrl != null &&
                         photoUrl.isNotEmpty &&
                         !photoUrl.contains('example.com'))
-                    ? NetworkImage(photoUrl)
+                    ? imageReseau(photoUrl)
                     : null,
                 child:
                     (photoUrl == null ||

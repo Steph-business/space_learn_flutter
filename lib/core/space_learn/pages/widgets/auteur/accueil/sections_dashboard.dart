@@ -14,6 +14,7 @@ import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/profile_image_helper.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class TopLivresSection extends StatelessWidget {
   final List<BookModel> books;
@@ -133,8 +134,8 @@ class TopLivresSection extends StatelessWidget {
             child:
                 book.imageCouverture != null &&
                     !book.imageCouverture!.contains('example.com')
-                ? Image.network(
-                    book.imageCouverture!,
+                ? Image(
+                    image: imageReseau(book.imageCouverture!),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) =>
                         Icon(Icons.book, size: 18, color: AppColors.textHint),
@@ -853,8 +854,8 @@ class DerniersAbonnesSection extends StatelessWidget {
           backgroundColor: AppColors.surfaceVariant,
           child: photo != null && photo.isNotEmpty
               ? ClipOval(
-                  child: Image.network(
-                    photo,
+                  child: Image(
+                    image: imageReseau(photo),
                     width: 36,
                     height: 36,
                     fit: BoxFit.cover,

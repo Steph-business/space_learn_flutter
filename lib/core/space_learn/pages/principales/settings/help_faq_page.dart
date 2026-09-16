@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:space_learn_flutter/core/themes/app_dimensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:space_learn_flutter/core/themes/app_colors.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
+import 'package:space_learn_flutter/core/utils/contact.dart';
 import 'package:space_learn_flutter/core/services/onboarding_guide_service.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_lecteur.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/settings/user_guide_page.dart';
@@ -223,22 +225,67 @@ class HelpFaqPage extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
+              // L'ADRESSE EST ÉCRITE, ELLE N'EST PAS SEULEMENT OUVRABLE.
+              //
+              // C'est ici qu'aboutissent les deux entrées « Contacter le
+              // support » des réglages, et l'application n'a jamais contenu la
+              // moindre adresse, alors que le site l'affiche depuis toujours
+              // (Stepace_learn_web, src/lib/contact.ts). Un lien qui
+              // s'ouvre ne remplace pas une adresse qu'on peut lire et recopier
+              // — un téléphone sans application de messagerie configurée est le
+              // cas courant, pas l'exception.
+              // CE QUE LE SUPPORT COUVRE, ET CE QU'IL NE COUVRE PLUS. La
+              // suppression de compte s'annule maintenant en SE RECONNECTANT,
+              // par mot de passe ou avec Google (space_learn_auth, login.go et
+              // oauth_google.go) : écrire ici ne sert plus qu'aux deux cas
+              // qu'une connexion ne rouvre pas — le délai de trente jours
+              // écoulé, et l'archivage prononcé par l'administration. Le
+              // commentaire ci-dessus annonçait le contraire, et c'était le
+              // monde d'avant.
               subtitle: Text(
-                "Nous vous répondrons dans les plus brefs délais.",
+                "Écrivez-nous à $adresseContact — nous vous répondrons dans "
+                "les plus brefs délais.",
                 style: GoogleFonts.poppins(color: AppColors.textSecondary),
               ),
               trailing: Icon(Icons.arrow_forward_ios, size: 14),
-              onTap: () {
-                AppNotifications.showSnackBar(
-                  context,
-                  message: "Ouverture de votre application de messagerie...",
-                  isSuccess: true,
-                );
-              },
+              onTap: () => _ecrireAuSupport(context),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Ouvre l'application de messagerie sur un courriel au support.
+  ///
+  /// L'entrée annonçait « Ouverture de votre application de messagerie... »
+  /// en vert, et n'ouvrait RIEN : aucun appel, aucun lien, un succès annoncé
+  /// pour un geste qui n'avait pas lieu. On n'annonce plus rien à l'avance —
+  /// la messagerie qui s'affiche est sa propre confirmation — et quand aucune
+  /// application ne répond, on redonne l'adresse plutôt qu'un appui sans effet.
+  Future<void> _ecrireAuSupport(BuildContext context) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: adresseContact,
+      queryParameters: const {'subject': 'Aide Space Learn'},
+    );
+
+    var ouvert = false;
+    try {
+      ouvert = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      // launchUrl lève quand aucune application ne répond : même issue, même
+      // message que si elle avait simplement rendu `false`.
+      ouvert = false;
+    }
+
+    if (ouvert || !context.mounted) return;
+    AppNotifications.showSnackBar(
+      context,
+      message:
+          "Aucune application de messagerie sur cet appareil. "
+          "Écrivez-nous à $adresseContact.",
+      isError: true,
     );
   }
 

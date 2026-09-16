@@ -28,6 +28,23 @@ class MessageService {
     if (response.statusCode == 201) {
       final Map<String, dynamic> data = json.decode(response.body);
       return Message.fromJson(data['data'] ?? data);
+    } else if (response.statusCode == 403) {
+      // MÊME REFUS QUE LA LECTURE, ET IL MANQUAIT ICI.
+      //
+      // `message.Service.PeutEcrire` refuse en 403 l'écriture dans le salon
+      // d'un livre qu'on n'a plus en bibliothèque — exactement comme
+      // `PeutVoir` refuse la lecture. Seul `getMessages` connaissait ce cas :
+      // l'envoi, lui, rendait une `Exception` ordinaire, indiscernable d'une
+      // panne. L'écran désarmait donc son verrou dans un `finally` commenté
+      // « un échec ne doit pas empêcher de réessayer », et la requête refusée
+      // repartait autant de fois qu'on appuyait — sur un refus qui, par
+      // construction, ne peut jamais aboutir.
+      throw AccesRefuse(
+        messageDeLaReponse(
+          response,
+          repli: "Vous ne pouvez plus écrire dans ce salon.",
+        ),
+      );
     } else {
       throw Exception(
         messageDeLaReponse(
@@ -72,6 +89,21 @@ class MessageService {
         }
       }
       return messages;
+    } else if (response.statusCode == 403) {
+      // UN REFUS DE DROIT N'EST PAS UNE PANNE, ET L'ÉCRAN NE PEUT PAS LE VOIR.
+      //
+      // Le serveur ne rend plus le fil d'un club à qui n'a pas le livre en
+      // bibliothèque et n'en est pas l'auteur (message.Service.PeutVoir) : il
+      // répond 403 avec sa raison en français. Cette phrase-là ne se distingue
+      // d'un message de panne par aucun mot ; seul le code HTTP le dit, et il
+      // s'arrête ici. Sans ce type, l'écran affichait la bonne phrase sous un
+      // bouton « Réessayer » qui rejouait indéfiniment la requête refusée.
+      throw AccesRefuse(
+        messageDeLaReponse(
+          response,
+          repli: "Ce salon est réservé aux lecteurs de ce livre.",
+        ),
+      );
     } else {
       throw Exception(
         messageDeLaReponse(

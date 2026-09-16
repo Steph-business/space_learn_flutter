@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/details/book_detail_page.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 // La carte est intentionnellement epuree : titre, statut, prix, note.
 // Les actions (Modifier, Publier, Supprimer) se trouvent dans le menu
@@ -92,8 +93,8 @@ class PublicationCard extends StatelessWidget {
                       book.imageCouverture != null &&
                           book.imageCouverture!.isNotEmpty &&
                           !book.imageCouverture!.contains('example.com')
-                      ? Image.network(
-                          book.imageCouverture!,
+                      ? Image(
+                          image: imageReseau(book.imageCouverture!),
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) =>
                               _buildPlaceholderCover(),

@@ -22,6 +22,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/ca
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenement_apercu.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenements_page.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class TeamsPageLecteur extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -685,8 +686,8 @@ class _TeamsPageLecteurState extends State<TeamsPageLecteur> {
                         // stockage laissait un rectangle vide et une exception
                         // dans la console : la carte paraissait cassee alors
                         // qu'il ne manquait qu'une image.
-                        child: Image.network(
-                          book.imageCouverture!,
+                        child: Image(
+                          image: imageReseau(book.imageCouverture!),
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stack) => Icon(
                             Iconsax.book,

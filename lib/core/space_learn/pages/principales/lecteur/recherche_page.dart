@@ -17,6 +17,7 @@ import 'package:space_learn_flutter/core/space_learn/data/model/library_model.da
 import 'package:space_learn_flutter/core/space_learn/data/model/user_model.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class RecherchePage extends StatefulWidget {
   const RecherchePage({super.key});
@@ -330,7 +331,7 @@ class _RecherchePageState extends State<RecherchePage> {
                     (book.imageCouverture != null &&
                         book.imageCouverture!.isNotEmpty)
                     ? DecorationImage(
-                        image: NetworkImage(book.imageCouverture!),
+                        image: imageReseau(book.imageCouverture!),
                         fit: BoxFit.cover,
                       )
                     : null,

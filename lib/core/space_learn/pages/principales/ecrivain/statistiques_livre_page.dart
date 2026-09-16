@@ -6,6 +6,7 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/authorSta
 import 'package:space_learn_flutter/core/space_learn/data/model/authorRevenueModel.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 /// Les chiffres d'un livre — ceux que le serveur donne, et rien d'autre.
 ///
@@ -162,8 +163,8 @@ class _StatistiquesLivrePageState extends State<StatistiquesLivrePage> {
                             borderRadius: BorderRadius.circular(
                               AppDimensions.radiusInner,
                             ),
-                            child: Image.network(
-                              book.imageCouverture!,
+                            child: Image(
+                              image: imageReseau(book.imageCouverture!),
                               fit: BoxFit.cover,
                             ),
                           )

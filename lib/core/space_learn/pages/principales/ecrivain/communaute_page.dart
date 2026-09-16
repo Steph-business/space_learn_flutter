@@ -24,6 +24,7 @@ import 'package:space_learn_flutter/core/space_learn/pages/widgets/lecteur/commu
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/carte_evenement.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/communaute/evenements_page.dart';
 import 'package:space_learn_flutter/core/themes/layout/nav_bar_all.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class TeamsPage extends StatefulWidget {
   final VoidCallback? onBackPressed;
@@ -157,9 +158,15 @@ class _TeamsPageState extends State<TeamsPage> {
       // quand la requete echoue : un echec reseau est indistinguable d'une
       // audience nulle si on les code pareil, et la phrase d'audience
       // annoncait alors « Personne ne vous suit encore ».
+      // LE TOTAL DU SERVEUR, PAS LA LONGUEUR DE LA LISTE. `meta.total` est
+      // exact quoi qu'il arrive à la tranche ; `.length` ne l'est que tant que
+      // la liste arrive entière, et cesse de l'être à la première borne.
+      // `nombreConnu` rend nul quand le serveur ne l'a pas dit — même
+      // traitement qu'une panne, pour la même raison : on ne remplace pas un
+      // fait qu'on ignore par un zéro qui affirme.
       int? abonnes;
       try {
-        abonnes = (await _relationService.getFollowers(user.id)).length;
+        abonnes = (await _relationService.getFollowers(user.id)).nombreConnu;
       } catch (_) {
         abonnes = null;
       }
@@ -865,8 +872,8 @@ class _TeamsPageState extends State<TeamsPage> {
                         // stockage laissait un rectangle vide et une exception
                         // dans la console : la carte paraissait cassee alors
                         // qu'il ne manquait qu'une image.
-                        child: Image.network(
-                          book.imageCouverture!,
+                        child: Image(
+                          image: imageReseau(book.imageCouverture!),
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stack) => Icon(
                             Iconsax.book,

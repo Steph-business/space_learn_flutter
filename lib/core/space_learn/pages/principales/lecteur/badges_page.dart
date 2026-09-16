@@ -12,6 +12,7 @@ import '../../../data/dataServices/reading_time_storage.dart';
 import '../../../data/model/badgeModel.dart';
 import '../../../data/model/goalModel.dart';
 import '../../../data/model/readingActivityModel.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class BadgesPage extends StatefulWidget {
   final String userId;
@@ -110,8 +111,9 @@ class _BadgesPageState extends State<BadgesPage>
       // « Temps de lecture » n'avait donc aucun effet ici ni sur l'accueil, qui
       // continuaient d'annoncer « Lire au moins 15 minutes aujourd'hui ». Trois
       // ecrans, un seul reglage, deux valeurs.
-      final cibleQuotidienne =
-          await ReadingTimeStorage.getDailyGoalMinutes(widget.userId);
+      final cibleQuotidienne = await ReadingTimeStorage.getDailyGoalMinutes(
+        widget.userId,
+      );
       final smartGoals = ReadingTimeStorage.computeSmartGoals(
         dailyGoalTarget: cibleQuotidienne,
         booksRead: finishedBooks,
@@ -593,8 +595,8 @@ class _BadgesPageState extends State<BadgesPage>
                     shape: BoxShape.circle,
                   ),
                   child: badge.iconUrl.startsWith('http')
-                      ? Image.network(
-                          badge.iconUrl,
+                      ? Image(
+                          image: imageReseau(badge.iconUrl),
                           width: 40,
                           height: 40,
                           color: isUnlocked ? null : AppColors.textHint,
@@ -712,7 +714,7 @@ class _BadgesPageState extends State<BadgesPage>
           // cet endroit ne l'appelait simplement pas.
           _estEnMinutes(badge.code)
               ? "${ReadingTimeStorage.formatMinutes(badge.progression)} / "
-                  "${ReadingTimeStorage.formatMinutes(badge.cible)}"
+                    "${ReadingTimeStorage.formatMinutes(badge.cible)}"
               : "${badge.progression} / ${badge.cible}",
           style: GoogleFonts.poppins(
             fontSize: 10,

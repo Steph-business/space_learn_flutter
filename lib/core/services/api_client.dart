@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:space_learn_flutter/core/utils/api_routes.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 
 /// Ce qu'une tentative de renouvellement apprend sur la session.
@@ -98,6 +99,34 @@ class ApiClient extends http.BaseClient {
   /// mener lui-même le renouvellement quand le corps dit une session finie, et
   /// de relayer un refus par [constaterSessionFinie].
   static const enTete401Metier = 'X-SL-401-Metier';
+
+  /// CE QUE LE SERVEUR A DIT EN METTANT FIN À LA SESSION, quand il a dit plus
+  /// que « ce jeton ne vaut plus rien ».
+  ///
+  /// `/auth/refresh` a DEUX refus, et ils ne s'expliquent pas de la même
+  /// façon. Le 401 dit que le jeton présenté est mort : « Votre session a
+  /// expiré. Reconnectez-vous. » couvre tout ce qu'il y a à en dire. Le 403,
+  /// lui, dit que le COMPTE est fermé — archivé, suspendu, supprimé — et le
+  /// serveur y écrit désormais la raison ET l'adresse où écrire :
+  /// « Ce compte n'est plus actif. Écrivez à contact@spacelearn.com depuis
+  /// l'adresse de ce compte. » (space_learn_auth, controllers/refresh.go).
+  ///
+  /// Les deux étaient rangés ensemble sous [Renouvellement.refuse] et sortaient
+  /// par la même phrase générique. La personne était mise dehors sans savoir
+  /// pourquoi ni à qui s'adresser — et précisément à l'instant où elle perd
+  /// « Aide & FAQ », seul endroit de l'application qui portait cette adresse.
+  ///
+  /// Le verdict, lui, ne change pas : les deux terminent la session, et aucun
+  /// ne se réessaie. Ce n'est pas une branche de plus, c'est la phrase à
+  /// afficher en arrivant sur l'écran de connexion — lue par
+  /// `_handleSessionExpired` (main.dart), qui en fait un dialogue qu'on ferme
+  /// soi-même plutôt qu'un message furtif : on ne recopie pas une adresse
+  /// électronique en quatre secondes.
+  ///
+  /// Remise à nul dès qu'un renouvellement aboutit ou qu'un 401 ordinaire
+  /// survient : une phrase gardée d'un refus précédent s'afficherait sur une
+  /// expiration banale.
+  static String? motifDeLaFinDeSession;
 
   /// Le renouvellement en cours, s'il y en a un.
   ///
@@ -355,8 +384,11 @@ class ApiClient extends http.BaseClient {
       debugPrint(
         '║ Refresh token présent : ${refresh != null && refresh.isNotEmpty}',
       );
-      // Rien à présenter : aucune requête ne ranimera cette session-là.
+      // Rien à présenter : aucune requête ne ranimera cette session-là. Le
+      // serveur n'a rien dit puisqu'on ne lui a rien demandé — la phrase d'un
+      // refus précédent ne doit pas s'afficher ici.
       if (refresh == null || refresh.isEmpty) {
+        motifDeLaFinDeSession = null;
         debugPrint('║ ⛔ PAS DE REFRESH TOKEN → refuse');
         debugPrint('╚════════════════════════════════════════════\n');
         return Renouvellement.refuse;
@@ -376,10 +408,17 @@ class ApiClient extends http.BaseClient {
 
       final verdict = verdictDuServeur(reponse.statusCode);
       if (verdict != Renouvellement.reussi) {
+        // Le 403 porte une raison et une adresse ; le 401 n'a rien de plus à
+        // dire que la phrase de session expirée. Voir [motifDeLaFinDeSession].
+        motifDeLaFinDeSession = reponse.statusCode == 403
+            ? phraseDuCorps(reponse.body)
+            : null;
         debugPrint('║ ⛔ Verdict : $verdict');
         debugPrint('╚════════════════════════════════════════════\n');
         return verdict;
       }
+
+      motifDeLaFinDeSession = null;
 
       // Un 200 illisible est une anomalie du serveur, pas une session finie :
       // on ne met personne dehors sur une réponse qu'on n'a pas su lire.

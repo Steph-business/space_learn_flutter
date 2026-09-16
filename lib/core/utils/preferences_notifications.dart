@@ -69,6 +69,17 @@ class PreferencesNotifications {
   /// interrupteur : sans ces deux lignes, qui avait coupé « Vie de la
   /// communauté » recevrait de nouveau les avis et les abonnements, sans avoir
   /// rien changé à son réglage.
+  ///
+  /// TROIS TYPES D'ARGENT SONT ABSENTS DE CETTE TABLE, ET ILS DOIVENT LE
+  /// RESTER — c'est une décision, pas un oubli. `auteur_retrait` (« votre
+  /// demande de retrait est enregistrée »), `auteur_retrait_echoue` (« nous
+  /// renonçons, votre argent vous est revenu ») et `auteur_coordonnees` (« le
+  /// numéro qui reçoit vos virements a changé ») sont émis par
+  /// space_learn_livres, modules/reversement. Les ranger sous [cleVentes]
+  /// paraîtrait naturel et serait grave : qui a coupé les alertes de vente
+  /// n'apprendrait plus qu'on a touché à sa destination de paiement, ni que son
+  /// virement n'a pas abouti. Le défaut « accepté » de [doitAfficher] les
+  /// couvre, et c'est exactement ce qu'on veut.
   static const Map<String, String> _cleParType = {
     'rappel_lecture': cleRappelsLecture,
     'communaute': cleCommunaute,

@@ -60,6 +60,7 @@ import 'package:space_learn_flutter/core/widgets/guides/space_learn_tour.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
 import 'package:space_learn_flutter/core/services/session_service.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class HomePageLecteur extends StatefulWidget {
   final String profileId;
@@ -488,10 +489,28 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
         _libraryService.getUserLibrary(token).catchError((e) {
           return <LibraryModel>[];
         }),
+        // `.relations` : le service rend maintenant la tranche ET son total
+        // (PageDeRelations). Cet accueil n'a besoin que de la liste — il
+        // affiche les auteurs suivis, il ne les compte pas — mais la
+        // conversion doit être faite ICI : plus bas, `results[6] is List`
+        // décide, et un objet qui n'est pas une liste y retomberait
+        // silencieusement sur une liste vide.
+        //
+        // TOUTES LES TRANCHES, ET PLUS SEULEMENT LA PREMIÈRE. Cette liste
+        // alimente `_followingIds`, qui décide du bouton « Suivre » sur chaque
+        // carte d'auteur : incomplète, elle propose de suivre quelqu'un qu'on
+        // suit déjà. Le serveur des livres a ramené sa tranche de cinq cents à
+        // cent (PlafondListeNominative = utils.LimiteMax), et un lecteur qui
+        // suit plus de cent auteurs tombait exactement là. Voir
+        // [RelationService.getToutesLesRelations] : le total vient de
+        // `meta.total`, jamais de la longueur de la liste.
         (user != null)
-            ? _relationService.getFollowing(user.id).catchError((e) {
-                return <RelationModel>[];
-              })
+            ? _relationService
+                  .getToutesLesRelations(user.id)
+                  .then((page) => page.relations)
+                  .catchError((e) {
+                    return <RelationModel>[];
+                  })
             : Future.value(<RelationModel>[]),
         _badgeService.getGoals().catchError((e) {
           return <GoalModel>[];
@@ -2349,8 +2368,8 @@ class _HomePageLecteurState extends State<HomePageLecteur> {
                       borderRadius: BorderRadius.circular(
                         AppDimensions.radiusSmall,
                       ),
-                      child: Image.network(
-                        book.imageCouverture!,
+                      child: Image(
+                        image: imageReseau(book.imageCouverture!),
                         fit: BoxFit.cover,
                       ),
                     )

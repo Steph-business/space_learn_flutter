@@ -35,6 +35,31 @@ String libelleTypeNotification(String type) {
     // « PAIEMENT ECHOUE », sans accents.
     case 'paiement_echoue':
       return 'PAIEMENT ÉCHOUÉ';
+    // Les trois avis d'ARGENT de l'auteur (space_learn_livres,
+    // modules/reversement/service.go). Sans ces cas ils tombaient dans le repli
+    // et s'affichaient « AUTEUR RETRAIT », « AUTEUR COORDONNEES »,
+    // « AUTEUR RETRAIT ECHOUE » — sans accents, avec le préfixe technique qui
+    // sert au ROUTAGE (« auteur » range l'avis du côté auteur dans les trois
+    // clients) et n'a rien à faire sous les yeux de qui lit.
+    //
+    // La couleur et l'icône étaient justes pour DEUX des trois : « echoue »
+    // est la sous-chaîne sur laquelle `notificationEstUnEchec` peint en rouge,
+    // et c'est pour cela que le serveur a nommé le type ainsi. Le troisième,
+    // `auteur_coordonnees`, tombait dans le repli — cloche grise, couleur par
+    // défaut — voir [notificationEstUneAlerte].
+    case 'auteur_retrait':
+      return 'DEMANDE DE RETRAIT';
+    case 'auteur_retrait_echoue':
+      return 'RETRAIT NON ABOUTI';
+    // « COORDONNÉES DE PAIEMENT » NE DISAIT PAS QUE QUELQUE CHOSE A CHANGÉ.
+    //
+    // C'est pourtant tout ce que cet avis annonce, et c'est le SEUL signal
+    // qu'a l'auteur si le changement ne vient pas de lui : la destination de
+    // ses virements n'est plus la même. Le libellé est celui du site, mot pour
+    // mot (Stepace_learn_web, src/app/notifications/page.tsx), pour qu'un même
+    // avis du même serveur ne porte pas deux noms selon l'écran où on le lit.
+    case 'auteur_coordonnees':
+      return 'NUMÉRO DE VIREMENT MODIFIÉ';
     case 'annonce':
       return 'ANNONCE';
     case 'evenement':
@@ -54,6 +79,13 @@ IconData iconeDuTypeDeNotification(String type) {
   // « paiement », et l'ordre des conditions decide donc de tout.
   if (notificationEstUnEchec(t)) {
     return Iconsax.close_circle;
+  }
+  // L'ALERTE PASSE AVANT LE PORTEFEUILLE, pour la même raison d'ordre que
+  // l'échec : voir [notificationEstUneAlerte].
+  if (notificationEstUneAlerte(t)) {
+    // Le bouclier du site (`gpp_maybe`), et non une cloche : c'est la même
+    // icône, du même jeu Material, sur le même avis.
+    return Icons.gpp_maybe;
   }
   if (t.contains('payment') ||
       t.contains('paiement') ||
@@ -88,6 +120,24 @@ bool notificationEstUnEchec(String t) =>
     t.contains('refuse') ||
     t.contains('failed');
 
+/// Un type qui n'annonce PAS un echec, et qu'il faut pourtant lire tout de
+/// suite.
+///
+/// `auteur_coordonnees` est le seul aujourd'hui, et il est le plus important
+/// des trois avis d'argent de l'auteur : il dit que la DESTINATION de ses
+/// virements a change. Rien dans son nom ne contient « echoue », il tombait
+/// donc dans le repli — cloche grise, couleur primaire, exactement l'aspect
+/// d'un « nouvel abonne ». Le site le peint en alerte et le nomme « Numero de
+/// virement modifie » (Stepace_learn_web, src/app/notifications/page.tsx) :
+/// un serveur, deux verites, et c'est le client OU L'AVIS ARRIVE qui etait le
+/// plus discret.
+///
+/// Ce n'est pas un echec — `notificationEstUnEchec` reste faux, et il le doit :
+/// rien n'a rate, un enregistrement a abouti. C'est un fait a verifier. D'ou
+/// un test separe, teste AVANT le cas general du portefeuille pour la meme
+/// raison d'ordre que l'echec.
+bool notificationEstUneAlerte(String t) => t.contains('coordonnees');
+
 Color couleurDuTypeDeNotification(String type) {
   final t = type.toLowerCase();
   // « paiement_echoue » CONTIENT « paiement » : sans ce test place en
@@ -96,6 +146,13 @@ Color couleurDuTypeDeNotification(String type) {
   // « paiement valide » juste en dessous — la couleur disait le contraire
   // du texte, et c'est la couleur qu'on lit en premier.
   if (notificationEstUnEchec(t)) {
+    return AppColors.error;
+  }
+  // Le changement de destination des virements se lit en ALERTE, comme sur le
+  // site : voir [notificationEstUneAlerte]. Sans ce test il héritait du VERT
+  // du portefeuille — la couleur de « votre vente a été créditée » sur l'avis
+  // qui prévient d'un éventuel détournement.
+  if (notificationEstUneAlerte(t)) {
     return AppColors.error;
   }
   if (t.contains('payment') ||

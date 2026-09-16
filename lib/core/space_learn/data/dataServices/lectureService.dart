@@ -42,6 +42,12 @@ class Lectureservice {
     }
   }
 
+  /// Les avis d'un livre — jumelle de `ReviewService.getBookReviews`, mêmes
+  /// bornes et même contrat de pagination : voir la note qui y est écrite.
+  ///
+  /// En bref : sans paramètre, les cent avis les plus récents. Un « voir plus »
+  /// envoie `?limit=100&page=N`, LES DEUX ENSEMBLE — `page` seul rendrait des
+  /// avis déjà affichés en manquant ceux qu'on vient chercher.
   Future<List<ReviewModel>> getReviewsByBook(String livreId) async {
     final url = ApiRoutes.reviewsByBook.replaceFirst(':livre_id', livreId);
     final response = await client.get(Uri.parse(url));
@@ -77,6 +83,18 @@ class Lectureservice {
     }
   }
 
+  /// Le fil d'activité : les CINQUANTE avis les plus récents, tous livres
+  /// confondus.
+  ///
+  /// Cinquante et non cent — `PlafondAvisRecents` (space_learn_livres,
+  /// modules/avis/controller.go) : la suite s'obtiendrait donc avec
+  /// `?limit=50&page=N`, les deux paramètres ensemble comme partout ailleurs.
+  /// Ce fil est borné à mille avis de profondeur ; au-delà le serveur répond
+  /// « Ce fil d'activité ne remonte pas si loin. Les avis d'un livre se lisent
+  /// sur sa fiche. » — une phrase à afficher telle quelle, sans « Réessayer ».
+  ///
+  /// L'accueil du lecteur n'a rien à y changer : il reçoit ses cinquante et
+  /// n'en garde que quinze.
   Future<List<ReviewModel>> getAllReviews([String? authToken]) async {
     final Map<String, String> headers = {};
     if (authToken != null) {

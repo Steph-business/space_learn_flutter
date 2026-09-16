@@ -106,7 +106,22 @@ class RetraitModel {
   final double montant;
   final String devise;
   final String statut;
+
+  /// LE MOTIF ÉCRIT POUR L'AUTEUR — plus la cause technique.
+  ///
+  /// Ce champ servait deux publics aux exigences contraires : l'auteur y lisait
+  /// nos adresses d'API et le corps brut renvoyé par la passerelle. Le serveur
+  /// a séparé les deux (space_learn_livres, modules/reversement) :
+  /// `derniere_erreur` ne porte plus QUE du texte destiné à l'auteur, et la
+  /// cause technique est partie dans `note_exploitation` — champ que
+  /// `ListerRetraits` EFFACE avant de rendre la liste à l'auteur, et qu'on ne
+  /// lit donc pas ici. Ne pas l'ajouter à [fromJson] : il n'arrive pas, et son
+  /// public est l'écran d'exploitation du site, pas ce téléphone.
+  ///
+  /// C'est le seul endroit où les quatre fins d'un retrait « echouee » se
+  /// distinguent : voir [libelleStatut].
   final String? derniereErreur;
+
   final DateTime? demandeLe;
   final DateTime? traiteLe;
 
@@ -135,6 +150,13 @@ class RetraitModel {
 
   bool get estPaye => statut == 'payee';
 
+  /// Le virement a été refusé, et cet ordre-là est CLOS.
+  ///
+  /// Rien ne le reprendra : `RevendiquerRetrait` et `RetraitsATraiter`
+  /// (space_learn_livres, modules/reversement) ne reprennent que « demandee ».
+  /// Le montant, lui, est déjà revenu au disponible — `CalculerSolde` ne compte
+  /// « echouee » ni dans les versés ni dans les en-cours. Retrait terminé,
+  /// argent rendu : à l'auteur de redemander s'il le veut.
   bool get estEnEchec => statut == 'echouee';
 
   /// Le virement est parti sans que l'opérateur ait confirmé son sort.
@@ -154,7 +176,27 @@ class RetraitModel {
       case 'payee':
         return 'Versé';
       case 'echouee':
-        return 'Échec, nouvelle tentative prévue';
+        // « Échec, nouvelle tentative prévue » promettait une reprise qui ne
+        // viendra jamais. Depuis que ce statut est TERMINAL côté serveur — la
+        // file de relance ne reprend plus que « demandee », précisément pour
+        // qu'un même dû ne sorte pas deux fois —, l'auteur qui lisait cette
+        // phrase attendait au lieu de redemander, pendant que sa somme, rendue
+        // au disponible, dormait. Le libellé dit les deux faits qui comptent :
+        // c'est fini, et l'argent est là.
+        //
+        // « VIREMENT REFUSÉ » DISAIT PLUS QUE LE STATUT NE SAIT. Ce statut
+        // recouvre quatre fins différentes côté serveur, et une seule est un
+        // refus : la clôture d'une demande épuisée après plusieurs tentatives
+        // (ClorerRetraitsEpuises — AUCUN ordre n'est parti, personne n'a rien
+        // refusé), le refus certain de l'opérateur, la régularisation humaine
+        // défavorable, et le refus sans numéro enregistré. Le serveur ne les
+        // distingue pas par le statut mais par le texte qu'il écrit dans
+        // `derniere_erreur` — texte destiné à l'auteur depuis que la cause
+        // technique est partie dans `note_exploitation`. Le libellé reste donc
+        // NEUTRE et vrai des quatre ; le détail vient du serveur, et
+        // `sales_report_page.dart` l'affiche dessous.
+        return 'Virement non abouti — le montant est de nouveau disponible, '
+            'vous pouvez redemander ce retrait';
       case 'annulee':
         return 'Annulé';
       case 'incertain':
@@ -278,12 +320,31 @@ class InfosPaiementModel {
   /// compte comme point de départ — l'auteur doit encore confirmer.
   final bool parDefaut;
 
+  /// Quand la destination des virements a changé pour la dernière fois.
+  ///
+  /// LE SERVEUR ARME UNE CARENCE DE VINGT-QUATRE HEURES SUR CE CHANGEMENT, ET
+  /// LE MOBILE NE LE LISAIT PAS. `SetMesInfosPaiement` (space_learn_livres,
+  /// modules/reversement/controller.go) pose `numero_change_le` dès que la
+  /// destination diffère de la précédente — PREMIÈRE INSCRIPTION COMPRISE
+  /// depuis ce tour — et `DemanderRetrait` refuse alors tout virement par un
+  /// 409 daté pendant les vingt-quatre heures qui suivent. La date part dans
+  /// la réponse du PUT comme dans celle du GET, précisément pour qu'un écran
+  /// puisse l'annoncer.
+  ///
+  /// Le site la lit depuis toujours (Stepace_learn_web,
+  /// src/lib/portefeuille.ts, `finDeCarence` ; bannière SalesReports.tsx). Le
+  /// mobile annonçait au contraire « Vos prochaines ventes y seront versées »
+  /// et laissait l'auteur découvrir la carence au moment de demander son
+  /// argent, dans un message furtif. Un serveur, deux vérités.
+  final DateTime? numeroChangeLe;
+
   const InfosPaiementModel({
     required this.prefix,
     required this.telephone,
     this.nomComplet = '',
     this.email = '',
     this.parDefaut = false,
+    this.numeroChangeLe,
   });
 
   factory InfosPaiementModel.fromJson(Map<String, dynamic> json) =>
@@ -293,12 +354,32 @@ class InfosPaiementModel {
         nomComplet: json['nom_complet']?.toString() ?? '',
         email: json['email']?.toString() ?? '',
         parDefaut: json['par_defaut'] == true,
+        numeroChangeLe: _date(json['numero_change_le']),
       );
 
   bool get estRenseigne => telephone.isNotEmpty && !parDefaut;
 
   String get numeroComplet =>
       prefix.isEmpty ? telephone : '+$prefix $telephone';
+
+  /// Combien de temps le serveur refuse encore les retraits. Voir
+  /// [numeroChangeLe].
+  static const Duration carenceApresChangement = Duration(hours: 24);
+
+  /// L'instant où les retraits redeviennent possibles, ou nul si la carence
+  /// est passée — ou n'a jamais été armée.
+  ///
+  /// L'ÉCRAN ANNONCE, IL NE REFUSE RIEN. Le serveur reste seul juge : c'est
+  /// `DemanderRetrait` qui tranche, avec sa propre horloge et sa propre
+  /// réponse. Cette date sert à le dire AVANT que l'auteur ne demande son
+  /// argent, pas à masquer un bouton d'après une pendule de téléphone qui peut
+  /// être fausse. Même calcul que le site (`CARENCE_NUMERO_MS`).
+  DateTime? get finDeCarence {
+    final d = numeroChangeLe;
+    if (d == null) return null;
+    final fin = d.toLocal().add(carenceApresChangement);
+    return fin.isAfter(DateTime.now()) ? fin : null;
+  }
 }
 
 double _double(dynamic v) =>

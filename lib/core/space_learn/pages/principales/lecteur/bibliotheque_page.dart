@@ -19,6 +19,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:space_learn_flutter/core/services/lecture_audio_livre.dart';
 import 'package:space_learn_flutter/core/utils/app_notifications.dart';
 import 'package:space_learn_flutter/core/space_learn/data/model/book_model.dart';
+import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 
 class BibliothequePage extends StatefulWidget {
   const BibliothequePage({super.key});
@@ -36,6 +39,19 @@ class _BibliothequePageState extends State<BibliothequePage> {
   List<String> _categories = ["Tous"];
   bool _isLoading = true;
   String? _error;
+
+  /// L'échec est-il une session morte plutôt qu'une panne ?
+  ///
+  /// CET ÉCRAN EST ENTIÈREMENT AUTHENTIFIÉ — `getUserLibrary(token)` — c'est
+  /// donc un de ceux où le 401 arrive normalement. Il écrasait pourtant la
+  /// cause par un texte en dur, « Erreur lors du chargement de la
+  /// bibliothèque », et n'offrait qu'un bouton « Réessayer » : le lecteur dont
+  /// le jeton venait de mourir tournait en boucle sur sa propre bibliothèque,
+  /// à appuyer sur le seul bouton qui, par construction, ne pouvait pas
+  /// aboutir. Deux règles de la maison sautées d'un coup — on montre le VRAI
+  /// message, et une session expirée mène à la connexion.
+  bool _sessionExpiree = false;
+
   String _statusFiltre = "Tous";
   String _sortOption = "Dernière lecture";
   String _searchQuery = "";
@@ -111,11 +127,14 @@ class _BibliothequePageState extends State<BibliothequePage> {
         setState(() {
           _isLoading = true;
           _error = null;
+          _sessionExpiree = false;
         });
       }
 
       final token = await TokenStorage.getToken();
-      if (token == null) throw Exception("Non connecté");
+      // Le jeton absent EST une session finie : « Non connecté » tombait dans
+      // le repli générique et se terminait par « Réessayer ».
+      if (token == null) throw Exception(phraseSessionExpiree);
       final items = await _libraryService.getUserLibrary(token);
       // If the library items don't include the full `livre` object (backend may
       // return only `livre_id`), fetch missing book details so we can display
@@ -201,11 +220,32 @@ class _BibliothequePageState extends State<BibliothequePage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = "Erreur lors du chargement de la bibliothèque";
+          // La cause telle que le serveur l'a dite, et le geste qui lui
+          // correspond : voir [_sessionExpiree].
+          _sessionExpiree = estSessionExpiree(e);
+          _error = messageLisible(
+            e,
+            repli: "Votre bibliothèque n'a pas pu être chargée.",
+          );
           _isLoading = false;
         });
       }
     }
+  }
+
+  /// Fin de session complète, puis retour à l'écran de connexion.
+  ///
+  /// Même geste que sur les autres écrans qui la proposent :
+  /// `SessionService.terminer()` est le point de nettoyage unique — effacer le
+  /// seul jeton laisserait derrière lui le cache des livres téléchargés et le
+  /// profil choisi, que le compte suivant retrouverait sur cet appareil.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
   }
 
   List<LibraryModel> _getFilteredBooks() {
@@ -738,13 +778,19 @@ class _BibliothequePageState extends State<BibliothequePage> {
             SizedBox(height: 16),
             Text(
               _error!,
+              textAlign: TextAlign.center,
               style: GoogleFonts.poppins(color: AppColors.textPrimary),
             ),
             SizedBox(height: 16),
+            // Le bouton suit la cause. « Réessayer » sur un jeton mort est le
+            // seul geste qui ne peut par construction jamais aboutir : la
+            // requête repart, le 401 revient, et le lecteur recommence.
             TextButton.icon(
-              onPressed: _loadLibrary,
-              icon: Icon(Icons.refresh_rounded),
-              label: Text("Réessayer"),
+              onPressed: _sessionExpiree ? _seReconnecter : _loadLibrary,
+              icon: Icon(
+                _sessionExpiree ? Icons.login_rounded : Icons.refresh_rounded,
+              ),
+              label: Text(_sessionExpiree ? "Se reconnecter" : "Réessayer"),
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
           ],

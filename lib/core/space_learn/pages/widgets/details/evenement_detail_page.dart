@@ -14,6 +14,7 @@ import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/communaute/nouvelle_annonce_page.dart';
 import 'package:space_learn_flutter/core/space_learn/pages/widgets/auteur/communaute/creer_evenement_page.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/utils/image_reseau.dart';
 
 class EvenementDetailPage extends StatefulWidget {
   final Evenement evenement;
@@ -245,7 +246,7 @@ class _EvenementDetailPageState extends State<EvenementDetailPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
                   image: DecorationImage(
-                    image: NetworkImage(_evenement.imageUrl!),
+                    image: imageReseau(_evenement.imageUrl!),
                     fit: BoxFit.cover,
                   ),
                   border: Border.all(

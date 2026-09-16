@@ -18,6 +18,8 @@ import 'package:space_learn_flutter/core/space_learn/data/dataServices/categorie
 import 'package:space_learn_flutter/core/space_learn/data/model/categorie.dart';
 import 'package:space_learn_flutter/core/utils/token_storage.dart';
 import 'package:space_learn_flutter/core/utils/message_erreur.dart';
+import 'package:space_learn_flutter/core/services/session_service.dart';
+import 'package:space_learn_flutter/core/space_learn/pages/principales/auth/login.dart';
 
 class MarketplacePage extends StatefulWidget {
   const MarketplacePage({super.key});
@@ -493,21 +495,42 @@ class _MarketplacePageState extends State<MarketplacePage> {
             ),
           ),
           // Pas de « Réessayer » sur une session finie : la requête repartirait
-          // avec le même jeton périmé et échouerait à l'identique.
-          if (!_sessionFinie)
-            TextButton(
-              onPressed: _loadBooks,
-              child: Text(
-                "Réessayer",
-                style: GoogleFonts.poppins(
-                  color: AppColors.accentInk,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
+          // avec le même jeton périmé et échouerait à l'identique. MAIS LA
+          // PHRASE DIT « RECONNECTEZ-VOUS », ET IL FAUT DONC POUVOIR LE FAIRE.
+          //
+          // Le bandeau n'offrait alors AUCUN geste : la consigne était juste et
+          // impossible à suivre depuis cet écran — la boutique n'a pas d'entrée
+          // vers la connexion, il fallait passer par les réglages et se
+          // déconnecter à la main. Et l'attente coûte ici quelque chose de
+          // précis : sans bibliothèque, les cartes perdent leur « Déjà
+          // acquis », et le lecteur peut repayer un livre qu'il possède déjà.
+          TextButton(
+            onPressed: _sessionFinie ? _seReconnecter : _loadBooks,
+            child: Text(
+              _sessionFinie ? "Se reconnecter" : "Réessayer",
+              style: GoogleFonts.poppins(
+                color: AppColors.accentInk,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
               ),
             ),
+          ),
         ],
       ),
+    );
+  }
+
+  /// Termine la session et ramène à l'écran de connexion.
+  ///
+  /// Le nettoyage passe par [SessionService] : effacer le seul jeton laisserait
+  /// derrière lui le reste de la session. Même geste, même sortie que sur les
+  /// deux pages Communauté, le fil des messages et le détail d'un livre.
+  Future<void> _seReconnecter() async {
+    await SessionService.terminer();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
     );
   }
 
